@@ -118,7 +118,7 @@ export class CompanyContextService {
     this.activeBranch.set(branch);
   }
 
-  private applyBrandColor(hexColor: string) {
+  public applyBrandColor(hexColor: string) {
     document.documentElement.style.setProperty('--primary-color', hexColor);
   }
 }

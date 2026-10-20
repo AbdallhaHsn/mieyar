@@ -1,22 +1,27 @@
-/* Al-Roban Cloud Accounting & ERP - Global Design System */
+/* Al-Roban Cloud Accounting & ERP - Global Enterprise Design System */
 @import 'primeicons/primeicons.css';
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
   --font-arabic: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-latin: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
   --primary-color: #0f766e;
   --primary-light: #14b8a6;
   --primary-dark: #0f5650;
-  --surface-ground: #f8fafc;
-  --surface-card: #ffffff;
-  --surface-border: #e2e8f0;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  
+  --surface-ground: #070d1e;
+  --surface-card: #0d172e;
+  --surface-border: rgba(255, 255, 255, 0.08);
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  
   --accent-gold: #f59e0b;
   --status-success: #10b981;
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
+  --status-info: #3b82f6;
 }
 
 * {
@@ -25,33 +30,59 @@
   padding: 0;
 }
 
-body {
-  font-family: var(--font-arabic);
+html, body {
+  width: 100%;
+  min-height: 100vh;
   background-color: var(--surface-ground);
   color: var(--text-main);
-  direction: rtl; /* Native Arabic accounting default */
-  min-height: 100vh;
+  font-family: var(--font-arabic);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Enterprise Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Glassmorphism & Card Utilities */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.35);
 }
 
 .badge-zatca {
-  background: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
   padding: 4px 10px;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+}
+
+/* Font Mono Utility */
+.font-mono {
+  font-family: 'SF Mono', Monaco, Menlo, 'Courier New', monospace;
+  letter-spacing: 0.02em;
 }
