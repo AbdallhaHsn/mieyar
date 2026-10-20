@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Modules\InvoicingAndZatca\AlRobban.Modules.InvoicingAndZatca.Domain\AlRobban.Modules.InvoicingAndZatca.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\InvoicingAndZatca\AlRobban.Modules.InvoicingAndZatca.Application\AlRobban.Modules.InvoicingAndZatca.Application.csproj" />
     <ProjectReference Include="..\..\src\Shared\AlRobban.Shared.Infrastructure\AlRobban.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\IdentityAndAccess\AlRobban.Modules.IdentityAndAccess.Domain\AlRobban.Modules.IdentityAndAccess.Domain.csproj" />
   </ItemGroup>
 
 </Project>

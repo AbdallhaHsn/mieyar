@@ -1,3 +1,4 @@
+using AlRobban.Modules.IdentityAndAccess.Infrastructure.Extensions;
 using AlRobban.Shared.Application.Abstractions;
 using AlRobban.Shared.Application.Behaviors;
 using AlRobban.Shared.Infrastructure.Dapper;
@@ -46,6 +47,9 @@ builder.Services.AddScoped<ICurrentTenantContext, TenantContext>();
 builder.Services.AddScoped<AuditableEntityInterceptor>();
 builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddSingleton<IZatcaCryptoService, ZatcaCryptoService>();
+
+// Register Modules
+builder.Services.AddIdentityAndAccessModule(builder.Configuration);
 
 // 5. MediatR & Pipeline Behaviors
 builder.Services.AddMediatR(cfg =>
