@@ -6,6 +6,7 @@ import { CompaniesListComponent } from './features/companies/companies-list.comp
 import { authGuard, loginGuard } from './core/guards/auth.guard';
 
 import { ChartOfAccountsComponent } from './features/accounting/chart-of-accounts/chart-of-accounts.component';
+import { AccountCreateComponent } from './features/accounting/account-create/account-create.component';
 
 export const routes: Routes = [
   {
@@ -34,6 +35,10 @@ export const routes: Routes = [
       {
         path: 'accounting/chart-of-accounts',
         component: ChartOfAccountsComponent
+      },
+      {
+        path: 'accounting/chart-of-accounts/create',
+        component: AccountCreateComponent
       },
       {
         path: 'accounting/journal-entries',

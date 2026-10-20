@@ -1,0 +1,493 @@
+<div class="account-create-page geometric-bg">
+  
+  <!-- Breadcrumb & Top Bar -->
+  <header class="page-header">
+    <div class="header-breadcrumb">
+      <nav class="breadcrumb-nav">
+        <a routerLink="/dashboard" class="crumb-link">لوحة التحكم</a>
+        <span class="crumb-sep">/</span>
+        <a routerLink="/accounting/chart-of-accounts" class="crumb-link">دليل الحسابات</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">إضافة حساب جديد</span>
+      </nav>
+
+      <div class="header-main-row">
+        <div class="title-wrap">
+          <div class="header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="page-title">تهيئة وإضافة حساب جديد</h1>
+            <p class="page-subtitle">
+              إنشاء حساب جديد في دليل الحسابات مع ربطه بالمعيار المحاسبي الدولي (IFRS/IAS) وضوابط هيئة الزكاة (ZATCA)
+            </p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn-back" (click)="goBack()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+            <span>العودة لشجرة الحسابات</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Alerts -->
+  @if (successMessage()) {
+    <div class="alert-box alert-success">
+      <div class="alert-icon">✓</div>
+      <div class="alert-content">{{ successMessage() }}</div>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert-box alert-error">
+      <div class="alert-icon">⚠</div>
+      <div class="alert-content">{{ errorMessage() }}</div>
+    </div>
+  }
+
+  <!-- Master 2-Column Split Layout -->
+  <div class="create-layout-grid">
+    
+    <!-- LEFT COLUMN: Account Definition Form -->
+    <main class="form-column">
+      <form [formGroup]="accountForm" class="account-form">
+        
+        <!-- CARD 1: Category & Structural Hierarchy -->
+        <section class="form-card">
+          <div class="card-header">
+            <div class="step-badge">1</div>
+            <div>
+              <h2 class="card-title">التصنيف الرئيسي والموقع الهيكلي</h2>
+              <p class="card-subtitle">حدد نوع الحساب ومكانه في الشجرة الهرمية</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Account Category Radio Selector Tiles -->
+            <label class="form-label required">التصنيف الرئيسي (Root Classification):</label>
+            <div class="category-tiles-grid">
+              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Asset">
+                <input type="radio" formControlName="accountType" [value]="AccountType.Asset" />
+                <span class="cat-icon bg-emerald">1</span>
+                <span class="cat-name">الأصول</span>
+                <span class="cat-desc">نقدية، بنوك، عملاء، أصول ثابتة</span>
+              </label>
+
+              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Liability">
+                <input type="radio" formControlName="accountType" [value]="AccountType.Liability" />
+                <span class="cat-icon bg-cyan">2</span>
+                <span class="cat-name">الالتزامات والخصوم</span>
+                <span class="cat-desc">موردون، ضرائب ZATCA، قروض</span>
+              </label>
+
+              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Equity">
+                <input type="radio" formControlName="accountType" [value]="AccountType.Equity" />
+                <span class="cat-icon bg-indigo">3</span>
+                <span class="cat-name">حقوق الملكية</span>
+                <span class="cat-desc">رأس المال، احتياطيات، أرباح مبقاة</span>
+              </label>
+
+              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Revenue">
+                <input type="radio" formControlName="accountType" [value]="AccountType.Revenue" />
+                <span class="cat-icon bg-purple">4</span>
+                <span class="cat-name">الإيرادات والمبيعات</span>
+                <span class="cat-desc">مبيعات البضائع، تقديم الخدمات</span>
+              </label>
+
+              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Expense">
+                <input type="radio" formControlName="accountType" [value]="AccountType.Expense" />
+                <span class="cat-icon bg-amber">5</span>
+                <span class="cat-name">المصروفات والتكاليف</span>
+                <span class="cat-desc">تكلفة المبيعات، رواتب، استهلاك</span>
+              </label>
+            </div>
+
+            <!-- Parent Account Selector -->
+            <div class="form-row-2 mt-4">
+              <div class="form-group flex-2">
+                <label class="form-label">الحساب الرئيسي الأعلى (الحساب الأب):</label>
+                <select 
+                  formControlName="parentAccountId" 
+                  class="form-control"
+                  (change)="onParentSelected(accountForm.get('parentAccountId')?.value)"
+                >
+                  <option value="">بدون حساب أب (حساب جذري مستوى 1)</option>
+                  @for (parent of availableParents(); track parent.id) {
+                    <option [value]="parent.id">
+                      {{ parent.accountCode }} - {{ parent.nameAr }} (مستوى {{ parent.level }})
+                    </option>
+                  }
+                </select>
+                <small class="field-hint">عند اختيار حساب أب، يتم اقتراح رقم الحساب والخصائص تلقائياً.</small>
+              </div>
+
+              <!-- Level Display Badge -->
+              <div class="form-group flex-1">
+                <label class="form-label">مستوى الحساب الهيكلي:</label>
+                <div class="level-indicator-box">
+                  <span class="level-pill">المستوى {{ calculatedLevel() }}</span>
+                  <span class="level-desc">{{ calculatedLevel() === 1 ? 'حساب جذري رئيسي' : calculatedLevel() === 2 ? 'مجموعة رئيسية' : calculatedLevel() === 3 ? 'حساب مساعد' : 'حساب تحليلي فرعي' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Code Field -->
+            <div class="form-group mt-3">
+              <div class="label-cluster">
+                <label class="form-label required">رمز الحساب الدفتري (Account Code):</label>
+                <span class="code-tag-badge">ترقيم ترتيبي موحد</span>
+              </div>
+              <div class="code-input-wrap">
+                <input 
+                  type="text" 
+                  formControlName="accountCode" 
+                  class="form-control font-mono code-input" 
+                  placeholder="مثال: 11105 أو 21103" 
+                />
+                <span class="code-check-pill">جاهز للحفظ</span>
+              </div>
+              @if (accountForm.get('accountCode')?.touched && accountForm.get('accountCode')?.invalid) {
+                <span class="error-text">رمز الحساب مطلوب ويجب أن يتكون من أرقام فقط دون مسافات.</span>
+              }
+            </div>
+
+          </div>
+        </section>
+
+        <!-- CARD 2: Names and Identification -->
+        <section class="form-card">
+          <div class="card-header">
+            <div class="step-badge">2</div>
+            <div>
+              <h2 class="card-title">البيانات التعريفية واللغوية</h2>
+              <p class="card-subtitle">اسم الحساب باللغتين المعتمدتين والعملة</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="form-row-2">
+              <div class="form-group flex-1">
+                <label class="form-label required">اسم الحساب (باللغة العربية):</label>
+                <input 
+                  type="text" 
+                  formControlName="nameAr" 
+                  class="form-control" 
+                  placeholder="مثال: مصرف الإنماء - حساب جاري رئيسي" 
+                />
+                @if (accountForm.get('nameAr')?.touched && accountForm.get('nameAr')?.invalid) {
+                  <span class="error-text">اسم الحساب بالعربية مطلوب (حرفين على الأقل).</span>
+                }
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label required">اسم الحساب (English Name):</label>
+                <input 
+                  type="text" 
+                  formControlName="nameEn" 
+                  class="form-control font-mono" 
+                  placeholder="e.g. Alinma Bank - Main Current Account"
+                  dir="ltr" 
+                />
+                @if (accountForm.get('nameEn')?.touched && accountForm.get('nameEn')?.invalid) {
+                  <span class="error-text">English Name is required (min 2 characters).</span>
+                }
+              </div>
+            </div>
+
+            <div class="form-row-2 mt-3">
+              <div class="form-group flex-1">
+                <label class="form-label required">العملة الافتراضية:</label>
+                <select formControlName="currencyCode" class="form-control">
+                  <option value="SAR">SAR - ريال سعودي (عملة الأساس)</option>
+                  <option value="USD">USD - دولار أمريكي</option>
+                  <option value="EUR">EUR - يورو</option>
+                  <option value="AED">AED - درهم إماراتي</option>
+                </select>
+              </div>
+
+              <div class="form-group flex-2">
+                <label class="form-label">الوصف والملاحظات المحاسبية:</label>
+                <input 
+                  type="text" 
+                  formControlName="description" 
+                  class="form-control" 
+                  placeholder="ملاحظات اختيارية عن الغرض من الحساب أو السياسة المتبعة" 
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD 3: Accounting Nature & Behavior -->
+        <section class="form-card">
+          <div class="card-header">
+            <div class="step-badge">3</div>
+            <div>
+              <h2 class="card-title">السياسات والخصائص المحاسبية</h2>
+              <p class="card-subtitle">تحديد طبيعة الحساب والقائمة المالية وقبول القيود المباشرة</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="form-row-2">
+              <!-- Account Nature -->
+              <div class="form-group flex-1">
+                <label class="form-label required">طبيعة الحساب (Accounting Nature):</label>
+                <select formControlName="accountNature" class="form-control nature-select">
+                  <option [value]="AccountNature.Debit">مدين (Debit) - يزيد بالمدين وينقص بالدائن</option>
+                  <option [value]="AccountNature.Credit">دائن (Credit) - يزيد بالدائن وينقص بالمدين</option>
+                </select>
+              </div>
+
+              <!-- Financial Statement -->
+              <div class="form-group flex-1">
+                <label class="form-label required">القائمة المالية المعنية:</label>
+                <select formControlName="financialStatement" class="form-control">
+                  <option [value]="FinancialStatement.BalanceSheet">قائمة المركز المالي (الميزانية العمومية)</option>
+                  <option [value]="FinancialStatement.IncomeStatement">قائمة الدخل (الأرباح والخسائر)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2 mt-4">
+              <!-- IsPostable Switch -->
+              <div class="toggle-card flex-1">
+                <label class="switch-ui">
+                  <input type="checkbox" formControlName="isPostable" />
+                  <span class="slider round"></span>
+                </label>
+                <div class="toggle-meta">
+                  <strong class="toggle-title">حساب تحليلي يقبل التقييد المباشر</strong>
+                  <span class="toggle-hint">يقبل توجيه الفواتير والقيود وسندات الصرف والقبض مباشرة</span>
+                </div>
+              </div>
+
+              <!-- Cost Center Required Switch -->
+              <div class="toggle-card flex-1">
+                <label class="switch-ui">
+                  <input type="checkbox" formControlName="isCostCenterRequired" />
+                  <span class="slider round"></span>
+                </label>
+                <div class="toggle-meta">
+                  <strong class="toggle-title">إلزامية مركز التكلفة</strong>
+                  <span class="toggle-hint">اشتراط تحديد مركز تكلفة عند القيد في هذا الحساب</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD 4: Standard Binding Selection -->
+        <section class="form-card">
+          <div class="card-header">
+            <div class="step-badge">4</div>
+            <div>
+              <h2 class="card-title">ربط المعيار المحاسبي المرجعي (IFRS / SOCPA / ZATCA)</h2>
+              <p class="card-subtitle">اختر المعيار المهني المنظم للتحكم في الإرشادات والقيود النموذجية المرافقة</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label required">المعيار المعتمد للحساب:</label>
+              <select formControlName="standardCode" class="form-control standard-dropdown">
+                @for (std of coaService.standards(); track std.standardCode) {
+                  <option [value]="std.standardCode">
+                    {{ std.standardCode }} - {{ std.standardTitleAr }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Quick Chips for Standards -->
+            <div class="standard-chips-row mt-3">
+              <span class="chips-label">معايير شائعة:</span>
+              @for (std of coaService.standards(); track std.standardCode) {
+                <button 
+                  type="button" 
+                  class="std-chip-btn"
+                  [class.active]="accountForm.get('standardCode')?.value === std.standardCode"
+                  (click)="selectStandard(std)"
+                >
+                  {{ std.standardCode }}
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Form Submission Actions Bar -->
+        <div class="form-action-bar">
+          <button 
+            type="button" 
+            class="btn-primary-action" 
+            [disabled]="accountForm.invalid || isSaving()"
+            (click)="onSubmit(false)"
+          >
+            @if (isSaving()) {
+              <span class="mini-spinner"></span>
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            }
+            <span>حفظ الحساب وإدراجه بالشجرة</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn-secondary-action" 
+            [disabled]="accountForm.invalid || isSaving()"
+            (click)="onSubmit(true)"
+          >
+            <span>حفظ وإضافة حساب آخر</span>
+          </button>
+
+          <button type="button" class="btn-cancel" (click)="goBack()">
+            <span>إلغاء</span>
+          </button>
+        </div>
+
+      </form>
+    </main>
+
+    <!-- RIGHT COLUMN: THE PERMANENT SIDE GUIDANCE PANEL (الجزء الجانبي الإرشادي للمعيار والقيود) -->
+    <aside class="guidance-column">
+      <div class="guidance-container-sticky">
+        
+        <!-- Panel Header -->
+        <div class="guidance-header">
+          <div class="gh-badge">
+            <span class="gh-dot"></span>
+            <span>المرشد المحاسبي والمعايير الدولية</span>
+          </div>
+          <h3 class="gh-title">دليل القيود والمعيار المرجعي</h3>
+          <p class="gh-subtitle">يتم تحديث هذا الدليل تلقائياً وفق نوع الحساب والمعيار المختار</p>
+        </div>
+
+        @if (selectedGuidance(); as guidance) {
+          <div class="guidance-scroll-content">
+            
+            <!-- Standard Hero Banner -->
+            <div class="standard-hero">
+              <div class="sh-top">
+                <span class="sh-code">{{ guidance.standardCode }}</span>
+                <span class="sh-badge">معتمد IFRS / SOCPA</span>
+              </div>
+              <h4 class="sh-title-ar">{{ guidance.standardTitleAr }}</h4>
+              <p class="sh-title-en" dir="ltr">{{ guidance.standardTitleEn }}</p>
+            </div>
+
+            <!-- Nature & Increase/Decrease Rules -->
+            <div class="info-card rules-card">
+              <div class="info-card-header">
+                <div class="ic-icon bg-emerald">⚖️</div>
+                <div>
+                  <h4 class="ic-title">طبيعة الحساب وقواعد الزيادة والنقصان</h4>
+                  <span class="ic-sub">كيف يتحرك رصيد هذا الحساب محاسبياً؟</span>
+                </div>
+              </div>
+
+              <div class="rules-grid">
+                <div class="rule-box debit-box">
+                  <div class="rb-badge debit">حالة المدين (Debit)</div>
+                  <strong class="rb-heading">زيادة الأصول والمصروفات</strong>
+                  <p class="rb-text">{{ guidance.debitRuleAr }}</p>
+                </div>
+
+                <div class="rule-box credit-box">
+                  <div class="rb-badge credit">حالة الدائن (Credit)</div>
+                  <strong class="rb-heading">زيادة الخصوم والإيرادات</strong>
+                  <p class="rb-text">{{ guidance.creditRuleAr }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recognition Criteria -->
+            <div class="info-card">
+              <div class="info-card-header">
+                <div class="ic-icon bg-cyan">📜</div>
+                <div>
+                  <h4 class="ic-title">شروط ومعايير الاعتراف المحاسبي</h4>
+                  <span class="ic-sub">Recognition Criteria</span>
+                </div>
+              </div>
+              <p class="ic-text">{{ guidance.recognitionCriteriaAr }}</p>
+            </div>
+
+            <!-- ZATCA & Tax Regulations -->
+            <div class="info-card zatca-border">
+              <div class="info-card-header">
+                <div class="ic-icon bg-amber">🏛️</div>
+                <div>
+                  <h4 class="ic-title">المعالجة الضريبية والزكوية (ZATCA)</h4>
+                  <span class="ic-sub">الإقرار الضريبي وضريبة القيمة المضافة 15%</span>
+                </div>
+              </div>
+              <p class="ic-text">{{ guidance.zatcaTaxImpactAr }}</p>
+            </div>
+
+            <!-- Typical Double-Entry Journal Entries (القيود المحاسبية النموذجية) -->
+            <div class="info-card vouchers-card">
+              <div class="info-card-header">
+                <div class="ic-icon bg-purple">💼</div>
+                <div>
+                  <h4 class="ic-title">القيود المحاسبية النموذجية المعتمدة</h4>
+                  <span class="ic-sub">نماذج قيود يومية مزدوجة مع التوجيه العملي</span>
+                </div>
+              </div>
+
+              <div class="vouchers-stack">
+                @for (v of guidance.typicalJournalEntries; track v.transactionTitleAr) {
+                  <div class="voucher-wrapper">
+                    <div class="voucher-top">
+                      <span class="vt-title">{{ v.transactionTitleAr }}</span>
+                      <span class="vt-desc">{{ v.scenarioDescriptionAr }}</span>
+                    </div>
+
+                    <div class="vt-grid-table">
+                      <div class="vtg-head">
+                        <span class="cell-side">الطرف</span>
+                        <span class="cell-acc">الحساب المقيد</span>
+                        <span class="cell-note">البيان والتوجيه</span>
+                      </div>
+
+                      @for (leg of v.legs; track leg.accountNameAr) {
+                        <div class="vtg-row" [class.is-dr]="leg.accountSide === 'Debit'" [class.is-cr]="leg.accountSide === 'Credit'">
+                          <div class="cell-side">
+                            <span class="side-pill" [class.dr]="leg.accountSide === 'Debit'" [class.cr]="leg.accountSide === 'Credit'">
+                              {{ leg.accountSide === 'Debit' ? 'مدين (Dr)' : 'دائن (Cr)' }}
+                            </span>
+                          </div>
+                          <div class="cell-acc">
+                            <span class="acc-ar">{{ leg.accountNameAr }}</span>
+                            <span class="acc-en font-mono" dir="ltr">{{ leg.accountNameEn }}</span>
+                          </div>
+                          <div class="cell-note">
+                            {{ leg.explanationAr }}
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+          </div>
+        }
+
+      </div>
+    </aside>
+
+  </div>
+
+</div>

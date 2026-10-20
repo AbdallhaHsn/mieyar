@@ -5,6 +5,8 @@ import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts
 import { AccountDto, AccountingStandardGuidance, AccountNature, AccountType, CreateAccountRequest, FinancialStatement } from '../../../core/models/account.model';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 
+import { Router } from '@angular/router';
+
 @Component({
   selector: 'app-chart-of-accounts',
   standalone: true,
@@ -16,6 +18,7 @@ export class ChartOfAccountsComponent implements OnInit {
   coaService = inject(ChartOfAccountsService);
   companyContext = inject(CompanyContextService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   // Search & Filter signals
   searchQuery = signal<string>('');
@@ -131,29 +134,12 @@ export class ChartOfAccountsComponent implements OnInit {
   }
 
   openCreateAccount(parent?: AccountDto): void {
-    this.coaService.openCreateAccountDrawer(parent);
-
     if (parent) {
-      this.accountForm.patchValue({
-        parentAccountId: parent.id,
-        accountType: parent.accountType,
-        accountNature: parent.accountNature,
-        financialStatement: parent.financialStatement,
-        isPostable: true,
-        standardCode: parent.guidance?.standardCode || 'IAS 16'
+      this.router.navigate(['/accounting/chart-of-accounts/create'], {
+        queryParams: { parentId: parent.id }
       });
-      // Suggest next sub-account code
-      this.suggestNextCode(parent);
     } else {
-      this.accountForm.reset({
-        parentAccountId: '',
-        accountCode: '',
-        accountType: AccountType.Asset,
-        accountNature: AccountNature.Debit,
-        financialStatement: FinancialStatement.BalanceSheet,
-        isPostable: false,
-        standardCode: 'IAS 16'
-      });
+      this.router.navigate(['/accounting/chart-of-accounts/create']);
     }
   }
 

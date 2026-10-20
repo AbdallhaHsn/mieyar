@@ -201,119 +201,20 @@
       <div class="panel-header">
         <div class="panel-title-wrap">
           <div class="panel-badge">
-            {{ coaService.drawerMode() === 'create-account' ? 'إضافة حساب جديد' : 'دليل المعيار المحاسبي' }}
+            دليل المعيار المحاسبي
           </div>
           <h2 class="panel-title">
-            {{ coaService.drawerMode() === 'create-account' ? 'بيانات الحساب والمرجع المهني' : coaService.inspectedAccount()?.nameAr }}
+            {{ coaService.inspectedAccount()?.nameAr || 'دليل المعيار والقيد النموذجي' }}
           </h2>
+          @if (coaService.inspectedAccount(); as acc) {
+            <span class="panel-acc-code font-mono text-muted">رمز الحساب: {{ acc.accountCode }} | {{ acc.accountTypeNameAr }}</span>
+          }
         </div>
         <button class="close-panel-btn" (click)="closeDrawer()" title="إغلاق اللوحة الجانبية">✕</button>
       </div>
 
       <div class="panel-scroll-body">
-        
-        <!-- SECTION 1: Form (Visible in create mode) -->
-        @if (coaService.drawerMode() === 'create-account') {
-          <form [formGroup]="accountForm" (ngSubmit)="onSubmitAccount()" class="create-form">
-            <div class="form-section-title">
-              <span class="step-num">1</span>
-              <span>تحديد الموقع والبيانات الأساسية</span>
-            </div>
-
-            <!-- Parent Account Selector -->
-            <div class="form-group">
-              <label class="form-label">الحساب الرئيسي (الأب):</label>
-              <select formControlName="parentAccountId" class="form-control" (change)="onParentChange(accountForm.get('parentAccountId')?.value)">
-                <option value="">بدون حساب أب (حساب رئيسي أعلى - Root)</option>
-                @for (parent of availableParents(); track parent.id) {
-                  <option [value]="parent.id">
-                    {{ parent.accountCode }} - {{ parent.nameAr }} (مستوى {{ parent.level }})
-                  </option>
-                }
-              </select>
-            </div>
-
-            <!-- Account Code -->
-            <div class="form-group">
-              <div class="label-with-tip">
-                <label class="form-label">رمز الحساب (Account Code):</label>
-                <span class="tip-badge">اقتراح ترقيم آلي</span>
-              </div>
-              <input type="text" formControlName="accountCode" class="form-control font-mono" placeholder="مثال: 11105" />
-            </div>
-
-            <!-- Arabic & English Names -->
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label class="form-label required">الاسم بالعربية:</label>
-                <input type="text" formControlName="nameAr" class="form-control" placeholder="مثال: البنك الأهلي - جاري" />
-              </div>
-              <div class="form-group flex-1">
-                <label class="form-label required">الاسم بالإنجليزية:</label>
-                <input type="text" formControlName="nameEn" class="form-control" placeholder="e.g. SNB Current Account" dir="ltr" />
-              </div>
-            </div>
-
-            <!-- Account Type & Nature -->
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label class="form-label">تصنيف الحساب:</label>
-                <select formControlName="accountType" class="form-control">
-                  <option [value]="AccountType.Asset">1 - الأصول (Assets)</option>
-                  <option [value]="AccountType.Liability">2 - الالتزامات والخصوم (Liabilities)</option>
-                  <option [value]="AccountType.Equity">3 - حقوق الملكية (Equity)</option>
-                  <option [value]="AccountType.Revenue">4 - الإيرادات (Revenue)</option>
-                  <option [value]="AccountType.Expense">5 - المصروفات (Expenses)</option>
-                </select>
-              </div>
-
-              <div class="form-group flex-1">
-                <label class="form-label">طبيعة الحساب:</label>
-                <select formControlName="accountNature" class="form-control">
-                  <option [value]="AccountNature.Debit">مدين (Debit - يزيد بالمدين)</option>
-                  <option [value]="AccountNature.Credit">دائن (Credit - يزيد بالدائن)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- IsPostable checkbox -->
-            <div class="form-group toggle-box">
-              <label class="switch-container">
-                <input type="checkbox" formControlName="isPostable" />
-                <span class="switch-slider"></span>
-              </label>
-              <div class="switch-text">
-                <span class="switch-title">حساب تحليلي يقبل التقييد المباشر (Postable Leaf)</span>
-                <span class="switch-desc">يمكن توجيه القيود والفواتير وسندات الصرف إليه مباشرة</span>
-              </div>
-            </div>
-
-            <!-- Select Accounting Standard Guidance -->
-            <div class="form-group">
-              <label class="form-label">المعيار المحاسبي المرجعي (IFRS / SOCPA / ZATCA):</label>
-              <select formControlName="standardCode" class="form-control select-standard">
-                @for (std of coaService.standards(); track std.standardCode) {
-                  <option [value]="std.standardCode">
-                    {{ std.standardCode }} - {{ std.standardTitleAr }}
-                  </option>
-                }
-              </select>
-            </div>
-
-            <!-- Actions Bar inside Form -->
-            <div class="form-actions-bar">
-              <button type="submit" class="btn-primary" [disabled]="accountForm.invalid || coaService.isLoading()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>حفظ وإدراج الحساب بالشجرة</span>
-              </button>
-              <button type="button" class="btn-secondary" (click)="closeDrawer()">إلغاء</button>
-            </div>
-          </form>
-        }
-
-        <!-- SECTION 2: THE PROFESSIONAL IFRS GUIDANCE & SAMPLE JOURNAL ENTRIES (الجزء الإرشادي للمعيار والقيود) -->
+        <!-- THE PROFESSIONAL IFRS GUIDANCE & SAMPLE JOURNAL ENTRIES (الجزء الإرشادي للمعيار والقيود) -->
         @if (coaService.activeGuidance(); as guidance) {
           <div class="guidance-sheet">
             <div class="guidance-banner">
