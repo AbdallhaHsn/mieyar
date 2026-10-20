@@ -16,7 +16,7 @@ import { AuthService } from '../../core/services/auth.service';
         <i class="pi pi-search search-icon"></i>
         <input 
           type="text" 
-          [placeholder]="langService.currentLang() === 'ar' ? 'بحث سريع... (Ctrl + K)' : 'Search... (Ctrl + K)'" 
+          [placeholder]="langService.currentLang() === 'ar' ? 'بحث سريع في الحسابات، القيود... (Ctrl + K)' : 'Search accounts, entries... (Ctrl + K)'" 
         />
       </div>
 
@@ -59,8 +59,8 @@ import { AuthService } from '../../core/services/auth.service';
   styles: [`
     .erp-topbar {
       height: 60px;
-      background: #090D17;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: #FFFFFF;
+      border-bottom: 1px solid #E2E8F0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -68,40 +68,41 @@ import { AuthService } from '../../core/services/auth.service';
       position: sticky;
       top: 0;
       z-index: 80;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
     .topbar-search {
       position: relative;
-      width: 320px;
+      width: 340px;
       display: flex;
       align-items: center;
 
       .search-icon {
         position: absolute;
         inset-inline-start: 0.85rem;
-        color: #64748B;
+        color: #94A3B8;
         font-size: 0.85rem;
       }
 
       input {
         width: 100%;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
-        color: #FFFFFF;
+        color: #0F172A;
         font-size: 0.825rem;
         padding: 0.45rem 2.25rem;
         outline: none;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
         &:focus {
-          border-color: #00F5A0;
-          box-shadow: 0 0 10px rgba(0, 245, 160, 0.15);
-          background: rgba(255, 255, 255, 0.05);
+          border-color: #10B981;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+          background: #FFFFFF;
         }
 
         &::placeholder {
-          color: #475569;
+          color: #94A3B8;
         }
       }
     }
@@ -117,8 +118,8 @@ import { AuthService } from '../../core/services/auth.service';
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      background: rgba(0, 245, 160, 0.08);
-      border: 1px solid rgba(0, 245, 160, 0.25);
+      background: #ECFDF5;
+      border: 1px solid rgba(16, 185, 129, 0.3);
       padding: 0.3rem 0.65rem;
       border-radius: 6px;
       font-size: 0.75rem;
@@ -128,18 +129,18 @@ import { AuthService } from '../../core/services/auth.service';
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #00F5A0;
-      box-shadow: 0 0 8px #00F5A0;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
     }
 
     .zatca-label {
-      color: #FFFFFF;
+      color: #059669;
       font-weight: 700;
       font-family: var(--font-latin);
     }
 
     .zatca-state {
-      color: #00F5A0;
+      color: #047857;
       font-weight: 600;
     }
 
@@ -148,35 +149,35 @@ import { AuthService } from '../../core/services/auth.service';
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       padding: 0.35rem 0.75rem;
       border-radius: 6px;
       font-size: 0.8rem;
-      color: #CBD5E1;
+      color: #334155;
       cursor: pointer;
       transition: all 0.15s ease;
 
       &:hover {
-        border-color: rgba(0, 240, 255, 0.3);
-        color: #FFFFFF;
+        border-color: #0284C7;
+        background: #FFFFFF;
       }
     }
 
     .text-cyan {
-      color: #00F0FF;
+      color: #0284C7;
     }
 
     .text-muted {
-      color: #64748B;
+      color: #94A3B8;
       font-size: 0.65rem;
     }
 
     /* Lang Btn */
     .lang-btn {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #CBD5E1;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #475569;
       padding: 0.35rem 0.65rem;
       border-radius: 6px;
       font-size: 0.75rem;
@@ -185,8 +186,9 @@ import { AuthService } from '../../core/services/auth.service';
       transition: all 0.15s ease;
 
       &:hover {
-        border-color: #00F5A0;
-        color: #00F5A0;
+        border-color: #10B981;
+        color: #059669;
+        background: #FFFFFF;
       }
     }
 
@@ -195,8 +197,8 @@ import { AuthService } from '../../core/services/auth.service';
       display: flex;
       align-items: center;
       gap: 0.55rem;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       padding: 0.25rem 0.65rem;
       border-radius: 8px;
     }
@@ -205,8 +207,8 @@ import { AuthService } from '../../core/services/auth.service';
       width: 26px;
       height: 26px;
       border-radius: 6px;
-      background: rgba(0, 245, 160, 0.12);
-      color: #00F5A0;
+      background: #ECFDF5;
+      color: #059669;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -216,7 +218,7 @@ import { AuthService } from '../../core/services/auth.service';
     .user-name {
       font-size: 0.8rem;
       font-weight: 600;
-      color: #FFFFFF;
+      color: #0F172A;
       max-width: 130px;
       white-space: nowrap;
       overflow: hidden;
@@ -226,7 +228,7 @@ import { AuthService } from '../../core/services/auth.service';
     .logout-btn {
       background: transparent;
       border: none;
-      color: #64748B;
+      color: #94A3B8;
       cursor: pointer;
       padding: 0.15rem;
       display: flex;
@@ -234,7 +236,7 @@ import { AuthService } from '../../core/services/auth.service';
       transition: color 0.15s ease;
 
       &:hover {
-        color: #FF4757;
+        color: #EF4444;
       }
     }
   `]

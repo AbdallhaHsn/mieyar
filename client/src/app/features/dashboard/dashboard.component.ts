@@ -54,7 +54,7 @@ interface JournalEntryPreview {
         </div>
       </div>
 
-      <!-- 4 High-Contrast KPI Cards (Cyber Green & Cyan) -->
+      <!-- 4 High-Contrast KPI Cards (Pure White & Cyber Green/Cyan) -->
       <div class="kpi-row">
         <div class="kpi-card" *ngFor="let kpi of metricCards" [ngClass]="kpi.accent">
           <div class="kpi-head">
@@ -131,7 +131,7 @@ interface JournalEntryPreview {
               <span class="z-label">{{ langService.currentLang() === 'ar' ? 'زمن التشفير ECDSA' : 'Signing Latency' }}</span>
             </div>
             <div class="z-item">
-              <span class="z-num text-white font-mono">100%</span>
+              <span class="z-num text-dark font-mono">100%</span>
               <span class="z-label">{{ langService.currentLang() === 'ar' ? 'نسبة الامتثال' : 'Compliance Rate' }}</span>
             </div>
           </div>
@@ -167,11 +167,11 @@ interface JournalEntryPreview {
             </thead>
             <tbody>
               <tr *ngFor="let item of recentEntries">
-                <td class="font-mono text-cyber-cyan">{{ item.voucherNo }}</td>
+                <td class="font-mono text-cyber-cyan font-bold">{{ item.voucherNo }}</td>
                 <td>{{ item.date }}</td>
-                <td class="text-white">{{ langService.currentLang() === 'ar' ? item.descriptionAr : item.descriptionEn }}</td>
+                <td class="text-dark font-medium">{{ langService.currentLang() === 'ar' ? item.descriptionAr : item.descriptionEn }}</td>
                 <td><span class="branch-pill">{{ langService.currentLang() === 'ar' ? item.branchAr : item.branchEn }}</span></td>
-                <td class="font-mono text-white font-bold">{{ item.amount }}</td>
+                <td class="font-mono text-dark font-bold">{{ item.amount }}</td>
                 <td>
                   <span class="badge-status" [class.posted]="item.status === 'Posted'" [class.audited]="item.status === 'Audited'">
                     {{ item.status === 'Posted' 
@@ -207,13 +207,13 @@ interface JournalEntryPreview {
     .page-title {
       font-size: 1.6rem;
       font-weight: 800;
-      color: #FFFFFF;
+      color: #0F172A;
       margin: 0;
       letter-spacing: -0.02em;
     }
 
     .page-subtitle {
-      font-size: 0.8rem;
+      font-size: 0.825rem;
       color: #64748B;
     }
 
@@ -226,7 +226,7 @@ interface JournalEntryPreview {
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      padding: 0.5rem 1rem;
+      padding: 0.5rem 1.15rem;
       border-radius: 8px;
       font-size: 0.85rem;
       font-weight: 700;
@@ -234,25 +234,24 @@ interface JournalEntryPreview {
       transition: all 0.2s ease;
 
       &.green {
-        background: #00F5A0;
-        color: #070B14;
+        background: #10B981;
+        color: #FFFFFF;
         border: none;
-        box-shadow: 0 0 15px rgba(0, 245, 160, 0.25);
+        box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
 
         &:hover {
-          background: #5CFFC6;
-          box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
+          background: #059669;
+          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
         }
       }
 
       &.cyan {
-        background: transparent;
-        color: #00F0FF;
-        border: 1px solid rgba(0, 240, 255, 0.4);
+        background: #FFFFFF;
+        color: #0284C7;
+        border: 1.5px solid #0284C7;
 
         &:hover {
-          background: rgba(0, 240, 255, 0.1);
-          border-color: #00F0FF;
+          background: #F0F9FF;
         }
       }
     }
@@ -265,28 +264,27 @@ interface JournalEntryPreview {
     }
 
     .kpi-card {
-      background: #0D1424;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 12px;
       padding: 1.25rem 1.4rem;
       display: flex;
       flex-direction: column;
       gap: 0.65rem;
-      position: relative;
-      transition: border-color 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+      transition: all 0.2s ease;
 
       &:hover {
         transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.08);
       }
 
       &.green {
-        border-top: 2px solid #00F5A0;
-        &:hover { border-color: rgba(0, 245, 160, 0.4); }
+        border-top: 3px solid #10B981;
       }
 
       &.cyan {
-        border-top: 2px solid #00F0FF;
-        &:hover { border-color: rgba(0, 240, 255, 0.4); }
+        border-top: 3px solid #0284C7;
       }
     }
 
@@ -299,29 +297,29 @@ interface JournalEntryPreview {
     .kpi-title {
       font-size: 0.825rem;
       font-weight: 600;
-      color: #94A3B8;
+      color: #64748B;
     }
 
     .kpi-badge {
       font-size: 0.75rem;
       font-weight: 700;
-      padding: 0.15rem 0.45rem;
+      padding: 0.15rem 0.5rem;
       border-radius: 4px;
 
       &.green {
-        background: rgba(0, 245, 160, 0.12);
-        color: #00F5A0;
+        background: #ECFDF5;
+        color: #059669;
       }
       &.cyan {
-        background: rgba(0, 240, 255, 0.12);
-        color: #00F0FF;
+        background: #F0F9FF;
+        color: #0284C7;
       }
     }
 
     .kpi-value {
       font-size: 1.65rem;
       font-weight: 800;
-      color: #FFFFFF;
+      color: #0F172A;
       letter-spacing: -0.02em;
     }
 
@@ -337,13 +335,14 @@ interface JournalEntryPreview {
     }
 
     .panel-card {
-      background: #0D1424;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 12px;
       padding: 1.35rem 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
     }
 
     .panel-header {
@@ -354,7 +353,7 @@ interface JournalEntryPreview {
       h3 {
         font-size: 1.05rem;
         font-weight: 700;
-        color: #FFFFFF;
+        color: #0F172A;
         margin: 0;
       }
     }
@@ -369,16 +368,16 @@ interface JournalEntryPreview {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #00F5A0;
-      box-shadow: 0 0 8px #00F5A0;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
     }
 
     .state-pill {
       font-size: 0.75rem;
-      font-weight: 600;
-      color: #00F5A0;
-      background: rgba(0, 245, 160, 0.1);
-      border: 1px solid rgba(0, 245, 160, 0.25);
+      font-weight: 700;
+      color: #059669;
+      background: #ECFDF5;
+      border: 1px solid rgba(16, 185, 129, 0.3);
       padding: 0.2rem 0.6rem;
       border-radius: 9999px;
     }
@@ -398,8 +397,8 @@ interface JournalEntryPreview {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       padding: 0.85rem 1rem;
       border-radius: 8px;
       cursor: pointer;
@@ -412,8 +411,9 @@ interface JournalEntryPreview {
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(0, 245, 160, 0.25);
+        background: #FFFFFF;
+        border-color: #10B981;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
         transform: translateY(-1px);
       }
     }
@@ -424,7 +424,7 @@ interface JournalEntryPreview {
 
       strong {
         font-size: 0.85rem;
-        color: #FFFFFF;
+        color: #0F172A;
       }
       small {
         font-size: 0.72rem;
@@ -437,10 +437,10 @@ interface JournalEntryPreview {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 0.75rem;
-      background: rgba(0, 0, 0, 0.25);
+      background: #F8FAFC;
       padding: 1rem;
       border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      border: 1px solid #E2E8F0;
     }
 
     .z-item {
@@ -456,7 +456,7 @@ interface JournalEntryPreview {
 
     .z-label {
       font-size: 0.75rem;
-      color: #94A3B8;
+      color: #64748B;
     }
 
     .security-chip {
@@ -464,18 +464,18 @@ interface JournalEntryPreview {
       align-items: center;
       gap: 0.5rem;
       font-size: 0.75rem;
-      color: #94A3B8;
-      background: rgba(0, 245, 160, 0.04);
+      color: #475569;
+      background: #ECFDF5;
       padding: 0.5rem 0.85rem;
       border-radius: 6px;
-      border: 1px solid rgba(0, 245, 160, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
     }
 
     /* Table */
     .btn-link {
       background: transparent;
       border: none;
-      color: #00F0FF;
+      color: #0284C7;
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
@@ -500,30 +500,31 @@ interface JournalEntryPreview {
       th {
         padding: 0.75rem 1rem;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         color: #64748B;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
       }
 
       td {
         padding: 0.85rem 1rem;
         font-size: 0.825rem;
-        color: #CBD5E1;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        color: #334155;
+        border-bottom: 1px solid #F1F5F9;
       }
 
       tr:hover td {
-        background: rgba(255, 255, 255, 0.02);
+        background: #F8FAFC;
       }
     }
 
     .branch-pill {
-      background: rgba(255, 255, 255, 0.04);
+      background: #F1F5F9;
       padding: 0.15rem 0.5rem;
       border-radius: 4px;
       font-size: 0.75rem;
-      color: #94A3B8;
+      color: #475569;
     }
 
     .badge-status {
@@ -535,16 +536,17 @@ interface JournalEntryPreview {
       font-weight: 700;
 
       &.posted {
-        background: rgba(0, 245, 160, 0.12);
-        color: #00F5A0;
+        background: #ECFDF5;
+        color: #059669;
       }
       &.audited {
-        background: rgba(0, 240, 255, 0.12);
-        color: #00F0FF;
+        background: #F0F9FF;
+        color: #0284C7;
       }
     }
 
     .font-bold { font-weight: 700; }
+    .font-medium { font-weight: 500; }
   `]
 })
 export class DashboardComponent {

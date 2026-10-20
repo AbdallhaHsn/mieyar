@@ -500,7 +500,12 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       align-items: center;
       padding: 3rem 2.5rem;
       position: relative;
-      background: #0b1120;
+      background: #FFFFFF;
+      background-image: 
+        radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        linear-gradient(rgba(16, 185, 129, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
     }
 
     .top-utility {
@@ -513,18 +518,20 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #e2e8f0;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #475569;
       padding: 0.45rem 1rem;
       border-radius: 9999px;
       font-size: 0.85rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: #ffffff;
+        background: #ECFDF5;
+        border-color: #10B981;
+        color: #059669;
       }
     }
 
@@ -543,13 +550,13 @@ import { CompanyContextService } from '../../../core/services/company-context.se
 
       h2 {
         font-size: 1.85rem;
-        font-weight: 700;
-        color: #ffffff;
+        font-weight: 800;
+        color: #0F172A;
         margin: 0;
       }
       p {
         font-size: 0.9rem;
-        color: #94a3b8;
+        color: #64748B;
         margin: 0;
       }
     }
@@ -559,10 +566,10 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.5rem;
-      background: rgba(15, 23, 42, 0.8);
+      background: #F8FAFC;
       padding: 0.4rem;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      border: 1px solid #E2E8F0;
     }
 
     .tab-btn {
@@ -581,9 +588,9 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       transition: all 0.2s ease;
 
       &.active {
-        background: #00F5A0;
-        color: #070B14;
-        box-shadow: 0 0 15px rgba(0, 245, 160, 0.35);
+        background: #10B981;
+        color: #FFFFFF;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
       }
     }
 
@@ -592,16 +599,16 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px dashed rgba(255, 255, 255, 0.1);
+      background: #F8FAFC;
+      border: 1px dashed #CBD5E1;
       padding: 0.75rem 1rem;
       border-radius: 10px;
     }
 
     .quick-title {
       font-size: 0.75rem;
-      color: #00F5A0;
-      font-weight: 600;
+      color: #059669;
+      font-weight: 700;
     }
 
     .quick-chips {
@@ -666,18 +673,18 @@ import { CompanyContextService } from '../../../core/services/company-context.se
         align-items: center;
         gap: 0.4rem;
         font-size: 0.85rem;
-        font-weight: 600;
-        color: #cbd5e1;
+        font-weight: 700;
+        color: #334155;
 
         i {
-          color: var(--primary-light, #14b8a6);
+          color: #10B981;
         }
       }
 
       input {
-        background: rgba(15, 23, 42, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #ffffff;
+        background: #F8FAFC;
+        border: 1px solid #CBD5E1;
+        color: #0F172A;
         padding: 0.85rem 1rem;
         border-radius: 10px;
         font-size: 0.95rem;
@@ -685,12 +692,13 @@ import { CompanyContextService } from '../../../core/services/company-context.se
         transition: all 0.2s ease;
 
         &:focus {
-          border-color: var(--primary-light, #14b8a6);
-          box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+          border-color: #10B981;
+          background: #FFFFFF;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
         }
 
         &::placeholder {
-          color: #64748b;
+          color: #94A3B8;
         }
       }
     }
@@ -756,20 +764,20 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       align-items: center;
       justify-content: center;
       gap: 0.65rem;
-      background: #00F5A0;
-      color: #070B14;
+      background: #10B981;
+      color: #FFFFFF;
       border: none;
       padding: 0.95rem 1.5rem;
       border-radius: 10px;
       font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 0 20px rgba(0, 245, 160, 0.3);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background: #5CFFC6;
-        box-shadow: 0 0 25px rgba(0, 245, 160, 0.5);
+        background: #059669;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
         transform: translateY(-1px);
       }
 

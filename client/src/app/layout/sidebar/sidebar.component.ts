@@ -115,17 +115,18 @@ interface NavSection {
       width: 260px;
       min-width: 260px;
       height: 100vh;
-      background: #090D17;
-      border-inline-end: 1px solid rgba(255, 255, 255, 0.06);
+      background: #FFFFFF;
+      border-inline-end: 1px solid #E2E8F0;
       display: flex;
       flex-direction: column;
       transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       position: sticky;
       top: 0;
       z-index: 90;
-      color: #94A3B8;
+      color: #64748B;
       overflow-y: auto;
       overflow-x: hidden;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
 
       &.collapsed {
         width: 72px;
@@ -159,7 +160,7 @@ interface NavSection {
         width: 3px;
       }
       &::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
+        background: #E2E8F0;
       }
     }
 
@@ -169,7 +170,7 @@ interface NavSection {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid #F1F5F9;
     }
 
     .brand-box {
@@ -183,12 +184,12 @@ interface NavSection {
       width: 38px;
       height: 38px;
       border-radius: 9px;
-      background: linear-gradient(135deg, #00F5A0 0%, #00F0FF 100%);
-      color: #070B14;
+      background: linear-gradient(135deg, #10B981 0%, #0284C7 100%);
+      color: #FFFFFF;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 16px rgba(0, 245, 160, 0.3);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
       flex-shrink: 0;
 
       svg {
@@ -205,23 +206,23 @@ interface NavSection {
     .brand-title {
       font-size: 1.25rem;
       font-weight: 800;
-      color: #FFFFFF;
+      color: #0F172A;
       margin: 0;
       letter-spacing: -0.02em;
     }
 
     .brand-edition {
       font-size: 0.68rem;
-      color: #00F0FF;
-      font-weight: 600;
+      color: #0284C7;
+      font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
     .collapse-toggle-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #94A3B8;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #64748B;
       width: 26px;
       height: 26px;
       border-radius: 6px;
@@ -232,8 +233,9 @@ interface NavSection {
       transition: all 0.2s ease;
 
       &:hover {
-        background: rgba(0, 245, 160, 0.15);
-        color: #00F5A0;
+        background: #ECFDF5;
+        border-color: #10B981;
+        color: #059669;
       }
     }
 
@@ -241,8 +243,8 @@ interface NavSection {
     .tenant-indicator {
       margin: 0.85rem 1rem 0.25rem 1rem;
       padding: 0.65rem 0.85rem;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -253,8 +255,8 @@ interface NavSection {
       width: 30px;
       height: 30px;
       border-radius: 6px;
-      background: rgba(0, 245, 160, 0.12);
-      color: #00F5A0;
+      background: #ECFDF5;
+      color: #059669;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -271,13 +273,13 @@ interface NavSection {
 
     .tenant-role {
       font-size: 0.65rem;
-      color: #00F0FF;
-      font-weight: 600;
+      color: #0284C7;
+      font-weight: 700;
     }
 
     .tenant-name {
       font-size: 0.78rem;
-      color: #FFFFFF;
+      color: #0F172A;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -302,7 +304,7 @@ interface NavSection {
       font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: #475569;
+      color: #94A3B8;
       padding-inline: 0.65rem;
       margin-bottom: 0.25rem;
       letter-spacing: 0.05em;
@@ -323,25 +325,25 @@ interface NavSection {
       gap: 0.75rem;
       padding: 0.6rem 0.85rem;
       border-radius: 8px;
-      color: #94A3B8;
+      color: #475569;
       text-decoration: none;
       font-size: 0.85rem;
-      font-weight: 500;
+      font-weight: 600;
       transition: all 0.15s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.04);
-        color: #FFFFFF;
+        background: #F8FAFC;
+        color: #0F172A;
       }
 
       &.active {
-        background: rgba(0, 245, 160, 0.08);
-        color: #00F5A0;
-        border-inline-start: 3px solid #00F5A0;
-        font-weight: 600;
+        background: #ECFDF5;
+        color: #059669;
+        border-inline-start: 3px solid #10B981;
+        font-weight: 700;
 
         .nav-icon {
-          color: #00F5A0;
+          color: #10B981;
         }
       }
     }
@@ -361,12 +363,12 @@ interface NavSection {
     /* Footer */
     .sidebar-footer {
       padding: 0.85rem 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-top: 1px solid #F1F5F9;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      background: rgba(0, 0, 0, 0.2);
+      background: #FFFFFF;
     }
 
     .user-card {
@@ -380,8 +382,8 @@ interface NavSection {
       width: 32px;
       height: 32px;
       border-radius: 8px;
-      background: rgba(0, 245, 160, 0.12);
-      color: #00F5A0;
+      background: #ECFDF5;
+      color: #059669;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -397,7 +399,7 @@ interface NavSection {
 
     .user-name {
       font-size: 0.78rem;
-      color: #FFFFFF;
+      color: #0F172A;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -412,9 +414,9 @@ interface NavSection {
       width: 30px;
       height: 30px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #94A3B8;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #64748B;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -423,9 +425,9 @@ interface NavSection {
       flex-shrink: 0;
 
       &:hover {
-        background: rgba(255, 71, 87, 0.15);
-        border-color: rgba(255, 71, 87, 0.4);
-        color: #FF4757;
+        background: #FEF2F2;
+        border-color: #FCA5A5;
+        color: #EF4444;
       }
     }
   `]

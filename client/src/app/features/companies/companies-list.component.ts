@@ -77,12 +77,12 @@ interface TenantCompanyRow {
               <tr *ngFor="let comp of filteredCompanies">
                 <td>
                   <div class="comp-col">
-                    <strong class="text-white">{{ comp.nameAr }}</strong>
+                    <strong class="text-dark">{{ comp.nameAr }}</strong>
                     <small class="code-pill font-mono">{{ comp.code }}</small>
                   </div>
                 </td>
-                <td class="font-mono text-white">{{ comp.vatNumber }}</td>
-                <td class="font-mono text-white">{{ comp.crNumber }}</td>
+                <td class="font-mono text-dark font-medium">{{ comp.vatNumber }}</td>
+                <td class="font-mono text-dark font-medium">{{ comp.crNumber }}</td>
                 <td><span class="user-pill font-mono text-cyber-cyan">{{ comp.adminUserName }}</span></td>
                 <td><span class="branch-count">{{ comp.branchesCount }}</span></td>
                 <td><span class="badge-active">100%</span></td>
@@ -122,13 +122,13 @@ interface TenantCompanyRow {
     .page-title {
       font-size: 1.6rem;
       font-weight: 800;
-      color: #FFFFFF;
+      color: #0F172A;
       margin: 0;
       letter-spacing: -0.02em;
     }
 
     .page-sub {
-      font-size: 0.8rem;
+      font-size: 0.825rem;
       color: #64748B;
     }
 
@@ -136,20 +136,20 @@ interface TenantCompanyRow {
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      background: #00F5A0;
-      color: #070B14;
+      background: #10B981;
+      color: #FFFFFF;
       border: none;
       padding: 0.55rem 1.15rem;
       border-radius: 8px;
       font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 0 15px rgba(0, 245, 160, 0.25);
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
       transition: all 0.2s ease;
 
       &:hover {
-        background: #5CFFC6;
-        box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
+        background: #059669;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
       }
     }
 
@@ -159,53 +159,55 @@ interface TenantCompanyRow {
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      background: #0D1424;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 10px;
       padding: 0.75rem 1rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
     }
 
     .search-box {
       display: flex;
       align-items: center;
       gap: 0.65rem;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       border-radius: 6px;
       padding: 0.4rem 0.85rem;
       flex: 1;
       max-width: 420px;
 
       i {
-        color: #64748B;
+        color: #94A3B8;
         font-size: 0.85rem;
       }
 
       input {
         background: transparent;
         border: none;
-        color: #FFFFFF;
+        color: #0F172A;
         outline: none;
         width: 100%;
         font-size: 0.825rem;
 
         &::placeholder {
-          color: #475569;
+          color: #94A3B8;
         }
       }
     }
 
     .count-tag {
       font-size: 0.825rem;
-      color: #94A3B8;
+      color: #64748B;
     }
 
     /* Table */
     .table-card {
-      background: #0D1424;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 12px;
       padding: 1.25rem;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
     }
 
     .table-responsive {
@@ -220,22 +222,23 @@ interface TenantCompanyRow {
       th {
         padding: 0.75rem 1rem;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         color: #64748B;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
       }
 
       td {
         padding: 0.95rem 1rem;
         font-size: 0.825rem;
-        color: #CBD5E1;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        color: #334155;
+        border-bottom: 1px solid #F1F5F9;
         vertical-align: middle;
       }
 
       tr:hover td {
-        background: rgba(255, 255, 255, 0.02);
+        background: #F8FAFC;
       }
     }
 
@@ -245,34 +248,40 @@ interface TenantCompanyRow {
       gap: 0.2rem;
     }
 
+    .text-dark {
+      color: #0F172A;
+    }
+
     .code-pill {
       font-size: 0.7rem;
-      color: #00F0FF;
-      background: rgba(0, 240, 255, 0.08);
+      color: #0284C7;
+      background: #F0F9FF;
+      border: 1px solid rgba(2, 132, 199, 0.2);
       padding: 0.1rem 0.35rem;
       border-radius: 4px;
       width: fit-content;
     }
 
     .user-pill {
-      background: rgba(255, 255, 255, 0.04);
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       padding: 0.2rem 0.5rem;
       border-radius: 4px;
       font-size: 0.78rem;
     }
 
     .branch-count {
-      background: rgba(255, 255, 255, 0.04);
+      background: #F1F5F9;
       padding: 0.2rem 0.5rem;
       border-radius: 4px;
       font-size: 0.78rem;
-      color: #FFFFFF;
+      color: #334155;
     }
 
     .badge-active {
-      background: rgba(0, 245, 160, 0.1);
-      color: #00F5A0;
-      border: 1px solid rgba(0, 245, 160, 0.25);
+      background: #ECFDF5;
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
       padding: 0.15rem 0.5rem;
       border-radius: 4px;
       font-size: 0.75rem;
@@ -283,9 +292,9 @@ interface TenantCompanyRow {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      background: transparent;
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      color: #00F0FF;
+      background: #F0F9FF;
+      border: 1px solid rgba(2, 132, 199, 0.3);
+      color: #0284C7;
       padding: 0.35rem 0.75rem;
       border-radius: 6px;
       font-size: 0.75rem;
@@ -294,10 +303,12 @@ interface TenantCompanyRow {
       transition: all 0.15s ease;
 
       &:hover {
-        background: rgba(0, 240, 255, 0.1);
-        border-color: #00F0FF;
+        background: #0284C7;
+        color: #FFFFFF;
       }
     }
+
+    .font-medium { font-weight: 500; }
   `]
 })
 export class CompaniesListComponent {

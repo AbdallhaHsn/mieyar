@@ -12,12 +12,12 @@ import { LanguageService } from '../../core/services/language.service';
   imports: [CommonModule, RouterModule, SidebarComponent, TopbarComponent, CompanyOnboardingComponent],
   template: `
     <div class="erp-shell" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
-      <!-- Sleek Cyber Sidebar -->
+      <!-- White & Clean Sidebar -->
       <app-sidebar></app-sidebar>
 
-      <!-- Main Workspace -->
-      <div class="erp-stage">
-        <!-- Minimal Topbar -->
+      <!-- Main Workspace with Subtle Geometric Green Drawings -->
+      <div class="erp-stage geometric-bg">
+        <!-- Clean White Topbar -->
         <app-topbar (openQuickAction)="openOnboardingModal()"></app-topbar>
 
         <!-- Dynamic Content Router Host -->
@@ -38,8 +38,8 @@ import { LanguageService } from '../../core/services/language.service';
       display: flex;
       width: 100vw;
       min-height: 100vh;
-      background: var(--surface-ground, #070B14);
-      color: #FFFFFF;
+      background: #F8FAFC;
+      color: #0F172A;
       font-family: var(--font-arabic);
       overflow-x: hidden;
     }
@@ -49,12 +49,12 @@ import { LanguageService } from '../../core/services/language.service';
       display: flex;
       flex-direction: column;
       min-width: 0;
-      background: #070B14;
+      min-height: 100vh;
     }
 
     .erp-content-host {
       flex: 1;
-      padding: 1.75rem 2rem;
+      padding: 1.75rem 2.25rem;
       overflow-y: auto;
     }
   `]
