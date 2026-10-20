@@ -26,18 +26,15 @@ interface NavSection {
   imports: [CommonModule, RouterModule],
   template: `
     <aside class="erp-sidebar" [class.collapsed]="isCollapsed()">
-      <!-- Brand Header -->
+      <!-- Official Al-Roban Brand Header -->
       <div class="sidebar-header">
         <div class="brand-box" (click)="router.navigate(['/dashboard'])">
-          <div class="brand-emblem">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-            </svg>
+          <div class="brand-logo-frame">
+            <img src="/alruban-logo.jpg" alt="Al-Roban Logo" class="official-logo" />
           </div>
           <div class="brand-text" *ngIf="!isCollapsed()">
             <h2 class="brand-title">الرّبــــان</h2>
-            <span class="brand-edition">Cloud ERP</span>
+            <span class="brand-edition">نظام ERP السحابي</span>
           </div>
         </div>
 
@@ -68,7 +65,8 @@ interface NavSection {
         <ng-container *ngFor="let section of navSections">
           <div class="nav-section" *ngIf="!section.superAdminOnly || authService.isSuperAdmin()">
             <div class="section-title" *ngIf="!isCollapsed()">
-              {{ langService.currentLang() === 'ar' ? section.titleAr : section.titleEn }}
+              <span class="title-text">{{ langService.currentLang() === 'ar' ? section.titleAr : section.titleEn }}</span>
+              <span class="title-line"></span>
             </div>
 
             <ul class="nav-list">
@@ -79,7 +77,9 @@ interface NavSection {
                   class="nav-link"
                   [title]="isCollapsed() ? (langService.currentLang() === 'ar' ? item.labelAr : item.labelEn) : ''"
                   *ngIf="!item.superAdminOnly || authService.isSuperAdmin()">
-                  <i [class]="item.icon + ' nav-icon'"></i>
+                  <div class="nav-icon-box">
+                    <i [class]="item.icon + ' nav-icon'"></i>
+                  </div>
                   <span class="nav-label" *ngIf="!isCollapsed()">
                     {{ langService.currentLang() === 'ar' ? item.labelAr : item.labelEn }}
                   </span>
@@ -112,8 +112,8 @@ interface NavSection {
   `,
   styles: [`
     .erp-sidebar {
-      width: 260px;
-      min-width: 260px;
+      width: 265px;
+      min-width: 265px;
       height: 100vh;
       background: #FFFFFF;
       border-inline-end: 1px solid #E2E8F0;
@@ -126,7 +126,7 @@ interface NavSection {
       color: #64748B;
       overflow-y: auto;
       overflow-x: hidden;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+      box-shadow: 2px 0 12px rgba(15, 23, 42, 0.02);
 
       &.collapsed {
         width: 72px;
@@ -138,11 +138,11 @@ interface NavSection {
 
         .nav-link {
           justify-content: center;
-          padding: 0.75rem;
+          padding: 0.65rem 0.5rem;
         }
 
         .sidebar-header {
-          padding: 1.25rem 0.5rem;
+          padding: 1rem 0.5rem;
           justify-content: center;
         }
 
@@ -152,7 +152,7 @@ interface NavSection {
 
         .sidebar-footer {
           justify-content: center;
-          padding: 1rem 0.5rem;
+          padding: 0.85rem 0.5rem;
         }
       }
 
@@ -166,7 +166,7 @@ interface NavSection {
 
     /* Header */
     .sidebar-header {
-      padding: 1.25rem 1.25rem 1rem 1.25rem;
+      padding: 1.15rem 1.25rem 0.95rem 1.25rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -180,21 +180,22 @@ interface NavSection {
       cursor: pointer;
     }
 
-    .brand-emblem {
-      width: 38px;
-      height: 38px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, #10B981 0%, #0284C7 100%);
-      color: #FFFFFF;
+    .brand-logo-frame {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+      background: #0B1528;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
       flex-shrink: 0;
 
-      svg {
-        width: 22px;
-        height: 22px;
+      .official-logo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
     }
 
@@ -209,14 +210,13 @@ interface NavSection {
       color: #0F172A;
       margin: 0;
       letter-spacing: -0.02em;
+      line-height: 1.2;
     }
 
     .brand-edition {
-      font-size: 0.68rem;
-      color: #0284C7;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      font-size: 0.7rem;
+      color: #059669;
+      font-weight: 600;
     }
 
     .collapse-toggle-btn {
@@ -291,23 +291,36 @@ interface NavSection {
       padding: 0.75rem 0.75rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.15rem;
     }
 
     .nav-section {
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      gap: 0.25rem;
     }
 
     .section-title {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       padding-inline: 0.65rem;
-      margin-bottom: 0.25rem;
-      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+
+      .title-text {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #94A3B8;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+
+      .title-line {
+        flex: 1;
+        height: 1px;
+        background: #F1F5F9;
+      }
     }
 
     .nav-list {
@@ -323,7 +336,7 @@ interface NavSection {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.6rem 0.85rem;
+      padding: 0.45rem 0.65rem;
       border-radius: 8px;
       color: #475569;
       text-decoration: none;
@@ -334,23 +347,44 @@ interface NavSection {
       &:hover {
         background: #F8FAFC;
         color: #0F172A;
+
+        .nav-icon-box {
+          background: #FFFFFF;
+          border-color: #CBD5E1;
+          color: #0F172A;
+        }
       }
 
       &.active {
         background: #ECFDF5;
         color: #059669;
-        border-inline-start: 3px solid #10B981;
         font-weight: 700;
 
-        .nav-icon {
-          color: #10B981;
+        .nav-icon-box {
+          background: #10B981;
+          border-color: #10B981;
+          color: #FFFFFF;
+          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
         }
       }
     }
 
-    .nav-icon {
-      font-size: 1rem;
+    .nav-icon-box {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748B;
+      transition: all 0.15s ease;
       flex-shrink: 0;
+
+      .nav-icon {
+        font-size: 0.9rem;
+      }
     }
 
     .nav-label {

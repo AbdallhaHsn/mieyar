@@ -24,15 +24,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
           <!-- Al-Roban Brand Insignia -->
           <div class="brand-insignia">
             <div class="logo-ring">
-              <svg class="ship-wheel" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="24" cy="24" r="18" stroke="#00F5A0" stroke-dasharray="4 2"></circle>
-                <circle cx="24" cy="24" r="10" stroke="#00F0FF" stroke-width="2.5"></circle>
-                <circle cx="24" cy="24" r="3.5" fill="#00F5A0"></circle>
-                <line x1="24" y1="2" x2="24" y2="46" stroke="#00F0FF" stroke-linecap="round"></line>
-                <line x1="2" y1="24" x2="46" y2="24" stroke="#00F0FF" stroke-linecap="round"></line>
-                <line x1="8.4" y1="8.4" x2="39.6" y2="39.6" stroke="#00F5A0" stroke-linecap="round"></line>
-                <line x1="8.4" y1="39.6" x2="39.6" y2="8.4" stroke="#00F5A0" stroke-linecap="round"></line>
-              </svg>
+              <img src="/alruban-logo.jpg" alt="Al-Roban Logo" class="official-logo-img" />
             </div>
             <div class="brand-titles">
               <h1 class="brand-name">
@@ -341,21 +333,22 @@ import { CompanyContextService } from '../../../core/services/company-context.se
     }
 
     .logo-ring {
-      width: 72px;
-      height: 72px;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(20, 184, 166, 0.4);
-      border-radius: 20px;
+      width: 68px;
+      height: 68px;
+      background: #0B1528;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 16px;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 25px rgba(20, 184, 166, 0.25);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
     }
 
-    .ship-wheel {
-      width: 44px;
-      height: 44px;
-      animation: spin-slow 35s linear infinite;
+    .official-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     @keyframes spin-slow {

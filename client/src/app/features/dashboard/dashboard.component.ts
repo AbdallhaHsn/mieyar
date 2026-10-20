@@ -78,7 +78,9 @@ interface JournalEntryPreview {
           </div>
           <div class="launch-grid">
             <button class="launch-card" (click)="router.navigate(['/accounting/chart-of-accounts'])">
-              <i class="pi pi-sitemap text-cyber-green"></i>
+              <div class="launch-icon-frame green">
+                <i class="pi pi-sitemap"></i>
+              </div>
               <div class="launch-info">
                 <strong>{{ langService.currentLang() === 'ar' ? 'دليل الحسابات' : 'Chart of Accounts' }}</strong>
                 <small>{{ langService.currentLang() === 'ar' ? 'شجرة الحسابات العامة' : 'General Ledger Tree' }}</small>
@@ -86,7 +88,9 @@ interface JournalEntryPreview {
             </button>
 
             <button class="launch-card" (click)="router.navigate(['/accounting/journal-entries'])">
-              <i class="pi pi-book text-cyber-cyan"></i>
+              <div class="launch-icon-frame cyan">
+                <i class="pi pi-book"></i>
+              </div>
               <div class="launch-info">
                 <strong>{{ langService.currentLang() === 'ar' ? 'دفتر اليومية' : 'Journal Entries' }}</strong>
                 <small>{{ langService.currentLang() === 'ar' ? 'القيود المحاسبية المزدوجة' : 'Double-Entry Vouchers' }}</small>
@@ -94,7 +98,9 @@ interface JournalEntryPreview {
             </button>
 
             <button class="launch-card" (click)="router.navigate(['/accounting/trial-balance'])">
-              <i class="pi pi-chart-bar text-cyber-green"></i>
+              <div class="launch-icon-frame green">
+                <i class="pi pi-chart-bar"></i>
+              </div>
               <div class="launch-info">
                 <strong>{{ langService.currentLang() === 'ar' ? 'ميزان المراجعة' : 'Trial Balance' }}</strong>
                 <small>{{ langService.currentLang() === 'ar' ? 'أرصدة ومطابقة الحسابات' : 'Account Balances' }}</small>
@@ -102,7 +108,9 @@ interface JournalEntryPreview {
             </button>
 
             <button class="launch-card" *ngIf="authService.isSuperAdmin()" (click)="router.navigate(['/companies'])">
-              <i class="pi pi-building text-cyber-cyan"></i>
+              <div class="launch-icon-frame cyan">
+                <i class="pi pi-building"></i>
+              </div>
               <div class="launch-info">
                 <strong>{{ langService.currentLang() === 'ar' ? 'الشركات والمستأجرين' : 'Tenants & Companies' }}</strong>
                 <small>{{ langService.currentLang() === 'ar' ? 'إدارة المنشآت والاشتراكات' : 'Manage Tenant Accounts' }}</small>
@@ -127,7 +135,7 @@ interface JournalEntryPreview {
               <span class="z-label">{{ langService.currentLang() === 'ar' ? 'فواتير معتمدة' : 'Cleared Invoices' }}</span>
             </div>
             <div class="z-item">
-              <span class="z-num text-cyber-cyan font-mono">8 ms</span>
+              <span class="z-num text-cyber-cyan font-mono" dir="ltr">8 ms</span>
               <span class="z-label">{{ langService.currentLang() === 'ar' ? 'زمن التشفير ECDSA' : 'Signing Latency' }}</span>
             </div>
             <div class="z-item">
@@ -137,7 +145,7 @@ interface JournalEntryPreview {
           </div>
 
           <div class="security-chip">
-            <i class="pi pi-shield text-cyber-green"></i>
+            <i class="pi pi-check-circle text-cyber-green"></i>
             <span>{{ langService.currentLang() === 'ar' ? 'التوقيع الرقمي والتشفير فوري مع منصة "فاتورة" بهيئة الزكاة' : 'Real-time ECDSA signatures & cryptographic stamps with ZATCA' }}</span>
           </div>
         </div>
@@ -148,7 +156,7 @@ interface JournalEntryPreview {
         <div class="panel-header">
           <h3>{{ langService.currentLang() === 'ar' ? 'أحدث قيود اليومية العامة' : 'Recent Journal Entries' }}</h3>
           <button class="btn-link" (click)="router.navigate(['/accounting/journal-entries'])">
-            {{ langService.currentLang() === 'ar' ? 'عرض الكل' : 'View All' }}
+            <span>{{ langService.currentLang() === 'ar' ? 'عرض الكل' : 'View All' }}</span>
             <i class="pi pi-arrow-left"></i>
           </button>
         </div>
@@ -168,15 +176,18 @@ interface JournalEntryPreview {
             <tbody>
               <tr *ngFor="let item of recentEntries">
                 <td class="font-mono text-cyber-cyan font-bold">{{ item.voucherNo }}</td>
-                <td>{{ item.date }}</td>
+                <td class="font-mono">{{ item.date }}</td>
                 <td class="text-dark font-medium">{{ langService.currentLang() === 'ar' ? item.descriptionAr : item.descriptionEn }}</td>
                 <td><span class="branch-pill">{{ langService.currentLang() === 'ar' ? item.branchAr : item.branchEn }}</span></td>
                 <td class="font-mono text-dark font-bold">{{ item.amount }}</td>
                 <td>
                   <span class="badge-status" [class.posted]="item.status === 'Posted'" [class.audited]="item.status === 'Audited'">
-                    {{ item.status === 'Posted' 
-                      ? (langService.currentLang() === 'ar' ? 'مرحّل' : 'Posted') 
-                      : (langService.currentLang() === 'ar' ? 'مدقق' : 'Audited') }}
+                    <i class="pi pi-check"></i>
+                    <span>
+                      {{ item.status === 'Posted' 
+                        ? (langService.currentLang() === 'ar' ? 'مرحّل' : 'Posted') 
+                        : (langService.currentLang() === 'ar' ? 'مدقق' : 'Audited') }}
+                    </span>
                   </span>
                 </td>
               </tr>
@@ -205,7 +216,7 @@ interface JournalEntryPreview {
     }
 
     .page-title {
-      font-size: 1.6rem;
+      font-size: 1.55rem;
       font-weight: 800;
       color: #0F172A;
       margin: 0;
@@ -213,7 +224,7 @@ interface JournalEntryPreview {
     }
 
     .page-subtitle {
-      font-size: 0.825rem;
+      font-size: 0.8rem;
       color: #64748B;
     }
 
@@ -237,11 +248,11 @@ interface JournalEntryPreview {
         background: #10B981;
         color: #FFFFFF;
         border: none;
-        box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
 
         &:hover {
           background: #059669;
-          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
         }
       }
 
@@ -271,12 +282,12 @@ interface JournalEntryPreview {
       display: flex;
       flex-direction: column;
       gap: 0.65rem;
-      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
       transition: all 0.2s ease;
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.08);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.06);
       }
 
       &.green {
@@ -342,7 +353,7 @@ interface JournalEntryPreview {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
     }
 
     .panel-header {
@@ -369,7 +380,7 @@ interface JournalEntryPreview {
       height: 7px;
       border-radius: 50%;
       background: #10B981;
-      box-shadow: 0 0 8px #10B981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
     }
 
     .state-pill {
@@ -396,25 +407,43 @@ interface JournalEntryPreview {
     .launch-card {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.85rem;
       background: #F8FAFC;
       border: 1px solid #E2E8F0;
       padding: 0.85rem 1rem;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       text-align: start;
       transition: all 0.15s ease;
 
-      i {
-        font-size: 1.25rem;
-        flex-shrink: 0;
-      }
-
       &:hover {
         background: #FFFFFF;
         border-color: #10B981;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
         transform: translateY(-1px);
+      }
+    }
+
+    .launch-icon-frame {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      flex-shrink: 0;
+
+      &.green {
+        background: #ECFDF5;
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+      }
+
+      &.cyan {
+        background: #F0F9FF;
+        color: #0284C7;
+        border: 1px solid rgba(2, 132, 199, 0.2);
       }
     }
 
@@ -477,7 +506,7 @@ interface JournalEntryPreview {
       border: none;
       color: #0284C7;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -530,7 +559,8 @@ interface JournalEntryPreview {
     .badge-status {
       display: inline-flex;
       align-items: center;
-      padding: 0.15rem 0.55rem;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
       border-radius: 4px;
       font-size: 0.72rem;
       font-weight: 700;
