@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.32" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\AlRobban.Shared.Infrastructure\AlRobban.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\GeneralLedger\AlRobban.Modules.GeneralLedger.Infrastructure\AlRobban.Modules.GeneralLedger.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\GeneralLedger\AlRobban.Modules.GeneralLedger.Endpoints\AlRobban.Modules.GeneralLedger.Endpoints.csproj" />
+    <ProjectReference Include="..\..\Modules\InvoicingAndZatca\AlRobban.Modules.InvoicingAndZatca.Infrastructure\AlRobban.Modules.InvoicingAndZatca.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\InvoicingAndZatca\AlRobban.Modules.InvoicingAndZatca.Endpoints\AlRobban.Modules.InvoicingAndZatca.Endpoints.csproj" />
+    <ProjectReference Include="..\..\Modules\DocumentManagement\AlRobban.Modules.DocumentManagement.Infrastructure\AlRobban.Modules.DocumentManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\IdentityAndAccess\AlRobban.Modules.IdentityAndAccess.Infrastructure\AlRobban.Modules.IdentityAndAccess.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

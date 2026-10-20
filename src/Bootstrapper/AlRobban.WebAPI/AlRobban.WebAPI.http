@@ -1,0 +1,6 @@
+@AlRobban.WebAPI_HostAddress = http://localhost:5047
+
+GET {{AlRobban.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

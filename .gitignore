@@ -1,0 +1,40 @@
+## .NET / C#
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+_ReSharper*/
+*.DotSettings.user
+
+## Node / Angular
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+## Logs and Test Results
+logs/
+*.log
+TestResults/
+BenchmarkDotNet.Artifacts/
+
+## Docker / Environment
+.env.local
+.env.*.local
+*.cert
+*.pfx
+*.key
+
+## OS Specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
