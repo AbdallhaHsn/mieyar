@@ -111,6 +111,15 @@ interface NavSection {
     </aside>
   `,
   styles: [`
+    :host {
+      display: block;
+      font-family: var(--font-arabic) !important;
+    }
+
+    button, a, span, strong {
+      font-family: var(--font-arabic) !important;
+    }
+
     .erp-sidebar {
       width: 265px;
       min-width: 265px;

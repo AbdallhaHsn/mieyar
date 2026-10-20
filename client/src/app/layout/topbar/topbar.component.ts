@@ -57,6 +57,15 @@ import { AuthService } from '../../core/services/auth.service';
     </header>
   `,
   styles: [`
+    :host {
+      display: block;
+      font-family: var(--font-arabic) !important;
+    }
+
+    button, input, span {
+      font-family: var(--font-arabic) !important;
+    }
+
     .erp-topbar {
       height: 60px;
       background: #FFFFFF;

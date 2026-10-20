@@ -198,6 +198,15 @@ interface JournalEntryPreview {
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      font-family: var(--font-arabic) !important;
+    }
+
+    button, input, select, textarea {
+      font-family: var(--font-arabic) !important;
+    }
+
     .dashboard-wrap {
       display: flex;
       flex-direction: column;

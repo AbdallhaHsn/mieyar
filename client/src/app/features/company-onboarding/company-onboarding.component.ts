@@ -124,6 +124,15 @@ import { AuthService } from '../../core/services/auth.service';
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      font-family: var(--font-arabic) !important;
+    }
+
+    button, input, select, textarea, h2, p, label {
+      font-family: var(--font-arabic) !important;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0;

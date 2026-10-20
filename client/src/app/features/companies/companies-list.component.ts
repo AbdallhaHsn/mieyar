@@ -103,6 +103,15 @@ interface TenantCompanyRow {
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      font-family: var(--font-arabic) !important;
+    }
+
+    button, input, select {
+      font-family: var(--font-arabic) !important;
+    }
+
     .companies-wrap {
       display: flex;
       flex-direction: column;
