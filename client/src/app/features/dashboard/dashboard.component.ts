@@ -11,10 +11,7 @@ interface MetricCard {
   amount: string;
   trend: string;
   isPositive: boolean;
-  icon: string;
-  colorClass: string;
-  subtitleAr: string;
-  subtitleEn: string;
+  accent: 'green' | 'cyan';
 }
 
 interface JournalEntryPreview {
@@ -22,11 +19,10 @@ interface JournalEntryPreview {
   date: string;
   descriptionAr: string;
   descriptionEn: string;
-  debit: string;
-  credit: string;
+  amount: string;
   branchAr: string;
   branchEn: string;
-  status: 'Posted' | 'Draft' | 'Audited';
+  status: 'Posted' | 'Audited';
 }
 
 @Component({
@@ -34,214 +30,151 @@ interface JournalEntryPreview {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="dashboard-container">
-      <!-- Executive Page Header -->
-      <header class="dash-header">
-        <div class="dash-title-group">
-          <div class="welcome-row">
-            <span class="welcome-chip">
-              <i class="pi pi-sparkles"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'نظام المحاسبة المالية المتقدم' : 'Advanced Financial ERP' }}</span>
-            </span>
-            <span class="fiscal-chip">
-              <i class="pi pi-calendar"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'السنة المالية 2026 (الفترة 10 - أكتوبر)' : 'Fiscal Year 2026 (Period 10 - Oct)' }}</span>
-            </span>
-          </div>
-
-          <h1 class="dash-heading">
-            {{ langService.currentLang() === 'ar' 
-              ? 'لوحة القيادة والمؤشرات المالية التنفيذية' 
-              : 'Executive Financial & Accounting Dashboard' }}
+    <div class="dashboard-wrap">
+      <!-- Minimalist Header -->
+      <div class="dash-top">
+        <div>
+          <h1 class="page-title">
+            {{ langService.currentLang() === 'ar' ? 'المؤشرات المالية ولوحة القيادة' : 'Financial Overview' }}
           </h1>
-          <p class="dash-sub">
-            {{ langService.currentLang() === 'ar'
-              ? 'نظرة شاملة ومباشرة على الإيرادات، التدفقات النقدية، قيود اليومية، وحالة التوافق مع هيئة الزكاة (ZATCA فاز 2)'
-              : 'Real-time overview of revenues, cash flow, double-entry journals, and ZATCA Phase 2 compliance' }}
-          </p>
+          <span class="page-subtitle">
+            {{ langService.currentLang() === 'ar' ? 'السنة المالية 2026 • الفترة النشطة' : 'Fiscal Year 2026 • Active Period' }}
+          </span>
         </div>
 
-        <div class="dash-actions">
-          <button class="btn-refresh" (click)="refreshMetrics()">
-            <i class="pi pi-sync"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'تحديث البيانات' : 'Refresh' }}</span>
+        <div class="quick-nav-actions">
+          <button class="btn-action green" (click)="router.navigate(['/accounting/journal-entries'])">
+            <i class="pi pi-plus"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'قيد جديد' : 'New Entry' }}</span>
+          </button>
+          <button class="btn-action cyan" (click)="router.navigate(['/invoicing/tax-invoices'])">
+            <i class="pi pi-receipt"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice' }}</span>
           </button>
         </div>
-      </header>
+      </div>
 
-      <!-- 4 Principal KPI Metric Cards -->
-      <section class="kpi-grid">
-        <div class="kpi-card" *ngFor="let kpi of metricCards" [ngClass]="kpi.colorClass">
-          <div class="kpi-top">
-            <span class="kpi-label">
+      <!-- 4 High-Contrast KPI Cards (Cyber Green & Cyan) -->
+      <div class="kpi-row">
+        <div class="kpi-card" *ngFor="let kpi of metricCards" [ngClass]="kpi.accent">
+          <div class="kpi-head">
+            <span class="kpi-title">
               {{ langService.currentLang() === 'ar' ? kpi.titleAr : kpi.titleEn }}
             </span>
-            <div class="kpi-icon-wrap">
-              <i [class]="kpi.icon"></i>
-            </div>
-          </div>
-
-          <div class="kpi-amount">{{ kpi.amount }}</div>
-
-          <div class="kpi-bottom">
-            <span class="kpi-trend" [class.positive]="kpi.isPositive" [class.negative]="!kpi.isPositive">
-              <i class="pi" [ngClass]="kpi.isPositive ? 'pi-arrow-up' : 'pi-arrow-down'"></i>
+            <span class="kpi-badge" [class.green]="kpi.accent === 'green'" [class.cyan]="kpi.accent === 'cyan'">
               {{ kpi.trend }}
             </span>
-            <span class="kpi-sub">
-              {{ langService.currentLang() === 'ar' ? kpi.subtitleAr : kpi.subtitleEn }}
-            </span>
           </div>
+          <div class="kpi-value font-mono">{{ kpi.amount }}</div>
         </div>
-      </section>
+      </div>
 
-      <!-- Middle Grid: ZATCA Compliance Radar & Quick Actions -->
-      <section class="middle-grid">
-        <!-- ZATCA Phase 2 E-Invoicing Live Radar -->
-        <div class="dash-card zatca-radar-card">
-          <div class="card-header-row">
-            <div class="header-left">
-              <i class="pi pi-shield text-emerald"></i>
-              <h3>{{ langService.currentLang() === 'ar' ? 'رادار الفوترة الإلكترونية (ZATCA Phase 2)' : 'ZATCA Phase 2 Live Radar' }}</h3>
-            </div>
-            <span class="badge-live">
-              <span class="pulse-dot"></span>
-              {{ langService.currentLang() === 'ar' ? 'الربط المباشر فعال 100%' : 'Direct Link Active 100%' }}
-            </span>
+      <!-- Two-Column Operations & ZATCA Strip -->
+      <div class="grid-two">
+        <!-- Quick Financial Launchpad -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>{{ langService.currentLang() === 'ar' ? 'الوصول السريع' : 'Quick Actions' }}</h3>
           </div>
-
-          <p class="radar-desc">
-            {{ langService.currentLang() === 'ar'
-              ? 'المنظومة مرتبطة بمنصة "فاتورة" التابعة لهيئة الزكاة والضريبة والجمارك مع توقيع رقمي فوري ECDSA secp256k1 وتشفير تام لكافة الفواتير الضريبية والمبسطة.'
-              : 'Directly integrated with ZATCA FATOORA portal featuring instant ECDSA secp256k1 digital signatures and full cryptographic compliance.' }}
-          </p>
-
-          <div class="zatca-metrics-row">
-            <div class="z-stat">
-              <span class="z-val text-emerald">1,428</span>
-              <span class="z-lbl">{{ langService.currentLang() === 'ar' ? 'فاتورة معتمدة ومطابقة' : 'Cleared Invoices' }}</span>
-            </div>
-            <div class="z-stat">
-              <span class="z-val text-cyan">8 ms</span>
-              <span class="z-lbl">{{ langService.currentLang() === 'ar' ? 'سرعة التوقيع الرقمي' : 'Signing Latency' }}</span>
-            </div>
-            <div class="z-stat">
-              <span class="z-val text-amber">0</span>
-              <span class="z-lbl">{{ langService.currentLang() === 'ar' ? 'أخطاء أو رفض في الهيئة' : 'Rejected Invoices' }}</span>
-            </div>
-          </div>
-
-          <div class="latest-clearance-box">
-            <div class="box-icon">
-              <i class="pi pi-check"></i>
-            </div>
-            <div class="box-details">
-              <strong>{{ langService.currentLang() === 'ar' ? 'آخر فاتورة ضريبية تم اعتمادها وتوليد الختم بنجاح' : 'Latest Cleared Tax Invoice' }}</strong>
-              <small class="text-mono">UUID: a98f4c21-789a-412e-b124-9f88d7c92b51 • QR TLV Phase 2 Verified</small>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Launchpad -->
-        <div class="dash-card launchpad-card">
-          <div class="card-header-row">
-            <div class="header-left">
-              <i class="pi pi-compass text-primary"></i>
-              <h3>{{ langService.currentLang() === 'ar' ? 'منصة العمليات السريعة' : 'Operations Launchpad' }}</h3>
-            </div>
-          </div>
-
-          <div class="launch-actions-grid">
-            <button class="launch-btn" (click)="router.navigate(['/accounting/chart-of-accounts'])">
-              <div class="launch-icon bg-emerald">
-                <i class="pi pi-sitemap"></i>
-              </div>
-              <div class="launch-text">
+          <div class="launch-grid">
+            <button class="launch-card" (click)="router.navigate(['/accounting/chart-of-accounts'])">
+              <i class="pi pi-sitemap text-cyber-green"></i>
+              <div class="launch-info">
                 <strong>{{ langService.currentLang() === 'ar' ? 'دليل الحسابات' : 'Chart of Accounts' }}</strong>
-                <span>{{ langService.currentLang() === 'ar' ? 'استعراض شجرة الحسابات المتفرعة' : 'Explore multi-level tree' }}</span>
+                <small>{{ langService.currentLang() === 'ar' ? 'شجرة الحسابات العامة' : 'General Ledger Tree' }}</small>
               </div>
             </button>
 
-            <button class="launch-btn" (click)="router.navigate(['/accounting/journal-entries'])">
-              <div class="launch-icon bg-blue">
-                <i class="pi pi-book"></i>
-              </div>
-              <div class="launch-text">
-                <strong>{{ langService.currentLang() === 'ar' ? 'قيد يومية جديد' : 'New Journal Entry' }}</strong>
-                <span>{{ langService.currentLang() === 'ar' ? 'تسجيل قيد مزدوج مدين / دائن' : 'Double-entry voucher' }}</span>
+            <button class="launch-card" (click)="router.navigate(['/accounting/journal-entries'])">
+              <i class="pi pi-book text-cyber-cyan"></i>
+              <div class="launch-info">
+                <strong>{{ langService.currentLang() === 'ar' ? 'دفتر اليومية' : 'Journal Entries' }}</strong>
+                <small>{{ langService.currentLang() === 'ar' ? 'القيود المحاسبية المزدوجة' : 'Double-Entry Vouchers' }}</small>
               </div>
             </button>
 
-            <button class="launch-btn" (click)="router.navigate(['/invoicing/tax-invoices'])">
-              <div class="launch-icon bg-purple">
-                <i class="pi pi-file"></i>
-              </div>
-              <div class="launch-text">
-                <strong>{{ langService.currentLang() === 'ar' ? 'إصدار فاتورة ZATCA' : 'Issue Tax Invoice' }}</strong>
-                <span>{{ langService.currentLang() === 'ar' ? 'فاتورة ضريبية B2B معتمدة' : 'Compliant B2B Tax Invoice' }}</span>
+            <button class="launch-card" (click)="router.navigate(['/accounting/trial-balance'])">
+              <i class="pi pi-chart-bar text-cyber-green"></i>
+              <div class="launch-info">
+                <strong>{{ langService.currentLang() === 'ar' ? 'ميزان المراجعة' : 'Trial Balance' }}</strong>
+                <small>{{ langService.currentLang() === 'ar' ? 'أرصدة ومطابقة الحسابات' : 'Account Balances' }}</small>
               </div>
             </button>
 
-            <button class="launch-btn" *ngIf="authService.isSuperAdmin()" (click)="router.navigate(['/companies'])">
-              <div class="launch-icon bg-amber">
-                <i class="pi pi-building"></i>
-              </div>
-              <div class="launch-text">
-                <strong>{{ langService.currentLang() === 'ar' ? 'إدارة الشركات والمستأجرين' : 'Tenant Management' }}</strong>
-                <span>{{ langService.currentLang() === 'ar' ? 'إضافة شركة وتزويدها ببيانات الدخول' : 'Manage & onboard companies' }}</span>
+            <button class="launch-card" *ngIf="authService.isSuperAdmin()" (click)="router.navigate(['/companies'])">
+              <i class="pi pi-building text-cyber-cyan"></i>
+              <div class="launch-info">
+                <strong>{{ langService.currentLang() === 'ar' ? 'الشركات والمستأجرين' : 'Tenants & Companies' }}</strong>
+                <small>{{ langService.currentLang() === 'ar' ? 'إدارة المنشآت والاشتراكات' : 'Manage Tenant Accounts' }}</small>
               </div>
             </button>
           </div>
         </div>
-      </section>
 
-      <!-- Bottom: Recent Double-Entry Journal Entries Stream -->
-      <section class="dash-card recent-journals-card">
-        <div class="card-header-row">
-          <div class="header-left">
-            <i class="pi pi-list text-cyan"></i>
-            <div>
-              <h3>{{ langService.currentLang() === 'ar' ? 'أحدث القيود المحاسبية المسجلة' : 'Recent Journal Entries' }}</h3>
-              <small class="text-muted">{{ langService.currentLang() === 'ar' ? 'قيود يومية مزدوجة مرتبطة بالسنة المالية النشطة والفروع' : 'Double-entry vouchers linked to active fiscal periods' }}</small>
+        <!-- Sleek ZATCA Phase 2 Status -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="header-zatca-tag">
+              <span class="live-dot"></span>
+              <h3>{{ langService.currentLang() === 'ar' ? 'منظومة ZATCA فاز 2 (الفاتورة الإلكترونية)' : 'ZATCA Phase 2 E-Invoicing' }}</h3>
+            </div>
+            <span class="state-pill">{{ langService.currentLang() === 'ar' ? 'متصل ومطابق' : 'Live & Cleared' }}</span>
+          </div>
+
+          <div class="zatca-kpis">
+            <div class="z-item">
+              <span class="z-num text-cyber-green font-mono">1,428</span>
+              <span class="z-label">{{ langService.currentLang() === 'ar' ? 'فواتير معتمدة' : 'Cleared Invoices' }}</span>
+            </div>
+            <div class="z-item">
+              <span class="z-num text-cyber-cyan font-mono">8 ms</span>
+              <span class="z-label">{{ langService.currentLang() === 'ar' ? 'زمن التشفير ECDSA' : 'Signing Latency' }}</span>
+            </div>
+            <div class="z-item">
+              <span class="z-num text-white font-mono">100%</span>
+              <span class="z-label">{{ langService.currentLang() === 'ar' ? 'نسبة الامتثال' : 'Compliance Rate' }}</span>
             </div>
           </div>
-          <button class="btn-view-all" (click)="router.navigate(['/accounting/journal-entries'])">
-            <span>{{ langService.currentLang() === 'ar' ? 'عرض دفتر اليومية كاملاً' : 'View All Entries' }}</span>
+
+          <div class="security-chip">
+            <i class="pi pi-shield text-cyber-green"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'التوقيع الرقمي والتشفير فوري مع منصة "فاتورة" بهيئة الزكاة' : 'Real-time ECDSA signatures & cryptographic stamps with ZATCA' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Entries Table -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <h3>{{ langService.currentLang() === 'ar' ? 'أحدث قيود اليومية العامة' : 'Recent Journal Entries' }}</h3>
+          <button class="btn-link" (click)="router.navigate(['/accounting/journal-entries'])">
+            {{ langService.currentLang() === 'ar' ? 'عرض الكل' : 'View All' }}
             <i class="pi pi-arrow-left"></i>
           </button>
         </div>
 
-        <div class="table-responsive">
-          <table class="erp-table">
+        <div class="table-wrap">
+          <table class="clean-table">
             <thead>
               <tr>
-                <th>{{ langService.currentLang() === 'ar' ? 'رقم السند' : 'Voucher No.' }}</th>
+                <th>{{ langService.currentLang() === 'ar' ? 'رقم القيد' : 'Voucher No.' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'التاريخ' : 'Date' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'البيان والشرح' : 'Description' }}</th>
+                <th>{{ langService.currentLang() === 'ar' ? 'البيان' : 'Description' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'الفرع' : 'Branch' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'إجمالي المدين' : 'Debit (SAR)' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'إجمالي الدائن' : 'Credit (SAR)' }}</th>
+                <th>{{ langService.currentLang() === 'ar' ? 'المبلغ (ر.س)' : 'Amount (SAR)' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let entry of recentEntries">
-                <td class="font-mono text-cyan font-bold">{{ entry.voucherNo }}</td>
-                <td>{{ entry.date }}</td>
-                <td class="font-medium">
-                  {{ langService.currentLang() === 'ar' ? entry.descriptionAr : entry.descriptionEn }}
-                </td>
+              <tr *ngFor="let item of recentEntries">
+                <td class="font-mono text-cyber-cyan">{{ item.voucherNo }}</td>
+                <td>{{ item.date }}</td>
+                <td class="text-white">{{ langService.currentLang() === 'ar' ? item.descriptionAr : item.descriptionEn }}</td>
+                <td><span class="branch-pill">{{ langService.currentLang() === 'ar' ? item.branchAr : item.branchEn }}</span></td>
+                <td class="font-mono text-white font-bold">{{ item.amount }}</td>
                 <td>
-                  <span class="branch-tag">
-                    {{ langService.currentLang() === 'ar' ? entry.branchAr : entry.branchEn }}
-                  </span>
-                </td>
-                <td class="font-mono font-bold">{{ entry.debit }}</td>
-                <td class="font-mono font-bold">{{ entry.credit }}</td>
-                <td>
-                  <span class="status-badge" [ngClass]="entry.status.toLowerCase()">
-                    <i class="pi pi-check"></i>
-                    {{ entry.status === 'Posted' 
+                  <span class="badge-status" [class.posted]="item.status === 'Posted'" [class.audited]="item.status === 'Audited'">
+                    {{ item.status === 'Posted' 
                       ? (langService.currentLang() === 'ar' ? 'مرحّل' : 'Posted') 
                       : (langService.currentLang() === 'ar' ? 'مدقق' : 'Audited') }}
                   </span>
@@ -250,244 +183,152 @@ interface JournalEntryPreview {
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
     </div>
   `,
   styles: [`
-    .dashboard-container {
+    .dashboard-wrap {
       display: flex;
       flex-direction: column;
-      gap: 1.75rem;
-      max-width: 1440px;
+      gap: 1.5rem;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
     /* Header */
-    .dash-header {
+    .dash-top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 1.5rem;
+      gap: 1rem;
       flex-wrap: wrap;
     }
 
-    .dash-title-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .welcome-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .welcome-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: rgba(20, 184, 166, 0.15);
-      color: #2dd4bf;
-      border: 1px solid rgba(20, 184, 166, 0.3);
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .fiscal-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .dash-heading {
-      font-size: 1.75rem;
+    .page-title {
+      font-size: 1.6rem;
       font-weight: 800;
-      color: #ffffff;
+      color: #FFFFFF;
       margin: 0;
       letter-spacing: -0.02em;
     }
 
-    .dash-sub {
-      font-size: 0.9rem;
-      color: #94a3b8;
-      margin: 0;
-      max-width: 780px;
-      line-height: 1.5;
+    .page-subtitle {
+      font-size: 0.8rem;
+      color: #64748B;
     }
 
-    .btn-refresh {
+    .quick-nav-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-action {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #cbd5e1;
-      padding: 0.55rem 1.15rem;
+      gap: 0.45rem;
+      padding: 0.5rem 1rem;
       border-radius: 8px;
       font-size: 0.85rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
 
-      &:hover {
-        background: rgba(15, 23, 42, 0.95);
-        color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.2);
+      &.green {
+        background: #00F5A0;
+        color: #070B14;
+        border: none;
+        box-shadow: 0 0 15px rgba(0, 245, 160, 0.25);
+
+        &:hover {
+          background: #5CFFC6;
+          box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
+        }
+      }
+
+      &.cyan {
+        background: transparent;
+        color: #00F0FF;
+        border: 1px solid rgba(0, 240, 255, 0.4);
+
+        &:hover {
+          background: rgba(0, 240, 255, 0.1);
+          border-color: #00F0FF;
+        }
       }
     }
 
-    /* KPI Grid */
-    .kpi-grid {
+    /* 4 High-Contrast KPI Cards */
+    .kpi-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.15rem;
     }
 
     .kpi-card {
-      background: rgba(15, 23, 42, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 1.35rem 1.5rem;
+      background: #0D1424;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 1.25rem 1.4rem;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.65rem;
       position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(10px);
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      transition: border-color 0.2s ease, transform 0.2s ease;
 
       &:hover {
         transform: translateY(-2px);
-        border-color: rgba(255, 255, 255, 0.2);
       }
 
-      &.emerald {
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          inset-inline-start: 0;
-          inset-inline-end: 0;
-          height: 3px;
-          background: linear-gradient(90deg, #10b981, #14b8a6);
-        }
-        .kpi-icon-wrap { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+      &.green {
+        border-top: 2px solid #00F5A0;
+        &:hover { border-color: rgba(0, 245, 160, 0.4); }
       }
 
-      &.amber {
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          inset-inline-start: 0;
-          inset-inline-end: 0;
-          height: 3px;
-          background: linear-gradient(90deg, #f59e0b, #d97706);
-        }
-        .kpi-icon-wrap { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-      }
-
-      &.blue {
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          inset-inline-start: 0;
-          inset-inline-end: 0;
-          height: 3px;
-          background: linear-gradient(90deg, #3b82f6, #6366f1);
-        }
-        .kpi-icon-wrap { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-      }
-
-      &.purple {
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          inset-inline-start: 0;
-          inset-inline-end: 0;
-          height: 3px;
-          background: linear-gradient(90deg, #8b5cf6, #ec4899);
-        }
-        .kpi-icon-wrap { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+      &.cyan {
+        border-top: 2px solid #00F0FF;
+        &:hover { border-color: rgba(0, 240, 255, 0.4); }
       }
     }
 
-    .kpi-top {
+    .kpi-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    .kpi-label {
-      font-size: 0.85rem;
+    .kpi-title {
+      font-size: 0.825rem;
       font-weight: 600;
-      color: #94a3b8;
+      color: #94A3B8;
     }
 
-    .kpi-icon-wrap {
-      width: 36px;
-      height: 36px;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.15rem;
-    }
-
-    .kpi-amount {
-      font-size: 1.75rem;
-      font-weight: 800;
-      color: #ffffff;
-      font-family: var(--font-latin);
-      letter-spacing: -0.02em;
-    }
-
-    .kpi-bottom {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.78rem;
-    }
-
-    .kpi-trend {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
+    .kpi-badge {
+      font-size: 0.75rem;
       font-weight: 700;
       padding: 0.15rem 0.45rem;
       border-radius: 4px;
 
-      &.positive {
-        background: rgba(16, 185, 129, 0.15);
-        color: #34d399;
+      &.green {
+        background: rgba(0, 245, 160, 0.12);
+        color: #00F5A0;
       }
-      &.negative {
-        background: rgba(239, 68, 68, 0.15);
-        color: #f87171;
+      &.cyan {
+        background: rgba(0, 240, 255, 0.12);
+        color: #00F0FF;
       }
     }
 
-    .kpi-sub {
-      color: #64748b;
+    .kpi-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
     }
 
-    /* Middle Grid */
-    .middle-grid {
+    /* Grid Two */
+    .grid-two {
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-columns: 1fr 1fr;
       gap: 1.25rem;
 
       @media (max-width: 1024px) {
@@ -495,246 +336,181 @@ interface JournalEntryPreview {
       }
     }
 
-    .dash-card {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 1.5rem;
+    .panel-card {
+      background: #0D1424;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 1.35rem 1.5rem;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
-      backdrop-filter: blur(10px);
+      gap: 1rem;
     }
 
-    .card-header-row {
+    .panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
 
       h3 {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 700;
-        color: #ffffff;
+        color: #FFFFFF;
         margin: 0;
       }
-
-      i {
-        font-size: 1.35rem;
-      }
     }
 
-    .text-emerald { color: #10b981; }
-    .text-primary { color: #14b8a6; }
-    .text-cyan { color: #38bdf8; }
-    .text-amber { color: #f59e0b; }
-    .text-muted { color: #64748b; font-size: 0.8rem; }
-    .font-mono { font-family: monospace; }
-    .font-bold { font-weight: 700; }
-    .font-medium { font-weight: 500; }
-
-    .badge-live {
-      display: inline-flex;
+    .header-zatca-tag {
+      display: flex;
       align-items: center;
-      gap: 0.5rem;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
+      gap: 0.6rem;
     }
 
-    .pulse-dot {
+    .live-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
+      background: #00F5A0;
+      box-shadow: 0 0 8px #00F5A0;
     }
 
-    .radar-desc {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    .zatca-metrics-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      background: rgba(2, 6, 23, 0.5);
-      padding: 1rem;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .z-stat {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-    }
-
-    .z-val {
-      font-size: 1.35rem;
-      font-weight: 800;
-      font-family: var(--font-latin);
-    }
-
-    .z-lbl {
+    .state-pill {
       font-size: 0.75rem;
-      color: #94a3b8;
+      font-weight: 600;
+      color: #00F5A0;
+      background: rgba(0, 245, 160, 0.1);
+      border: 1px solid rgba(0, 245, 160, 0.25);
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
     }
 
-    .latest-clearance-box {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      padding: 0.85rem 1rem;
-      border-radius: 10px;
-    }
-
-    .box-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #10b981;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      flex-shrink: 0;
-    }
-
-    .box-details {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-
-      strong {
-        font-size: 0.85rem;
-        color: #e2e8f0;
-      }
-      small {
-        font-size: 0.72rem;
-        color: #6ee7b7;
-      }
-    }
-
-    /* Launchpad */
-    .launch-actions-grid {
+    /* Launch Grid */
+    .launch-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.85rem;
+      gap: 0.75rem;
 
-      @media (max-width: 640px) {
+      @media (max-width: 600px) {
         grid-template-columns: 1fr;
       }
     }
 
-    .launch-btn {
+    .launch-card {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
-      background: rgba(2, 6, 23, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 0.9rem 1rem;
-      border-radius: 10px;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
       cursor: pointer;
       text-align: start;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
+
+      i {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
 
       &:hover {
-        background: rgba(15, 23, 42, 0.8);
-        border-color: rgba(20, 184, 166, 0.3);
-        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(0, 245, 160, 0.25);
+        transform: translateY(-1px);
       }
     }
 
-    .launch-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.15rem;
-      color: #ffffff;
-      flex-shrink: 0;
-
-      &.bg-emerald { background: linear-gradient(135deg, #059669, #10b981); }
-      &.bg-blue { background: linear-gradient(135deg, #2563eb, #3b82f6); }
-      &.bg-purple { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
-      &.bg-amber { background: linear-gradient(135deg, #d97706, #f59e0b); }
-    }
-
-    .launch-text {
+    .launch-info {
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
 
       strong {
         font-size: 0.85rem;
-        color: #ffffff;
+        color: #FFFFFF;
       }
-      span {
-        font-size: 0.75rem;
-        color: #94a3b8;
+      small {
+        font-size: 0.72rem;
+        color: #64748B;
       }
     }
 
-    /* Table */
-    .btn-view-all {
+    /* ZATCA KPIs */
+    .zatca-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .z-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .z-num {
+      font-size: 1.45rem;
+      font-weight: 800;
+    }
+
+    .z-label {
+      font-size: 0.75rem;
+      color: #94A3B8;
+    }
+
+    .security-chip {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #94A3B8;
+      background: rgba(0, 245, 160, 0.04);
+      padding: 0.5rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 245, 160, 0.1);
+    }
+
+    /* Table */
+    .btn-link {
       background: transparent;
       border: none;
-      color: #38bdf8;
-      font-size: 0.825rem;
+      color: #00F0FF;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
 
       &:hover {
         text-decoration: underline;
       }
     }
 
-    .table-responsive {
+    .table-wrap {
       overflow-x: auto;
     }
 
-    .erp-table {
+    .clean-table {
       width: 100%;
       border-collapse: collapse;
       text-align: start;
 
       th {
-        padding: 0.85rem 1rem;
-        font-size: 0.78rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
-        color: #94a3b8;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        color: #64748B;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       }
 
       td {
-        padding: 0.95rem 1rem;
-        font-size: 0.85rem;
-        color: #cbd5e1;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 0.85rem 1rem;
+        font-size: 0.825rem;
+        color: #CBD5E1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       }
 
       tr:hover td {
@@ -742,32 +518,33 @@ interface JournalEntryPreview {
       }
     }
 
-    .branch-tag {
-      background: rgba(255, 255, 255, 0.06);
-      padding: 0.2rem 0.55rem;
+    .branch-pill {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.15rem 0.5rem;
       border-radius: 4px;
       font-size: 0.75rem;
-      color: #94a3b8;
+      color: #94A3B8;
     }
 
-    .status-badge {
+    .badge-status {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
       font-weight: 700;
 
       &.posted {
-        background: rgba(16, 185, 129, 0.15);
-        color: #34d399;
+        background: rgba(0, 245, 160, 0.12);
+        color: #00F5A0;
       }
       &.audited {
-        background: rgba(59, 130, 246, 0.15);
-        color: #60a5fa;
+        background: rgba(0, 240, 255, 0.12);
+        color: #00F0FF;
       }
     }
+
+    .font-bold { font-weight: 700; }
   `]
 })
 export class DashboardComponent {
@@ -783,32 +560,23 @@ export class DashboardComponent {
       amount: 'SAR 2,845,900.00',
       trend: '+16.2%',
       isPositive: true,
-      icon: 'pi pi-chart-line',
-      colorClass: 'emerald',
-      subtitleAr: 'مقارنة بالفترة المالية السابقة',
-      subtitleEn: 'vs previous fiscal period'
+      accent: 'green'
     },
     {
-      titleAr: 'إجمالي المصروفات التشغيلية',
+      titleAr: 'المصروفات التشغيلية',
       titleEn: 'Total Expenses',
       amount: 'SAR 1,412,300.00',
       trend: '-2.8%',
       isPositive: true,
-      icon: 'pi pi-wallet',
-      colorClass: 'amber',
-      subtitleAr: 'ضمن الميزانية التقديرية',
-      subtitleEn: 'within allocated budget'
+      accent: 'cyan'
     },
     {
       titleAr: 'صافي الأرباح التشغيلية',
-      titleEn: 'Net Operating Profit',
+      titleEn: 'Operating Profit',
       amount: 'SAR 1,433,600.00',
       trend: '+24.5%',
       isPositive: true,
-      icon: 'pi pi-dollar',
-      colorClass: 'blue',
-      subtitleAr: 'هامش ربح تشغيلي 50.4%',
-      subtitleEn: '50.4% operating margin'
+      accent: 'green'
     },
     {
       titleAr: 'ضريبة القيمة المضافة (15%)',
@@ -816,10 +584,7 @@ export class DashboardComponent {
       amount: 'SAR 215,040.00',
       trend: 'مطابق ZATCA',
       isPositive: true,
-      icon: 'pi pi-percentage',
-      colorClass: 'purple',
-      subtitleAr: 'جاهز للإقرار الضريبي الربع سنوي',
-      subtitleEn: 'Ready for quarterly VAT return'
+      accent: 'cyan'
     }
   ];
 
@@ -827,50 +592,42 @@ export class DashboardComponent {
     {
       voucherNo: 'JV-2026-00412',
       date: '2026-10-20',
-      descriptionAr: 'إثبات مبيعات استشارات وحلول سحابية - شركة النهضة',
-      descriptionEn: 'Cloud Consulting Revenue - Al-Nahda Corp',
-      debit: '115,000.00',
-      credit: '115,000.00',
-      branchAr: 'الفرع الرئيسي - الرياض',
-      branchEn: 'Main Branch - Riyadh',
+      descriptionAr: 'مبيعات خدمات سحابية - شركة النهضة',
+      descriptionEn: 'Cloud Consulting Revenue - Al-Nahda',
+      amount: '115,000.00',
+      branchAr: 'الفرع الرئيسي',
+      branchEn: 'Main Branch',
       status: 'Posted'
     },
     {
       voucherNo: 'JV-2026-00411',
       date: '2026-10-19',
-      descriptionAr: 'سداد إيجار المستودعات المركزية والدعم الفني',
-      descriptionEn: 'Central Warehouse & Technical Support Rent',
-      debit: '45,000.00',
-      credit: '45,000.00',
-      branchAr: 'فرع المنطقة الغربية - جدة',
-      branchEn: 'Western Region Branch - Jeddah',
+      descriptionAr: 'سداد إيجار مستودعات ودعم فني',
+      descriptionEn: 'Warehouse & Technical Support Rent',
+      amount: '45,000.00',
+      branchAr: 'فرع جدة',
+      branchEn: 'Jeddah Branch',
       status: 'Posted'
     },
     {
       voucherNo: 'JV-2026-00410',
       date: '2026-10-18',
-      descriptionAr: 'قيد تسوية ضريبة القيمة المضافة المحصلة والمسددة',
-      descriptionEn: 'Output vs Input VAT Settlement Voucher',
-      debit: '28,400.00',
-      credit: '28,400.00',
-      branchAr: 'الفرع الرئيسي - الرياض',
-      branchEn: 'Main Branch - Riyadh',
+      descriptionAr: 'تسوية ضريبة القيمة المضافة للفترة الحالية',
+      descriptionEn: 'VAT Periodic Settlement Voucher',
+      amount: '28,400.00',
+      branchAr: 'الفرع الرئيسي',
+      branchEn: 'Main Branch',
       status: 'Audited'
     },
     {
       voucherNo: 'JV-2026-00409',
       date: '2026-10-17',
-      descriptionAr: 'تحصيل مستحقات فواتير ضريبية عبر البنك الأهلي السعودي',
-      descriptionEn: 'SNB Bank Customer Receivable Inward Remittance',
-      debit: '250,000.00',
-      credit: '250,000.00',
-      branchAr: 'الفرع الرئيسي - الرياض',
-      branchEn: 'Main Branch - Riyadh',
+      descriptionAr: 'تحصيل مستحقات فواتير ضريبية عبر البنك الأهلي',
+      descriptionEn: 'SNB Customer Receivable Inward Remittance',
+      amount: '250,000.00',
+      branchAr: 'الفرع الرئيسي',
+      branchEn: 'Main Branch',
       status: 'Posted'
     }
   ];
-
-  refreshMetrics() {
-    // Simulates live metric refresh
-  }
 }

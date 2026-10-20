@@ -25,18 +25,18 @@ import { CompanyContextService } from '../../../core/services/company-context.se
           <div class="brand-insignia">
             <div class="logo-ring">
               <svg class="ship-wheel" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="24" cy="24" r="18" stroke="var(--primary-light, #14b8a6)" stroke-dasharray="4 2"></circle>
-                <circle cx="24" cy="24" r="10" stroke="#f59e0b" stroke-width="2.5"></circle>
-                <circle cx="24" cy="24" r="3.5" fill="#f59e0b"></circle>
-                <line x1="24" y1="2" x2="24" y2="46" stroke="#f59e0b" stroke-linecap="round"></line>
-                <line x1="2" y1="24" x2="46" y2="24" stroke="#f59e0b" stroke-linecap="round"></line>
-                <line x1="8.4" y1="8.4" x2="39.6" y2="39.6" stroke="#14b8a6" stroke-linecap="round"></line>
-                <line x1="8.4" y1="39.6" x2="39.6" y2="8.4" stroke="#14b8a6" stroke-linecap="round"></line>
+                <circle cx="24" cy="24" r="18" stroke="#00F5A0" stroke-dasharray="4 2"></circle>
+                <circle cx="24" cy="24" r="10" stroke="#00F0FF" stroke-width="2.5"></circle>
+                <circle cx="24" cy="24" r="3.5" fill="#00F5A0"></circle>
+                <line x1="24" y1="2" x2="24" y2="46" stroke="#00F0FF" stroke-linecap="round"></line>
+                <line x1="2" y1="24" x2="46" y2="24" stroke="#00F0FF" stroke-linecap="round"></line>
+                <line x1="8.4" y1="8.4" x2="39.6" y2="39.6" stroke="#00F5A0" stroke-linecap="round"></line>
+                <line x1="8.4" y1="39.6" x2="39.6" y2="8.4" stroke="#00F5A0" stroke-linecap="round"></line>
               </svg>
             </div>
             <div class="brand-titles">
               <h1 class="brand-name">
-                <span class="gold-gradient">الرّبــــان</span>
+                <span class="cyber-gradient">الرّبــــان</span>
                 <span class="sub-name">Al-Roban ERP</span>
               </h1>
               <p class="brand-tagline">
@@ -297,7 +297,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
     .orb-1 {
       width: 450px;
       height: 450px;
-      background: #0f766e;
+      background: #00F5A0;
       top: -100px;
       right: -100px;
       animation: pulse-glow 8s ease-in-out infinite alternate;
@@ -306,7 +306,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
     .orb-2 {
       width: 400px;
       height: 400px;
-      background: #2563eb;
+      background: #00F0FF;
       bottom: -100px;
       left: -50px;
       animation: pulse-glow 10s ease-in-out infinite alternate;
@@ -378,8 +378,8 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       gap: 0.75rem;
     }
 
-    .gold-gradient {
-      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 60%, #d97706 100%);
+    .cyber-gradient {
+      background: linear-gradient(135deg, #00F5A0 0%, #00F0FF 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -581,9 +581,9 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       transition: all 0.2s ease;
 
       &.active {
-        background: var(--primary-color, #0f766e);
-        color: #ffffff;
-        box-shadow: 0 4px 12px rgba(15, 118, 110, 0.35);
+        background: #00F5A0;
+        color: #070B14;
+        box-shadow: 0 0 15px rgba(0, 245, 160, 0.35);
       }
     }
 
@@ -592,15 +592,15 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      background: rgba(30, 41, 59, 0.5);
-      border: 1px dashed rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
       padding: 0.75rem 1rem;
       border-radius: 10px;
     }
 
     .quick-title {
       font-size: 0.75rem;
-      color: #fbbf24;
+      color: #00F5A0;
       font-weight: 600;
     }
 
@@ -624,16 +624,16 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       transition: all 0.2s ease;
 
       &.super {
-        background: rgba(245, 158, 11, 0.15);
-        color: #fbbf24;
-        border-color: rgba(245, 158, 11, 0.3);
-        &:hover { background: rgba(245, 158, 11, 0.25); }
+        background: rgba(0, 245, 160, 0.1);
+        color: #00F5A0;
+        border-color: rgba(0, 245, 160, 0.3);
+        &:hover { background: rgba(0, 245, 160, 0.2); }
       }
       &.tenant {
-        background: rgba(59, 130, 246, 0.15);
-        color: #60a5fa;
-        border-color: rgba(59, 130, 246, 0.3);
-        &:hover { background: rgba(59, 130, 246, 0.25); }
+        background: rgba(0, 240, 255, 0.1);
+        color: #00F0FF;
+        border-color: rgba(0, 240, 255, 0.3);
+        &:hover { background: rgba(0, 240, 255, 0.2); }
       }
     }
 
@@ -745,7 +745,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       user-select: none;
 
       input {
-        accent-color: var(--primary-color, #0f766e);
+        accent-color: #00F5A0;
         width: 16px;
         height: 16px;
       }
@@ -756,20 +756,21 @@ import { CompanyContextService } from '../../../core/services/company-context.se
       align-items: center;
       justify-content: center;
       gap: 0.65rem;
-      background: linear-gradient(135deg, var(--primary-color, #0f766e) 0%, #0d9488 100%);
-      color: #ffffff;
+      background: #00F5A0;
+      color: #070B14;
       border: none;
       padding: 0.95rem 1.5rem;
       border-radius: 10px;
       font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(15, 118, 110, 0.35);
+      box-shadow: 0 0 20px rgba(0, 245, 160, 0.3);
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
+        background: #5CFFC6;
+        box-shadow: 0 0 25px rgba(0, 245, 160, 0.5);
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(15, 118, 110, 0.45);
       }
 
       &:disabled {

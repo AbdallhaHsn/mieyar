@@ -1,27 +1,36 @@
-/* Al-Roban Cloud Accounting & ERP - Global Enterprise Design System */
+/* Al-Roban Cloud Accounting & ERP - Cyber Green, Cyan & White Enterprise System */
 @import 'primeicons/primeicons.css';
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
   --font-arabic: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-latin: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
-  --primary-color: #0f766e;
-  --primary-light: #14b8a6;
-  --primary-dark: #0f5650;
+  /* Cyber Green & Cyan Palette */
+  --cyber-green: #00F5A0;
+  --cyber-green-glow: rgba(0, 245, 160, 0.25);
+  --cyber-cyan: #00F0FF;
+  --cyber-cyan-glow: rgba(0, 240, 255, 0.25);
   
-  --surface-ground: #070d1e;
-  --surface-card: #0d172e;
-  --surface-border: rgba(255, 255, 255, 0.08);
+  --primary-color: #00F5A0;
+  --primary-light: #5CFFC6;
+  --primary-dark: #00B377;
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  /* Crisp Obsidian & White */
+  --surface-ground: #070B14;
+  --surface-card: #0D1424;
+  --surface-card-hover: #121C32;
+  --surface-border: rgba(255, 255, 255, 0.07);
+  --surface-border-cyber: rgba(0, 245, 160, 0.2);
   
-  --accent-gold: #f59e0b;
-  --status-success: #10b981;
-  --status-warning: #f59e0b;
-  --status-danger: #ef4444;
-  --status-info: #3b82f6;
+  --text-pure-white: #FFFFFF;
+  --text-main: #FFFFFF;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  
+  --status-success: #00F5A0;
+  --status-info: #00F0FF;
+  --status-danger: #FF4757;
 }
 
 * {
@@ -34,55 +43,64 @@ html, body {
   width: 100%;
   min-height: 100vh;
   background-color: var(--surface-ground);
-  color: var(--text-main);
+  color: var(--text-pure-white);
   font-family: var(--font-arabic);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Enterprise Scrollbars */
+/* Custom Sleek Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.4);
+  background: #070B14;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--cyber-green);
 }
 
-/* Glassmorphism & Card Utilities */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.35);
+/* Cyber Card & Glass Utilities */
+.cyber-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.badge-zatca {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.cyber-card:hover {
+  border-color: var(--surface-border-cyber);
 }
 
-/* Font Mono Utility */
+.cyber-glow-green {
+  box-shadow: 0 0 20px -5px var(--cyber-green-glow);
+}
+
+.cyber-glow-cyan {
+  box-shadow: 0 0 20px -5px var(--cyber-cyan-glow);
+}
+
+.text-cyber-green {
+  color: var(--cyber-green) !important;
+}
+
+.text-cyber-cyan {
+  color: var(--cyber-cyan) !important;
+}
+
+.text-white {
+  color: #FFFFFF !important;
+}
+
 .font-mono {
-  font-family: 'SF Mono', Monaco, Menlo, 'Courier New', monospace;
-  letter-spacing: 0.02em;
+  font-family: var(--font-latin), monospace;
+  letter-spacing: -0.01em;
 }
