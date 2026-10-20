@@ -21,7 +21,7 @@
           <div>
             <h1 class="page-title">تهيئة وإضافة حساب جديد</h1>
             <p class="page-subtitle">
-              إنشاء حساب جديد في دليل الحسابات مع ربطه بالمعيار المحاسبي الدولي (IFRS/IAS) وضوابط هيئة الزكاة (ZATCA)
+              إدراج الحساب وفق معايير المحاسبة الدولية (IFRS) واللوائح الزكوية والضريبية (ZATCA)
             </p>
           </div>
         </div>
@@ -53,67 +53,82 @@
     </div>
   }
 
-  <!-- Master 2-Column Split Layout -->
+  <!-- Master 2-Column Split Layout (Airy & Balanced) -->
   <div class="create-layout-grid">
     
-    <!-- LEFT COLUMN: Account Definition Form -->
+    <!-- LEFT COLUMN: Clean Account Definition Form -->
     <main class="form-column">
       <form [formGroup]="accountForm" class="account-form">
         
-        <!-- CARD 1: Category & Structural Hierarchy -->
+        <!-- CARD 1: Category & Structural Location (Streamlined) -->
         <section class="form-card">
           <div class="card-header">
             <div class="step-badge">1</div>
             <div>
-              <h2 class="card-title">التصنيف الرئيسي والموقع الهيكلي</h2>
-              <p class="card-subtitle">حدد نوع الحساب ومكانه في الشجرة الهرمية</p>
+              <h2 class="card-title">التصنيف والموقع الهيكلي</h2>
+              <p class="card-subtitle">حدد نوع الحساب وموقعه في شجرة الحسابات</p>
             </div>
           </div>
 
           <div class="card-body">
-            <!-- Account Category Radio Selector Tiles -->
-            <label class="form-label required">التصنيف الرئيسي (Root Classification):</label>
-            <div class="category-tiles-grid">
-              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Asset">
-                <input type="radio" formControlName="accountType" [value]="AccountType.Asset" />
-                <span class="cat-icon bg-emerald">1</span>
-                <span class="cat-name">الأصول</span>
-                <span class="cat-desc">نقدية، بنوك، عملاء، أصول ثابتة</span>
-              </label>
+            
+            <!-- Sleek Horizontal Category Segmented Control (Decluttered) -->
+            <div class="category-segment-control">
+              <button 
+                type="button" 
+                class="segment-btn" 
+                [class.active]="accountForm.get('accountType')?.value == AccountType.Asset"
+                (click)="setAccountCategory(AccountType.Asset)"
+              >
+                <span class="seg-num">1</span>
+                <span>الأصول</span>
+              </button>
 
-              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Liability">
-                <input type="radio" formControlName="accountType" [value]="AccountType.Liability" />
-                <span class="cat-icon bg-cyan">2</span>
-                <span class="cat-name">الالتزامات والخصوم</span>
-                <span class="cat-desc">موردون، ضرائب ZATCA، قروض</span>
-              </label>
+              <button 
+                type="button" 
+                class="segment-btn" 
+                [class.active]="accountForm.get('accountType')?.value == AccountType.Liability"
+                (click)="setAccountCategory(AccountType.Liability)"
+              >
+                <span class="seg-num">2</span>
+                <span>الالتزامات والخصوم</span>
+              </button>
 
-              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Equity">
-                <input type="radio" formControlName="accountType" [value]="AccountType.Equity" />
-                <span class="cat-icon bg-indigo">3</span>
-                <span class="cat-name">حقوق الملكية</span>
-                <span class="cat-desc">رأس المال، احتياطيات، أرباح مبقاة</span>
-              </label>
+              <button 
+                type="button" 
+                class="segment-btn" 
+                [class.active]="accountForm.get('accountType')?.value == AccountType.Equity"
+                (click)="setAccountCategory(AccountType.Equity)"
+              >
+                <span class="seg-num">3</span>
+                <span>حقوق الملكية</span>
+              </button>
 
-              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Revenue">
-                <input type="radio" formControlName="accountType" [value]="AccountType.Revenue" />
-                <span class="cat-icon bg-purple">4</span>
-                <span class="cat-name">الإيرادات والمبيعات</span>
-                <span class="cat-desc">مبيعات البضائع، تقديم الخدمات</span>
-              </label>
+              <button 
+                type="button" 
+                class="segment-btn" 
+                [class.active]="accountForm.get('accountType')?.value == AccountType.Revenue"
+                (click)="setAccountCategory(AccountType.Revenue)"
+              >
+                <span class="seg-num">4</span>
+                <span>الإيرادات</span>
+              </button>
 
-              <label class="cat-tile" [class.selected]="accountForm.get('accountType')?.value == AccountType.Expense">
-                <input type="radio" formControlName="accountType" [value]="AccountType.Expense" />
-                <span class="cat-icon bg-amber">5</span>
-                <span class="cat-name">المصروفات والتكاليف</span>
-                <span class="cat-desc">تكلفة المبيعات، رواتب، استهلاك</span>
-              </label>
+              <button 
+                type="button" 
+                class="segment-btn" 
+                [class.active]="accountForm.get('accountType')?.value == AccountType.Expense"
+                (click)="setAccountCategory(AccountType.Expense)"
+              >
+                <span class="seg-num">5</span>
+                <span>المصروفات</span>
+              </button>
             </div>
 
-            <!-- Parent Account Selector -->
+            <!-- Parent Account & Level Row -->
             <div class="form-row-2 mt-4">
               <div class="form-group flex-2">
-                <label class="form-label">الحساب الرئيسي الأعلى (الحساب الأب):</label>
+                <label class="form-label">الحساب الأب (Parent Account):</label>
                 <select 
                   formControlName="parentAccountId" 
                   class="form-control"
@@ -126,15 +141,16 @@
                     </option>
                   }
                 </select>
-                <small class="field-hint">عند اختيار حساب أب، يتم اقتراح رقم الحساب والخصائص تلقائياً.</small>
               </div>
 
               <!-- Level Display Badge -->
               <div class="form-group flex-1">
-                <label class="form-label">مستوى الحساب الهيكلي:</label>
+                <label class="form-label">المستوى الهيكلي:</label>
                 <div class="level-indicator-box">
                   <span class="level-pill">المستوى {{ calculatedLevel() }}</span>
-                  <span class="level-desc">{{ calculatedLevel() === 1 ? 'حساب جذري رئيسي' : calculatedLevel() === 2 ? 'مجموعة رئيسية' : calculatedLevel() === 3 ? 'حساب مساعد' : 'حساب تحليلي فرعي' }}</span>
+                  <span class="level-desc">
+                    {{ calculatedLevel() === 1 ? 'جذري رئيسي' : calculatedLevel() === 2 ? 'مجموعة رئيسية' : 'حساب تحليلي' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -143,14 +159,14 @@
             <div class="form-group mt-3">
               <div class="label-cluster">
                 <label class="form-label required">رمز الحساب الدفتري (Account Code):</label>
-                <span class="code-tag-badge">ترقيم ترتيبي موحد</span>
+                <span class="code-tag-badge">اقتراح ترقيم آلي ذكي</span>
               </div>
               <div class="code-input-wrap">
                 <input 
                   type="text" 
                   formControlName="accountCode" 
                   class="form-control font-mono code-input" 
-                  placeholder="مثال: 11105 أو 21103" 
+                  placeholder="مثال: 11105" 
                 />
                 <span class="code-check-pill">جاهز للحفظ</span>
               </div>
@@ -162,38 +178,63 @@
           </div>
         </section>
 
-        <!-- CARD 2: Names and Identification -->
+        <!-- CARD 2: Names & Bi-Directional Real-time Translation (الترجمة الآلية الفورية) -->
         <section class="form-card">
           <div class="card-header">
             <div class="step-badge">2</div>
-            <div>
-              <h2 class="card-title">البيانات التعريفية واللغوية</h2>
-              <p class="card-subtitle">اسم الحساب باللغتين المعتمدتين والعملة</p>
+            <div class="header-flex-between">
+              <div>
+                <h2 class="card-title">مسميات الحساب والترجمة الآلية</h2>
+                <p class="card-subtitle">أدخل الاسم بلغة واحدة وسيقوم النظام بالترجمة الفورية للغة الأخرى تلقائياً</p>
+              </div>
+              
+              <!-- Translation Status Indicator Toggle -->
+              <button 
+                type="button" 
+                class="translate-toggle-btn"
+                [class.active]="isAutoTranslateEnabled()"
+                (click)="toggleAutoTranslate()"
+                [title]="isAutoTranslateEnabled() ? 'الترجمة الآلية المتبادلة مفعلة - انقر للتعطيل' : 'انقر لتفعيل الترجمة الآلية المتبادلة'"
+              >
+                <span class="trans-dot"></span>
+                <span>الترجمة الآلية {{ isAutoTranslateEnabled() ? 'مفعلة' : 'معطلة' }}</span>
+              </button>
             </div>
           </div>
 
           <div class="card-body">
             <div class="form-row-2">
+              
+              <!-- Arabic Name -->
               <div class="form-group flex-1">
-                <label class="form-label required">اسم الحساب (باللغة العربية):</label>
+                <div class="label-cluster">
+                  <label class="form-label required">الاسم باللغة العربية:</label>
+                  <span class="lang-tag ar-tag">العربية</span>
+                </div>
                 <input 
                   type="text" 
                   formControlName="nameAr" 
-                  class="form-control" 
-                  placeholder="مثال: مصرف الإنماء - حساب جاري رئيسي" 
+                  class="form-control font-medium" 
+                  placeholder="مثال: مصرف الإنماء - حساب جاري" 
                 />
                 @if (accountForm.get('nameAr')?.touched && accountForm.get('nameAr')?.invalid) {
                   <span class="error-text">اسم الحساب بالعربية مطلوب (حرفين على الأقل).</span>
                 }
               </div>
 
+              <!-- English Name (Auto-Translated) -->
               <div class="form-group flex-1">
-                <label class="form-label required">اسم الحساب (English Name):</label>
+                <div class="label-cluster">
+                  <label class="form-label required">الاسم باللغة الإنجليزية (English):</label>
+                  <span class="lang-tag en-tag">
+                    {{ isAutoTranslateEnabled() ? '⚡ مترجم آلياً' : 'English' }}
+                  </span>
+                </div>
                 <input 
                   type="text" 
                   formControlName="nameEn" 
                   class="form-control font-mono" 
-                  placeholder="e.g. Alinma Bank - Main Current Account"
+                  placeholder="e.g. Alinma Bank - Current Account"
                   dir="ltr" 
                 />
                 @if (accountForm.get('nameEn')?.touched && accountForm.get('nameEn')?.invalid) {
@@ -202,6 +243,7 @@
               </div>
             </div>
 
+            <!-- Currency & Description Row -->
             <div class="form-row-2 mt-3">
               <div class="form-group flex-1">
                 <label class="form-label required">العملة الافتراضية:</label>
@@ -214,51 +256,65 @@
               </div>
 
               <div class="form-group flex-2">
-                <label class="form-label">الوصف والملاحظات المحاسبية:</label>
+                <label class="form-label">الوصف والملاحظات:</label>
                 <input 
                   type="text" 
                   formControlName="description" 
                   class="form-control" 
-                  placeholder="ملاحظات اختيارية عن الغرض من الحساب أو السياسة المتبعة" 
+                  placeholder="ملاحظات اختيارية عن الغرض من الحساب" 
                 />
               </div>
             </div>
           </div>
         </section>
 
-        <!-- CARD 3: Accounting Nature & Behavior -->
+        <!-- CARD 3: Accounting Policies & Standard Binding (Unified & Decluttered) -->
         <section class="form-card">
           <div class="card-header">
             <div class="step-badge">3</div>
             <div>
-              <h2 class="card-title">السياسات والخصائص المحاسبية</h2>
-              <p class="card-subtitle">تحديد طبيعة الحساب والقائمة المالية وقبول القيود المباشرة</p>
+              <h2 class="card-title">السياسات المحاسبية والمعيار المعتمد</h2>
+              <p class="card-subtitle">طبيعة الحساب، القائمة المالية، والمعيار الدولي المرتبط</p>
             </div>
           </div>
 
           <div class="card-body">
+            
             <div class="form-row-2">
-              <!-- Account Nature -->
+              <!-- Nature -->
               <div class="form-group flex-1">
-                <label class="form-label required">طبيعة الحساب (Accounting Nature):</label>
-                <select formControlName="accountNature" class="form-control nature-select">
+                <label class="form-label required">طبيعة الحساب:</label>
+                <select formControlName="accountNature" class="form-control">
                   <option [value]="AccountNature.Debit">مدين (Debit) - يزيد بالمدين وينقص بالدائن</option>
                   <option [value]="AccountNature.Credit">دائن (Credit) - يزيد بالدائن وينقص بالمدين</option>
                 </select>
               </div>
 
-              <!-- Financial Statement -->
+              <!-- Statement -->
               <div class="form-group flex-1">
                 <label class="form-label required">القائمة المالية المعنية:</label>
                 <select formControlName="financialStatement" class="form-control">
-                  <option [value]="FinancialStatement.BalanceSheet">قائمة المركز المالي (الميزانية العمومية)</option>
+                  <option [value]="FinancialStatement.BalanceSheet">قائمة المركز المالي (الميزانية)</option>
                   <option [value]="FinancialStatement.IncomeStatement">قائمة الدخل (الأرباح والخسائر)</option>
                 </select>
               </div>
             </div>
 
+            <!-- Standard Selector -->
+            <div class="form-group mt-3">
+              <label class="form-label required">المعيار المحاسبي المرجعي (IFRS / SOCPA / ZATCA):</label>
+              <select formControlName="standardCode" class="form-control standard-select">
+                @for (std of coaService.standards(); track std.standardCode) {
+                  <option [value]="std.standardCode">
+                    {{ std.standardCode }} - {{ std.standardTitleAr }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Toggles Row -->
             <div class="form-row-2 mt-4">
-              <!-- IsPostable Switch -->
+              <!-- IsPostable -->
               <div class="toggle-card flex-1">
                 <label class="switch-ui">
                   <input type="checkbox" formControlName="isPostable" />
@@ -266,11 +322,11 @@
                 </label>
                 <div class="toggle-meta">
                   <strong class="toggle-title">حساب تحليلي يقبل التقييد المباشر</strong>
-                  <span class="toggle-hint">يقبل توجيه الفواتير والقيود وسندات الصرف والقبض مباشرة</span>
+                  <span class="toggle-hint">يقبل سندات الصرف والقبض وفواتير المبيعات والمشتريات</span>
                 </div>
               </div>
 
-              <!-- Cost Center Required Switch -->
+              <!-- Cost Center -->
               <div class="toggle-card flex-1">
                 <label class="switch-ui">
                   <input type="checkbox" formControlName="isCostCenterRequired" />
@@ -282,45 +338,7 @@
                 </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        <!-- CARD 4: Standard Binding Selection -->
-        <section class="form-card">
-          <div class="card-header">
-            <div class="step-badge">4</div>
-            <div>
-              <h2 class="card-title">ربط المعيار المحاسبي المرجعي (IFRS / SOCPA / ZATCA)</h2>
-              <p class="card-subtitle">اختر المعيار المهني المنظم للتحكم في الإرشادات والقيود النموذجية المرافقة</p>
-            </div>
-          </div>
-
-          <div class="card-body">
-            <div class="form-group">
-              <label class="form-label required">المعيار المعتمد للحساب:</label>
-              <select formControlName="standardCode" class="form-control standard-dropdown">
-                @for (std of coaService.standards(); track std.standardCode) {
-                  <option [value]="std.standardCode">
-                    {{ std.standardCode }} - {{ std.standardTitleAr }}
-                  </option>
-                }
-              </select>
-            </div>
-
-            <!-- Quick Chips for Standards -->
-            <div class="standard-chips-row mt-3">
-              <span class="chips-label">معايير شائعة:</span>
-              @for (std of coaService.standards(); track std.standardCode) {
-                <button 
-                  type="button" 
-                  class="std-chip-btn"
-                  [class.active]="accountForm.get('standardCode')?.value === std.standardCode"
-                  (click)="selectStandard(std)"
-                >
-                  {{ std.standardCode }}
-                </button>
-              }
-            </div>
           </div>
         </section>
 
@@ -359,7 +377,7 @@
       </form>
     </main>
 
-    <!-- RIGHT COLUMN: THE PERMANENT SIDE GUIDANCE PANEL (الجزء الجانبي الإرشادي للمعيار والقيود) -->
+    <!-- RIGHT COLUMN: Streamlined Side Guidance Panel (الجزء الجانبي الإرشادي النقي) -->
     <aside class="guidance-column">
       <div class="guidance-container-sticky">
         
@@ -370,7 +388,7 @@
             <span>المرشد المحاسبي والمعايير الدولية</span>
           </div>
           <h3 class="gh-title">دليل القيود والمعيار المرجعي</h3>
-          <p class="gh-subtitle">يتم تحديث هذا الدليل تلقائياً وفق نوع الحساب والمعيار المختار</p>
+          <p class="gh-subtitle">يتم تحديث الإرشادات والقيود تلقائياً وفق نوع الحساب والمعيار</p>
         </div>
 
         @if (selectedGuidance(); as guidance) {
@@ -387,12 +405,12 @@
             </div>
 
             <!-- Nature & Increase/Decrease Rules -->
-            <div class="info-card rules-card">
+            <div class="info-card">
               <div class="info-card-header">
                 <div class="ic-icon bg-emerald">⚖️</div>
                 <div>
                   <h4 class="ic-title">طبيعة الحساب وقواعد الزيادة والنقصان</h4>
-                  <span class="ic-sub">كيف يتحرك رصيد هذا الحساب محاسبياً؟</span>
+                  <span class="ic-sub">حركة رصيد الحساب دفترياً</span>
                 </div>
               </div>
 

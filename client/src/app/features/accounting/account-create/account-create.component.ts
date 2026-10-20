@@ -5,6 +5,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts.service';
 import { AccountDto, AccountingStandardGuidance, AccountNature, AccountType, CreateAccountRequest, FinancialStatement } from '../../../core/models/account.model';
 import { CompanyContextService } from '../../../core/services/company-context.service';
+import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
 
 @Component({
   selector: 'app-account-create',
@@ -19,11 +20,16 @@ export class AccountCreateComponent implements OnInit {
   private route = inject(ActivatedRoute);
   coaService = inject(ChartOfAccountsService);
   companyContext = inject(CompanyContextService);
+  translator = inject(AccountingTranslatorService);
 
   accountForm!: FormGroup;
   isSaving = signal<boolean>(false);
   successMessage = signal<string | null>(null);
   errorMessage = signal<string | null>(null);
+
+  // Auto-translate bidirectional toggle
+  isAutoTranslateEnabled = signal<boolean>(true);
+  private isTranslating = false;
 
   // Active guidance displayed in the side panel
   selectedGuidance = signal<AccountingStandardGuidance | null>(null);
@@ -80,7 +86,10 @@ export class AccountCreateComponent implements OnInit {
       isCostCenterRequired: [false]
     });
 
-    // Auto-update guidance when standard code changes
+    // 1. Bi-directional auto-translation between Arabic and English names
+    this.setupBiDirectionalTranslation();
+
+    // 2. Auto-update guidance when standard code changes
     this.accountForm.get('standardCode')?.valueChanges.subscribe(stdCode => {
       if (stdCode) {
         const found = this.coaService.standards().find(s => s.standardCode === stdCode);
@@ -90,7 +99,7 @@ export class AccountCreateComponent implements OnInit {
       }
     });
 
-    // When accountType changes, auto-align default nature and financial statement
+    // 3. When accountType changes, auto-align default nature and financial statement
     this.accountForm.get('accountType')?.valueChanges.subscribe(typeVal => {
       const type = Number(typeVal);
       if (type === AccountType.Asset || type === AccountType.Expense) {
@@ -110,6 +119,46 @@ export class AccountCreateComponent implements OnInit {
     });
   }
 
+  private setupBiDirectionalTranslation(): void {
+    // When Arabic Name changes -> auto translate to English
+    this.accountForm.get('nameAr')?.valueChanges.subscribe(arText => {
+      if (!this.isAutoTranslateEnabled() || this.isTranslating) return;
+
+      if (!arText || !arText.trim()) {
+        this.isTranslating = true;
+        this.accountForm.patchValue({ nameEn: '' }, { emitEvent: false });
+        this.isTranslating = false;
+        return;
+      }
+
+      const enTranslation = this.translator.translateArabicToEnglish(arText);
+      this.isTranslating = true;
+      this.accountForm.patchValue({ nameEn: enTranslation }, { emitEvent: false });
+      this.isTranslating = false;
+    });
+
+    // When English Name changes -> auto translate to Arabic
+    this.accountForm.get('nameEn')?.valueChanges.subscribe(enText => {
+      if (!this.isAutoTranslateEnabled() || this.isTranslating) return;
+
+      if (!enText || !enText.trim()) {
+        this.isTranslating = true;
+        this.accountForm.patchValue({ nameAr: '' }, { emitEvent: false });
+        this.isTranslating = false;
+        return;
+      }
+
+      const arTranslation = this.translator.translateEnglishToArabic(enText);
+      this.isTranslating = true;
+      this.accountForm.patchValue({ nameAr: arTranslation }, { emitEvent: false });
+      this.isTranslating = false;
+    });
+  }
+
+  toggleAutoTranslate(): void {
+    this.isAutoTranslateEnabled.set(!this.isAutoTranslateEnabled());
+  }
+
   onParentSelected(parentId: string): void {
     if (!parentId) {
       this.calculatedLevel.set(1);
@@ -121,6 +170,10 @@ export class AccountCreateComponent implements OnInit {
     }
 
     this.applyParent(parentId);
+  }
+
+  setAccountCategory(type: AccountType): void {
+    this.accountForm.patchValue({ accountType: type });
   }
 
   private applyParent(parentId: string): void {
@@ -218,13 +271,15 @@ export class AccountCreateComponent implements OnInit {
         this.successMessage.set(`تم حفظ الحساب (${created.accountCode} - ${created.nameAr}) بنجاح.`);
 
         if (createAnother) {
-          // Keep parent if selected, increment code
           const currentParentId = val.parentAccountId;
+          this.isTranslating = true;
           this.accountForm.patchValue({
             nameAr: '',
             nameEn: '',
             description: ''
           });
+          this.isTranslating = false;
+
           if (currentParentId) {
             this.applyParent(currentParentId);
           } else {
