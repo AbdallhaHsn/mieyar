@@ -1,3 +1,4 @@
+using System.Text;
 using AlRobban.Modules.IdentityAndAccess.Infrastructure.Extensions;
 using AlRobban.Shared.Application.Abstractions;
 using AlRobban.Shared.Application.Behaviors;
@@ -8,6 +9,8 @@ using AlRobban.Shared.Infrastructure.Security;
 using AlRobban.WebAPI.Hubs;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -38,9 +41,31 @@ builder.Services.AddOpenTelemetry()
         .AddConsoleExporter());
 
 // 3. Core Framework & Services
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
+
+// JWT Authentication Configuration
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "AlRobbanEnterpriseAccountingSuperSecretKey2026!#$@%";
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 // 4. Multi-Tenancy & Infrastructure
 builder.Services.AddScoped<ICurrentTenantContext, TenantContext>();

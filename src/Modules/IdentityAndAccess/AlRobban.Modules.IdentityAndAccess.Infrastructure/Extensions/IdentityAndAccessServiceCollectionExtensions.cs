@@ -1,4 +1,5 @@
 using AlRobban.Modules.IdentityAndAccess.Application.Commands.CreateCompany;
+using AlRobban.Modules.IdentityAndAccess.Application.Services;
 using AlRobban.Modules.IdentityAndAccess.Domain.Repositories;
 using AlRobban.Modules.IdentityAndAccess.Infrastructure.Persistence;
 using AlRobban.Modules.IdentityAndAccess.Infrastructure.Repositories;
@@ -40,8 +41,11 @@ public static class IdentityAndAccessServiceCollectionExtensions
             }
         });
 
-        // Repositories
+        // Repositories & Security Services
         services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddSingleton<IPasswordHasher, AlRobban.Modules.IdentityAndAccess.Infrastructure.Security.PasswordHasher>();
+        services.AddSingleton<IJwtTokenService, AlRobban.Modules.IdentityAndAccess.Infrastructure.Security.JwtTokenService>();
 
         // MediatR & FluentValidation for this module
         services.AddMediatR(cfg =>

@@ -1,7 +1,37 @@
 <!-- 1. Global Header with Company Branding & Language Switcher -->
 <app-header></app-header>
 
-<!-- 2. Main Workspace Container -->
+<!-- 2. Platform Owner (الشركة المالكة) Top Action Ribbon -->
+<div class="owner-ribbon glass-panel">
+  <div class="owner-status">
+    <span class="role-badge" [class.super]="authService.isSuperAdmin()">
+      <i class="pi" [ngClass]="authService.isSuperAdmin() ? 'pi-crown' : 'pi-user'"></i>
+      <span>
+        {{ authService.isSuperAdmin() 
+          ? (langService.currentLang() === 'ar' ? 'الشركة المالكة للمشروع (مدير المنصة)' : 'Platform Owner (Super Admin)')
+          : (langService.currentLang() === 'ar' ? 'مسؤول الشركة المستأجرة' : 'Company Administrator') }}
+      </span>
+    </span>
+    <span class="user-greeting">
+      {{ langService.currentLang() === 'ar' ? 'المستخدم الحالي: ' : 'Logged in as: ' }}
+      <strong>{{ langService.currentLang() === 'ar' ? authService.currentUser().fullNameAr : authService.currentUser().fullNameEn }}</strong>
+    </span>
+  </div>
+
+  <div class="owner-controls">
+    <button *ngIf="!authService.isSuperAdmin()" class="btn-switch-super" (click)="authService.loginAsSuperAdmin()">
+      <i class="pi pi-undo"></i>
+      <span>{{ langService.currentLang() === 'ar' ? 'العودة لحساب الشركة المالكة' : 'Switch back to Platform Owner' }}</span>
+    </button>
+
+    <button class="btn-add-company" (click)="openOnboarding()">
+      <i class="pi pi-plus-circle"></i>
+      <span>{{ langService.currentLang() === 'ar' ? 'إضافة شركة جديدة وتزويدها ببيانات الدخول' : 'Onboard New Company & Credentials' }}</span>
+    </button>
+  </div>
+</div>
+
+<!-- 3. Main Workspace Container -->
 <main class="main-workspace">
   <!-- System Architecture & Tenant Banner -->
   <section class="overview-grid">
@@ -108,3 +138,6 @@
     </div>
   </section>
 </main>
+
+<!-- 4. Company Onboarding Modal for Platform Owner -->
+<app-company-onboarding *ngIf="showOnboardingModal" (closed)="closeOnboarding()"></app-company-onboarding>

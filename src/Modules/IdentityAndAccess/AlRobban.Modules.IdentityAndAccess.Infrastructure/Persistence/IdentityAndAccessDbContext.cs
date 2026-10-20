@@ -12,6 +12,7 @@ public class IdentityAndAccessDbContext : AppDbContextBase
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<FiscalYear> FiscalYears => Set<FiscalYear>();
     public DbSet<FiscalPeriod> FiscalPeriods => Set<FiscalPeriod>();
+    public DbSet<User> Users => Set<User>();
 
     public IdentityAndAccessDbContext(
         DbContextOptions<IdentityAndAccessDbContext> options,

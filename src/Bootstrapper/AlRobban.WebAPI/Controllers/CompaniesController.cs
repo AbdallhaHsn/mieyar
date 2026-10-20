@@ -39,4 +39,21 @@ public class CompaniesController : ControllerBase
 
         return CreatedAtAction(nameof(GetAll), new { id = result.Value.Id }, result.Value);
     }
+
+    [HttpPost("onboard")]
+    [ProducesResponseType(typeof(CompanyDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> OnboardCompanyWithAdmin(
+        [FromBody] AlRobban.Modules.IdentityAndAccess.Application.Commands.OnboardCompany.OnboardCompanyCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
+        return CreatedAtAction(nameof(GetAll), new { id = result.Value.Id }, result.Value);
+    }
 }
