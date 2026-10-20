@@ -1,5 +1,6 @@
 using System.Text;
 using AlRobban.Modules.IdentityAndAccess.Infrastructure.Extensions;
+using AlRobban.Modules.GeneralLedger.Infrastructure.Extensions;
 using AlRobban.Shared.Application.Abstractions;
 using AlRobban.Shared.Application.Behaviors;
 using AlRobban.Shared.Infrastructure.Dapper;
@@ -75,6 +76,7 @@ builder.Services.AddSingleton<IZatcaCryptoService, ZatcaCryptoService>();
 
 // Register Modules
 builder.Services.AddIdentityAndAccessModule(builder.Configuration);
+builder.Services.AddGeneralLedgerModule(builder.Configuration);
 
 // 5. MediatR & Pipeline Behaviors
 builder.Services.AddMediatR(cfg =>
@@ -180,5 +182,21 @@ app.MapGet("/api/system/status", (ICurrentTenantContext tenantContext) => Result
         "Distributed Redis Caching"
     }
 })).WithName("GetSystemStatus").WithOpenApi();
+
+// Ensure DB Schemas and Tables
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var idDb = scope.ServiceProvider.GetRequiredService<AlRobban.Modules.IdentityAndAccess.Infrastructure.Persistence.IdentityAndAccessDbContext>();
+        var glDb = scope.ServiceProvider.GetRequiredService<AlRobban.Modules.GeneralLedger.Infrastructure.Persistence.GeneralLedgerDbContext>();
+        await idDb.Database.EnsureCreatedAsync();
+        await glDb.Database.EnsureCreatedAsync();
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Database initialization warning: {Message}", ex.Message);
+    }
+}
 
 app.Run();

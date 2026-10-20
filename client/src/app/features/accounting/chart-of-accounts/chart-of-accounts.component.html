@@ -1,0 +1,535 @@
+<div class="coa-container geometric-bg">
+  
+  <!-- Page Header & Action Bar -->
+  <header class="coa-header">
+    <div class="header-content">
+      <div class="title-cluster">
+        <div class="icon-orb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">شجرة دليل الحسابات الموحد (Chart of Accounts)</h1>
+          <p class="page-subtitle">
+            مصممة وفق معايير المحاسبة الدولية (IFRS/IAS) ومعايير الهيئة السعودية للمحاسبين (SOCPA) ومتطلبات (ZATCA)
+          </p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="refresh()" title="تحديث البيانات">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>تحديث الشجرة</span>
+        </button>
+        
+        <button class="btn-primary" (click)="openCreateAccount()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>إضافة حساب جديد</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Accounting Metrics Strip -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">إجمالي الحسابات</div>
+        <div class="kpi-value">{{ totalAccountsCount() }}</div>
+        <div class="kpi-sub">شاملة المجموعات والتحليلي</div>
+      </div>
+
+      <div class="kpi-card accent-emerald">
+        <div class="kpi-label">الأصول (1)</div>
+        <div class="kpi-value text-emerald">{{ assetsCount() }}</div>
+        <div class="kpi-sub">متداولة وغير متداولة</div>
+      </div>
+
+      <div class="kpi-card accent-cyan">
+        <div class="kpi-label">الخصوم والملكية (2 + 3)</div>
+        <div class="kpi-value text-cyan">{{ liabilitiesAndEquityCount() }}</div>
+        <div class="kpi-sub">التزامات، حقوق ملكية، ورأس مال</div>
+      </div>
+
+      <div class="kpi-card accent-purple">
+        <div class="kpi-label">الإيرادات والمصروفات (4 + 5)</div>
+        <div class="kpi-value">{{ revenueAndExpensesCount() }}</div>
+        <div class="kpi-sub">قائمة الأرباح والخسائر</div>
+      </div>
+
+      <div class="kpi-card accent-amber">
+        <div class="kpi-label">حسابات فرعية تقبل القيد</div>
+        <div class="kpi-value text-amber">{{ postableCount() }}</div>
+        <div class="kpi-sub">تقبل سندات وقيد يومية مباشرة</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filter & Control Toolbar -->
+  <section class="toolbar-card">
+    <div class="toolbar-search">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input
+        type="text"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+        placeholder="ابحث برمز الحساب، أو الاسم بالعربية، أو بالإنجليزية (مثال: 111، النقدية، Sales)..."
+        class="search-input"
+      />
+      @if (searchQuery()) {
+        <button class="clear-btn" (click)="searchQuery.set('')">✕</button>
+      }
+    </div>
+
+    <div class="toolbar-filters">
+      <!-- Category Filter Pills -->
+      <div class="filter-pill-group">
+        <button
+          class="pill-btn"
+          [class.active]="selectedTypeFilter() === null"
+          (click)="selectedTypeFilter.set(null)"
+        >
+          كافة الفئات
+        </button>
+        <button
+          class="pill-btn"
+          [class.active]="selectedTypeFilter() === AccountType.Asset"
+          (click)="selectedTypeFilter.set(AccountType.Asset)"
+        >
+          الأصول (1)
+        </button>
+        <button
+          class="pill-btn"
+          [class.active]="selectedTypeFilter() === AccountType.Liability"
+          (click)="selectedTypeFilter.set(AccountType.Liability)"
+        >
+          الالتزامات (2)
+        </button>
+        <button
+          class="pill-btn"
+          [class.active]="selectedTypeFilter() === AccountType.Equity"
+          (click)="selectedTypeFilter.set(AccountType.Equity)"
+        >
+          الملكية (3)
+        </button>
+        <button
+          class="pill-btn"
+          [class.active]="selectedTypeFilter() === AccountType.Revenue"
+          (click)="selectedTypeFilter.set(AccountType.Revenue)"
+        >
+          الإيرادات (4)
+        </button>
+        <button
+          class="pill-btn"
+          [class.active]="selectedTypeFilter() === AccountType.Expense"
+          (click)="selectedTypeFilter.set(AccountType.Expense)"
+        >
+          المصروفات (5)
+        </button>
+      </div>
+
+      <div class="tree-controls">
+        <button class="btn-ghost" (click)="expandAll()" title="فتح كافة الفروع">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
+          </svg>
+          <span>توسيع الكل</span>
+        </button>
+        <button class="btn-ghost" (click)="collapseAll()" title="طي كافة الفروع">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 11l7-7 7 7M5 19l7-7 7 7" />
+          </svg>
+          <span>طي الكل</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Split Layout (Tree Table + Side Guidance Panel) -->
+  <div class="split-viewport" [class.drawer-active]="coaService.isDrawerOpen()">
+    
+    <!-- Tree Table Area -->
+    <main class="tree-main-area">
+      <div class="table-card">
+        
+        <!-- Table Header -->
+        <div class="table-header-row">
+          <div class="th col-code">رمز الحساب</div>
+          <div class="th col-name">اسم الحساب (عربي / English)</div>
+          <div class="th col-level">المستوى</div>
+          <div class="th col-nature">طبيعة الحساب</div>
+          <div class="th col-statement">القائمة المالية</div>
+          <div class="th col-standard">المعيار المرجعي</div>
+          <div class="th col-status">النوع</div>
+          <div class="th col-balance">الرصيد الدفتري</div>
+          <div class="th col-actions">إجراءات وإرشاد</div>
+        </div>
+
+        <!-- Accounts Tree Rows -->
+        @if (coaService.isLoading()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>جارٍ تحميل وبناء شجرة الحسابات وفق المعايير الدولية...</p>
+          </div>
+        } @else if (filteredTree().length === 0) {
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3>لا توجد حسابات مطابقة لبحثك</h3>
+            <p>جرّب تعديل كلمة البحث أو فلتر الفئات لعرض الحسابات المطلوبة.</p>
+          </div>
+        } @else {
+          <div class="tree-body">
+            @for (rootNode of filteredTree(); track rootNode.id) {
+              <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: rootNode, depth: 0 }"></ng-container>
+            }
+          </div>
+        }
+      </div>
+    </main>
+
+    <!-- Side Guidance & Form Panel (الجزء الجانبي الإرشادي للمعيار والقيود) -->
+    <aside class="side-guidance-panel" [class.panel-open]="coaService.isDrawerOpen()">
+      
+      <!-- Panel Header -->
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <div class="panel-badge">
+            {{ coaService.drawerMode() === 'create-account' ? 'إضافة حساب جديد' : 'دليل المعيار المحاسبي' }}
+          </div>
+          <h2 class="panel-title">
+            {{ coaService.drawerMode() === 'create-account' ? 'بيانات الحساب والمرجع المهني' : coaService.inspectedAccount()?.nameAr }}
+          </h2>
+        </div>
+        <button class="close-panel-btn" (click)="closeDrawer()" title="إغلاق اللوحة الجانبية">✕</button>
+      </div>
+
+      <div class="panel-scroll-body">
+        
+        <!-- SECTION 1: Form (Visible in create mode) -->
+        @if (coaService.drawerMode() === 'create-account') {
+          <form [formGroup]="accountForm" (ngSubmit)="onSubmitAccount()" class="create-form">
+            <div class="form-section-title">
+              <span class="step-num">1</span>
+              <span>تحديد الموقع والبيانات الأساسية</span>
+            </div>
+
+            <!-- Parent Account Selector -->
+            <div class="form-group">
+              <label class="form-label">الحساب الرئيسي (الأب):</label>
+              <select formControlName="parentAccountId" class="form-control" (change)="onParentChange(accountForm.get('parentAccountId')?.value)">
+                <option value="">بدون حساب أب (حساب رئيسي أعلى - Root)</option>
+                @for (parent of availableParents(); track parent.id) {
+                  <option [value]="parent.id">
+                    {{ parent.accountCode }} - {{ parent.nameAr }} (مستوى {{ parent.level }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Account Code -->
+            <div class="form-group">
+              <div class="label-with-tip">
+                <label class="form-label">رمز الحساب (Account Code):</label>
+                <span class="tip-badge">اقتراح ترقيم آلي</span>
+              </div>
+              <input type="text" formControlName="accountCode" class="form-control font-mono" placeholder="مثال: 11105" />
+            </div>
+
+            <!-- Arabic & English Names -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label required">الاسم بالعربية:</label>
+                <input type="text" formControlName="nameAr" class="form-control" placeholder="مثال: البنك الأهلي - جاري" />
+              </div>
+              <div class="form-group flex-1">
+                <label class="form-label required">الاسم بالإنجليزية:</label>
+                <input type="text" formControlName="nameEn" class="form-control" placeholder="e.g. SNB Current Account" dir="ltr" />
+              </div>
+            </div>
+
+            <!-- Account Type & Nature -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label">تصنيف الحساب:</label>
+                <select formControlName="accountType" class="form-control">
+                  <option [value]="AccountType.Asset">1 - الأصول (Assets)</option>
+                  <option [value]="AccountType.Liability">2 - الالتزامات والخصوم (Liabilities)</option>
+                  <option [value]="AccountType.Equity">3 - حقوق الملكية (Equity)</option>
+                  <option [value]="AccountType.Revenue">4 - الإيرادات (Revenue)</option>
+                  <option [value]="AccountType.Expense">5 - المصروفات (Expenses)</option>
+                </select>
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label">طبيعة الحساب:</label>
+                <select formControlName="accountNature" class="form-control">
+                  <option [value]="AccountNature.Debit">مدين (Debit - يزيد بالمدين)</option>
+                  <option [value]="AccountNature.Credit">دائن (Credit - يزيد بالدائن)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- IsPostable checkbox -->
+            <div class="form-group toggle-box">
+              <label class="switch-container">
+                <input type="checkbox" formControlName="isPostable" />
+                <span class="switch-slider"></span>
+              </label>
+              <div class="switch-text">
+                <span class="switch-title">حساب تحليلي يقبل التقييد المباشر (Postable Leaf)</span>
+                <span class="switch-desc">يمكن توجيه القيود والفواتير وسندات الصرف إليه مباشرة</span>
+              </div>
+            </div>
+
+            <!-- Select Accounting Standard Guidance -->
+            <div class="form-group">
+              <label class="form-label">المعيار المحاسبي المرجعي (IFRS / SOCPA / ZATCA):</label>
+              <select formControlName="standardCode" class="form-control select-standard">
+                @for (std of coaService.standards(); track std.standardCode) {
+                  <option [value]="std.standardCode">
+                    {{ std.standardCode }} - {{ std.standardTitleAr }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Actions Bar inside Form -->
+            <div class="form-actions-bar">
+              <button type="submit" class="btn-primary" [disabled]="accountForm.invalid || coaService.isLoading()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>حفظ وإدراج الحساب بالشجرة</span>
+              </button>
+              <button type="button" class="btn-secondary" (click)="closeDrawer()">إلغاء</button>
+            </div>
+          </form>
+        }
+
+        <!-- SECTION 2: THE PROFESSIONAL IFRS GUIDANCE & SAMPLE JOURNAL ENTRIES (الجزء الإرشادي للمعيار والقيود) -->
+        @if (coaService.activeGuidance(); as guidance) {
+          <div class="guidance-sheet">
+            <div class="guidance-banner">
+              <div class="standard-tag">
+                <span class="code">{{ guidance.standardCode }}</span>
+                <span class="verified-pill">معتمد دولياً</span>
+              </div>
+              <h3 class="standard-title-ar">{{ guidance.standardTitleAr }}</h3>
+              <p class="standard-title-en" dir="ltr">{{ guidance.standardTitleEn }}</p>
+            </div>
+
+            <!-- Accounting Nature Explainer (متى يزيد ومتى ينقص) -->
+            <div class="guidance-card nature-card">
+              <div class="card-title-row">
+                <div class="bullet-icon bg-emerald">⚖️</div>
+                <h4>القاعدة المحاسبية لطبيعة الحساب (مدين أم دائن)</h4>
+              </div>
+              <div class="rules-dual-grid">
+                <div class="rule-box debit-rule">
+                  <div class="rule-header">
+                    <span class="side-badge debit">حالة المدين (Debit)</span>
+                    <span class="rule-sign">+ الزيادة في الأصول والمصروفات</span>
+                  </div>
+                  <p class="rule-text">{{ guidance.debitRuleAr }}</p>
+                </div>
+
+                <div class="rule-box credit-rule">
+                  <div class="rule-header">
+                    <span class="side-badge credit">حالة الدائن (Credit)</span>
+                    <span class="rule-sign">+ الزيادة في الخصوم والإيرادات</span>
+                  </div>
+                  <p class="rule-text">{{ guidance.creditRuleAr }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recognition Criteria (شروط الاعتراف) -->
+            <div class="guidance-card">
+              <div class="card-title-row">
+                <div class="bullet-icon bg-cyan">📜</div>
+                <h4>شروط ومعايير الاعتراف المحاسبي (Recognition Criteria)</h4>
+              </div>
+              <p class="guidance-desc-text">{{ guidance.recognitionCriteriaAr }}</p>
+            </div>
+
+            <!-- ZATCA & Financial Statement Treatment (الزكاة والضريبة) -->
+            <div class="guidance-card zatca-card">
+              <div class="card-title-row">
+                <div class="bullet-icon bg-amber">🏛️</div>
+                <h4>المعالجة الزكوية والضريبية والفوترة الإلكترونية (ZATCA Phase 2)</h4>
+              </div>
+              <p class="guidance-desc-text">{{ guidance.zatcaTaxImpactAr }}</p>
+            </div>
+
+            <!-- Typical Double-Entry Journal Entries (القيود المحاسبية النموذجية) -->
+            <div class="guidance-card journal-entries-card">
+              <div class="card-title-row">
+                <div class="bullet-icon bg-purple">💼</div>
+                <div>
+                  <h4>القيود المحاسبية النموذجية الخاصة بهذا الحساب</h4>
+                  <span class="sub-text">نماذج قيود يومية معيارية مطبقة وفق المحاسبة المزدوجة</span>
+                </div>
+              </div>
+
+              @if (guidance.typicalJournalEntries.length > 0) {
+                <div class="vouchers-list">
+                  @for (voucher of guidance.typicalJournalEntries; track voucher.transactionTitleAr) {
+                    <div class="voucher-box">
+                      <div class="voucher-header">
+                        <span class="voucher-title">{{ voucher.transactionTitleAr }}</span>
+                        <span class="voucher-scenario">{{ voucher.scenarioDescriptionAr }}</span>
+                      </div>
+
+                      <div class="voucher-table">
+                        <div class="vt-head">
+                          <span class="vth side">الطرف</span>
+                          <span class="vth acc">اسم الحساب المقيد</span>
+                          <span class="vth note">الشرح والتوجيه المحاسبي</span>
+                        </div>
+                        @for (leg of voucher.legs; track leg.accountNameAr) {
+                          <div class="vt-row" [class.is-debit]="leg.accountSide === 'Debit'" [class.is-credit]="leg.accountSide === 'Credit'">
+                            <span class="vt-side">
+                              <span class="side-pill" [class.side-dr]="leg.accountSide === 'Debit'" [class.side-cr]="leg.accountSide === 'Credit'">
+                                {{ leg.accountSide === 'Debit' ? 'مدين (Dr)' : 'دائن (Cr)' }}
+                              </span>
+                            </span>
+                            <span class="vt-acc">
+                              <strong>{{ leg.accountNameAr }}</strong>
+                              <small dir="ltr">{{ leg.accountNameEn }}</small>
+                            </span>
+                            <span class="vt-note">{{ leg.explanationAr }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="no-vouchers">لا توجد قيود استثنائية مسجلة لهذا المعيار؛ يخضع للقواعد العامة.</p>
+              }
+            </div>
+
+          </div>
+        }
+
+      </div>
+    </aside>
+
+  </div>
+
+</div>
+
+<!-- Recursive Node Template for Hierarchical Accounts Tree -->
+<ng-template #nodeTemplate let-node let-depth="depth">
+  <div 
+    class="tree-row" 
+    [class.level-root]="node.level === 1"
+    [class.level-group]="node.level > 1 && !node.isPostable"
+    [class.level-leaf]="node.isPostable"
+    [class.active-selected]="coaService.inspectedAccount()?.id === node.id"
+  >
+    
+    <!-- Code Column with indentation & toggle -->
+    <div class="td col-code" [style.padding-right.rem]="depth * 1.5">
+      @if (node.hasChildren) {
+        <button class="expand-btn" (click)="toggleExpand(node); $event.stopPropagation()" [title]="node.isExpanded ? 'طي الحساب' : 'فتح الحساب'">
+          <span class="chevron" [class.open]="node.isExpanded">◀</span>
+        </button>
+      } @else {
+        <span class="leaf-dot">•</span>
+      }
+      <span class="code-badge font-mono">{{ node.accountCode }}</span>
+    </div>
+
+    <!-- Name Column -->
+    <div class="td col-name">
+      <div class="name-block">
+        <span class="name-ar font-medium">{{ node.nameAr }}</span>
+        <span class="name-en text-muted font-mono" dir="ltr">{{ node.nameEn }}</span>
+      </div>
+    </div>
+
+    <!-- Level Column -->
+    <div class="td col-level">
+      <span class="level-badge">مستوى {{ node.level }}</span>
+    </div>
+
+    <!-- Nature Column (Debit / Credit) -->
+    <div class="td col-nature">
+      @if (node.accountNature === AccountNature.Debit) {
+        <span class="nature-pill nature-debit">مدين (Debit)</span>
+      } @else {
+        <span class="nature-pill nature-credit">دائن (Credit)</span>
+      }
+    </div>
+
+    <!-- Statement Column -->
+    <div class="td col-statement">
+      <span class="statement-tag" [class.stmt-bs]="node.financialStatement === FinancialStatement.BalanceSheet">
+        {{ node.financialStatement === FinancialStatement.BalanceSheet ? 'مركز مالي' : 'قائمة دخل' }}
+      </span>
+    </div>
+
+    <!-- Standard Guidance Column -->
+    <div class="td col-standard">
+      @if (node.guidance?.standardCode) {
+        <span class="standard-pill" (click)="openInspectGuidance(node)" title="انقر لعرض شروح ومعايير القيود">
+          📘 {{ node.guidance?.standardCode }}
+        </span>
+      } @else {
+        <span class="standard-pill default" (click)="openInspectGuidance(node)">
+          📘 معايير عامة
+        </span>
+      }
+    </div>
+
+    <!-- Status Column -->
+    <div class="td col-status">
+      @if (node.isPostable) {
+        <span class="status-badge postable">فرعي يقبل القيد</span>
+      } @else {
+        <span class="status-badge group">رئيسي تجميعي</span>
+      }
+    </div>
+
+    <!-- Balance Column -->
+    <div class="td col-balance font-mono">
+      <span class="balance-amount">{{ node.currentBalance | number:'1.2-2' }}</span>
+      <span class="currency-tag">ر.س</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="td col-actions">
+      <button class="row-action-btn view-btn" (click)="openInspectGuidance(node)" title="عرض دليل المعيار والقيود المحاسبية">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>دليل المعيار</span>
+      </button>
+
+      @if (!node.isPostable || node.level < 4) {
+        <button class="row-action-btn add-btn" (click)="openCreateAccount(node)" title="إضافة حساب فرعي تحته">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>إضافة فرعي</span>
+        </button>
+      }
+    </div>
+
+  </div>
+
+  <!-- Recursive Child Nodes -->
+  @if (node.isExpanded && node.subAccounts?.length) {
+    @for (child of node.subAccounts; track child.id) {
+      <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: child, depth: depth + 1 }"></ng-container>
+    }
+  }
+</ng-template>

@@ -5,6 +5,8 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { CompaniesListComponent } from './features/companies/companies-list.component';
 import { authGuard, loginGuard } from './core/guards/auth.guard';
 
+import { ChartOfAccountsComponent } from './features/accounting/chart-of-accounts/chart-of-accounts.component';
+
 export const routes: Routes = [
   {
     path: 'login',
@@ -31,7 +33,7 @@ export const routes: Routes = [
       },
       {
         path: 'accounting/chart-of-accounts',
-        component: DashboardComponent // placeholder routing back to dashboard until chart of accounts is fully rendered
+        component: ChartOfAccountsComponent
       },
       {
         path: 'accounting/journal-entries',

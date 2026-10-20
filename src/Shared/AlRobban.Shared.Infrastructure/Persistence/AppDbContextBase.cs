@@ -41,7 +41,7 @@ public abstract class AppDbContextBase : DbContext
                 filterExpression = notDeleted;
             }
 
-            // 2. Multi-Tenant Filter
+            // 2. Multi-Tenant Filter (Safe handling when TenantId is null or set)
             if (typeof(IMustHaveTenant).IsAssignableFrom(clrType))
             {
                 var tenantProperty = Expression.Property(parameter, nameof(IMustHaveTenant.TenantId));
@@ -49,13 +49,14 @@ public abstract class AppDbContextBase : DbContext
                     Expression.Constant(_tenantContext),
                     nameof(ICurrentTenantContext.TenantId));
 
-                // e.TenantId == _tenantContext.TenantId.Value
-                var tenantValue = Expression.Property(currentTenantIdExpr, "Value");
-                var tenantMatch = Expression.Equal(tenantProperty, tenantValue);
+                var hasNoTenant = Expression.Equal(currentTenantIdExpr, Expression.Constant(null, typeof(Guid?)));
+                var convertedTenantProp = Expression.Convert(tenantProperty, typeof(Guid?));
+                var tenantMatch = Expression.Equal(convertedTenantProp, currentTenantIdExpr);
+                var tenantCondition = Expression.OrElse(hasNoTenant, tenantMatch);
 
                 filterExpression = filterExpression != null
-                    ? Expression.AndAlso(filterExpression, tenantMatch)
-                    : tenantMatch;
+                    ? Expression.AndAlso(filterExpression, tenantCondition)
+                    : tenantCondition;
             }
 
             if (filterExpression != null)
