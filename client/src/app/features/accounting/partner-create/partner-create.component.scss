@@ -1,37 +1,35 @@
 .partner-create-page {
-  padding: 0.6rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  padding: 0.75rem 1rem 2rem 1rem;
   font-family: var(--font-arabic) !important;
   background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   box-sizing: border-box;
-
-  @media (min-height: 680px) and (min-width: 1100px) {
-    max-height: calc(100vh - 65px);
-    overflow: hidden;
-  }
+  min-height: calc(100vh - 65px);
 }
 
 /* ==========================================================================
-   TOPBAR: Single-Row Ultra Compact Header
+   TOPBAR
    ========================================================================== */
 .page-topbar {
-  height: 42px;
+  height: 44px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 0 0.75rem;
+  padding: 0 0.85rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  flex-shrink: 0;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
 
   .topbar-right {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.75rem;
   }
 
   .btn-back {
@@ -56,10 +54,10 @@
   .title-group {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
 
     .main-title {
-      font-size: 0.925rem;
+      font-size: 0.95rem;
       font-weight: 800;
       color: #0f172a;
       margin: 0;
@@ -67,11 +65,20 @@
       align-items: center;
       gap: 0.45rem;
 
-      i { font-size: 1rem; }
+      i { font-size: 1.05rem; }
+    }
+
+    .head-code {
+      font-size: 0.725rem;
+      font-weight: 750;
+      background: #f1f5f9;
+      color: #059669;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
     }
   }
 
-  /* Segmented Type Pills */
   .type-pills-strip {
     display: inline-flex;
     background: #f1f5f9;
@@ -81,653 +88,602 @@
 
     .pill-btn {
       height: 26px;
-      padding: 0 0.65rem;
+      padding: 0 0.6rem;
       border: none;
       background: transparent;
       color: #64748b;
-      font-size: 0.725rem;
+      font-size: 0.72rem;
       font-weight: 700;
       border-radius: 4px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      transition: all 0.15s;
+      gap: 0.3rem;
+      transition: all 0.15s ease;
 
       i { font-size: 0.75rem; }
 
-      &:hover {
-        color: #0f172a;
-      }
-
       &.active {
         background: #ffffff;
-        color: #065f46;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        color: #059669;
         font-weight: 800;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
       }
     }
   }
 
-  /* ZATCA Mini Pill */
-  .zatca-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    background: #f8fafc;
-    color: #475569;
-    border: 1px solid #cbd5e1;
-    padding: 0.15rem 0.55rem;
-    border-radius: 12px;
-    font-size: 0.685rem;
-    font-weight: 700;
-
-    i { font-size: 0.75rem; }
-
-    &.ready {
-      background: #ecfdf5;
-      color: #065f46;
-      border-color: #a7f3d0;
-    }
-  }
-
-  /* Actions */
   .topbar-actions {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.5rem;
 
     button {
       height: 30px;
-      padding: 0 0.85rem;
-      border-radius: 6px;
+      padding: 0 0.75rem;
       font-size: 0.75rem;
       font-weight: 750;
+      border-radius: 6px;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
       cursor: pointer;
-      transition: all 0.15s ease;
       border: none;
-
-      i { font-size: 0.75rem; }
+      transition: all 0.15s ease;
+      text-decoration: none;
     }
 
-    .btn-secondary {
-      background: #f1f5f9;
-      color: #475569;
+    .btn-cancel {
+      background: #f8fafc;
+      color: #64748b;
       border: 1px solid #cbd5e1;
 
-      &:hover { background: #e2e8f0; color: #0f172a; }
+      &:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
     }
 
-    .btn-outline {
-      background: #ffffff;
-      color: #059669;
-      border: 1px solid #10b981;
-
-      &:hover { background: #ecfdf5; }
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    .btn-save-direct {
+      background: #059669;
       color: #ffffff;
-      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
 
       &:hover {
-        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+        background: #047857;
       }
     }
   }
 }
 
 /* ==========================================================================
-   WORKSPACE GRID: 3-Column Balanced Layout
+   STEPPER PROGRESS BAR (Top Wizard Navigation)
    ========================================================================== */
-.workspace-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.45fr) minmax(280px, 0.95fr);
-  gap: 0.65rem;
-  align-items: stretch;
-  flex: 1;
+.stepper-container {
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.85rem 1.25rem 0.65rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
 
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
+  .stepper-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    gap: 0.5rem;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      border: 2px solid #cbd5e1;
+      color: #64748b;
+      font-weight: 800;
+      font-size: 0.825rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      i { font-size: 0.75rem; }
+    }
+
+    .step-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+
+      .step-title {
+        font-size: 0.8rem;
+        font-weight: 750;
+        color: #64748b;
+        transition: color 0.2s;
+      }
+
+      .step-desc {
+        font-size: 0.685rem;
+        color: #94a3b8;
+      }
+    }
+
+    &.active {
+      .step-circle {
+        background: #059669;
+        border-color: #059669;
+        color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+      }
+
+      .step-meta .step-title {
+        color: #0f172a;
+        font-weight: 850;
+      }
+    }
+
+    &.completed {
+      .step-circle {
+        background: #ecfdf5;
+        border-color: #059669;
+        color: #059669;
+      }
+
+      .step-meta .step-title {
+        color: #059669;
+      }
+    }
+  }
+
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 0.5rem;
+    position: relative;
+    transition: background 0.3s;
+
+    &.filled {
+      background: #059669;
+    }
+  }
+
+  .stepper-progress-bar {
+    height: 3px;
+    background: #f1f5f9;
+    border-radius: 9999px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+
+    .progress-fill {
+      height: 100%;
+      background: #059669;
+      transition: width 0.3s ease;
+    }
   }
 }
 
 /* ==========================================================================
-   COMPACT CARDS (Panels 1 & 2)
+   WIZARD CARD WRAPPER: Vertical Form Alignment
    ========================================================================== */
-.compact-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+.wizard-card-wrapper {
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+
+  .wizard-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.03);
+  }
+}
+
+/* Step Content Pane */
+.step-content-pane {
+  padding: 1.25rem 1.75rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-  overflow: hidden;
+  gap: 1.25rem;
 
-  &.highlight-card {
-    border-top: 3px solid #059669;
-  }
-
-  .card-head {
-    height: 32px;
-    background: #ffffff;
-    border-bottom: 1px solid #f1f5f9;
-    padding: 0 0.75rem;
+  .pane-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
+    gap: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
 
-    .head-title {
-      font-size: 0.785rem;
-      font-weight: 800;
-      color: #1e293b;
+    .ph-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
-      gap: 0.4rem;
-
-      i { font-size: 0.85rem; }
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
     }
 
-    .head-code-pill {
-      font-size: 0.7rem;
-      font-weight: 750;
-      background: #f1f5f9;
-      color: #475569;
-      padding: 0.05rem 0.45rem;
-      border-radius: 4px;
+    .ph-text {
+      flex: 1;
+
+      .ph-title {
+        font-size: 0.95rem;
+        font-weight: 850;
+        color: #0f172a;
+        margin: 0 0 0.2rem 0;
+      }
+
+      .ph-desc {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin: 0;
+      }
     }
 
-    .btn-prefill {
+    .btn-prefill-addr {
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       color: #065f46;
       border-radius: 4px;
-      padding: 0.15rem 0.5rem;
-      font-size: 0.685rem;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.725rem;
       font-weight: 750;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
-      cursor: pointer;
-      transition: all 0.15s;
+      gap: 0.3rem;
 
       &:hover {
-        background: #059669;
-        color: #ffffff;
-        border-color: #059669;
+        background: #a7f3d0;
       }
     }
-  }
-
-  .card-content {
-    padding: 0.55rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.38rem;
-    flex: 1;
-  }
-}
-
-/* Sub Divider Line */
-.divider-sub {
-  position: relative;
-  text-align: center;
-  margin: 0.2rem 0;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: #f1f5f9;
-  }
-
-  span {
-    position: relative;
-    background: #ffffff;
-    padding: 0 0.45rem;
-    font-size: 0.65rem;
-    font-weight: 750;
-    color: #64748b;
   }
 }
 
 /* ==========================================================================
-   FORM CONTROLS & DENSE GRID
+   VERTICAL FORM GRID: 2 Balanced Symmetrical Columns
    ========================================================================== */
-.form-row {
+.vertical-form-grid {
   display: grid;
-  gap: 0.45rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 1.5rem;
 
-  &.cols-2 {
-    grid-template-columns: 1fr 1fr;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   }
-}
 
-.field-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  .col-span-2 {
+    grid-column: span 2;
 
-  label {
-    font-size: 0.685rem;
-    font-weight: 750;
-    color: #334155;
-    margin: 0;
-
-    &.required::after {
-      content: ' *';
-      color: #ef4444;
-      font-weight: 900;
+    @media (max-width: 768px) {
+      grid-column: span 1;
     }
   }
 
-  .field-label-bar {
+  .form-field {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.35rem;
 
-    .inline-action {
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-label {
+      font-size: 0.775rem;
+      font-weight: 750;
+      color: #334155;
+
+      &.required::after {
+        content: " *";
+        color: #ef4444;
+      }
+    }
+
+    .btn-text-action {
       background: none;
       border: none;
-      color: #0284c7;
-      font-size: 0.65rem;
+      color: #059669;
+      font-size: 0.7rem;
       font-weight: 700;
       cursor: pointer;
       padding: 0;
       display: inline-flex;
       align-items: center;
-      gap: 0.2rem;
+      gap: 0.25rem;
 
-      &:hover { text-decoration: underline; color: #0369a1; }
-    }
+      &:hover:not(:disabled) {
+        text-decoration: underline;
+      }
 
-    .auto-hint {
-      font-size: 0.625rem;
-      color: #059669;
+      &:disabled {
+        color: #cbd5e1;
+        cursor: not-allowed;
+      }
     }
 
     .status-indicator {
-      font-size: 0.625rem;
-      font-weight: 750;
-      color: #94a3b8;
+      font-size: 0.7rem;
+      color: #64748b;
 
-      &.valid { color: #059669; }
-      &.invalid { color: #dc2626; }
+      &.valid {
+        color: #059669;
+        font-weight: 750;
+      }
+
+      &.invalid {
+        color: #dc2626;
+        font-weight: 750;
+      }
     }
 
     .sub-status {
-      font-size: 0.625rem;
-      font-weight: 750;
+      font-size: 0.685rem;
       color: #dc2626;
 
-      &.ok { color: #059669; }
+      &.ok {
+        color: #059669;
+        font-weight: 700;
+      }
+    }
+
+    .field-hint {
+      font-size: 0.685rem;
+      color: #64748b;
+    }
+
+    .form-control, .form-select {
+      height: 36px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 0 0.65rem;
+      font-size: 0.8rem;
+      color: #1e293b;
+      background-color: #ffffff;
+      box-sizing: border-box;
+      outline: none;
+      transition: all 0.15s ease;
+
+      &:focus {
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+      }
+
+      &.is-valid {
+        border-color: #059669;
+      }
+
+      &.is-invalid {
+        border-color: #ef4444;
+      }
+    }
+
+    .input-with-counter {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .form-control {
+        width: 100%;
+        padding-left: 3.5rem;
+      }
+
+      .counter {
+        position: absolute;
+        left: 0.75rem;
+        font-size: 0.7rem;
+        color: #94a3b8;
+      }
+    }
+  }
+
+  .grid-divider {
+    padding-top: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+    margin-top: 0.25rem;
+
+    span {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #059669;
     }
   }
 }
 
-.form-control {
-  height: 28px;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 5px;
-  font-size: 0.775rem;
-  color: #0f172a;
-  background-color: #ffffff;
-  font-family: inherit;
-  transition: all 0.15s ease;
-  box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: #059669;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
-  }
-
-  &.is-invalid {
-    border-color: #ef4444 !important;
-    background-color: #fffbfb;
-  }
-
-  &.is-valid {
-    border-color: #10b981 !important;
-  }
-}
-
-.form-select {
-  padding-left: 1.5rem;
-  cursor: pointer;
-}
-
-.font-code {
-  font-family: var(--font-latin), monospace !important;
-  letter-spacing: 0.02em;
-}
-
-.font-latin {
-  font-family: var(--font-latin), system-ui, sans-serif !important;
-}
-
-.font-bold {
-  font-weight: 750;
-}
-
-/* Input Addon Group */
-.input-addon-group {
+/* ZATCA Summary Box in Step 2 */
+.zatca-summary-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
   display: flex;
-  align-items: center;
-  border: 1px solid #cbd5e1;
-  border-radius: 5px;
-  overflow: hidden;
-  height: 28px;
-  background: #ffffff;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 
-  &:focus-within {
-    border-color: #059669;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
-  }
-
-  .addon {
-    background: #f8fafc;
-    border-left: 1px solid #e2e8f0;
-    color: #475569;
-    padding: 0 0.45rem;
-    height: 100%;
+  .zsb-head {
     display: flex;
     align-items: center;
-    font-size: 0.685rem;
-    font-weight: 750;
-    flex-shrink: 0;
+    gap: 0.5rem;
+    font-size: 0.775rem;
+    color: #0f172a;
+
+    .score-badge {
+      margin-right: auto;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      background: #fef3c7;
+      color: #b45309;
+
+      &.full {
+        background: #dcfce7;
+        color: #166534;
+      }
+    }
   }
 
-  .addon-suffix {
-    background: #f8fafc;
-    border-right: 1px solid #e2e8f0;
-    color: #64748b;
-    padding: 0 0.45rem;
-    height: 100%;
+  .zsb-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+
+    .z-pill {
+      font-size: 0.685rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+
+      &.ok {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #065f46;
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+/* Final Summary Review Card in Step 3 */
+.final-review-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 0.85rem 1.15rem;
+  margin-top: 0.5rem;
+
+  .frc-title {
+    font-size: 0.825rem;
+    font-weight: 800;
+    color: #166534;
+    margin: 0 0 0.65rem 0;
     display: flex;
     align-items: center;
-    font-size: 0.685rem;
-    flex-shrink: 0;
+    gap: 0.45rem;
   }
 
-  input {
-    border: none;
-    height: 100%;
-    flex: 1;
-    min-width: 0;
-    box-shadow: none !important;
-    padding: 0 0.45rem;
-  }
-}
+  .frc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem 1rem;
 
-/* Input Icon Group */
-.input-icon-group {
-  position: relative;
-  display: flex;
-  align-items: center;
+    .frc-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
 
-  .group-icon {
-    position: absolute;
-    right: 0.5rem;
-    color: #94a3b8;
-    font-size: 0.75rem;
-    pointer-events: none;
-  }
+      &.col-span-2 {
+        grid-column: span 2;
+      }
 
-  .with-icon {
-    padding-right: 1.6rem;
-    width: 100%;
-  }
-}
+      .frc-lbl {
+        font-size: 0.685rem;
+        color: #475569;
+        font-weight: 650;
+      }
 
-/* VAT Format Box */
-.vat-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-
-  .vat-box {
-    width: 100%;
-    padding-left: 42px;
-    letter-spacing: 0.06em;
-    font-weight: 750;
-  }
-
-  .char-count {
-    position: absolute;
-    left: 0.5rem;
-    font-size: 0.65rem;
-    color: #94a3b8;
-    pointer-events: none;
+      .frc-val {
+        font-size: 0.775rem;
+        color: #0f172a;
+      }
+    }
   }
 }
 
 /* ==========================================================================
-   PANEL 3: COMPACT PREVIEW & ZATCA METER
+   WIZARD FOOTER CONTROLS
    ========================================================================== */
-.compact-preview-panel {
+.wizard-footer {
+  padding: 0.85rem 1.75rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
+  justify-content: space-between;
+  align-items: center;
 
-/* Live Buyer Preview Card */
-.preview-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-
-  .pv-head {
-    height: 28px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 0 0.65rem;
-    display: flex;
+  .btn-nav {
+    height: 36px;
+    padding: 0 1.25rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 750;
+    cursor: pointer;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.45rem;
+    border: none;
+    transition: all 0.15s ease;
 
-    .pv-tag {
-      font-size: 0.685rem;
-      font-weight: 750;
-      color: #065f46;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-
-      i { font-size: 0.7rem; }
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
-    .pv-code {
-      font-size: 0.685rem;
-      color: #64748b;
-      font-weight: 700;
-    }
-  }
+    &.btn-prev {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #475569;
 
-  .pv-body {
-    padding: 0.55rem 0.65rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-
-    .pv-names {
-      .pv-name-ar {
-        font-size: 0.825rem;
-        font-weight: 800;
+      &:hover:not(:disabled) {
+        background: #f1f5f9;
         color: #0f172a;
-        line-height: 1.3;
-      }
-
-      .pv-name-en {
-        font-size: 0.7rem;
-        color: #64748b;
       }
     }
 
-    .pv-details-grid {
-      border-top: 1px solid #f1f5f9;
-      padding-top: 0.35rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-
-      .pv-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        font-size: 0.685rem;
-
-        .pvi-label {
-          color: #94a3b8;
-          font-weight: 600;
-        }
-
-        .pvi-val {
-          font-weight: 700;
-          color: #1e293b;
-
-          &.text-emerald { color: #059669; }
-          &.text-muted { color: #94a3b8; font-weight: normal; }
-        }
-
-        &.full {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.1rem;
-
-          .pvi-addr {
-            margin: 0;
-            font-size: 0.685rem;
-            color: #334155;
-            line-height: 1.35;
-
-            .text-muted { color: #94a3b8; }
-          }
-        }
-      }
-    }
-  }
-}
-
-/* ZATCA Phase 2 Meter */
-.meter-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-
-  .meter-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .meter-title {
-      font-size: 0.725rem;
-      font-weight: 750;
-      color: #1e293b;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-
-      i { font-size: 0.8rem; }
-    }
-
-    .meter-score {
-      font-size: 0.75rem;
-      font-weight: 850;
-      color: #0284c7;
-
-      &.full { color: #059669; }
-    }
-  }
-
-  .progress-track {
-    height: 5px;
-    background: #e2e8f0;
-    border-radius: 4px;
-    overflow: hidden;
-
-    .progress-fill {
-      height: 100%;
+    &.btn-next {
       background: #0284c7;
-      transition: width 0.3s ease;
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
 
-      &.full { background: #059669; }
+      &:hover:not(:disabled) {
+        background: #0369a1;
+      }
     }
-  }
 
-  /* Checklist Pills Grid */
-  .checklist-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.25rem;
+    &.btn-save-final {
+      background: #059669;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25);
 
-    .check-pill {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      padding: 0.2rem 0.35rem;
-      font-size: 0.625rem;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      &:hover:not(:disabled) {
+        background: #047857;
+      }
+    }
 
-      i { font-size: 0.65rem; color: #cbd5e1; }
+    &.btn-save-another {
+      background: #ffffff;
+      border: 1px solid #059669;
+      color: #059669;
+      margin-left: 0.5rem;
 
-      &.ok {
-        background: #f0fdf4;
-        border-color: #bbf7d0;
-        color: #166534;
-
-        i { color: #16a34a; }
+      &:hover:not(:disabled) {
+        background: #ecfdf5;
       }
     }
   }
-
-  /* Compact Readiness Banner */
-  .readiness-mini-box {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.45rem;
-    border-radius: 5px;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    color: #92400e;
-    font-size: 0.65rem;
-    font-weight: 700;
-
-    i { font-size: 0.75rem; flex-shrink: 0; }
-
-    &.ready {
-      background: #ecfdf5;
-      border-color: #a7f3d0;
-      color: #065f46;
-    }
-  }
 }
-
-/* Helper color utilities */
-.text-emerald { color: #059669 !important; }
-.text-cyan { color: #0284c7 !important; }
-.text-muted { color: #94a3b8 !important; }

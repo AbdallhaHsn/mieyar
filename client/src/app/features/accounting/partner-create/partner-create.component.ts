@@ -40,6 +40,9 @@ export class PartnerCreateComponent implements OnInit {
 
   PartnerType = PartnerType;
 
+  // Multi-step Wizard Navigation
+  currentStep = signal<number>(1); // 1 = بيانات الشريك والضريبة, 2 = العنوان الوطني, 3 = السياسات المالية والمراجعة
+
   // Loading & Action States
   isSaving = signal<boolean>(false);
   isAutoTranslating = signal<boolean>(false);
@@ -66,20 +69,18 @@ export class PartnerCreateComponent implements OnInit {
     'ينبع', 'الجبيل', 'الطائف', 'حفر الباطن', 'أخرى'
   ];
 
-  // Form Model Signals
+  // Step 1: Partner Model Signals
   partnerType = signal<PartnerType>(PartnerType.Customer);
   code = signal<string>('');
   nameAr = signal<string>('');
   nameEn = signal<string>('');
   phone = signal<string>('');
   email = signal<string>('');
-
-  // Tax & Identity Signals
   taxNumber = signal<string>('');
   otherIdType = signal<string>('CRN');
   otherIdValue = signal<string>('');
 
-  // Saudi National Address Signals
+  // Step 2: Saudi National Address Signals
   streetName = signal<string>('');
   buildingNumber = signal<string>('');
   plotIdentification = signal<string>(''); // الرقم الإضافي 4 أرقام
@@ -89,7 +90,7 @@ export class PartnerCreateComponent implements OnInit {
   postalZone = signal<string>(''); // 5 أرقام
   countryCode = signal<string>('SA');
 
-  // Credit & Financials
+  // Step 3: Credit & Financials
   creditLimit = signal<number>(50000);
   paymentTermsDays = signal<number>(30);
   glAccountId = signal<string>('');
@@ -99,62 +100,47 @@ export class PartnerCreateComponent implements OnInit {
     return this.cityName() === 'أخرى' ? (this.customCity().trim() || 'الرياض') : this.cityName();
   });
 
-  // Computed: VAT Number Validation Details
+  // Computed: VAT Validation
   vatValidation = computed(() => {
     const raw = this.taxNumber().trim();
     if (!raw) {
-      return { isValid: false, isEmpty: true, message: 'لم يتم إدخال رقم ضريبي بعد (مطلوب للشركات الخاضعة للضريبة)' };
+      return { isValid: false, isEmpty: true, message: 'اختياري للأفراد وغير المسجلين' };
     }
     const is15Digits = /^\d{15}$/.test(raw);
     const startsWith3 = raw.startsWith('3');
     const endsWith3 = raw.endsWith('3');
 
     if (!is15Digits) {
-      return { isValid: false, isEmpty: false, message: `الرقم الضريبي يجب أن يكون 15 رقماً بالضبط (الحالي: ${raw.length} رقم)` };
+      return { isValid: false, isEmpty: false, message: `يجب أن يكون 15 رقماً (الحالي: ${raw.length})` };
     }
-    if (!startsWith3) {
-      return { isValid: false, isEmpty: false, message: 'الرقم الضريبي السعودي يبدأ دائماً بالرقم 3' };
-    }
-    if (!endsWith3) {
-      return { isValid: false, isEmpty: false, message: 'الرقم الضريبي السعودي ينتهي دائماً بالرقم 3' };
+    if (!startsWith3 || !endsWith3) {
+      return { isValid: false, isEmpty: false, message: 'الرقم الضريبي السعودي يبدأ وينتهي بـ 3' };
     }
 
-    return { isValid: true, isEmpty: false, message: 'الرقم الضريبي متوافق تماماً مع صيغة هيئة الزكاة والضريبة والجمارك (ZATCA)' };
+    return { isValid: true, isEmpty: false, message: '✓ الرقم الضريبي سليم ومتوافق مع ZATCA' };
   });
 
   // Computed: Building Number Validation (4 digits)
   buildingValidation = computed(() => {
     const val = this.buildingNumber().trim();
-    if (!val) return { isValid: false, isEmpty: true, message: 'رقم المبنى مطلوب (4 أرقام)' };
+    if (!val) return { isValid: false, isEmpty: true, message: 'مطلوب (4 أرقام)' };
     const isValid = /^\d{4}$/.test(val);
     return {
       isValid,
       isEmpty: false,
-      message: isValid ? 'رقم المبنى سليم (4 أرقام)' : 'رقم المبنى بالعنوان الوطني يجب أن يتكون من 4 أرقام'
+      message: isValid ? '✓ 4 أرقام' : 'يجب أن يتكون من 4 أرقام'
     };
   });
 
   // Computed: Postal Zone Validation (5 digits)
   postalValidation = computed(() => {
     const val = this.postalZone().trim();
-    if (!val) return { isValid: false, isEmpty: true, message: 'الرمز البريدي مطلوب (5 أرقام)' };
+    if (!val) return { isValid: false, isEmpty: true, message: 'مطلوب (5 أرقام)' };
     const isValid = /^\d{5}$/.test(val);
     return {
       isValid,
       isEmpty: false,
-      message: isValid ? 'الرمز البريدي سليم (5 أرقام)' : 'الرمز البريدي السعودي يجب أن يتكون من 5 أرقام'
-    };
-  });
-
-  // Computed: Additional Number Validation (optional or 4 digits)
-  plotValidation = computed(() => {
-    const val = this.plotIdentification().trim();
-    if (!val) return { isValid: true, isEmpty: true, message: 'الرقم الإضافي اختياري (مستحسن 4 أرقام)' };
-    const isValid = /^\d{4}$/.test(val);
-    return {
-      isValid,
-      isEmpty: false,
-      message: isValid ? 'الرقم الإضافي سليم (4 أرقام)' : 'الرقم الإضافي يجب أن يتكون من 4 أرقام'
+      message: isValid ? '✓ 5 أرقام' : 'يجب أن يتكون من 5 أرقام'
     };
   });
 
@@ -171,13 +157,13 @@ export class PartnerCreateComponent implements OnInit {
 
     const items = [
       { key: 'name', label: 'الاسم القانوني للمنشأة بالعربية', ok: hasNameAr, mandatory: true },
-      { key: 'vat', label: 'الرقم الضريبي السعودي (15 رقم يبدأ وينتهي بـ 3)', ok: vatOk, mandatory: false },
-      { key: 'id', label: 'معرف المنشأة التجاري (السجل التجاري أو الرقم الموحد 700)', ok: hasId, mandatory: true },
-      { key: 'street', label: 'اسم الشارع في العنوان الوطني', ok: hasStreet, mandatory: true },
-      { key: 'building', label: 'رقم المبنى المعتمد (4 أرقام)', ok: bldOk, mandatory: true },
-      { key: 'district', label: 'اسم الحي في العنوان الوطني', ok: hasDistrict, mandatory: true },
-      { key: 'city', label: 'المدينة التابعة للمنشأة', ok: hasCity, mandatory: true },
-      { key: 'postal', label: 'الرمز البريدي المعتمد (5 أرقام)', ok: postOk, mandatory: true }
+      { key: 'vat', label: 'الرقم الضريبي السعودي (15 رقماً)', ok: vatOk, mandatory: false },
+      { key: 'id', label: 'معرف المنشأة (السجل التجاري أو 700)', ok: hasId, mandatory: true },
+      { key: 'street', label: 'اسم الشارع بالعنوان الوطني', ok: hasStreet, mandatory: true },
+      { key: 'building', label: 'رقم المبنى (4 أرقام)', ok: bldOk, mandatory: true },
+      { key: 'district', label: 'اسم الحي', ok: hasDistrict, mandatory: true },
+      { key: 'city', label: 'المدينة', ok: hasCity, mandatory: true },
+      { key: 'postal', label: 'الرمز البريدي (5 أرقام)', ok: postOk, mandatory: true }
     ];
 
     const passedCount = items.filter(i => i.ok).length;
@@ -206,7 +192,6 @@ export class PartnerCreateComponent implements OnInit {
         }
       };
       flatten(tree || []);
-      // Filter postable accounts under Assets (1) or Liabilities (2)
       this.accountsList.set(flattened.filter(a => a.isPostable));
     });
   }
@@ -241,7 +226,6 @@ export class PartnerCreateComponent implements OnInit {
     this.glAccountId.set(acc ? acc.id : '');
   }
 
-  // Quick Address Fill helper (for testing / pre-fill)
   fillSampleAddress(): void {
     this.streetName.set('طريق الملك فهد الفرعي');
     this.buildingNumber.set('7254');
@@ -252,21 +236,56 @@ export class PartnerCreateComponent implements OnInit {
     this.countryCode.set('SA');
   }
 
-  savePartner(addAnother: boolean = false): void {
-    const name = this.nameAr().trim();
-    const pCode = this.code().trim();
+  // Multi-step Navigation
+  goToStep(step: number): void {
+    if (step === 2 && !this.validateStep1()) return;
+    if (step === 3 && (!this.validateStep1() || !this.validateStep2())) return;
+    this.currentStep.set(step);
+  }
 
-    if (!pCode) {
+  nextStep(): void {
+    const s = this.currentStep();
+    if (s === 1) {
+      if (this.validateStep1()) {
+        this.currentStep.set(2);
+      }
+    } else if (s === 2) {
+      if (this.validateStep2()) {
+        this.currentStep.set(3);
+      }
+    }
+  }
+
+  prevStep(): void {
+    const s = this.currentStep();
+    if (s > 1) {
+      this.currentStep.set(s - 1);
+    }
+  }
+
+  private validateStep1(): boolean {
+    if (!this.code().trim()) {
       Swal.fire({ icon: 'warning', title: 'كود الشريك مطلوب', text: 'يرجى إدخال أو توليد كود الشريك التجاري.' });
-      return;
+      return false;
     }
-
-    if (!name) {
+    if (!this.nameAr().trim()) {
       Swal.fire({ icon: 'warning', title: 'اسم الشريك مطلوب', text: 'يرجى إدخال الاسم التجاري للعميل أو المنشأة بالعربية.' });
+      return false;
+    }
+    return true;
+  }
+
+  private validateStep2(): boolean {
+    // Street & City recommended for ZATCA
+    return true;
+  }
+
+  savePartner(addAnother: boolean = false): void {
+    if (!this.validateStep1()) {
+      this.currentStep.set(1);
       return;
     }
 
-    // Check ZATCA requirements warning
     const readiness = this.complianceChecklist();
     if (!readiness.canIssueStandardTaxInvoice) {
       Swal.fire({
@@ -284,7 +303,7 @@ export class PartnerCreateComponent implements OnInit {
               ${!this.vatValidation().isValid && !this.otherIdValue() ? '<li>الرقم الضريبي أو السجل التجاري</li>' : ''}
             </ul>
             <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">
-              هل ترغب في حفظ بطاقة العميل الآن والعودة لاستكمال العنوان لاحقاً؟
+              هل ترغب في حفظ بطاقة العميل الآن ومتابعة الحفظ؟
             </p>
           </div>
         `,
@@ -293,7 +312,7 @@ export class PartnerCreateComponent implements OnInit {
         confirmButtonColor: '#059669',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'نعم، حفظ ومتابعة',
-        cancelButtonText: 'إلغاء واستكمال البيانات'
+        cancelButtonText: 'إلغاء واستكمال العنوان'
       }).then(res => {
         if (res.isConfirmed) {
           this.executeSave(addAnother);
@@ -347,7 +366,7 @@ export class PartnerCreateComponent implements OnInit {
               <span style="color: #64748b;">تم حفظ بطاقة الشريك وبيانات العنوان الوطني والامتثال الضريبي.</span>
             </div>
           `,
-          timer: 2200,
+          timer: 2000,
           timerProgressBar: true,
           confirmButtonColor: '#059669',
           confirmButtonText: 'حسناً'
@@ -355,6 +374,7 @@ export class PartnerCreateComponent implements OnInit {
 
         if (addAnother) {
           this.resetForm();
+          this.currentStep.set(1);
         } else {
           this.router.navigate(['/accounting/partners']);
         }
