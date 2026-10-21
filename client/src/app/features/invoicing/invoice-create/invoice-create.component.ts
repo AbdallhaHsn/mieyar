@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
-import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -61,6 +61,9 @@ export class InvoiceCreateComponent implements OnInit {
   isLoadingPartners = signal<boolean>(false);
   partners = signal<PartnerOption[]>([]);
   selectedPartnerId = signal<string>('');
+  isCashCustomer = signal<boolean>(false);
+  showEditCustomerOverride = signal<boolean>(false);
+  showPreviewModal = signal<boolean>(false);
 
   // Invoice Header Signals
   invoiceType = signal<InvoiceType>(InvoiceType.StandardTaxInvoice);
@@ -68,11 +71,11 @@ export class InvoiceCreateComponent implements OnInit {
   invoiceNumber = signal<string>('');
   issueDate = signal<string>(new Date().toISOString().substring(0, 10));
   supplyDate = signal<string>(new Date().toISOString().substring(0, 10));
-  paymentMeansCode = signal<string>('10'); // 10 = نقدي, 30 = تحويل بنكي, 48 = بطاقة مدى
+  paymentMeansCode = signal<string>('10'); // 10 = نقدي, 30 = تحويل بنكي, 48 = مدى
   currency = signal<string>('SAR');
   notes = signal<string>('خاضعة لضريبة القيمة المضافة بنسبة 15% - معتمدة لدى هيئة الزكاة والضريبة والجمارك (ZATCA)');
 
-  // Buyer / Customer Signals
+  // Buyer / Customer Signals (Loaded from selected partner or cash customer)
   buyerName = signal<string>('');
   buyerNameEn = signal<string>('');
   buyerVatNumber = signal<string>('');
@@ -81,7 +84,7 @@ export class InvoiceCreateComponent implements OnInit {
   buyerPhone = signal<string>('');
   buyerEmail = signal<string>('');
 
-  // Saudi National Address Signals (Mandatory for Standard B2B)
+  // Saudi National Address Signals
   buyerStreet = signal<string>('');
   buyerBuildingNumber = signal<string>('');
   buyerPlotIdentification = signal<string>('');
@@ -90,7 +93,6 @@ export class InvoiceCreateComponent implements OnInit {
   buyerPostalCode = signal<string>('');
   buyerCountryCode = signal<string>('SA');
 
-  // Common Saudi Cities
   saudiCities = [
     'الرياض', 'جدة', 'الدمام', 'مكة المكرمة', 'المدينة المنورة',
     'الخبر', 'الأحساء', 'الظهران', 'القصيم (بريدة)', 'عنيزة',
@@ -112,6 +114,25 @@ export class InvoiceCreateComponent implements OnInit {
     }
   ]);
 
+  // Selected Partner Object
+  selectedPartner = computed(() => {
+    const id = this.selectedPartnerId();
+    if (!id) return null;
+    return this.partners().find(p => p.id === id) || null;
+  });
+
+  // Partner ZATCA readiness check
+  isPartnerZatcaReady = computed(() => {
+    const p = this.selectedPartner();
+    if (!p) return false;
+    const vat = (p.taxNumber || '').trim();
+    const is15Vat = /^\d{15}$/.test(vat) && vat.startsWith('3') && vat.endsWith('3');
+    const hasCr = !!(p.commercialRegistration || p.otherIdValue);
+    const hasStreet = !!(p.streetName && p.streetName.trim().length >= 3);
+    const hasCity = !!p.cityName;
+    return is15Vat && hasCr && hasStreet && hasCity;
+  });
+
   // Computed: Line Item Computations
   lineComputations = computed(() => {
     return this.lineItems().map(line => {
@@ -119,42 +140,35 @@ export class InvoiceCreateComponent implements OnInit {
       const taxable = Math.max(0, subtotal - (line.discount || 0));
       const vat = Math.round((taxable * (line.vatRate / 100)) * 100) / 100;
       const total = taxable + vat;
-      return {
-        subtotal,
-        taxable,
-        vat,
-        total
-      };
+      return { subtotal, taxable, vat, total };
     });
   });
 
-  // Computed: Invoice Summary Totals
+  // Computed: Financial Totals
   subtotal = computed(() => {
-    return this.lineComputations().reduce((sum, item) => sum + item.subtotal, 0);
+    return this.lineComputations().reduce((acc, curr) => acc + curr.subtotal, 0);
   });
 
   totalDiscount = computed(() => {
-    return this.lineItems().reduce((sum, item) => sum + (item.discount || 0), 0);
+    return this.lineItems().reduce((acc, curr) => acc + (curr.discount || 0), 0);
   });
 
   totalTaxableAmount = computed(() => {
-    return this.lineComputations().reduce((sum, item) => sum + item.taxable, 0);
+    return this.lineComputations().reduce((acc, curr) => acc + curr.taxable, 0);
   });
 
   totalVatAmount = computed(() => {
-    return this.lineComputations().reduce((sum, item) => sum + item.vat, 0);
+    return this.lineComputations().reduce((acc, curr) => acc + curr.vat, 0);
   });
 
   grandTotal = computed(() => {
-    return this.totalTaxableAmount() + this.totalVatAmount();
+    return this.lineComputations().reduce((acc, curr) => acc + curr.total, 0);
   });
 
-  // Computed: Arabic Tafqeet (Amount in Words)
   amountInWordsAr = computed(() => {
     return this.tafqeet(this.grandTotal());
   });
 
-  // Computed: VAT Number Validation Details
   vatValidation = computed(() => {
     const raw = this.buyerVatNumber().trim();
     if (!raw) {
@@ -162,7 +176,7 @@ export class InvoiceCreateComponent implements OnInit {
       return {
         isValid: !isStandard,
         isEmpty: true,
-        message: isStandard ? 'الرقم الضريبي مطلوب للفواتير الضريبية (B2B)' : 'اختياري للفاتورة المبسطة (B2C)'
+        message: isStandard ? 'الرقم الضريبي مطلوب للفواتير الضريبية (B2B)' : 'غير مطلوب للفاتورة المبسطة (B2C)'
       };
     }
     const is15Digits = /^\d{15}$/.test(raw);
@@ -177,56 +191,55 @@ export class InvoiceCreateComponent implements OnInit {
     };
   });
 
-  // Computed: Building Number Validation (4 digits)
-  buildingValidation = computed(() => {
-    const val = this.buyerBuildingNumber().trim();
-    if (!val) return { isValid: false, isEmpty: true };
-    return { isValid: /^\d{4}$/.test(val), isEmpty: false };
-  });
-
-  // Computed: Postal Code Validation (5 digits)
-  postalValidation = computed(() => {
-    const val = this.buyerPostalCode().trim();
-    if (!val) return { isValid: false, isEmpty: true };
-    return { isValid: /^\d{5}$/.test(val), isEmpty: false };
-  });
-
-  // Computed: ZATCA Phase 2 Compliance Checklist
   zatcaChecklist = computed(() => {
-    const hasName = this.buyerName().trim().length >= 3;
+    const isStandard = this.invoiceType() === InvoiceType.StandardTaxInvoice;
+    const isCash = this.isCashCustomer();
+    const hasLines = this.lineItems().length > 0 && this.lineItems().every(l => l.itemNameAr.trim() && l.unitPrice > 0);
+
+    if (!isStandard || isCash) {
+      // Simplified Invoice (B2C)
+      const items = [
+        { label: 'نوع الفاتورة: ضريبية مبسطة (B2C)', ok: true, mandatory: true },
+        { label: 'العميل: مبيعات نقدية / عامة', ok: true, mandatory: true },
+        { label: 'بنود الفاتورة والأسعار والضريبة', ok: hasLines, mandatory: true },
+        { label: 'حساب ضريبة القيمة المضافة 15%', ok: this.totalVatAmount() >= 0, mandatory: true },
+        { label: 'رمز الاستجابة السريعة (QR TLV)', ok: true, mandatory: true }
+      ];
+      const passedCount = items.filter(i => i.ok).length;
+      return {
+        items,
+        score: Math.round((passedCount / items.length) * 100),
+        isFullyCompliant: hasLines
+      };
+    }
+
+    // Standard Invoice (B2B)
+    const hasPartner = !!this.selectedPartnerId() || this.buyerName().trim().length >= 3;
     const vatOk = this.vatValidation().isValid;
     const hasCr = this.buyerOtherIdValue().trim().length >= 3;
     const hasStreet = this.buyerStreet().trim().length >= 3;
-    const bldOk = this.buildingValidation().isValid;
+    const bldOk = /^\d{4}$/.test(this.buyerBuildingNumber().trim());
     const hasDistrict = this.buyerCitySubdivisionName().trim().length >= 2;
     const hasCity = this.buyerCity().trim().length >= 2;
-    const postOk = this.postalValidation().isValid;
-    const hasLines = this.lineItems().length > 0 && this.lineItems().every(l => l.itemNameAr.trim() && l.unitPrice > 0);
-
-    const isStandard = this.invoiceType() === InvoiceType.StandardTaxInvoice;
+    const postOk = /^\d{5}$/.test(this.buyerPostalCode().trim());
 
     const items = [
-      { label: 'الاسم القانوني للمشتري', ok: hasName, mandatory: true },
-      { label: 'الرقم الضريبي (15 رقماً)', ok: vatOk, mandatory: isStandard },
-      { label: 'السجل التجاري أو الرقم الموحد 700', ok: hasCr, mandatory: isStandard },
-      { label: 'اسم الشارع بالعنوان الوطني', ok: hasStreet, mandatory: isStandard },
-      { label: 'رقم المبنى (4 أرقام)', ok: bldOk, mandatory: isStandard },
-      { label: 'اسم الحي في العنوان الوطني', ok: hasDistrict, mandatory: isStandard },
-      { label: 'المدينة التابعة للمنشأة', ok: hasCity, mandatory: isStandard },
-      { label: 'الرمز البريدي (5 أرقام)', ok: postOk, mandatory: isStandard },
-      { label: 'بنود الفاتورة والأسعار والضريبة', ok: hasLines, mandatory: true }
+      { label: 'الاسم القانوني للعميل (المشتري)', ok: hasPartner, mandatory: true },
+      { label: 'الرقم الضريبي للمشتري (15 رقماً)', ok: vatOk, mandatory: true },
+      { label: 'السجل التجاري أو الرقم الموحد 700', ok: hasCr, mandatory: true },
+      { label: 'اسم الشارع بالعنوان الوطني', ok: hasStreet, mandatory: true },
+      { label: 'رقم المبنى بالعنوان الوطني (4 أرقام)', ok: bldOk, mandatory: true },
+      { label: 'اسم الحي والمدينة التابعة للمنشأة', ok: hasDistrict && hasCity, mandatory: true },
+      { label: 'الرمز البريدي (5 أرقام)', ok: postOk, mandatory: true },
+      { label: 'بنود الفاتورة واحتساب الضريبة 15%', ok: hasLines, mandatory: true }
     ];
 
     const passedCount = items.filter(i => i.ok).length;
-    const score = Math.round((passedCount / items.length) * 100);
-
-    const isFullyCompliant = isStandard 
-      ? (hasName && vatOk && hasCr && hasStreet && bldOk && hasDistrict && hasCity && postOk && hasLines)
-      : (hasName && hasLines);
+    const isFullyCompliant = hasPartner && vatOk && hasCr && hasStreet && bldOk && hasDistrict && hasCity && postOk && hasLines;
 
     return {
       items,
-      score,
+      score: Math.round((passedCount / items.length) * 100),
       isFullyCompliant
     };
   });
@@ -247,8 +260,7 @@ export class InvoiceCreateComponent implements OnInit {
     this.http.get<any[]>('/api/partners').subscribe({
       next: (list) => {
         this.isLoadingPartners.set(false);
-        // Map to partner options (only active customers or both)
-        const mapped = (list || []).map(p => ({
+        const mapped: PartnerOption[] = (list || []).map(p => ({
           id: p.id,
           code: p.code,
           nameAr: p.nameAr,
@@ -268,6 +280,12 @@ export class InvoiceCreateComponent implements OnInit {
           email: p.email
         }));
         this.partners.set(mapped);
+
+        // Auto-select first partner with complete data if none selected
+        if (!this.selectedPartnerId() && mapped.length > 0) {
+          const defaultPartner = mapped.find(p => p.taxNumber && p.streetName) || mapped[0];
+          this.onPartnerSelected(defaultPartner.id);
+        }
       },
       error: () => {
         this.isLoadingPartners.set(false);
@@ -277,7 +295,13 @@ export class InvoiceCreateComponent implements OnInit {
 
   onPartnerSelected(partnerId: string): void {
     this.selectedPartnerId.set(partnerId);
-    if (!partnerId) return;
+    this.isCashCustomer.set(false);
+    this.showEditCustomerOverride.set(false);
+
+    if (!partnerId) {
+      this.clearBuyerFields();
+      return;
+    }
 
     const partner = this.partners().find(p => p.id === partnerId);
     if (!partner) return;
@@ -291,34 +315,66 @@ export class InvoiceCreateComponent implements OnInit {
     this.buyerEmail.set(partner.email || '');
 
     // National Address
-    if (partner.streetName) this.buyerStreet.set(partner.streetName);
-    if (partner.buildingNumber) this.buyerBuildingNumber.set(partner.buildingNumber);
-    if (partner.plotIdentification) this.buyerPlotIdentification.set(partner.plotIdentification);
-    if (partner.citySubdivisionName) this.buyerCitySubdivisionName.set(partner.citySubdivisionName);
-    if (partner.cityName) this.buyerCity.set(partner.cityName);
-    if (partner.postalZone) this.buyerPostalCode.set(partner.postalZone);
-    if (partner.countryCode) this.buyerCountryCode.set(partner.countryCode);
+    this.buyerStreet.set(partner.streetName || '');
+    this.buyerBuildingNumber.set(partner.buildingNumber || '');
+    this.buyerPlotIdentification.set(partner.plotIdentification || '');
+    this.buyerCitySubdivisionName.set(partner.citySubdivisionName || '');
+    this.buyerCity.set(partner.cityName || 'الرياض');
+    this.buyerPostalCode.set(partner.postalZone || '');
+    this.buyerCountryCode.set(partner.countryCode || 'SA');
   }
 
-  fillSampleBuyer(): void {
-    this.buyerName.set('شركة الفرسان للتجارة والمقاولات العامة');
-    this.buyerNameEn.set('Al-Fursan Trading & Contracting Co.');
-    this.buyerVatNumber.set('300012345600003');
-    this.buyerOtherIdType.set('CRN');
-    this.buyerOtherIdValue.set('1010897654');
-    this.buyerPhone.set('0501234567');
-    this.buyerEmail.set('billing@alfursan-sa.com');
-    this.buyerStreet.set('طريق الملك فهد الفرعي');
-    this.buyerBuildingNumber.set('7254');
-    this.buyerPlotIdentification.set('3411');
-    this.buyerCitySubdivisionName.set('حي العليا');
+  selectCashCustomer(): void {
+    this.isCashCustomer.set(true);
+    this.selectedPartnerId.set('');
+    this.showEditCustomerOverride.set(false);
+    this.invoiceType.set(InvoiceType.SimplifiedTaxInvoice);
+    this.buyerName.set('عميل نقدي عام (Cash / Walk-in Customer)');
+    this.buyerNameEn.set('Cash Customer');
+    this.buyerVatNumber.set('');
+    this.buyerOtherIdType.set('');
+    this.buyerOtherIdValue.set('');
+    this.buyerStreet.set('');
+    this.buyerBuildingNumber.set('');
+    this.buyerPlotIdentification.set('');
+    this.buyerCitySubdivisionName.set('');
     this.buyerCity.set('الرياض');
-    this.buyerPostalCode.set('12214');
+    this.buyerPostalCode.set('');
     this.buyerCountryCode.set('SA');
+    this.buyerPhone.set('');
+    this.buyerEmail.set('');
+  }
+
+  clearPartner(): void {
+    this.selectedPartnerId.set('');
+    this.isCashCustomer.set(false);
+    this.showEditCustomerOverride.set(false);
+    this.clearBuyerFields();
+  }
+
+  private clearBuyerFields(): void {
+    this.buyerName.set('');
+    this.buyerNameEn.set('');
+    this.buyerVatNumber.set('');
+    this.buyerOtherIdValue.set('');
+    this.buyerStreet.set('');
+    this.buyerBuildingNumber.set('');
+    this.buyerPlotIdentification.set('');
+    this.buyerCitySubdivisionName.set('');
+    this.buyerPostalCode.set('');
+    this.buyerPhone.set('');
+    this.buyerEmail.set('');
   }
 
   setInvoiceType(type: InvoiceType): void {
     this.invoiceType.set(type);
+    if (type === InvoiceType.StandardTaxInvoice && this.isCashCustomer()) {
+      // Prompt user to select a registered company partner
+      this.isCashCustomer.set(false);
+      if (this.partners().length > 0) {
+        this.onPartnerSelected(this.partners()[0].id);
+      }
+    }
   }
 
   setPaymentMeans(code: string): void {
@@ -359,8 +415,8 @@ export class InvoiceCreateComponent implements OnInit {
     if (!bName) {
       Swal.fire({
         icon: 'warning',
-        title: 'اسم العميل مطلوب',
-        text: 'يرجى إدخال اسم العميل التجاري أو اختياره من القائمة.',
+        title: 'العميل مطلوب',
+        text: 'يرجى اختيار العميل من القائمة أو اختيار مبيعات نقدية.',
         confirmButtonColor: '#059669'
       });
       return;
@@ -383,25 +439,25 @@ export class InvoiceCreateComponent implements OnInit {
         html: `
           <div style="text-align: right; direction: rtl; font-size: 0.85rem; line-height: 1.6; color: #475569;">
             <p style="font-weight: 700; color: #b45309; margin-bottom: 0.5rem;">
-              ⚠️ لن تقبل منصة فاتورة (ZATCA Clearing) هذه الفاتورة الضريبية القياسية بسبب نقص الحقول الإلزامية التالية:
+              ⚠️ لن تقبل هيئة الزكاة والضريبة هذه الفاتورة الضريبية القياسية (B2B) بسبب نقص الحقول التالية في ملف العميل:
             </p>
             <ul style="padding-right: 1.2rem; margin: 0;">
               ${!this.buyerStreet() ? '<li>اسم الشارع بالعنوان الوطني</li>' : ''}
-              ${!this.buildingValidation().isValid ? '<li>رقم المبنى (4 أرقام)</li>' : ''}
+              ${!/^\d{4}$/.test(this.buyerBuildingNumber()) ? '<li>رقم المبنى (4 أرقام)</li>' : ''}
               ${!this.buyerCitySubdivisionName() ? '<li>اسم الحي</li>' : ''}
-              ${!this.postalValidation().isValid ? '<li>الرمز البريدي (5 أرقام)</li>' : ''}
+              ${!/^\d{5}$/.test(this.buyerPostalCode()) ? '<li>الرمز البريدي (5 أرقام)</li>' : ''}
               ${!this.vatValidation().isValid ? '<li>الرقم الضريبي للمنشأة (15 رقماً)</li>' : ''}
-              ${!this.buyerOtherIdValue() ? '<li>رقم السجل التجاري أو المعرف</li>' : ''}
+              ${!this.buyerOtherIdValue() ? '<li>رقم السجل التجاري</li>' : ''}
             </ul>
             <p style="margin-top: 0.75rem; color: #64748b;">
-              هل ترغب في حفظ الفاتورة كمسودة مؤقتة والعودة لاستكمالها لاحقاً؟
+              يمكنك استكمال بيانات العميل عبر زر "تعديل استثنائي لهذه الفاتورة" أو حفظ الفاتورة كمسودة مؤقتة.
             </p>
           </div>
         `,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'حفظ كمسودة (Draft)',
-        cancelButtonText: 'استكمال البيانات الآن',
+        cancelButtonText: 'استكمال البيانات',
         confirmButtonColor: '#0284c7',
         cancelButtonColor: '#64748b'
       }).then(res => {
