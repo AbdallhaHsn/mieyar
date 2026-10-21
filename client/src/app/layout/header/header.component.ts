@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { LanguageService } from '../../core/services/language.service';
 import { CompanyContextService } from '../../core/services/company-context.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <header class="app-header glass-panel">
       <!-- 1. Company Brand & White-labeling Section -->
@@ -43,7 +44,21 @@ import { CompanyContextService } from '../../core/services/company-context.servi
         </div>
       </div>
 
-      <!-- 2. Active Branch & Actions -->
+      <!-- 2. Middle Navigation Section: Dashboard Link -->
+      <nav class="header-nav">
+        <a 
+          routerLink="/dashboard" 
+          routerLinkActive="active" 
+          class="dashboard-nav-btn"
+          [title]="langService.currentLang() === 'ar' ? 'الذهاب إلى لوحة القيادة' : 'Go to Executive Dashboard'">
+          <div class="nav-icon-circle">
+            <i class="pi pi-th-large"></i>
+          </div>
+          <span class="nav-text">{{ langService.currentLang() === 'ar' ? 'لوحة القيادة' : 'Dashboard' }}</span>
+        </a>
+      </nav>
+
+      <!-- 3. Active Branch & Actions -->
       <div class="actions-section">
         <!-- Branch Selector Badge -->
         <div class="branch-pill">
@@ -72,6 +87,7 @@ import { CompanyContextService } from '../../core/services/company-context.servi
       top: 1rem;
       z-index: 100;
       transition: all 0.3s ease;
+      gap: 1rem;
     }
 
     .brand-section {
@@ -141,6 +157,68 @@ import { CompanyContextService } from '../../core/services/company-context.servi
       color: #cbd5e1;
     }
 
+    /* Middle Nav: Dashboard Button */
+    .header-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dashboard-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: #F8FAFC;
+      border: 1.5px solid #E2E8F0;
+      padding: 0.45rem 1.15rem;
+      border-radius: 9999px;
+      color: #334155;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 700;
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+
+      .nav-icon-circle {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #ECFDF5;
+        color: #059669;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        transition: all 0.2s ease;
+      }
+
+      &:hover {
+        background: #F0FDF4;
+        border-color: #10B981;
+        color: #047857;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+
+        .nav-icon-circle {
+          background: #10B981;
+          color: #FFFFFF;
+        }
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+        border-color: #059669;
+        color: #FFFFFF;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+
+        .nav-icon-circle {
+          background: rgba(255, 255, 255, 0.25);
+          color: #FFFFFF;
+        }
+      }
+    }
+
+    /* Actions Section */
     .actions-section {
       display: flex;
       align-items: center;

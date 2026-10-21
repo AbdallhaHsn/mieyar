@@ -129,18 +129,13 @@
             <div class="form-row-2 mt-4">
               <div class="form-group flex-2">
                 <label class="form-label">الحساب الأب (Parent Account):</label>
-                <select 
-                  formControlName="parentAccountId" 
-                  class="form-control"
-                  (change)="onParentSelected(accountForm.get('parentAccountId')?.value)"
-                >
-                  <option value="">بدون حساب أب (حساب جذري مستوى 1)</option>
-                  @for (parent of availableParents(); track parent.id) {
-                    <option [value]="parent.id">
-                      {{ parent.accountCode }} - {{ parent.nameAr }} (مستوى {{ parent.level }})
-                    </option>
-                  }
-                </select>
+                <app-account-picker 
+                  formControlName="parentAccountId"
+                  [accounts]="availableParents()"
+                  [allowRootOption]="true"
+                  placeholder="بدون حساب أب (حساب جذري مستوى 1)"
+                  (accountSelect)="onParentAccountPicked($event)"
+                ></app-account-picker>
               </div>
 
               <!-- Level Display Badge -->

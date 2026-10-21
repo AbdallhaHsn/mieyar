@@ -12,5 +12,6 @@ public interface IAccountRepository
     Task<bool> HasAnyAccountsAsync(Guid companyId, CancellationToken cancellationToken = default);
     Task AddAsync(Account account, CancellationToken cancellationToken = default);
     Task AddRangeAsync(IEnumerable<Account> accounts, CancellationToken cancellationToken = default);
+    void Remove(Account account);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

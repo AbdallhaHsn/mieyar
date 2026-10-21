@@ -68,6 +68,11 @@ public class AccountRepository : IAccountRepository
         await _dbContext.Accounts.AddRangeAsync(accounts, cancellationToken);
     }
 
+    public void Remove(Account account)
+    {
+        _dbContext.Accounts.Remove(account);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await _dbContext.SaveChangesAsync(cancellationToken);

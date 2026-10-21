@@ -1,0 +1,782 @@
+<div class="journal-create-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Top Navigation & Status Bar -->
+  <header class="create-header">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="cancel()" title="العودة">
+        <i class="pi pi-arrow-right" *ngIf="langService.currentLang() === 'ar'"></i>
+        <i class="pi pi-arrow-left" *ngIf="langService.currentLang() !== 'ar'"></i>
+        <span>{{ langService.currentLang() === 'ar' ? 'العودة للقيود' : 'Back to Entries' }}</span>
+      </button>
+
+      <div class="header-title-box">
+        <div class="badge-icon">
+          <i class="pi pi-book"></i>
+        </div>
+        <div>
+          <h1 class="page-title">
+            {{ langService.currentLang() === 'ar' ? 'إنشاء قيد يومية عامة فائق السرعة' : 'High-Speed Journal Entry' }}
+          </h1>
+          <span class="compliance-pill">
+            <i class="pi pi-shield"></i>
+            {{ langService.currentLang() === 'ar' ? 'معتمد وفق معايير المحاسبة SOCPA & IFRS' : 'SOCPA & IFRS Double-Entry Engine' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Auto-Save & Offline Status Bar -->
+    <div class="header-right">
+      <!-- Connectivity Indicator -->
+      <div class="status-chip" [class.online]="isOnline()" [class.offline]="!isOnline()">
+        <span class="status-dot"></span>
+        <span class="status-text">
+          {{ isOnline() ? (langService.currentLang() === 'ar' ? 'متصل بالسيرفر' : 'Online') : (langService.currentLang() === 'ar' ? 'وضع عدم الاتصال (Offline)' : 'Offline Mode') }}
+        </span>
+      </div>
+
+      <!-- Auto-Save Status Pill -->
+      <div class="autosave-pill" [class.saving]="autoSaveStatus() === 'saving'" [class.saved]="autoSaveStatus() === 'saved'">
+        <i class="pi pi-spin pi-spinner" *ngIf="autoSaveStatus() === 'saving'"></i>
+        <i class="pi pi-check-circle" *ngIf="autoSaveStatus() === 'saved'"></i>
+        <i class="pi pi-save" *ngIf="autoSaveStatus() === 'idle'"></i>
+        <i class="pi pi-cloud-offline" *ngIf="autoSaveStatus() === 'offline'"></i>
+        <span *ngIf="autoSaveStatus() === 'saving'">{{ langService.currentLang() === 'ar' ? 'جاري الحفظ التلقائي...' : 'Saving...' }}</span>
+        <span *ngIf="autoSaveStatus() === 'saved'">{{ langService.currentLang() === 'ar' ? 'محفوظ محلياً (' + lastSavedTime() + ')' : 'Auto-saved (' + lastSavedTime() + ')' }}</span>
+        <span *ngIf="autoSaveStatus() === 'offline'">{{ langService.currentLang() === 'ar' ? 'محفوظ في المتصفح بأمان' : 'Safely Saved Locally' }}</span>
+        <span *ngIf="autoSaveStatus() === 'idle'">{{ langService.currentLang() === 'ar' ? 'حفظ ذكي مستمر' : 'Smart Auto-Save' }}</span>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <button type="button" class="btn-icon" (click)="showShortcutsModal.set(true)" title="اختصارات لوحة المفاتيح">
+        <i class="pi pi-keyboard"></i>
+      </button>
+
+      <button type="button" class="btn-icon" (click)="exportDraftToJson()" title="تصدير نسخة احتياطية من القيد">
+        <i class="pi pi-download"></i>
+      </button>
+
+      <button type="button" class="btn-icon text-danger" (click)="discardRecoveredDraft()" title="تفريغ المسودة والبدء بقيد فارغ">
+        <i class="pi pi-trash"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Crash & Recovery Alert Banner -->
+  <div class="recovery-banner" *ngIf="hasRecoveredDraft() && recoveredDraftInfo()">
+    <div class="banner-content">
+      <div class="banner-icon">
+        <i class="pi pi-bolt"></i>
+      </div>
+      <div class="banner-text">
+        <strong>{{ langService.currentLang() === 'ar' ? 'تم استرجاع مسودة قيد سابقة تلقائياً!' : 'Previous Journal Draft Auto-Recovered!' }}</strong>
+        <p>
+          {{ langService.currentLang() === 'ar' 
+            ? 'تم العثور على قيد محفوظ يحتوي على (' + recoveredDraftInfo()?.count + ') أسطر من جلسة سابقة (محفوظ بتاريخ ' + recoveredDraftInfo()?.time + '). تم استرجاع كل البيانات لحمايتك من الضياع.' 
+            : 'Found an unsaved draft with ' + recoveredDraftInfo()?.count + ' lines from session at ' + recoveredDraftInfo()?.time + '. Restored safely.' }}
+        </p>
+      </div>
+    </div>
+    <div class="banner-actions">
+      <button type="button" class="btn-banner-action" (click)="dismissRecoveryBanner()">
+        <i class="pi pi-check"></i>
+        <span>{{ langService.currentLang() === 'ar' ? 'متابعة التحرير' : 'Continue Editing' }}</span>
+      </button>
+      <button type="button" class="btn-banner-dismiss" (click)="discardRecoveredDraft()">
+        <i class="pi pi-times"></i>
+        <span>{{ langService.currentLang() === 'ar' ? 'مسح المسودة وبدء جديد' : 'Discard Draft' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Offline Warning Banner -->
+  <div class="offline-banner" *ngIf="!isOnline()">
+    <div class="banner-icon"><i class="pi pi-wifi text-amber"></i></div>
+    <div class="banner-text">
+      <strong>{{ langService.currentLang() === 'ar' ? 'أنت تعمل حالياً بدون اتصال بالإنترنت (Offline Mode)' : 'Working in Offline Mode' }}</strong>
+      <span>{{ langService.currentLang() === 'ar' ? 'نظام الحفظ الذكي يعمل بكفاءة 100% ويقوم بتخزين كل رقم وسطر تدخله في ذاكرة المتصفح المحلية. يمكنك إكمال القيد بأمان وسيتاح الترحيل فور عودة الإنترنت.' : 'All rows and amounts are continuously preserved in local storage. Posting will resume once reconnected.' }}</span>
+    </div>
+  </div>
+
+  <!-- Main Work Area Container -->
+  <div class="work-area">
+
+    <!-- Card 1: Entry Header Information -->
+    <section class="card header-card">
+      <div class="card-header-strip">
+        <div class="section-title">
+          <i class="pi pi-file-edit text-emerald"></i>
+          <h3>{{ langService.currentLang() === 'ar' ? 'بيانات وترويسة القيد المحاسبي' : 'Journal Entry Header Details' }}</h3>
+        </div>
+        <div class="entry-type-pills">
+          <button 
+            type="button" 
+            class="type-pill" 
+            [class.active]="entryModel.entryType === 1" 
+            (click)="entryModel.entryType = 1; triggerAutoSave()">
+            {{ langService.currentLang() === 'ar' ? 'قيد يومية عادي' : 'Daily Entry' }}
+          </button>
+          <button 
+            type="button" 
+            class="type-pill" 
+            [class.active]="entryModel.entryType === 2" 
+            (click)="entryModel.entryType = 2; triggerAutoSave()">
+            {{ langService.currentLang() === 'ar' ? 'قيد افتتاحي' : 'Opening Entry' }}
+          </button>
+          <button 
+            type="button" 
+            class="type-pill" 
+            [class.active]="entryModel.entryType === 3" 
+            (click)="entryModel.entryType = 3; triggerAutoSave()">
+            {{ langService.currentLang() === 'ar' ? 'تسوية جردية' : 'Adjustment' }}
+          </button>
+          <button 
+            type="button" 
+            class="type-pill" 
+            [class.active]="entryModel.entryType === 4" 
+            (click)="entryModel.entryType = 4; triggerAutoSave()">
+            {{ langService.currentLang() === 'ar' ? 'إقفال سنوي' : 'Closing Entry' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <!-- Field 1: Entry Date -->
+        <div class="field-box">
+          <label>{{ langService.currentLang() === 'ar' ? 'تاريخ القيد:' : 'Entry Date:' }} <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="pi pi-calendar"></i>
+            <input type="date" class="form-control" [(ngModel)]="entryModel.entryDate" (ngModelChange)="triggerAutoSave()" />
+          </div>
+        </div>
+
+        <!-- Field 2: Reference Number -->
+        <div class="field-box">
+          <label>{{ langService.currentLang() === 'ar' ? 'رقم المرجع / السند:' : 'Reference No:' }}</label>
+          <div class="input-with-icon">
+            <i class="pi pi-hashtag"></i>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="entryModel.referenceNumber" 
+              (ngModelChange)="triggerAutoSave()"
+              [placeholder]="langService.currentLang() === 'ar' ? 'مثال: INV-2026-004' : 'e.g. INV-2026-004'" 
+            />
+          </div>
+        </div>
+
+        <!-- Field 3: Entry Type Select -->
+        <div class="field-box">
+          <label>{{ langService.currentLang() === 'ar' ? 'نوع الحركة المحاسبية:' : 'Entry Category:' }}</label>
+          <div class="input-with-icon">
+            <i class="pi pi-tag"></i>
+            <select class="form-control" [(ngModel)]="entryModel.entryType" (ngModelChange)="triggerAutoSave()">
+              <option [value]="1">{{ langService.currentLang() === 'ar' ? 'قيد يومية عادي (Daily)' : 'Daily Entry' }}</option>
+              <option [value]="2">{{ langService.currentLang() === 'ar' ? 'قيد افتتاحي (Opening)' : 'Opening Entry' }}</option>
+              <option [value]="3">{{ langService.currentLang() === 'ar' ? 'قيد تسوية جردية (Adjustment)' : 'Adjustment Entry' }}</option>
+              <option [value]="4">{{ langService.currentLang() === 'ar' ? 'قيد إقفال سنوي (Closing)' : 'Closing Entry' }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Smart Unified Narration Field with Instant Bidirectional Translation -->
+        <div class="narration-smart-container col-span-full">
+          <div class="narration-header-bar">
+            <div class="label-group">
+              <label class="smart-label">
+                <i class="pi pi-sparkles text-emerald"></i>
+                <span>{{ langService.currentLang() === 'ar' ? 'البيان العام للقيد (إدخال موحد مع ترجمة ذكية فورية):' : 'General Narration (Smart Unified Entry):' }}</span>
+                <span class="required">*</span>
+              </label>
+
+              <!-- Language & Translation Status Badge -->
+              <div class="lang-detector-badge" *ngIf="primaryInputText().trim()">
+                <span class="badge-lang" [class.ar]="detectedLanguage() === 'ar'" [class.en]="detectedLanguage() === 'en'">
+                  {{ detectedLanguage() === 'ar' ? 'مدخل بالعربية' : 'Entered in English' }}
+                </span>
+                <i class="pi pi-arrow-left arrow-direction" *ngIf="langService.currentLang() === 'ar'"></i>
+                <i class="pi pi-arrow-right arrow-direction" *ngIf="langService.currentLang() !== 'ar'"></i>
+                <span class="badge-target">
+                  {{ detectedLanguage() === 'ar' ? 'يترجم للإنجليزية تلقائياً' : 'Auto-translating to Arabic' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Auto-translate Switch & Actions -->
+            <div class="narration-actions">
+              <button 
+                type="button" 
+                class="btn-toggle-translate" 
+                [class.active]="isAutoTranslateActive()" 
+                (click)="toggleAutoTranslate()"
+                title="تفعيل/تعطيل الترجمة الفورية">
+                <i class="pi pi-language"></i>
+                <span>{{ isAutoTranslateActive() ? (langService.currentLang() === 'ar' ? 'الترجمة التلقائية نشطة' : 'Auto-Translate Active') : (langService.currentLang() === 'ar' ? 'تفعيل الترجمة التلقائية' : 'Enable Auto-Translate') }}</span>
+              </button>
+
+              <button 
+                type="button" 
+                class="btn-text-action" 
+                (click)="propagateGeneralDescription()" 
+                *ngIf="primaryInputText().trim()"
+                title="تعميم هذا البيان على أسطر القيد الفارغة">
+                <i class="pi pi-copy"></i>
+                <span>{{ langService.currentLang() === 'ar' ? 'تعميم على أسطر القيد' : 'Propagate to lines' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Input Field (User types once here in ANY language) -->
+          <div class="input-with-icon narration-main-input">
+            <i class="pi pi-pencil"></i>
+            <textarea 
+              rows="2" 
+              class="form-control smart-input smart-textarea" 
+              [ngModel]="primaryInputText()" 
+              (ngModelChange)="onPrimaryNarrationChange($event)"
+              [placeholder]="langService.currentLang() === 'ar' 
+                ? 'اكتب البيان بالعربية أو الإنجليزية (مثال: سداد مصروف إيجار المقر لشهر أكتوبر أو October rent payment)...' 
+                : 'Type narration in Arabic or English...'"
+            ></textarea>
+          </div>
+
+          <!-- Live Dynamic Translation Result Card -->
+          <div class="translation-preview-box" *ngIf="primaryInputText().trim()">
+            <div class="translation-preview-content">
+              <div class="preview-title">
+                <i class="pi pi-globe text-cyan"></i>
+                <span class="title-text">
+                  {{ detectedLanguage() === 'ar' 
+                    ? (langService.currentLang() === 'ar' ? 'الترجمة الإنجليزية التلقائية المقابلة:' : 'Auto-Translated English:') 
+                    : (langService.currentLang() === 'ar' ? 'الترجمة العربية التلقائية المقابلة:' : 'Auto-Translated Arabic:') }}
+                </span>
+              </div>
+
+              <!-- Translated Result Display -->
+              <div class="preview-value-box">
+                <span class="translated-text">
+                  {{ detectedLanguage() === 'ar' ? (entryModel.descriptionEn || '...') : (entryModel.descriptionAr || '...') }}
+                </span>
+
+                <button 
+                  type="button" 
+                  class="btn-edit-translation" 
+                  (click)="toggleManualTranslation()"
+                  title="تعديل الترجمة يدويًا">
+                  <i class="pi pi-pencil"></i>
+                  <span>{{ showManualTranslation() ? (langService.currentLang() === 'ar' ? 'إخفاء التعديل' : 'Close') : (langService.currentLang() === 'ar' ? 'تعديل الترجمة يدويًا' : 'Edit Manually') }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Manual Override Input (Collapsible) -->
+            <div class="manual-override-panel" *ngIf="showManualTranslation()">
+              <label class="override-label">
+                {{ detectedLanguage() === 'ar' 
+                  ? (langService.currentLang() === 'ar' ? 'تعديل النص الإنجليزي المقابل:' : 'Edit English text:') 
+                  : (langService.currentLang() === 'ar' ? 'تعديل النص العربي المقابل:' : 'Edit Arabic text:') }}
+              </label>
+              <input 
+                type="text" 
+                class="form-control override-input" 
+                [ngModel]="detectedLanguage() === 'ar' ? entryModel.descriptionEn : entryModel.descriptionAr" 
+                (ngModelChange)="onManualTranslationChange($event)" 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Card 2: High-Speed Lines Grid & Rapid Toolbar -->
+    <section class="card lines-card">
+      <div class="lines-toolbar">
+        <div class="toolbar-left">
+          <div class="section-title">
+            <i class="pi pi-list text-cyan"></i>
+            <h3>{{ langService.currentLang() === 'ar' ? 'أسطر وأطراف القيد المحاسبي المزدوج' : 'Double-Entry Lines Grid' }}</h3>
+          </div>
+          <div class="lines-counter">
+            <span class="count-badge">{{ lines().length }} {{ langService.currentLang() === 'ar' ? 'سطر' : 'Lines' }}</span>
+            <span class="valid-badge" *ngIf="validLinesCount() > 0">
+              <i class="pi pi-check"></i>
+              {{ validLinesCount() }} {{ langService.currentLang() === 'ar' ? 'مكتمل' : 'Completed' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rapid Actions -->
+        <div class="toolbar-actions">
+          <button type="button" class="btn-action primary" (click)="addLine()" title="إضافة سطر جديد (Alt + N أو F2)">
+            <i class="pi pi-plus"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'إضافة سطر (Alt+N)' : 'Add Line (Alt+N)' }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn-action balance" 
+            (click)="autoBalance()" 
+            title="موازنة القيد التلقائية بحساب الفارق (Alt + B)">
+            <i class="pi pi-sliders-h"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'موازنة تلقائية (Alt+B)' : 'Auto Balance (Alt+B)' }}</span>
+          </button>
+
+          <button type="button" class="btn-action excel" (click)="openExcelModal()" title="لصق بيانات جدول من Excel (Alt + E)">
+            <i class="pi pi-file-excel"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'لصق من Excel' : 'Paste from Excel' }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn-action secondary" 
+            (click)="propagateGeneralDescription()"
+            title="ملء البيان للأسطر الفارغة من البيان العام">
+            <i class="pi pi-sync"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'تعبئة البيان' : 'Fill Descriptions' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Excel-Like Table Grid -->
+      <div class="table-container">
+        <table class="grid-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-account">{{ langService.currentLang() === 'ar' ? 'الحساب المحاسبي (ابحث بالكود أو الاسم)' : 'Account (Search by code or name)' }} <span class="required">*</span></th>
+              <th class="col-cost-center">{{ langService.currentLang() === 'ar' ? 'مركز التكلفة' : 'Cost Center' }}</th>
+              <th class="col-desc">{{ langService.currentLang() === 'ar' ? 'بيان السطر المحاسبي' : 'Line Narration' }}</th>
+              <th class="col-amount debit-head">{{ langService.currentLang() === 'ar' ? 'مدين (Debit SAR)' : 'Debit (SAR)' }}</th>
+              <th class="col-amount credit-head">{{ langService.currentLang() === 'ar' ? 'دائن (Credit SAR)' : 'Credit (SAR)' }}</th>
+              <th class="col-actions">{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of lines(); let i = index; trackBy: trackByLineId" [class.highlight-row]="i % 2 === 1" [class.row-picker-open]="line.isPickerOpen">
+              <!-- Index Number & Move Handles -->
+              <td class="col-num cell-center">
+                <div class="row-num-box">
+                  <span class="index-num">{{ i + 1 }}</span>
+                  <div class="move-buttons">
+                    <button type="button" class="btn-move" (click)="moveLineUp(i)" [disabled]="i === 0" title="تحريك لأعلى">
+                      <i class="pi pi-chevron-up"></i>
+                    </button>
+                    <button type="button" class="btn-move" (click)="moveLineDown(i)" [disabled]="i === lines().length - 1" title="تحريك لأسفل">
+                      <i class="pi pi-chevron-down"></i>
+                    </button>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Smart Account Search & Autocomplete Cell -->
+              <td class="col-account account-search-cell" [class.picker-active]="line.isPickerOpen">
+                <div class="account-selector-box" (click)="$event.stopPropagation()">
+                  <div 
+                    class="account-display-trigger" 
+                    [id]="'account-trigger-' + i"
+                    (click)="openAccountPicker(line)"
+                    [class.is-selected]="!!line.accountId"
+                    [class.is-open]="line.isPickerOpen"
+                    [class.is-empty]="!line.accountId">
+                    <div class="account-info" *ngIf="line.accountId">
+                      <span class="code-badge font-mono">{{ line.accountCode }}</span>
+                      <span class="name-text">{{ langService.currentLang() === 'ar' ? line.accountNameAr : line.accountNameEn }}</span>
+                    </div>
+                    <div class="placeholder-text" *ngIf="!line.accountId">
+                      <i class="pi pi-search"></i>
+                      <span>{{ langService.currentLang() === 'ar' ? 'اختر الحساب المحاسبي...' : 'Select Account...' }}</span>
+                    </div>
+                    <div class="trigger-controls">
+                      <button 
+                        type="button" 
+                        class="btn-clear-account" 
+                        *ngIf="line.accountId" 
+                        (click)="clearSelectedAccount(line, $event)"
+                        title="مسح الحساب المختار">
+                        <i class="pi pi-times"></i>
+                      </button>
+                      <i class="pi pi-chevron-down caret-icon" [class.rotated]="line.isPickerOpen"></i>
+                    </div>
+                  </div>
+
+                  <!-- High-Visibility Floating Autocomplete Dropdown -->
+                  <div class="account-dropdown-panel" [class.drop-up]="isNearBottom(i)" *ngIf="line.isPickerOpen">
+                    <!-- Search Input Box with Clear Button -->
+                    <div class="dropdown-search-box">
+                      <i class="pi pi-search search-ico"></i>
+                      <input 
+                        type="text" 
+                        class="account-search-input"
+                        [id]="'account-search-input-' + i"
+                        [(ngModel)]="line.searchFilter" 
+                        (ngModelChange)="onAccountFilterChange(line, i)"
+                        (keydown)="onAccountSearchKeydown($event, line, i)"
+                        [placeholder]="langService.currentLang() === 'ar' ? 'ابحث برقم الحساب أو الاسم (مثال: 10101 أو بنك الراجحي)...' : 'Search code or name...'"
+                        autofocus
+                      />
+                      <button 
+                        type="button" 
+                        class="btn-clear-search" 
+                        *ngIf="line.searchFilter" 
+                        (click)="line.searchFilter = ''; onAccountFilterChange(line, i)">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+
+                    <!-- Category Filter Tabs -->
+                    <div class="dropdown-categories-bar">
+                      <button 
+                        type="button" 
+                        class="cat-chip" 
+                        *ngFor="let cat of accountCategories"
+                        [class.active]="selectedAccountCategory() === cat.id"
+                        (click)="setCategoryFilter(cat.id)">
+                        <span>{{ langService.currentLang() === 'ar' ? cat.labelAr : cat.labelEn }}</span>
+                      </button>
+                    </div>
+
+                    <!-- Count & Quick Instructions Header with Auto-Select Badge -->
+                    <div class="dropdown-header-stats">
+                      <div class="stats-left">
+                        <span class="count-tag">
+                          <i class="pi pi-list"></i>
+                          {{ langService.currentLang() === 'ar' ? 'الحسابات الفرعية (' + getFilteredAccounts(line.searchFilter).length + '):' : 'Postable Accounts (' + getFilteredAccounts(line.searchFilter).length + '):' }}
+                        </span>
+                        <!-- Quick Match Pill -->
+                        <span class="match-pill" *ngIf="isExactMatch(line.searchFilter) || getFilteredAccounts(line.searchFilter).length === 1">
+                          <i class="pi pi-bolt"></i>
+                          {{ langService.currentLang() === 'ar' ? 'اضغط Enter أو Tab للاختيار الفوري' : 'Press Enter or Tab to select' }}
+                        </span>
+                      </div>
+                      <button 
+                        type="button" 
+                        class="btn-toggle-instant" 
+                        [class.active]="autoSelectExactMatch()" 
+                        (click)="toggleAutoSelectExactMatch()" 
+                        title="تفعيل/تعطيل الاختيار التلقائي الفوري بمجرد كتابة رقم الحساب">
+                        <i class="pi pi-bolt"></i>
+                        <span>{{ autoSelectExactMatch() ? (langService.currentLang() === 'ar' ? 'اختيار فوري بالكود نشط' : 'Instant Code Select On') : (langService.currentLang() === 'ar' ? 'تفعيل الاختيار الفوري' : 'Enable Instant Select') }}</span>
+                      </button>
+                    </div>
+
+                    <!-- Filtered Options List -->
+                    <div class="dropdown-list">
+                      <div 
+                        class="dropdown-item" 
+                        *ngFor="let acc of getFilteredAccounts(line.searchFilter); let accIdx = index" 
+                        [class.keyboard-highlight]="accIdx === highlightedAccountIndex()"
+                        (click)="selectAccount(line, acc, i)">
+                        <div class="acc-meta">
+                          <span class="code font-mono">{{ acc.accountCode }}</span>
+                          <div class="name-block">
+                            <span class="primary-name">{{ langService.currentLang() === 'ar' ? acc.nameAr : acc.nameEn }}</span>
+                            <span class="sub-name" *ngIf="acc.nameEn && langService.currentLang() === 'ar'">{{ acc.nameEn }}</span>
+                          </div>
+                        </div>
+                        <div class="pills-meta">
+                          <span class="key-hint" *ngIf="accIdx === highlightedAccountIndex()">
+                            <kbd>Enter</kbd> / <kbd>Tab</kbd>
+                          </span>
+                          <span class="type-pill-sm">{{ acc.accountTypeNameAr }}</span>
+                          <span class="nature-pill" [class.debit]="acc.accountNature === 1" [class.credit]="acc.accountNature === 2">
+                            {{ acc.accountNature === 1 ? (langService.currentLang() === 'ar' ? 'مدين' : 'Debit') : (langService.currentLang() === 'ar' ? 'دائن' : 'Credit') }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="dropdown-empty" *ngIf="getFilteredAccounts(line.searchFilter).length === 0">
+                        <i class="pi pi-info-circle"></i>
+                        <span>{{ langService.currentLang() === 'ar' ? 'لا يوجد حساب فرعي يقبل الحركة بهذا الاسم' : 'No matching postable accounts found' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Cost Center Cell -->
+              <td class="col-cost-center">
+                <select 
+                  class="grid-select" 
+                  [id]="'cost-center-' + i"
+                  [(ngModel)]="line.costCenterId" 
+                  (ngModelChange)="triggerAutoSave()"
+                  (keydown)="onCostCenterKeyDown($event, i)">
+                  <option [ngValue]="undefined">{{ langService.currentLang() === 'ar' ? '— بدون مركز تكلفة —' : '— None —' }}</option>
+                  <option *ngFor="let cc of costCenters" [value]="cc.id">
+                    {{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : cc.nameEn }}
+                  </option>
+                </select>
+              </td>
+
+              <!-- Line Description Cell -->
+              <td class="col-desc">
+                <input 
+                  type="text" 
+                  class="grid-input" 
+                  [id]="'desc-input-' + i"
+                  [(ngModel)]="line.description" 
+                  (ngModelChange)="triggerAutoSave()"
+                  (keydown)="onDescKeyDown($event, i)"
+                  [placeholder]="langService.currentLang() === 'ar' ? 'بيان تفصيلي للسطر...' : 'Line description...'" 
+                />
+              </td>
+
+              <!-- Debit Amount Cell -->
+              <td class="col-amount">
+                <div class="amount-input-box debit-box">
+                  <input 
+                    type="number" 
+                    class="grid-input amount-field debit font-mono" 
+                    [id]="'debit-input-' + i"
+                    [(ngModel)]="line.debit" 
+                    (ngModelChange)="onDebitChange(line)"
+                    (keydown)="onDebitKeyDown($event, i)"
+                    min="0" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                  />
+                  <span class="curr-tag">SAR</span>
+                </div>
+              </td>
+
+              <!-- Credit Amount Cell -->
+              <td class="col-amount">
+                <div class="amount-input-box credit-box">
+                  <input 
+                    type="number" 
+                    class="grid-input amount-field credit font-mono" 
+                    [id]="'credit-input-' + i"
+                    [(ngModel)]="line.credit" 
+                    (ngModelChange)="onCreditChange(line)"
+                    (keydown)="onCreditKeyDown($event, i)"
+                    min="0" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                  />
+                  <span class="curr-tag">SAR</span>
+                </div>
+              </td>
+
+              <!-- Actions Cell (Duplicate, Delete) -->
+              <td class="col-actions cell-center">
+                <div class="row-actions">
+                  <button 
+                    type="button" 
+                    class="btn-row-action duplicate" 
+                    (click)="duplicateLine(i)" 
+                    title="تكرار هذا السطر">
+                    <i class="pi pi-clone"></i>
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn-row-action delete" 
+                    (click)="removeLine(i)" 
+                    [disabled]="lines().length <= 2"
+                    title="حذف هذا السطر">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add Row Quick Strip at Bottom of Table -->
+      <div class="table-bottom-bar">
+        <button type="button" class="btn-add-bottom" (click)="addLine()">
+          <i class="pi pi-plus-circle"></i>
+          <span>{{ langService.currentLang() === 'ar' ? 'إضافة سطر محاسبي جديد (اضغط Tab أو Enter من خانة الدائن للتوليد السريع)' : 'Add New Row (or press Tab/Enter on Credit field)' }}</span>
+        </button>
+        <div class="keyboard-hint">
+          <kbd>Alt</kbd> + <kbd>N</kbd> {{ langService.currentLang() === 'ar' ? 'إضافة سطر' : 'Add' }}
+          &bull;
+          <kbd>Alt</kbd> + <kbd>B</kbd> {{ langService.currentLang() === 'ar' ? 'موازنة' : 'Balance' }}
+          &bull;
+          <kbd>Alt</kbd> + <kbd>S</kbd> {{ langService.currentLang() === 'ar' ? 'مسودة' : 'Draft' }}
+          &bull;
+          <kbd>Alt</kbd> + <kbd>P</kbd> {{ langService.currentLang() === 'ar' ? 'ترحيل' : 'Post' }}
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Sticky Bottom Balance & Submit Dock -->
+  <footer class="bottom-dock">
+    <div class="dock-container">
+
+      <!-- Balance Overview Cards -->
+      <div class="balance-cards">
+        <div class="stat-card debit">
+          <span class="stat-label">{{ langService.currentLang() === 'ar' ? 'إجمالي المدين (Debit)' : 'Total Debit' }}</span>
+          <strong class="stat-value font-mono">{{ totalDebit() | number:'1.2-2' }} <small>SAR</small></strong>
+        </div>
+
+        <div class="stat-card credit">
+          <span class="stat-label">{{ langService.currentLang() === 'ar' ? 'إجمالي الدائن (Credit)' : 'Total Credit' }}</span>
+          <strong class="stat-value font-mono">{{ totalCredit() | number:'1.2-2' }} <small>SAR</small></strong>
+        </div>
+
+        <!-- Dynamic Difference & Balance State -->
+        <div class="stat-card diff" [class.balanced]="isBalanced()" [class.unbalanced]="!isBalanced()">
+          <span class="stat-label">{{ langService.currentLang() === 'ar' ? 'الفرق (التباين)' : 'Difference' }}</span>
+          <div class="diff-val-box font-mono">
+            <strong>{{ difference() | number:'1.2-2' }} <small>SAR</small></strong>
+            <button 
+              type="button" 
+              class="btn-quick-balance" 
+              (click)="autoBalance()" 
+              *ngIf="!isBalanced() && (totalDebit() > 0 || totalCredit() > 0)"
+              title="موازنة فورية">
+              <i class="pi pi-sliders-h"></i>
+              <span>{{ langService.currentLang() === 'ar' ? 'موازنة' : 'Balance' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Visual Balance Status Pill -->
+        <div class="balance-status-badge" [class.balanced]="isBalanced()" [class.unbalanced]="!isBalanced()">
+          <i class="pi pi-check-circle" *ngIf="isBalanced()"></i>
+          <i class="pi pi-exclamation-triangle" *ngIf="!isBalanced()"></i>
+          <span>
+            {{ isBalanced() 
+              ? (langService.currentLang() === 'ar' ? 'القيد متوازن تماماً (جاهز للترحيل)' : 'Entry is Perfectly Balanced') 
+              : (langService.currentLang() === 'ar' ? 'القيد غير متوازن' : 'Entry is Unbalanced') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Main Action Buttons -->
+      <div class="dock-actions">
+        <button type="button" class="btn-dock cancel" (click)="cancel()">
+          {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+        </button>
+
+        <button 
+          type="button" 
+          class="btn-dock draft" 
+          (click)="submitEntry(false)" 
+          [disabled]="isSubmitting()">
+          <i class="pi pi-save"></i>
+          <span>{{ langService.currentLang() === 'ar' ? 'حفظ كمسودة (Alt+S)' : 'Save as Draft (Alt+S)' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="btn-dock post" 
+          (click)="submitEntry(true)" 
+          [disabled]="isSubmitting() || !isBalanced()">
+          <i class="pi pi-send"></i>
+          <span>{{ langService.currentLang() === 'ar' ? 'ترحيل القيد فوراً (Alt+P)' : 'Post Entry (Alt+P)' }}</span>
+        </button>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Modal 1: Excel / CSV Rapid Paste Importer -->
+  <div class="modal-backdrop" *ngIf="showExcelModal()" (click)="closeExcelModal()">
+    <div class="modal-card excel-modal" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-file-excel text-emerald"></i>
+          <h3>{{ langService.currentLang() === 'ar' ? 'استيراد ولصق أسطر القيد من Excel / Sheets' : 'Paste Rows from Excel / Sheets' }}</h3>
+        </div>
+        <button type="button" class="btn-close" (click)="closeExcelModal()"><i class="pi pi-times"></i></button>
+      </header>
+
+      <div class="modal-body">
+        <div class="excel-guide">
+          <i class="pi pi-info-circle text-cyan"></i>
+          <div>
+            <strong>{{ langService.currentLang() === 'ar' ? 'طريقة الاستخدام السريعة:' : 'Quick How-To:' }}</strong>
+            <p>
+              {{ langService.currentLang() === 'ar' 
+                ? 'انسخ الأعمدة من ملف Excel أو Google Sheets (رقم الحساب، البيان، المدين، الدائن) ثم الصقها في الحقل أدناه مباشرة. سيقوم النظام بتحليل الأسطر ومطابقة الحسابات وتوزيع المبالغ آلياً.' 
+                : 'Copy columns from Excel (Account Code, Description, Debit, Credit) and paste below. The system will auto-match accounts and populate rows.' }}
+            </p>
+          </div>
+        </div>
+
+        <textarea 
+          class="excel-textarea font-mono" 
+          [(ngModel)]="excelRawText" 
+          (ngModelChange)="onExcelTextChange()"
+          rows="9"
+          [placeholder]="langService.currentLang() === 'ar' ? 'الصق محتوى جدول الإكسل هنا (Ctrl + V)...' : 'Paste table data here (Ctrl + V)...'">
+        </textarea>
+
+        <div class="excel-footer-info" *ngIf="excelPreviewCount() > 0">
+          <span class="preview-badge">
+            <i class="pi pi-check"></i>
+            {{ langService.currentLang() === 'ar' ? 'تم رصد ' + excelPreviewCount() + ' سطر جاهز للاستيراد' : excelPreviewCount() + ' lines detected' }}
+          </span>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn-modal cancel" (click)="closeExcelModal()">
+          {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+        </button>
+        <button type="button" class="btn-modal confirm" (click)="importExcelData()">
+          <i class="pi pi-download"></i>
+          <span>{{ langService.currentLang() === 'ar' ? 'استيراد وتوليد الأسطر' : 'Import Rows' }}</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modal 2: Keyboard Shortcuts Help -->
+  <div class="modal-backdrop" *ngIf="showShortcutsModal()" (click)="showShortcutsModal.set(false)">
+    <div class="modal-card shortcuts-modal" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-keyboard text-emerald"></i>
+          <h3>{{ langService.currentLang() === 'ar' ? 'اختصارات لوحة المفاتيح للمحاسب السريع' : 'Keyboard Shortcuts for Rapid Entry' }}</h3>
+        </div>
+        <button type="button" class="btn-close" (click)="showShortcutsModal.set(false)"><i class="pi pi-times"></i></button>
+      </header>
+
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Alt</kbd> + <kbd>N</kbd> <span class="or">أو</span> <kbd>F2</kbd></div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'إضافة سطر محاسبي جديد فوري' : 'Add New Journal Line' }}</span>
+          </div>
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Alt</kbd> + <kbd>B</kbd></div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'موازنة القيد التلقائية بحساب الفارق' : 'Auto Balance Entry' }}</span>
+          </div>
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Alt</kbd> + <kbd>E</kbd></div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'فتح نافذة لصق بيانات الإكسل' : 'Open Excel Paste Importer' }}</span>
+          </div>
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Alt</kbd> + <kbd>S</kbd></div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'حفظ القيد كمسودة في السيرفر' : 'Save Entry as Draft' }}</span>
+          </div>
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Alt</kbd> + <kbd>P</kbd></div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'ترحيل القيد المالي فوراً' : 'Post Entry Immediately' }}</span>
+          </div>
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Enter</kbd> / <kbd>Tab</kbd> في الدائن</div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'الانتقال للسطر الجديد تلقائياً في نهاية الجدول' : 'Auto-adds new line on last row' }}</span>
+          </div>
+          <div class="shortcut-item">
+            <div class="keys"><kbd>Esc</kbd></div>
+            <span class="desc">{{ langService.currentLang() === 'ar' ? 'إغلاق القوائم المنسدلة والنوافذ' : 'Close dropdowns or modals' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn-modal confirm" (click)="showShortcutsModal.set(false)">
+          {{ langService.currentLang() === 'ar' ? 'فهمت ذلك' : 'Got it' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+
+</div>

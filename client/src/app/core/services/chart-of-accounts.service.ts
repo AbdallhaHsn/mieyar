@@ -89,6 +89,39 @@ export class ChartOfAccountsService {
     );
   }
 
+  updateAccount(id: string, request: { nameAr: string; nameEn: string; description?: string; isActive?: boolean; standardCode?: string }): Observable<AccountDto> {
+    this.isLoading.set(true);
+    return this.http.put<AccountDto>(`${this.apiUrl}/${id}`, request).pipe(
+      tap(() => {
+        this.isLoading.set(false);
+        this.loadAccountsTree().subscribe();
+      }),
+      catchError(err => {
+        this.isLoading.set(false);
+        const msg = err.error?.description || 'حدث خطأ أثناء تعديل الحساب.';
+        this.errorMessage.set(msg);
+        throw err;
+      })
+    );
+  }
+
+  deleteAccount(id: string): Observable<void> {
+    this.isLoading.set(true);
+    const compId = this.companyContext.activeCompany().id;
+    const params = new HttpParams().set('companyId', compId);
+
+    return this.http.delete<void>(`${this.apiUrl}/${id}`, { params }).pipe(
+      tap(() => {
+        this.isLoading.set(false);
+        this.loadAccountsTree().subscribe();
+      }),
+      catchError(err => {
+        this.isLoading.set(false);
+        throw err;
+      })
+    );
+  }
+
   openGuidanceDrawer(account: AccountDto) {
     this.inspectedAccount.set(account);
     this.drawerMode.set('view-guidance');
@@ -135,6 +168,25 @@ export class ChartOfAccountsService {
     }));
   }
 
+  exportCsv(): Observable<Blob> {
+    const compId = this.companyContext.activeCompany().id;
+    let params = new HttpParams();
+    if (compId) params = params.set('companyId', compId);
+
+    return this.http.get(`${this.apiUrl}/export-csv`, {
+      params,
+      responseType: 'blob'
+    });
+  }
+
+  importCsv(csvContent: string): Observable<{ totalRows: number; createdCount: number; updatedCount: number; errorCount: number; errorMessages: string[] }> {
+    const compId = this.companyContext.activeCompany().id;
+    return this.http.post<any>(`${this.apiUrl}/import-csv`, {
+      csvContent,
+      companyId: compId
+    });
+  }
+
   private findMatchingStandard(account: AccountDto): AccountingStandardGuidance | null {
     const list = this.standards();
     if (list.length === 0) return null;
@@ -151,3 +203,4 @@ export class ChartOfAccountsService {
     return list[0];
   }
 }
+

@@ -63,4 +63,96 @@ public class AccountsController : ControllerBase
 
         return CreatedAtAction(nameof(GetAccountsTree), new { id = result.Value.Id }, result.Value);
     }
+
+    /// <summary>
+    /// تعديل وإعادة تسمية حساب في شجرة الحسابات
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAccount(
+        [FromRoute] Guid id,
+        [FromBody] UpdateAccountRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AlRobban.Modules.GeneralLedger.Application.Commands.UpdateAccount.UpdateAccountCommand(
+            id,
+            request.NameAr,
+            request.NameEn,
+            request.Description,
+            request.IsActive,
+            request.StandardCode
+        );
+
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// حذف حساب من شجرة الحسابات (شريطة عدم وجود حسابات فرعية أو قيود مرتبطة)
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAccount([FromRoute] Guid id, [FromQuery] Guid? companyId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new AlRobban.Modules.GeneralLedger.Application.Commands.DeleteAccount.DeleteAccountCommand(id, companyId), cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// تصدير شجرة دليل الحسابات إلى ملف CSV متوافق مع Excel واللغة العربية
+    /// </summary>
+    [HttpGet("export-csv")]
+    public async Task<IActionResult> ExportCsv([FromQuery] Guid? companyId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new ExportAccountsCsvQuery(companyId), cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
+        return File(result.Value.FileBytes, result.Value.ContentType, result.Value.FileName);
+    }
+
+    /// <summary>
+    /// استيراد شجرة أو بنود دليل الحسابات دفعة واحدة من ملف أو نص CSV
+    /// </summary>
+    [HttpPost("import-csv")]
+    public async Task<IActionResult> ImportCsv([FromBody] ImportAccountsCsvRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new ImportAccountsFromCsvCommand(request.CsvContent, request.CompanyId), cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
+        return Ok(result.Value);
+    }
 }
+
+public record ImportAccountsCsvRequest(
+    string CsvContent,
+    Guid? CompanyId = null
+);
+
+public record UpdateAccountRequest(
+    string NameAr,
+    string NameEn,
+    string? Description = null,
+    bool IsActive = true,
+    string? StandardCode = null
+);
+

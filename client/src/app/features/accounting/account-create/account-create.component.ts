@@ -6,11 +6,13 @@ import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts
 import { AccountDto, AccountingStandardGuidance, AccountNature, AccountType, CreateAccountRequest, FinancialStatement } from '../../../core/models/account.model';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
+import { AccountPickerComponent } from '../../../shared/components/account-picker/account-picker.component';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-account-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AccountPickerComponent],
   templateUrl: './account-create.component.html',
   styleUrls: ['./account-create.component.scss']
 })
@@ -163,6 +165,7 @@ export class AccountCreateComponent implements OnInit {
     if (!parentId) {
       this.calculatedLevel.set(1);
       this.accountForm.patchValue({
+        parentAccountId: '',
         isPostable: false,
         accountCode: ''
       });
@@ -170,6 +173,14 @@ export class AccountCreateComponent implements OnInit {
     }
 
     this.applyParent(parentId);
+  }
+
+  onParentAccountPicked(acc: AccountDto | null): void {
+    if (!acc) {
+      this.onParentSelected('');
+      return;
+    }
+    this.applyParent(acc.id);
   }
 
   setAccountCategory(type: AccountType): void {
@@ -270,6 +281,25 @@ export class AccountCreateComponent implements OnInit {
         this.isSaving.set(false);
         this.successMessage.set(`تم حفظ الحساب (${created.accountCode} - ${created.nameAr}) بنجاح.`);
 
+        Swal.fire({
+          title: 'تم حفظ الحساب بنجاح',
+          html: `
+            <div style="font-family: inherit; text-align: center; padding: 0.25rem 0;">
+              <div style="font-size: 1.15rem; font-weight: 700; color: #065f46; margin-bottom: 0.35rem;">
+                ${created.accountCode} - ${created.nameAr}
+              </div>
+              <div style="font-size: 0.85rem; color: #64748b; font-family: monospace;">
+                ${created.nameEn}
+              </div>
+            </div>
+          `,
+          icon: 'success',
+          confirmButtonColor: '#059669',
+          confirmButtonText: 'حسناً',
+          timer: 2500,
+          timerProgressBar: true
+        });
+
         if (createAnother) {
           const currentParentId = val.parentAccountId;
           this.isTranslating = true;
@@ -288,13 +318,21 @@ export class AccountCreateComponent implements OnInit {
         } else {
           setTimeout(() => {
             this.router.navigate(['/accounting/chart-of-accounts']);
-          }, 800);
+          }, 900);
         }
       },
       error: (err) => {
         this.isSaving.set(false);
         const msg = err.error?.description || 'حدث خطأ أثناء حفظ الحساب في قاعدة البيانات.';
         this.errorMessage.set(msg);
+
+        Swal.fire({
+          title: 'تعذر حفظ الحساب',
+          text: msg,
+          icon: 'error',
+          confirmButtonColor: '#059669',
+          confirmButtonText: 'موافق'
+        });
       }
     });
   }

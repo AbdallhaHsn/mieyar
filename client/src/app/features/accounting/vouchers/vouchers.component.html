@@ -1,0 +1,553 @@
+<div class="vouchers-page rtl-container" dir="rtl">
+  <!-- Executive Top Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="title-with-badge">
+        <h1 class="page-title">سندات القبض والصرف وإدارة الخزينة</h1>
+        <span class="badge-socpa">SOCPA / IFRS</span>
+      </div>
+      <p class="page-subtitle">إدارة ومطابقة التدفقات النقدية والبنكية، التوليد التلقائي لقيود اليومية، والطباعة الرسمية</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-emerald" (click)="openCreateModal(VoucherTypeEnum.Receipt)">
+        <i class="icon-receipt">📥</i>
+        <span>سند قبض جديد</span>
+      </button>
+      <button class="btn btn-indigo" (click)="openCreateModal(VoucherTypeEnum.Payment)">
+        <i class="icon-payment">📤</i>
+        <span>سند صرف جديد</span>
+      </button>
+      <button class="btn btn-secondary" (click)="loadVouchers()" [disabled]="isLoading()">
+        <i class="icon-refresh">🔄</i>
+        <span>تحديث</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Success & Error Alerts -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <span class="alert-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <span class="alert-icon">⚠</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- ERP Metric Strip (5 Columns Compact) -->
+  <section class="metrics-strip">
+    <div class="metric-card metric-receipt">
+      <div class="metric-label">إجمالي المقبوضات (سندات القبض)</div>
+      <div class="metric-value">{{ kpis().totalReceiptsAmount | number:'1.2-2' }} <small>ر.س</small></div>
+      <div class="metric-meta">{{ kpis().receiptCount }} سند قبض معتمد</div>
+    </div>
+
+    <div class="metric-card metric-payment">
+      <div class="metric-label">إجمالي المدفوعات (سندات الصرف)</div>
+      <div class="metric-value">{{ kpis().totalPaymentsAmount | number:'1.2-2' }} <small>ر.س</small></div>
+      <div class="metric-meta">{{ kpis().paymentCount }} سند صرف معتمد</div>
+    </div>
+
+    <div class="metric-card metric-flow" [class.negative]="kpis().netCashFlow < 0">
+      <div class="metric-label">صافي التدفق النقدي من السندات</div>
+      <div class="metric-value">{{ kpis().netCashFlow | number:'1.2-2' }} <small>ر.س</small></div>
+      <div class="metric-meta">{{ kpis().netCashFlow >= 0 ? 'فائض تدفقات نقدية' : 'عجز تدفقات نقدية' }}</div>
+    </div>
+
+    <div class="metric-card metric-posted">
+      <div class="metric-label">السندات المرحّلة محاسبياً</div>
+      <div class="metric-value">{{ kpis().postedCount }} <small>سند</small></div>
+      <div class="metric-meta">مرتبطة بقيود أستاذ عام</div>
+    </div>
+
+    <div class="metric-card metric-draft">
+      <div class="metric-label">مسودات قيد المراجعة</div>
+      <div class="metric-value">{{ kpis().draftCount }} <small>مسودة</small></div>
+      <div class="metric-meta">بانتظار الاعتماد والترحيل</div>
+    </div>
+  </section>
+
+  <!-- Toolbar with Tabs & Dense Filters -->
+  <section class="toolbar-card">
+    <div class="tabs-nav">
+      <button class="tab-btn" [class.active]="activeTab() === 'all'" (click)="setTab('all')">
+        كافة السندات ({{ kpis().totalVouchers }})
+      </button>
+      <button class="tab-btn tab-receipt" [class.active]="activeTab() === 'receipt'" (click)="setTab('receipt')">
+        📥 سندات القبض ({{ kpis().receiptCount }})
+      </button>
+      <button class="tab-btn tab-payment" [class.active]="activeTab() === 'payment'" (click)="setTab('payment')">
+        📤 سندات الصرف ({{ kpis().paymentCount }})
+      </button>
+    </div>
+
+    <div class="filters-row">
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="بحث برقم السند، المستلم، البيان، رقم المرجع..." 
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event); loadVouchers()"
+          class="form-control" />
+      </div>
+
+      <div class="filter-item">
+        <label>الحالة:</label>
+        <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event); loadVouchers()" class="form-control">
+          <option value="all">كافة الحالات</option>
+          <option value="posted">مرحّل فقط</option>
+          <option value="draft">مسودة فقط</option>
+          <option value="cancelled">ملغي فقط</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label>من تاريخ:</label>
+        <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event); loadVouchers()" class="form-control" />
+      </div>
+
+      <div class="filter-item">
+        <label>إلى تاريخ:</label>
+        <input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event); loadVouchers()" class="form-control" />
+      </div>
+    </div>
+  </section>
+
+  <!-- High-Density Vouchers Table -->
+  <section class="table-card">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>جاري تحميل بيانات السندات...</span>
+      </div>
+    } @else if (vouchers().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📂</div>
+        <h3>لا توجد سندات مطابقة</h3>
+        <p>لم يتم العثور على أي سندات قبض أو صرف في هذه الفترة وفق محددات البحث الحالية.</p>
+        <div class="empty-actions">
+          <button class="btn btn-emerald" (click)="openCreateModal(VoucherTypeEnum.Receipt)">+ إنشاء سند قبض</button>
+          <button class="btn btn-indigo" (click)="openCreateModal(VoucherTypeEnum.Payment)">+ إنشاء سند صرف</button>
+        </div>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="erp-dense-table">
+          <thead>
+            <tr>
+              <th style="width: 120px;">رقم السند</th>
+              <th style="width: 100px;">النوع</th>
+              <th style="width: 100px;">التاريخ</th>
+              <th style="width: 110px;">طريقة الدفع</th>
+              <th>المستلم منه / المصروف له</th>
+              <th>حساب الخزينة / البنك</th>
+              <th style="width: 130px; text-align: left;">المبلغ (ر.س)</th>
+              <th style="width: 110px;">قيد اليومية</th>
+              <th style="width: 90px; text-align: center;">الحالة</th>
+              <th style="width: 140px; text-align: center;">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of vouchers(); track v.id) {
+              <tr [class.row-draft]="v.status === VoucherStatusEnum.Draft" [class.row-cancelled]="v.status === VoucherStatusEnum.Cancelled">
+                <td class="font-mono font-bold">{{ v.voucherNumber }}</td>
+                <td>
+                  <span class="type-pill" [class.type-receipt]="v.voucherType === VoucherTypeEnum.Receipt" [class.type-payment]="v.voucherType === VoucherTypeEnum.Payment">
+                    {{ v.voucherType === VoucherTypeEnum.Receipt ? '📥 قبض' : '📤 صرف' }}
+                  </span>
+                </td>
+                <td>{{ v.voucherDate | date:'yyyy-MM-dd' }}</td>
+                <td>
+                  <span class="method-tag">{{ v.paymentMethodNameAr }}</span>
+                  @if (v.referenceNumber) {
+                    <div class="ref-sub">مرجع: {{ v.referenceNumber }}</div>
+                  }
+                </td>
+                <td class="font-medium text-dark">{{ v.beneficiaryOrPayerName }}</td>
+                <td>
+                  <span class="font-mono text-muted text-xs">{{ v.cashOrBankAccountCode }}</span>
+                  <div>{{ v.cashOrBankAccountNameAr }}</div>
+                </td>
+                <td class="amount-cell font-mono font-bold" [class.text-emerald]="v.voucherType === VoucherTypeEnum.Receipt" [class.text-rose]="v.voucherType === VoucherTypeEnum.Payment">
+                  {{ v.amount | number:'1.2-2' }}
+                </td>
+                <td>
+                  @if (v.journalEntryNumber) {
+                    <span class="entry-link" title="قيد اليومية المرتبط">{{ v.journalEntryNumber }}</span>
+                  } @else {
+                    <span class="text-muted text-xs">— غير مرحّل —</span>
+                  }
+                </td>
+                <td style="text-align: center;">
+                  <span class="status-pill" [class.status-posted]="v.status === VoucherStatusEnum.Posted" [class.status-draft]="v.status === VoucherStatusEnum.Draft" [class.status-cancelled]="v.status === VoucherStatusEnum.Cancelled">
+                    {{ v.statusNameAr }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  <button class="action-btn" title="المرفقات والمستندات المؤيدة" (click)="openAttachments(v)">
+                    📎
+                  </button>
+                  <button class="action-btn" title="معاينة وطباعة السند" (click)="viewVoucher(v)">
+                    🖨️
+                  </button>
+                  @if (v.status === VoucherStatusEnum.Draft) {
+                    <button class="action-btn text-emerald" title="ترحيل السند إلى الأستاذ العام" (click)="postVoucher(v)">
+                      ✅
+                    </button>
+                  }
+                  @if (v.status === VoucherStatusEnum.Posted) {
+                    <button class="action-btn text-rose" title="إلغاء السند وعكس القيد" (click)="openCancelModal(v)">
+                      🚫
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <!-- Modal: Create Voucher (Receipt or Payment) -->
+  @if (isCreateModalOpen()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header" [class.header-receipt]="createType() === VoucherTypeEnum.Receipt" [class.header-payment]="createType() === VoucherTypeEnum.Payment">
+          <div class="modal-title">
+            <span class="modal-icon">{{ createType() === VoucherTypeEnum.Receipt ? '📥' : '📤' }}</span>
+            <h3>{{ createType() === VoucherTypeEnum.Receipt ? 'إنشاء سند قبض مالي جديد' : 'إنشاء سند صرف مالي جديد' }}</h3>
+          </div>
+          <button class="close-btn" (click)="closeCreateModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Main Form Grid -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label>تاريخ السند <span class="required">*</span></label>
+              <input type="date" [ngModel]="formDate()" (ngModelChange)="formDate.set($event)" class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label>طريقة الدفع / الاستلام <span class="required">*</span></label>
+              <select [ngModel]="formPaymentMethod()" (ngModelChange)="formPaymentMethod.set($event)" class="form-control form-select-custom">
+                <option [value]="PaymentMethodEnum.Cash">نقداً (صندوق النقدية)</option>
+                <option [value]="PaymentMethodEnum.BankTransfer">تحويل بنكي مباشر</option>
+                <option [value]="PaymentMethodEnum.Cheque">شيك مصرفي</option>
+                <option [value]="PaymentMethodEnum.Card">شبكة / مدى / بطاقة</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>حساب الخزينة / البنك <span class="required">*</span></label>
+              <app-account-picker 
+                [accounts]="cashAndBankAccounts()" 
+                placeholder="اختر حساب الخزينة أو البنك..." 
+                [allowRootOption]="false"
+                [ngModel]="formCashAccountId()" 
+                (ngModelChange)="formCashAccountId.set($event)">
+              </app-account-picker>
+            </div>
+
+            <div class="form-group">
+              <label>{{ createType() === VoucherTypeEnum.Receipt ? 'استلمنا من المكرم' : 'يصرف للمكرم' }} <span class="required">*</span></label>
+              <input 
+                type="text" 
+                [ngModel]="formBeneficiary()" 
+                (ngModelChange)="formBeneficiary.set($event)" 
+                placeholder="اسم العميل، المورد، أو الجهة المستفيدة" 
+                class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label>رقم المرجع / الشيك / الحوالة</label>
+              <input 
+                type="text" 
+                [ngModel]="formReference()" 
+                (ngModelChange)="formReference.set($event)" 
+                placeholder="مثال: رقم الحوالة أو الشيك" 
+                class="form-control" />
+            </div>
+
+            <div class="form-group full-width">
+              <label>البيان العام للسند <span class="required">*</span></label>
+              <input 
+                type="text" 
+                [ngModel]="formDescription()" 
+                (ngModelChange)="formDescription.set($event)" 
+                placeholder="مثال: سداد دفعة من فاتورة مبيعات رقم..." 
+                class="form-control" />
+            </div>
+          </div>
+
+          <!-- Distribution Lines Section -->
+          <div class="lines-section">
+            <div class="lines-header">
+              <h4>البنود المالية وتوزيع الحسابات (الطرف المقابل)</h4>
+              <button class="btn btn-sm btn-outline" (click)="addLine()">+ إضافة حساب آخر</button>
+            </div>
+
+            <table class="lines-table">
+              <thead>
+                <tr>
+                  <th style="width: 50%;">الحساب المحاسبي <span class="required">*</span></th>
+                  <th style="width: 20%;">المبلغ (ر.س) <span class="required">*</span></th>
+                  <th style="width: 25%;">البيان الفرعي</th>
+                  <th style="width: 5%;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of formLines(); track $index; let idx = $index) {
+                  <tr>
+                    <td class="account-cell">
+                      <app-account-picker 
+                        [accounts]="distributionAccounts()" 
+                        placeholder="اختر الحساب المحاسبي..." 
+                        [compact]="true" 
+                        [allowRootOption]="false" 
+                        [(ngModel)]="line.accountId">
+                      </app-account-picker>
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        [(ngModel)]="line.amount" 
+                        placeholder="0.00" 
+                        class="form-control form-control-sm font-mono" />
+                    </td>
+                    <td>
+                      <input 
+                        type="text" 
+                        [(ngModel)]="line.description" 
+                        placeholder="بيان خاص بالسطر (اختياري)" 
+                        class="form-control form-control-sm" />
+                    </td>
+                    <td style="text-align: center;">
+                      @if (formLines().length > 1) {
+                        <button class="btn-del" (click)="removeLine(idx)" title="حذف السطر">✕</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Total & Arabic Tafqeet Banner -->
+          <div class="tafqeet-summary-box">
+            <div class="total-row">
+              <span class="total-label">إجمالي قيمة السند:</span>
+              <span class="total-amount font-mono">{{ formTotalAmount() | number:'1.2-2' }} ر.س</span>
+            </div>
+            <div class="tafqeet-text font-serif">
+              {{ formTafqeet() }}
+            </div>
+          </div>
+
+          <!-- Options Checkbox -->
+          <div class="post-checkbox">
+            <label>
+              <input type="checkbox" [ngModel]="formAutoPost()" (ngModelChange)="formAutoPost.set($event)" />
+              <span><strong>ترحيل القيد فوراً</strong> (إنشاء قيد يومية متوازن آلياً في دفتر الأستاذ العام وتحديث الأرصدة)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeCreateModal()" [disabled]="isLoading()">إلغاء</button>
+          <button class="btn btn-emerald" (click)="saveVoucher()" [disabled]="isLoading() || formTotalAmount() <= 0">
+            {{ isLoading() ? 'جاري الحفظ...' : (formAutoPost() ? 'حفظ وترحيل السند' : 'حفظ كمسودة') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Print Preview Official Voucher (A4/A5 Printable) -->
+  @if (isViewModalOpen() && selectedVoucher()) {
+    <div class="modal-overlay" (click)="closeViewModal()">
+      <div class="modal-dialog modal-print" (click)="$event.stopPropagation()">
+        <div class="modal-header modal-header-print no-print">
+          <div class="modal-title">
+            <h3>معاينة وطباعة السند المالي الرسمي</h3>
+          </div>
+          <div class="print-actions">
+            <button class="btn btn-primary" (click)="printVoucher()">🖨️ طباعة الآن (Print)</button>
+            <button class="close-btn" (click)="closeViewModal()">✕</button>
+          </div>
+        </div>
+
+        <div class="modal-body print-body">
+          <div id="printable-voucher" class="official-voucher">
+            <!-- Official Header -->
+            <div class="voucher-header">
+              <div class="company-meta">
+                <h2 class="company-title">{{ companyContext.activeCompany().nameAr }}</h2>
+                <div class="company-sub">نظام الربان المحاسبي المتكامل - إدارة الخزينة</div>
+                <div class="company-sub">السجل التجاري: 1010889900 | الرقم الضريبي: 300998877600003</div>
+              </div>
+              <div class="voucher-title-box" [class.box-receipt]="selectedVoucher()!.voucherType === VoucherTypeEnum.Receipt" [class.box-payment]="selectedVoucher()!.voucherType === VoucherTypeEnum.Payment">
+                <h1 class="voucher-title">{{ selectedVoucher()!.voucherTypeNameAr }}</h1>
+                <div class="voucher-no font-mono">{{ selectedVoucher()!.voucherNumber }}</div>
+                <div class="voucher-status-stamp">{{ selectedVoucher()!.statusNameAr }}</div>
+              </div>
+            </div>
+
+            <!-- Meta Strip -->
+            <div class="voucher-meta-grid">
+              <div class="meta-item">
+                <span class="lbl">التاريخ:</span>
+                <span class="val font-mono">{{ selectedVoucher()!.voucherDate | date:'yyyy-MM-dd' }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="lbl">طريقة الدفع:</span>
+                <span class="val">{{ selectedVoucher()!.paymentMethodNameAr }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="lbl">رقم المرجع:</span>
+                <span class="val font-mono">{{ selectedVoucher()!.referenceNumber || '—' }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="lbl">قيد اليومية المرتبط:</span>
+                <span class="val font-mono">{{ selectedVoucher()!.journalEntryNumber || 'غير مرحّل' }}</span>
+              </div>
+            </div>
+
+            <!-- Formal Voucher Sentences -->
+            <div class="formal-voucher-content">
+              <div class="formal-line">
+                <span class="formal-label">{{ selectedVoucher()!.voucherType === VoucherTypeEnum.Receipt ? 'استلمنا من المكرم / السادة:' : 'يصرف للمكرم / السادة:' }}</span>
+                <span class="formal-value font-bold">{{ selectedVoucher()!.beneficiaryOrPayerName }}</span>
+              </div>
+
+              <div class="formal-line highlight-amount">
+                <span class="formal-label">مبلغاً وقدره:</span>
+                <span class="formal-value font-mono font-bold">{{ selectedVoucher()!.amount | number:'1.2-2' }} ريال سعودي</span>
+              </div>
+
+              <div class="formal-line tafqeet-line">
+                <span class="formal-label">فقط وقدره كتابةً:</span>
+                <span class="formal-value tafqeet-calligraphy">{{ selectedVoucher()!.amountTafqeetAr }}</span>
+              </div>
+
+              <div class="formal-line">
+                <span class="formal-label">عن طريق حساب:</span>
+                <span class="formal-value font-mono">{{ selectedVoucher()!.cashOrBankAccountCode }} - {{ selectedVoucher()!.cashOrBankAccountNameAr }}</span>
+              </div>
+
+              <div class="formal-line">
+                <span class="formal-label">وذلك قيمة:</span>
+                <span class="formal-value">{{ selectedVoucher()!.description }}</span>
+              </div>
+            </div>
+
+            <!-- Accounting Breakdown Table -->
+            <div class="print-table-wrapper">
+              <table class="print-table">
+                <thead>
+                  <tr>
+                    <th style="width: 8%;">م</th>
+                    <th style="width: 25%;">رقم الحساب</th>
+                    <th style="width: 35%;">اسم الحساب المالي</th>
+                    <th style="width: 20%; text-align: left;">المبلغ (ر.س)</th>
+                    <th style="width: 12%;">مركز التكلفة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (l of selectedVoucher()!.lines; track l.id) {
+                    <tr>
+                      <td style="text-align: center;">{{ l.lineNumber }}</td>
+                      <td class="font-mono">{{ l.accountCode }}</td>
+                      <td>{{ l.accountNameAr }}</td>
+                      <td class="font-mono font-bold" style="text-align: left;">{{ l.amount | number:'1.2-2' }}</td>
+                      <td>{{ l.costCenterNameAr || '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" style="text-align: right; font-weight: bold;">الإجمالي العام</td>
+                    <td class="font-mono font-bold" style="text-align: left;">{{ selectedVoucher()!.amount | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Audit & Signature Block -->
+            <div class="signatures-strip">
+              <div class="signature-box">
+                <div class="sig-title">أمين الصندوق / المنشئ</div>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ selectedVoucher()!.createdBy || 'المحاسب المسؤول' }}</div>
+              </div>
+              <div class="signature-box">
+                <div class="sig-title">المحاسب المالي</div>
+                <div class="sig-space"></div>
+                <div class="sig-name">........................</div>
+              </div>
+              <div class="signature-box">
+                <div class="sig-title">المدير المالي / الاعتماد</div>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ selectedVoucher()!.postedBy || '........................' }}</div>
+              </div>
+              <div class="signature-box">
+                <div class="sig-title">المستلم / التوقيع</div>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ selectedVoucher()!.beneficiaryOrPayerName }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Cancel Reason -->
+  @if (isCancelModalOpen() && voucherToCancel()) {
+    <div class="modal-overlay" (click)="closeCancelModal()">
+      <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header header-cancel">
+          <h3>إلغاء السند وعكس القيد المحاسبي</h3>
+          <button class="close-btn" (click)="closeCancelModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="cancel-warning">
+            أنت على وشك إلغاء السند رقم <strong>{{ voucherToCancel()!.voucherNumber }}</strong>.
+            سيتم عكس قيد اليومية المرتبط به في دفتر الأستاذ العام وتعديل الأرصدة تلقائياً.
+          </p>
+          <div class="form-group">
+            <label>سبب الإلغاء <span class="required">*</span></label>
+            <textarea 
+              rows="3" 
+              [ngModel]="cancelReason()" 
+              (ngModelChange)="cancelReason.set($event)" 
+              placeholder="اكتب سبب إلغاء هذا السند بدقة للتدقيق المحاسبي..." 
+              class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeCancelModal()" [disabled]="isLoading()">تراجع</button>
+          <button class="btn btn-danger" (click)="confirmCancelVoucher()" [disabled]="isLoading() || !cancelReason().trim()">
+            {{ isLoading() ? 'جاري الإلغاء...' : 'تأكيد الإلغاء وعكس القيد' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Universal Document Attachments Modal -->
+  <app-document-attachments-modal
+    [isOpen]="showAttachmentsModal"
+    entityType="Voucher"
+    [entityId]="selectedAttachmentEntityId"
+    [entityTitle]="selectedAttachmentTitle"
+    (closed)="showAttachmentsModal = false">
+  </app-document-attachments-modal>
+</div>

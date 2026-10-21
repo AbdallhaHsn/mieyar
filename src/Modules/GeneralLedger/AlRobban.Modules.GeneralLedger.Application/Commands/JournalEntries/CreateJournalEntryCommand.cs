@@ -1,0 +1,209 @@
+using AlRobban.Modules.GeneralLedger.Application.DTOs;
+using AlRobban.Modules.GeneralLedger.Domain.Entities;
+using AlRobban.Modules.GeneralLedger.Domain.Enums;
+using AlRobban.Modules.GeneralLedger.Domain.Repositories;
+using AlRobban.Shared.Application.Abstractions;
+using AlRobban.Shared.Kernel.Primitives;
+using MediatR;
+
+namespace AlRobban.Modules.GeneralLedger.Application.Commands.JournalEntries;
+
+public record CreateJournalEntryLineRequest(
+    Guid AccountId,
+    decimal Debit,
+    decimal Credit,
+    string? Description,
+    Guid? CostCenterId);
+
+public record CreateJournalEntryCommand(
+    Guid? CompanyId,
+    DateTime EntryDate,
+    JournalEntryType EntryType,
+    string DescriptionAr,
+    string? DescriptionEn,
+    string? ReferenceNumber,
+    bool PostImmediately,
+    List<CreateJournalEntryLineRequest> Lines) : IRequest<Result<JournalEntryDto>>;
+
+public class CreateJournalEntryCommandHandler : IRequestHandler<CreateJournalEntryCommand, Result<JournalEntryDto>>
+{
+    private readonly IJournalEntryRepository _journalRepo;
+    private readonly IFinancialSettingsRepository _settingsRepo;
+    private readonly IAccountRepository _accountRepo;
+    private readonly ICurrentTenantContext _tenantContext;
+
+    public CreateJournalEntryCommandHandler(
+        IJournalEntryRepository journalRepo,
+        IFinancialSettingsRepository settingsRepo,
+        IAccountRepository accountRepo,
+        ICurrentTenantContext tenantContext)
+    {
+        _journalRepo = journalRepo;
+        _settingsRepo = settingsRepo;
+        _accountRepo = accountRepo;
+        _tenantContext = tenantContext;
+    }
+
+    public async Task<Result<JournalEntryDto>> Handle(CreateJournalEntryCommand request, CancellationToken cancellationToken)
+    {
+        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+        if (request.Lines == null || request.Lines.Count < 2)
+        {
+            return Result.Failure<JournalEntryDto>(new Error("JournalEntry.InvalidLines", "يجب أن يحتوي القيد على سطرين على الأقل (طرف مدين وطرف دائن)"));
+        }
+
+        var totalDebit = Math.Round(request.Lines.Sum(x => x.Debit), 4);
+        var totalCredit = Math.Round(request.Lines.Sum(x => x.Credit), 4);
+
+        if (Math.Abs(totalDebit - totalCredit) > 0.0001m)
+        {
+            return Result.Failure<JournalEntryDto>(new Error("JournalEntry.Unbalanced", $"القيد غير متوازن محاسبياً (إجمالي المدين: {totalDebit} ≠ إجمالي الدائن: {totalCredit})"));
+        }
+
+        // 1. Locate Fiscal Period for EntryDate
+        var fiscalYears = await _settingsRepo.GetAllFiscalYearsAsync(companyId, cancellationToken);
+        var entryDate = request.EntryDate.Date;
+
+        if (!fiscalYears.Any())
+        {
+            var settings = await _settingsRepo.GetOrCreateSettingsAsync(tenantId, companyId, cancellationToken);
+            var defaultYear = FiscalYear.Create(
+                tenantId,
+                companyId,
+                entryDate.Year,
+                $"السنة المالية {entryDate.Year}",
+                $"Fiscal Year {entryDate.Year}",
+                new DateTime(entryDate.Year, 1, 1),
+                new DateTime(entryDate.Year, 12, 31),
+                includeClosingPeriod: settings.Include13thClosingPeriod);
+
+            await _settingsRepo.AddFiscalYearAsync(defaultYear, cancellationToken);
+            await _settingsRepo.SaveChangesAsync(cancellationToken);
+            fiscalYears = await _settingsRepo.GetAllFiscalYearsAsync(companyId, cancellationToken);
+        }
+
+        var activeYear = fiscalYears.FirstOrDefault(y => y.StartDate.Date <= entryDate && entryDate <= y.EndDate.Date && y.IsActive);
+
+        if (activeYear == null)
+        {
+            return Result.Failure<JournalEntryDto>(new Error("JournalEntry.NoFiscalYear", $"لا توجد سنة مالية معرفة تشمل التاريخ {entryDate:yyyy-MM-dd}. (Found {fiscalYears.Count} years for Company {companyId})"));
+        }
+
+        var period = activeYear.Periods.FirstOrDefault(p => p.StartDate <= entryDate && entryDate <= p.EndDate && !p.IsClosingPeriod);
+        if (period == null)
+        {
+            period = activeYear.Periods.FirstOrDefault(p => p.StartDate <= entryDate && entryDate <= p.EndDate);
+        }
+
+        if (period == null)
+        {
+            return Result.Failure<JournalEntryDto>(new Error("JournalEntry.NoPeriod", $"لا توجد فترة محاسبية مطابقة لتاريخ القيد {entryDate:yyyy-MM-dd}"));
+        }
+
+        if (request.PostImmediately && period.Status != FiscalPeriodStatus.Open)
+        {
+            return Result.Failure<JournalEntryDto>(new Error("JournalEntry.PeriodLocked", $"لا يمكن ترحيل القيد لأن فترة ({period.PeriodNameAr}) مقفلة أو مغلقة"));
+        }
+
+        // 2. Generate Next Entry Number
+        var entryNumber = await _journalRepo.GenerateNextEntryNumberAsync(companyId, activeYear.YearNumber, cancellationToken);
+
+        // 3. Create Entry Aggregate
+        var descEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? request.DescriptionAr : request.DescriptionEn;
+        var entry = JournalEntry.Create(
+            tenantId,
+            companyId,
+            entryNumber,
+            entryDate,
+            period.Id,
+            request.EntryType,
+            request.DescriptionAr,
+            descEn,
+            request.ReferenceNumber,
+            createdBy: "النظام / المحاسب");
+
+        foreach (var lineReq in request.Lines)
+        {
+            var lineDesc = string.IsNullOrWhiteSpace(lineReq.Description) ? request.DescriptionAr : lineReq.Description;
+            entry.AddLine(
+                lineReq.AccountId,
+                lineReq.Debit,
+                lineReq.Credit,
+                lineDesc,
+                lineReq.CostCenterId);
+        }
+
+        // 4. Handle Post if requested
+        if (request.PostImmediately)
+        {
+            entry.Post("المحاسب المالي", isPeriodOpen: period.Status == FiscalPeriodStatus.Open);
+
+            // Update Account Balances
+            foreach (var line in entry.Lines)
+            {
+                var account = await _accountRepo.GetByIdAsync(line.AccountId, cancellationToken);
+                if (account != null)
+                {
+                    if (line.Debit > 0)
+                    {
+                        account.UpdateBalance(line.Debit, AccountNature.Debit);
+                    }
+                    if (line.Credit > 0)
+                    {
+                        account.UpdateBalance(line.Credit, AccountNature.Credit);
+                    }
+                }
+            }
+        }
+
+        await _journalRepo.AddAsync(entry, cancellationToken);
+        await _journalRepo.SaveChangesAsync(cancellationToken);
+
+        // Fetch saved entry with full relations
+        var saved = await _journalRepo.GetByIdAsync(entry.Id, cancellationToken);
+        var dto = MapToDto(saved ?? entry, period);
+
+        return Result.Success(dto);
+    }
+
+    private static JournalEntryDto MapToDto(JournalEntry e, FiscalPeriod p)
+    {
+        return new JournalEntryDto(
+            e.Id,
+            e.CompanyId,
+            e.EntryNumber,
+            e.EntryDate,
+            e.FiscalPeriodId,
+            p?.PeriodNameAr ?? string.Empty,
+            p?.PeriodNameEn ?? string.Empty,
+            e.EntryType,
+            e.Status,
+            e.ReferenceNumber,
+            e.DescriptionAr,
+            e.DescriptionEn,
+            e.TotalDebit,
+            e.TotalCredit,
+            e.ReversedEntryId,
+            e.ReversalReason,
+            e.PostedAtUtc,
+            e.PostedBy,
+            e.CreatedAtUtc,
+            e.CreatedBy,
+            e.Lines.Select(l => new JournalEntryLineDto(
+                l.Id,
+                l.LineNumber,
+                l.AccountId,
+                l.Account?.AccountCode ?? string.Empty,
+                l.Account?.NameAr ?? string.Empty,
+                l.Account?.NameEn ?? string.Empty,
+                l.Debit,
+                l.Credit,
+                l.Description,
+                l.CostCenterId,
+                l.CostCenter?.NameAr
+            )).ToList()
+        );
+    }
+}

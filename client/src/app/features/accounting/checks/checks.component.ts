@@ -1,0 +1,971 @@
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { CompanyContextService } from '../../../core/services/company-context.service';
+import { LanguageService } from '../../../core/services/language.service';
+import Swal from 'sweetalert2';
+
+export enum PdcType {
+  Receivable = 1, // ورقة قبض
+  Payable = 2    // ورقة دفع
+}
+
+export enum PdcStatus {
+  Received = 1,  // مستلم / محرر
+  Deposited = 2, // مودع بالحافظة
+  Cleared = 3,   // تم التحصيل الفعلي
+  Bounced = 4,   // مرتد
+  Cancelled = 5  // ملغي
+}
+
+export interface PostDatedCheckDto {
+  id: string;
+  checkNumber: string;
+  bankName: string;
+  drawerOrPayee: string;
+  amount: number;
+  dueDate: string;
+  receivedDate: string;
+  status: PdcStatus;
+  statusNameAr: string;
+  type: PdcType;
+  typeNameAr: string;
+  depositDate?: string;
+  clearDate?: string;
+  bounceReason?: string;
+  bounceFee?: number;
+  notes?: string;
+}
+
+@Component({
+  selector: 'app-checks',
+  standalone: true,
+  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
+  template: `
+    <div class="checks-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+      
+      <!-- Page Header -->
+      <header class="page-header">
+        <div class="header-title-box">
+          <div class="icon-frame">
+            <i class="pi pi-credit-card"></i>
+          </div>
+          <div>
+            <h1 class="page-title">
+              {{ langService.currentLang() === 'ar' ? 'دورة متابعة الشيكات وأوراق القبض والدفع (PDC Lifecycle)' : 'Post-Dated Checks (PDC) Management' }}
+            </h1>
+            <p class="page-subtitle">
+              {{ langService.currentLang() === 'ar' 
+                ? 'إدارة محفظة الشيكات الآجلة، وحافظات التحصيل البنكي، والارتداد، والتسوية وفق الأصول المحاسبية' 
+                : 'Full lifecycle tracking of Receivable & Payable notes: Issuance, Deposit, Clearing & Bounce management' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn-refresh" (click)="loadChecks()" [title]="langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh'">
+            <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+          </button>
+          <button class="btn-primary" (click)="openCreateModal()">
+            <i class="pi pi-plus"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'تسجيل شيك جديد' : 'New Check' }}</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- KPI Metrics Strip -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon-box cyan">
+            <i class="pi pi-inbox"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'إجمالي المحفظة المستلمة' : 'Total In Portfolio' }}</span>
+            <strong class="kpi-value">{{ totalReceivedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
+            <span class="kpi-count">{{ receivedCount() }} {{ langService.currentLang() === 'ar' ? 'شيكات تحت الحفظ' : 'checks' }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-box amber">
+            <i class="pi pi-clock"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'شيكات برسم التحصيل (مودعة)' : 'Deposited / Under Collection' }}</span>
+            <strong class="kpi-value">{{ totalDepositedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
+            <span class="kpi-count">{{ depositedCount() }} {{ langService.currentLang() === 'ar' ? 'شيكات بالبنك' : 'checks in bank' }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-box emerald">
+            <i class="pi pi-check-circle"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'تم تحصيلها بنجاح' : 'Cleared Checks' }}</span>
+            <strong class="kpi-value text-emerald">{{ totalClearedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
+            <span class="kpi-count">{{ clearedCount() }} {{ langService.currentLang() === 'ar' ? 'شيك محصل' : 'cleared' }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-box rose">
+            <i class="pi pi-exclamation-triangle"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'شيكات مرتدة' : 'Bounced Checks' }}</span>
+            <strong class="kpi-value text-rose">{{ totalBouncedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
+            <span class="kpi-count">{{ bouncedCount() }} {{ langService.currentLang() === 'ar' ? 'شيكات مرفوضة' : 'bounced' }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filter Controls Strip -->
+      <section class="filters-bar">
+        <div class="type-pills">
+          <button [class.active]="selectedType() === null" (click)="selectedType.set(null)">
+            {{ langService.currentLang() === 'ar' ? 'الكل' : 'All' }}
+          </button>
+          <button [class.active]="selectedType() === PdcType.Receivable" (click)="selectedType.set(PdcType.Receivable)">
+            <i class="pi pi-arrow-down-left"></i>
+            {{ langService.currentLang() === 'ar' ? 'أوراق قبض (مستلمة)' : 'Receivable Notes' }}
+          </button>
+          <button [class.active]="selectedType() === PdcType.Payable" (click)="selectedType.set(PdcType.Payable)">
+            <i class="pi pi-arrow-up-right"></i>
+            {{ langService.currentLang() === 'ar' ? 'أوراق دفع (صادرة)' : 'Payable Notes' }}
+          </button>
+        </div>
+
+        <div class="status-select-wrap">
+          <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)" class="status-select">
+            <option [ngValue]="null">{{ langService.currentLang() === 'ar' ? 'جميع الحالات' : 'All Statuses' }}</option>
+            <option [ngValue]="PdcStatus.Received">{{ langService.currentLang() === 'ar' ? 'مستلم / بالصندوق' : 'In Portfolio' }}</option>
+            <option [ngValue]="PdcStatus.Deposited">{{ langService.currentLang() === 'ar' ? 'مودع برسم التحصيل' : 'Deposited' }}</option>
+            <option [ngValue]="PdcStatus.Cleared">{{ langService.currentLang() === 'ar' ? 'محصل فعلياً' : 'Cleared' }}</option>
+            <option [ngValue]="PdcStatus.Bounced">{{ langService.currentLang() === 'ar' ? 'مرتد / مرفوض' : 'Bounced' }}</option>
+          </select>
+
+          <input 
+            type="text" 
+            [placeholder]="langService.currentLang() === 'ar' ? 'بحث برقم الشيك أو الساحب أو البنك...' : 'Search by check number, bank, party...'" 
+            class="search-input"
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)" />
+        </div>
+      </section>
+
+      <!-- Checks Table -->
+      <div class="table-card">
+        <table class="checks-table">
+          <thead>
+            <tr>
+              <th>{{ langService.currentLang() === 'ar' ? 'النوع' : 'Type' }}</th>
+              <th>{{ langService.currentLang() === 'ar' ? 'رقم الشيك' : 'Check #' }}</th>
+              <th>{{ langService.currentLang() === 'ar' ? 'البنك المسحوب عليه' : 'Drawn Bank' }}</th>
+              <th>{{ langService.currentLang() === 'ar' ? 'الساحب / المستفيد' : 'Party / Drawer' }}</th>
+              <th>{{ langService.currentLang() === 'ar' ? 'تاريخ الاستحقاق' : 'Due Date' }}</th>
+              <th>{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR)' : 'Amount' }}</th>
+              <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
+              <th class="text-center">{{ langService.currentLang() === 'ar' ? 'الإجراءات المحاسبية' : 'Lifecycle Actions' }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="filteredChecks().length === 0">
+              <td colspan="8" class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>{{ langService.currentLang() === 'ar' ? 'لا توجد شيكات مطابقة لمعايير البحث' : 'No checks found matching filters' }}</p>
+              </td>
+            </tr>
+            <tr *ngFor="let check of filteredChecks()">
+              <td>
+                <span class="type-badge" [class.rec]="check.type === PdcType.Receivable" [class.pay]="check.type === PdcType.Payable">
+                  <i class="pi" [ngClass]="check.type === PdcType.Receivable ? 'pi-arrow-down-left' : 'pi-arrow-up-right'"></i>
+                  {{ check.typeNameAr }}
+                </span>
+              </td>
+              <td><strong>{{ check.checkNumber }}</strong></td>
+              <td>{{ check.bankName }}</td>
+              <td>{{ check.drawerOrPayee }}</td>
+              <td>
+                <span [class.overdue]="isOverdue(check.dueDate) && check.status < PdcStatus.Cleared">
+                  {{ check.dueDate | date:'yyyy-MM-dd' }}
+                </span>
+              </td>
+              <td class="amount-cell">{{ check.amount | number:'1.2-2' }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="getStatusClass(check.status)">
+                  {{ check.statusNameAr }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <!-- If Received: can Deposit -->
+                <button 
+                  *ngIf="check.status === PdcStatus.Received" 
+                  class="btn-action deposit" 
+                  (click)="depositCheck(check)"
+                  title="إيداع بحافظة البنك برسم التحصيل">
+                  <i class="pi pi-send"></i>
+                  <span>{{ langService.currentLang() === 'ar' ? 'إيداع بنكي' : 'Deposit' }}</span>
+                </button>
+
+                <!-- If Deposited: can Clear or Bounce -->
+                <button 
+                  *ngIf="check.status === PdcStatus.Deposited" 
+                  class="btn-action clear" 
+                  (click)="clearCheck(check)"
+                  title="تأكيد التحصيل الفعلي في الحساب">
+                  <i class="pi pi-check"></i>
+                  <span>{{ langService.currentLang() === 'ar' ? 'تحصيل' : 'Clear' }}</span>
+                </button>
+
+                <button 
+                  *ngIf="check.status === PdcStatus.Deposited" 
+                  class="btn-action bounce" 
+                  (click)="bounceCheck(check)"
+                  title="إثبات ارتداد الشيك من البنك">
+                  <i class="pi pi-times-circle"></i>
+                  <span>{{ langService.currentLang() === 'ar' ? 'ارتداد' : 'Bounce' }}</span>
+                </button>
+
+                <!-- Cleared or Bounced tag -->
+                <span *ngIf="check.status === PdcStatus.Cleared" class="action-done success">
+                  <i class="pi pi-check-circle"></i> {{ langService.currentLang() === 'ar' ? 'محصل' : 'Cleared' }}
+                </span>
+                <span *ngIf="check.status === PdcStatus.Bounced" class="action-done danger" [title]="check.bounceReason || ''">
+                  <i class="pi pi-ban"></i> {{ langService.currentLang() === 'ar' ? 'مرتد' : 'Bounced' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Create Check Modal -->
+      <div class="modal-backdrop" *ngIf="showCreateModal()" (click)="showCreateModal.set(false)">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <i class="pi pi-plus-circle"></i>
+              {{ langService.currentLang() === 'ar' ? 'تسجيل ورقة قبض / دفع جديدة' : 'Register New Check / Note' }}
+            </h3>
+            <button class="close-btn" (click)="showCreateModal.set(false)">&times;</button>
+          </div>
+
+          <form (ngSubmit)="submitCreateCheck()" class="modal-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>{{ langService.currentLang() === 'ar' ? 'نوع الورقة التجارية *' : 'Note Type *' }}</label>
+                <select [(ngModel)]="newCheckForm.type" name="type" class="form-control" required>
+                  <option [ngValue]="PdcType.Receivable">{{ langService.currentLang() === 'ar' ? 'ورقة قبض (استلام من عميل)' : 'Receivable (From Customer)' }}</option>
+                  <option [ngValue]="PdcType.Payable">{{ langService.currentLang() === 'ar' ? 'ورقة دفع (شيك صادر لمورد)' : 'Payable (To Supplier)' }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>{{ langService.currentLang() === 'ar' ? 'رقم الشيك *' : 'Check Number *' }}</label>
+                <input type="text" [(ngModel)]="newCheckForm.checkNumber" name="checkNumber" class="form-control" placeholder="مثال: CHK-10024" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>{{ langService.currentLang() === 'ar' ? 'البنك المسحوب عليه *' : 'Bank Name *' }}</label>
+                <input type="text" [(ngModel)]="newCheckForm.bankName" name="bankName" class="form-control" placeholder="مثال: مصرف الراجحي" required />
+              </div>
+
+              <div class="form-group">
+                <label>{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR) *' : 'Amount (SAR) *' }}</label>
+                <input type="number" step="0.01" [(ngModel)]="newCheckForm.amount" name="amount" class="form-control" placeholder="0.00" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>{{ langService.currentLang() === 'ar' ? 'الساحب / المستفيد *' : 'Party / Drawer *' }}</label>
+                <input type="text" [(ngModel)]="newCheckForm.drawerOrPayee" name="drawerOrPayee" class="form-control" placeholder="اسم الشركة أو العميل" required />
+              </div>
+
+              <div class="form-group">
+                <label>{{ langService.currentLang() === 'ar' ? 'تاريخ الاستحقاق *' : 'Due Date *' }}</label>
+                <input type="date" [(ngModel)]="newCheckForm.dueDate" name="dueDate" class="form-control" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>{{ langService.currentLang() === 'ar' ? 'ملاحظات وتفاصيل' : 'Notes / Memo' }}</label>
+              <textarea [(ngModel)]="newCheckForm.notes" name="notes" class="form-control" rows="2" placeholder="أي تفاصيل إضافية..."></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn-cancel" (click)="showCreateModal.set(false)">
+                {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+              </button>
+              <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+                <i class="pi pi-check"></i>
+                <span>{{ langService.currentLang() === 'ar' ? 'حفظ وتثبيت الشيك' : 'Save Check' }}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  `,
+  styles: [`
+    .checks-container {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      font-family: var(--font-arabic) !important;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+      padding: 1.25rem 1.5rem;
+      border-radius: 14px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    }
+
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .icon-frame {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0F172A;
+      margin: 0;
+    }
+
+    .page-subtitle {
+      font-size: 0.8rem;
+      color: #64748B;
+      margin: 0.2rem 0 0 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 9px;
+      padding: 0.55rem 1.25rem;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      }
+    }
+
+    .btn-refresh {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #475569;
+      border-radius: 9px;
+      padding: 0.55rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #F1F5F9;
+        color: #0F172A;
+      }
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .kpi-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+    }
+
+    .kpi-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+
+      &.cyan { background: #E0F2FE; color: #0284C7; }
+      &.amber { background: #FEF3C7; color: #D97706; }
+      &.emerald { background: #ECFDF5; color: #059669; }
+      &.rose { background: #FFE4E6; color: #E11D48; }
+    }
+
+    .kpi-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .kpi-label {
+      font-size: 0.74rem;
+      color: #64748B;
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0F172A;
+    }
+
+    .kpi-count {
+      font-size: 0.7rem;
+      color: #94A3B8;
+    }
+
+    /* Filters Bar */
+    .filters-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: #FFFFFF;
+      padding: 0.85rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .type-pills {
+      display: flex;
+      gap: 0.5rem;
+
+      button {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        padding: 0.4rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+
+        &.active {
+          background: #ECFDF5;
+          border-color: #10B981;
+          color: #059669;
+          font-weight: 750;
+        }
+      }
+    }
+
+    .status-select-wrap {
+      display: flex;
+      gap: 0.65rem;
+      align-items: center;
+    }
+
+    .status-select, .search-input {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      color: #1E293B;
+      outline: none;
+
+      &:focus {
+        border-color: #10B981;
+        background: #FFFFFF;
+      }
+    }
+
+    .search-input {
+      min-width: 260px;
+    }
+
+    /* Table */
+    .table-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+    }
+
+    .checks-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: start;
+
+      th {
+        background: #F8FAFC;
+        padding: 0.85rem 1rem;
+        font-size: 0.78rem;
+        font-weight: 750;
+        color: #475569;
+        border-bottom: 1px solid #E2E8F0;
+      }
+
+      td {
+        padding: 0.85rem 1rem;
+        font-size: 0.82rem;
+        color: #334155;
+        border-bottom: 1px solid #F1F5F9;
+      }
+
+      tr:hover td {
+        background: #F8FAFC;
+      }
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+
+      &.rec { background: #E0F2FE; color: #0284C7; }
+      &.pay { background: #FEF3C7; color: #D97706; }
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 750;
+
+      &.received { background: #F1F5F9; color: #475569; }
+      &.deposited { background: #FEF3C7; color: #D97706; }
+      &.cleared { background: #ECFDF5; color: #059669; }
+      &.bounced { background: #FFE4E6; color: #E11D48; }
+    }
+
+    .amount-cell {
+      font-weight: 750;
+      color: #0F172A;
+    }
+
+    .overdue {
+      color: #E11D48;
+      font-weight: 750;
+    }
+
+    .actions-cell {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-action {
+      border: 1px solid transparent;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.15s ease;
+
+      &.deposit { background: #FEF3C7; color: #B45309; border-color: #FDE68A; }
+      &.clear { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+      &.bounce { background: #FFE4E6; color: #BE123C; border-color: #FECDD3; }
+
+      &:hover {
+        transform: translateY(-1px);
+        filter: brightness(0.95);
+      }
+    }
+
+    .action-done {
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+
+      &.success { color: #059669; }
+      &.danger { color: #E11D48; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #94A3B8;
+
+      i { font-size: 2.5rem; margin-bottom: 0.5rem; }
+      p { font-size: 0.88rem; margin: 0; }
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-box {
+      background: #FFFFFF;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.15rem 1.5rem;
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+
+      h3 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #059669;
+      }
+
+      .close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: #64748B;
+        cursor: pointer;
+      }
+    }
+
+    .modal-form {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #334155;
+      }
+    }
+
+    .form-control {
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      outline: none;
+
+      &:focus {
+        border-color: #10B981;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+      }
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1.25rem;
+      font-weight: 750;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-cancel {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      color: #475569;
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  `]
+})
+export class ChecksComponent implements OnInit {
+  private http = inject(HttpClient);
+  companyContext = inject(CompanyContextService);
+  langService = inject(LanguageService);
+
+  checks = signal<PostDatedCheckDto[]>([]);
+  isLoading = signal<boolean>(false);
+  isSubmitting = signal<boolean>(false);
+  showCreateModal = signal<boolean>(false);
+
+  // Filters
+  selectedType = signal<PdcType | null>(null);
+  selectedStatus = signal<PdcStatus | null>(null);
+  searchTerm = signal<string>('');
+
+  // Enums for template
+  PdcType = PdcType;
+  PdcStatus = PdcStatus;
+
+  newCheckForm = {
+    type: PdcType.Receivable,
+    checkNumber: '',
+    bankName: '',
+    drawerOrPayee: '',
+    amount: 0,
+    dueDate: new Date().toISOString().substring(0, 10),
+    notes: ''
+  };
+
+  // KPIs
+  totalReceivedAmount = computed(() => this.checks().filter(c => c.status === PdcStatus.Received).reduce((s, c) => s + c.amount, 0));
+  receivedCount = computed(() => this.checks().filter(c => c.status === PdcStatus.Received).length);
+
+  totalDepositedAmount = computed(() => this.checks().filter(c => c.status === PdcStatus.Deposited).reduce((s, c) => s + c.amount, 0));
+  depositedCount = computed(() => this.checks().filter(c => c.status === PdcStatus.Deposited).length);
+
+  totalClearedAmount = computed(() => this.checks().filter(c => c.status === PdcStatus.Cleared).reduce((s, c) => s + c.amount, 0));
+  clearedCount = computed(() => this.checks().filter(c => c.status === PdcStatus.Cleared).length);
+
+  totalBouncedAmount = computed(() => this.checks().filter(c => c.status === PdcStatus.Bounced).reduce((s, c) => s + c.amount, 0));
+  bouncedCount = computed(() => this.checks().filter(c => c.status === PdcStatus.Bounced).length);
+
+  filteredChecks = computed(() => {
+    return this.checks().filter(c => {
+      if (this.selectedType() !== null && c.type !== this.selectedType()) return false;
+      if (this.selectedStatus() !== null && c.status !== this.selectedStatus()) return false;
+      if (this.searchTerm()) {
+        const q = this.searchTerm().toLowerCase();
+        return (c.checkNumber || '').toLowerCase().includes(q) ||
+               (c.bankName || '').toLowerCase().includes(q) ||
+               (c.drawerOrPayee || '').toLowerCase().includes(q);
+      }
+      return true;
+    });
+  });
+
+  ngOnInit() {
+    this.loadChecks();
+  }
+
+  loadChecks() {
+    this.isLoading.set(true);
+    this.http.get<PostDatedCheckDto[]>('/api/checks').subscribe({
+      next: (res) => {
+        this.checks.set(res || []);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  openCreateModal() {
+    this.newCheckForm = {
+      type: PdcType.Receivable,
+      checkNumber: '',
+      bankName: '',
+      drawerOrPayee: '',
+      amount: 0,
+      dueDate: new Date().toISOString().substring(0, 10),
+      notes: ''
+    };
+    this.showCreateModal.set(true);
+  }
+
+  submitCreateCheck() {
+    if (!this.newCheckForm.checkNumber || !this.newCheckForm.bankName || this.newCheckForm.amount <= 0) {
+      Swal.fire({ icon: 'warning', title: 'بيانات غير مكتملة', text: 'يرجى إدخال رقم الشيك والبنك ومبلغ صالح.' });
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.http.post('/api/checks', this.newCheckForm).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.showCreateModal.set(false);
+        Swal.fire({ icon: 'success', title: 'تم الحفظ', text: 'تم تسجيل الشيك في حافظة المحفظة بنجاح.' });
+        this.loadChecks();
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل تسجيل الشيك' });
+      }
+    });
+  }
+
+  depositCheck(check: PostDatedCheckDto) {
+    Swal.fire({
+      title: 'إيداع الشيك برسم التحصيل؟',
+      text: `رقم الشيك: ${check.checkNumber} بمبلغ ${check.amount} ريال`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'تأكيد الإيداع',
+      cancelButtonText: 'إلغاء'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.http.post(`/api/checks/${check.id}/deposit`, {}).subscribe({
+          next: () => {
+            Swal.fire({ icon: 'success', title: 'تم الإيداع', text: 'أصبح الشيك الآن بحافظة التحصيل البنكي.' });
+            this.loadChecks();
+          },
+          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل الإيداع' })
+        });
+      }
+    });
+  }
+
+  clearCheck(check: PostDatedCheckDto) {
+    Swal.fire({
+      title: 'تأكيد تحصيل الشيك فعلياً؟',
+      text: `سيتم إثبات استلام المبلغ (${check.amount} ريال) في حساب البنك.`,
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: 'تأكيد التحصيل',
+      cancelButtonText: 'إلغاء'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.http.post(`/api/checks/${check.id}/clear`, {}).subscribe({
+          next: () => {
+            Swal.fire({ icon: 'success', title: 'تم التحصيل', text: 'تم تحصيل الشيك بنجاح وتحديث رصيد البنك.' });
+            this.loadChecks();
+          },
+          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل التحصيل' })
+        });
+      }
+    });
+  }
+
+  bounceCheck(check: PostDatedCheckDto) {
+    Swal.fire({
+      title: 'إثبات ارتداد الشيك من البنك',
+      html: `
+        <input id="swal-bounce-reason" class="swal2-input" placeholder="سبب الارتداد (مثال: عدم كفاية الرصيد)">
+        <input id="swal-bounce-fee" type="number" class="swal2-input" placeholder="رسوم الارتداد البنكية إن وجدت">
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'تأكيد الارتداد',
+      cancelButtonText: 'إلغاء',
+      preConfirm: () => {
+        const reason = (document.getElementById('swal-bounce-reason') as HTMLInputElement).value;
+        const fee = (document.getElementById('swal-bounce-fee') as HTMLInputElement).value;
+        if (!reason) {
+          Swal.showValidationMessage('يرجى كتابة سبب الارتداد');
+        }
+        return { reason, fee: Number(fee) || 0 };
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        const body = { reason: result.value.reason, bounceFee: result.value.fee };
+        this.http.post(`/api/checks/${check.id}/bounce`, body).subscribe({
+          next: () => {
+            Swal.fire({ icon: 'warning', title: 'تم تسجيل الارتداد', text: 'تم تغيير حالة الشيك إلى مرتد وإثبات الرسوم.' });
+            this.loadChecks();
+          },
+          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل تسجيل الارتداد' })
+        });
+      }
+    });
+  }
+
+  isOverdue(dueDateStr: string): boolean {
+    if (!dueDateStr) return false;
+    const due = new Date(dueDateStr).getTime();
+    const now = new Date().setHours(0,0,0,0);
+    return due < now;
+  }
+
+  getStatusClass(status: PdcStatus): string {
+    switch (status) {
+      case PdcStatus.Received: return 'received';
+      case PdcStatus.Deposited: return 'deposited';
+      case PdcStatus.Cleared: return 'cleared';
+      case PdcStatus.Bounced: return 'bounced';
+      default: return 'received';
+    }
+  }
+}

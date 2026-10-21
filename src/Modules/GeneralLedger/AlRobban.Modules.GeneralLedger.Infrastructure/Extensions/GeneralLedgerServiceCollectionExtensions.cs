@@ -41,6 +41,15 @@ public static class GeneralLedgerServiceCollectionExtensions
 
         // Repositories
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IFinancialSettingsRepository, FinancialSettingsRepository>();
+        services.AddScoped<IJournalEntryRepository, JournalEntryRepository>();
+        services.AddScoped<IVoucherRepository, VoucherRepository>();
+        services.AddScoped<IBankReconciliationRepository, BankReconciliationRepository>();
+        services.AddScoped<IFixedAssetRepository, FixedAssetRepository>();
+        services.AddScoped<IRecurringJournalEntryRepository, RecurringJournalEntryRepository>();
+        services.AddScoped<IPostDatedCheckRepository, PostDatedCheckRepository>();
+        services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<ICurrencyRateRepository, CurrencyRateRepository>();
 
         // MediatR registration for GeneralLedger Application assembly
         services.AddMediatR(cfg =>

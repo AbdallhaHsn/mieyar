@@ -1,0 +1,202 @@
+<div class="account-picker-container" [class.is-open]="isOpen()" [class.is-disabled]="disabled" [class.picker-compact]="compact">
+  
+  <!-- Trigger Box (مطابق تماماً لمظهر القائمة المنسدلة form-control) -->
+  <div 
+    class="select-trigger-control" 
+    [class.compact]="compact"
+    [class.active]="isOpen()" 
+    [class.has-value]="!!selectedAccount()"
+    (click)="toggleDropdown()"
+    role="combobox"
+    [attr.aria-expanded]="isOpen()"
+    tabindex="0"
+  >
+    <div class="trigger-label">
+      @if (selectedAccount()) {
+        <span class="acc-code font-mono">{{ selectedAccount()?.accountCode }}</span>
+        <span class="acc-sep">-</span>
+        <span class="acc-name">{{ selectedAccount()?.nameAr }}</span>
+        @if (!compact && selectedAccount()?.level) {
+          <span class="acc-lvl">(مستوى {{ selectedAccount()?.level }})</span>
+        }
+      } @else {
+        <span class="placeholder-text">{{ placeholder || 'اختر الحساب المحاسبي...' }}</span>
+      }
+    </div>
+
+    <div class="trigger-icons">
+      @if (selectedAccount() && !disabled) {
+        <button 
+          type="button" 
+          class="btn-reset" 
+          (click)="clearSelection($event)"
+          title="إلغاء التحديد"
+        >
+          ✕
+        </button>
+      }
+      <span class="arrow-svg" [class.rotated]="isOpen()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- DROPDOWN MENU PANEL (القائمة المنسدلة الحقيقية العائمة بأعلى طبقة z-index) -->
+  @if (isOpen()) {
+    <div class="dropdown-floating-menu" (click)="$event.stopPropagation()">
+      
+      <!-- 1. Search Box inside Dropdown -->
+      <div class="menu-search-wrap">
+        <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="text" 
+          class="menu-search-input" 
+          placeholder="ابحث برقم الحساب أو الاسم (اضغط Enter للاختيار)..." 
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="onSearchChange($event)"
+          (keydown)="onSearchKeydown($event)"
+          autofocus
+        />
+        @if (searchQuery()) {
+          <button type="button" class="btn-clear-query" (click)="clearSearch()">
+            ✕
+          </button>
+        }
+      </div>
+
+      <!-- 2. Category Filter Pills -->
+      @if (availableCategories().length > 2) {
+        <div class="menu-filters-bar">
+          @for (cat of availableCategories(); track cat.id) {
+            <button 
+              type="button" 
+              class="filter-pill" 
+              [class.active]="selectedType() === cat.id"
+              (click)="setCategory(cat.id)"
+            >
+              {{ cat.label }}
+            </button>
+          }
+        </div>
+      }
+
+      <!-- 3. Options List (قائمة العناصر المنسدلة بتدرج شجري واضح) -->
+      <div class="menu-options-list">
+        
+        <!-- Root Option -->
+        @if (allowRootOption && !searchQuery() && selectedType() === 'all') {
+          <div 
+            class="option-row root-option-row" 
+            [class.selected]="!selectedValue()"
+            (click)="selectRoot()"
+          >
+            <div class="option-left">
+              <span class="tree-bullet">🌱</span>
+              <span class="option-title">{{ rootOptionTitle }}</span>
+            </div>
+            @if (!selectedValue()) {
+              <span class="selected-tick">✓</span>
+            }
+          </div>
+        }
+
+        <!-- Accounts Options -->
+        @if (paginatedAccounts().length > 0) {
+          @for (acc of paginatedAccounts(); track acc.id; let idx = $index) {
+            <div 
+              class="option-row" 
+              [class.selected]="selectedValue() === acc.id"
+              [class.highlighted]="highlightedIndex() === idx"
+              [class.indent-level-2]="!compact && allowRootOption && acc.level === 2"
+              [class.indent-level-3]="!compact && allowRootOption && acc.level === 3"
+              [class.indent-level-4]="!compact && allowRootOption && acc.level >= 4"
+              (mouseenter)="highlightedIndex.set(idx)"
+              (click)="selectAccount(acc)"
+            >
+              <div class="option-left">
+                @if (!compact && allowRootOption) {
+                  @if (acc.level === 1) {
+                    <span class="tree-branch level-1">📁</span>
+                  } @else if (acc.level === 2) {
+                    <span class="tree-branch level-2">↳</span>
+                  } @else {
+                    <span class="tree-branch level-3">↳↳</span>
+                  }
+                }
+                
+                <span class="code-span font-mono">{{ acc.accountCode }}</span>
+                <span class="dash-span">-</span>
+                <span class="name-span" [title]="acc.nameAr">{{ acc.nameAr }}</span>
+                @if (!compact && allowRootOption && acc.level) {
+                  <span class="level-span">(مستوى {{ acc.level }})</span>
+                }
+              </div>
+
+              @if (selectedValue() === acc.id) {
+                <span class="selected-tick">✓</span>
+              }
+            </div>
+          }
+        } @else {
+          <!-- Empty Results -->
+          <div class="no-options-found">
+            <span>لا توجد حسابات مطابقة لمعايير البحث والفلترة</span>
+          </div>
+        }
+      </div>
+
+      <!-- 4. Pagination Footer Bar (الباجنيشن) -->
+      @if (totalPages() > 1 || totalItems() > 6) {
+        <div class="menu-pagination-bar">
+          <div class="pag-count">
+            <span>صفحة {{ currentPage() }} من {{ totalPages() }} ({{ totalItems() }} حساب)</span>
+          </div>
+
+          @if (totalPages() > 1) {
+            <div class="pag-buttons">
+              <button 
+                type="button" 
+                class="pag-btn prev-btn" 
+                [disabled]="currentPage() === 1"
+                (click)="prevPage()"
+              >
+                السابق
+              </button>
+
+              @for (p of pagesArray(); track $index) {
+                @if (p === '...') {
+                  <span class="pag-ellipsis">..</span>
+                } @else {
+                  <button 
+                    type="button" 
+                    class="pag-page-num" 
+                    [class.active]="currentPage() === p"
+                    (click)="goToPage(p)"
+                  >
+                    {{ p }}
+                  </button>
+                }
+              }
+
+              <button 
+                type="button" 
+                class="pag-btn next-btn" 
+                [disabled]="currentPage() === totalPages()"
+                (click)="nextPage()"
+              >
+                التالي
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  }
+
+</div>

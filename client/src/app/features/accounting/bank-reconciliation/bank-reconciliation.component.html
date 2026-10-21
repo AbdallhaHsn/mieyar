@@ -1,0 +1,376 @@
+<div class="bank-rec-container">
+  <!-- Header / Action Strip -->
+  <div class="header-strip">
+    <div class="header-titles">
+      <div class="breadcrumbs">المحاسبة المالية &gt; التسويات البنكية</div>
+      <h1 class="main-title">
+        <i class="pi pi-building"></i>
+        التسويات البنكية ومطابقة كشوفات الحساب
+      </h1>
+      <p class="subtitle">مطابقة كشوفات الحسابات البنكية مع القيود الدفترية وتسوية الفروقات آلياً وفق المعايير المحاسبية</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline-info" (click)="openImportModal()" title="لصق بيانات كشف حساب إكسل للمطابقة الفورية">
+        <i class="pi pi-file-excel"></i>
+        استيراد كشف بنكي ومطابقة آلية
+      </button>
+      <button class="btn btn-secondary" (click)="toggleHistory()">
+        <i class="pi pi-history"></i>
+        سجل التسويات السابقة
+      </button>
+      <button class="btn btn-secondary" [disabled]="isSaving() || isLoading()" (click)="saveReconciliation(false)">
+        <i class="pi pi-save"></i>
+        حفظ مسودة
+      </button>
+      <button 
+        class="btn btn-primary" 
+        [disabled]="isSaving() || isLoading() || !isBalanced() || transactions().length === 0"
+        (click)="saveReconciliation(true)"
+        [title]="!isBalanced() ? 'يجب أن يكون الفرق متطابقاً تماماً (0.00) للاعتماد' : ''">
+        <i class="pi pi-check-circle"></i>
+        اعتماد التسوية البنكية
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div *ngIf="errorMessage()" class="alert alert-danger">
+    <i class="pi pi-exclamation-circle"></i>
+    <span>{{ errorMessage() }}</span>
+    <button class="alert-close" (click)="errorMessage.set('')">&times;</button>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert alert-success">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage() }}</span>
+    <button class="alert-close" (click)="successMessage.set('')">&times;</button>
+  </div>
+
+  <!-- Setup Control Bar -->
+  <div class="setup-card">
+    <div class="setup-grid">
+      <div class="form-group">
+        <label for="bankAccountSelect">الحساب البنكي</label>
+        <select 
+          id="bankAccountSelect"
+          class="form-control" 
+          [ngModel]="selectedAccountId()" 
+          (ngModelChange)="onAccountChanged($event)">
+          <option *ngFor="let acc of bankAccounts()" [value]="acc.accountId">
+            {{ acc.accountCode }} - {{ acc.accountNameAr }} (الرصيد: {{ acc.currentLedgerBalance | number:'1.2-2' }} ريال)
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="statementDateInput">تاريخ كشف الحساب</label>
+        <input 
+          id="statementDateInput"
+          type="date" 
+          class="form-control" 
+          [ngModel]="statementDate()" 
+          (ngModelChange)="statementDate.set($event); loadWorkspace()" />
+      </div>
+
+      <div class="form-group">
+        <label for="statementBalanceInput">رصيد كشف الحساب البنكي الفعلي</label>
+        <div class="input-with-currency">
+          <input 
+            id="statementBalanceInput"
+            type="number" 
+            step="0.01" 
+            class="form-control text-start ltr-input" 
+            [ngModel]="statementEndingBalance()" 
+            (ngModelChange)="statementEndingBalance.set($event)" />
+          <span class="currency-tag">ر.س</span>
+        </div>
+      </div>
+
+      <div class="form-group actions-col">
+        <label>&nbsp;</label>
+        <button class="btn btn-refresh" [disabled]="isLoading()" (click)="loadWorkspace()" title="إعادة تحميل الحركات">
+          <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+          تحديث
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Balance Strip (4 KPI Cards) -->
+  <div class="kpi-grid">
+    <div class="kpi-card card-book">
+      <div class="kpi-icon"><i class="pi pi-book"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">الرصيد الدفتري للنظام</div>
+        <div class="kpi-value">{{ bookBalance() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
+        <div class="kpi-sub">إجمالي قيود اليومية حتى تاريخه</div>
+      </div>
+    </div>
+
+    <div class="kpi-card card-bank">
+      <div class="kpi-icon"><i class="pi pi-file"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">رصيد كشف الحساب الفعلي</div>
+        <div class="kpi-value">{{ statementEndingBalance() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
+        <div class="kpi-sub">المُدخل من كشف البنك</div>
+      </div>
+    </div>
+
+    <div class="kpi-card card-cleared">
+      <div class="kpi-icon"><i class="pi pi-check"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">الحركات المطابقة ({{ matchedCount() }})</div>
+        <div class="kpi-value text-teal">
+          +{{ clearedDeposits() | number:'1.2-2' }} / -{{ clearedWithdrawals() | number:'1.2-2' }}
+        </div>
+        <div class="kpi-sub">معلقة: {{ unmatchedCount() }} حركة</div>
+      </div>
+    </div>
+
+    <div class="kpi-card card-diff" [class.balanced]="isBalanced()" [class.unbalanced]="!isBalanced()">
+      <div class="kpi-icon">
+        <i class="pi" [class.pi-check-circle]="isBalanced()" [class.pi-exclamation-triangle]="!isBalanced()"></i>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-label">الفرق غير المسوى (Difference)</div>
+        <div class="kpi-value" [class.text-green]="isBalanced()" [class.text-red]="!isBalanced()">
+          {{ difference() | number:'1.2-2' }} <span class="sar">ر.س</span>
+        </div>
+        <div class="kpi-sub" *ngIf="isBalanced()">
+          <span class="badge badge-success"><i class="pi pi-check"></i> متطابق تماماً جاهز للاعتماد</span>
+        </div>
+        <div class="kpi-sub" *ngIf="!isBalanced()">
+          <span class="badge badge-warning"><i class="pi pi-times"></i> يتطلب مطابقة الحركات للوصول إلى 0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace Table Section -->
+  <div class="table-container">
+    <div class="table-toolbar">
+      <!-- Filter Tabs -->
+      <div class="toolbar-tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeFilter() === 'all'" 
+          (click)="activeFilter.set('all')">
+          جميع الحركات ({{ transactions().length }})
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeFilter() === 'matched'" 
+          (click)="activeFilter.set('matched')">
+          المطابقة ({{ matchedCount() }})
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeFilter() === 'unmatched'" 
+          (click)="activeFilter.set('unmatched')">
+          غير المطابقة ({{ unmatchedCount() }})
+        </button>
+      </div>
+
+      <!-- Bulk Actions & Search -->
+      <div class="toolbar-actions">
+        <button class="btn btn-xs btn-outline" (click)="matchAll()" title="مطابقة جميع الحركات">
+          <i class="pi pi-check-square"></i> تحديد الكل
+        </button>
+        <button class="btn btn-xs btn-outline" (click)="unmatchAll()" title="إلغاء مطابقة جميع الحركات">
+          <i class="pi pi-stop"></i> إلغاء التحديد
+        </button>
+
+        <div class="search-box">
+          <i class="pi pi-search search-icon"></i>
+          <input 
+            type="text" 
+            placeholder="بحث برقم القيد أو البيان أو المرجع..." 
+            [ngModel]="searchQuery()" 
+            (ngModelChange)="searchQuery.set($event)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="erp-table">
+        <thead>
+          <tr>
+            <th class="col-check text-center">مطابقة</th>
+            <th class="col-date">التاريخ</th>
+            <th class="col-code">رقم القيد</th>
+            <th class="col-ref">المرجع / الشيك</th>
+            <th class="col-desc">البيان والتفاصيل</th>
+            <th class="col-num text-end">إيداعات (مدين)</th>
+            <th class="col-num text-end">سحوبات (دائن)</th>
+            <th class="col-status text-center">الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isLoading()">
+            <td colspan="8" class="text-center py-4 text-muted">
+              <i class="fas fa-spinner fa-spin me-2"></i> جاري تحميل حركات الحساب البنكي...
+            </td>
+          </tr>
+
+          <tr *ngIf="!isLoading() && filteredTransactions().length === 0">
+            <td colspan="8" class="text-center py-4 text-muted">
+              <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+              لا توجد حركات مطابقة لمعايير البحث الحالية
+            </td>
+          </tr>
+
+          <tr 
+            *ngFor="let tx of filteredTransactions()" 
+            [class.row-matched]="tx.isMatched"
+            (click)="toggleItemMatch(tx)"
+            class="clickable-row">
+            <td class="text-center" (click)="$event.stopPropagation()">
+              <input 
+                type="checkbox" 
+                class="form-check-input"
+                [checked]="tx.isMatched" 
+                (change)="toggleItemMatch(tx)" />
+            </td>
+            <td>{{ tx.transactionDate | date:'yyyy-MM-dd' }}</td>
+            <td>
+              <span class="badge badge-code">{{ tx.entryNumber }}</span>
+            </td>
+            <td>{{ tx.referenceNumber || '-' }}</td>
+            <td class="text-truncate" style="max-width: 280px;" [title]="tx.description">{{ tx.description }}</td>
+            <td class="text-end fw-semibold text-emerald">
+              {{ tx.debit > 0 ? (tx.debit | number:'1.2-2') : '-' }}
+            </td>
+            <td class="text-end fw-semibold text-rose">
+              {{ tx.credit > 0 ? (tx.credit | number:'1.2-2') : '-' }}
+            </td>
+            <td class="text-center">
+              <span *ngIf="tx.isMatched" class="badge badge-success">
+                <i class="fas fa-check"></i> مطابقة
+              </span>
+              <span *ngIf="!tx.isMatched" class="badge badge-secondary">
+                <i class="far fa-clock"></i> معلقة
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notes & Footer Summary -->
+    <div class="table-footer-strip">
+      <div class="notes-input">
+        <label for="recNotes">ملاحظات التسوية البنكية:</label>
+        <input 
+          id="recNotes"
+          type="text" 
+          placeholder="أدخل أي ملاحظات تدقيقية أو تسويات فروقات إن وجدت..." 
+          class="form-control form-control-sm"
+          [ngModel]="notes()" 
+          (ngModelChange)="notes.set($event)" />
+      </div>
+
+      <div class="footer-totals">
+        <div class="total-item">
+          <span>إجمالي المقبوضات المطابقة:</span>
+          <strong class="text-emerald">{{ clearedDeposits() | number:'1.2-2' }} ر.س</strong>
+        </div>
+        <div class="total-item">
+          <span>إجمالي المدفوعات المطابقة:</span>
+          <strong class="text-rose">{{ clearedWithdrawals() | number:'1.2-2' }} ر.س</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Drawer / Modal -->
+  <div class="modal-backdrop" *ngIf="showHistory()" (click)="showHistory.set(false)">
+    <div class="modal-drawer" (click)="$event.stopPropagation()">
+      <div class="drawer-header">
+        <h3><i class="fas fa-history me-2"></i> سجل التسويات البنكية المعتمدة والمسودات</h3>
+        <button class="drawer-close" (click)="showHistory.set(false)">&times;</button>
+      </div>
+
+      <div class="drawer-body">
+        <div *ngIf="isLoadingHistory()" class="text-center py-4 text-muted">
+          <i class="fas fa-spinner fa-spin me-2"></i> جاري تحميل السجل...
+        </div>
+
+        <div *ngIf="!isLoadingHistory() && historyList().length === 0" class="text-center py-4 text-muted">
+          لا توجد تسويات بنكية مسجلة مسبقاً لهذا الحساب.
+        </div>
+
+        <div *ngFor="let h of historyList()" class="history-item-card">
+          <div class="history-top">
+            <span class="badge badge-code">{{ h.reconciliationNumber }}</span>
+            <span class="badge" [class.badge-success]="h.status === 2" [class.badge-warning]="h.status === 1">
+              {{ h.statusNameAr }}
+            </span>
+          </div>
+          <div class="history-details">
+            <div><strong>الحساب:</strong> {{ h.bankAccountCode }} - {{ h.bankAccountNameAr }}</div>
+            <div><strong>تاريخ الكشف:</strong> {{ h.statementDate | date:'yyyy-MM-dd' }}</div>
+            <div><strong>رصيد كشف البنك:</strong> {{ h.statementEndingBalance | number:'1.2-2' }} ر.س</div>
+            <div><strong>الرصيد الدفتري:</strong> {{ h.bookBalance | number:'1.2-2' }} ر.س</div>
+            <div *ngIf="h.reconciledBy"><strong>المعتمد:</strong> {{ h.reconciledBy }} ({{ h.reconciledAtUtc | date:'yyyy-MM-dd HH:mm' }})</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Import Bank Statement & Auto-Match -->
+  <div class="modal-backdrop" *ngIf="showImportModal()" (click)="closeImportModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-info-subtle">
+        <h3><i class="pi pi-file-excel text-info me-2"></i> استيراد كشف حساب بنكي ومطابقة آلية ذكية</h3>
+        <button class="modal-close" (click)="closeImportModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="pi pi-info-circle me-1"></i>
+          <strong>طريقة الاستخدام:</strong> يمكنك نسخ ولصق صفوف كشف الحساب مباشرة من ملف Excel أو CSV (يدعم الأعمدة: التاريخ، المرجع، البيان، مدين، دائن). ستقوم خوارزمية المطابقة بفحص المرجع والمبالغ والتقارب الزمني ومطابقتها آلياً.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="fw-semibold mb-1">بيانات كشف الحساب (انسخ والصق من إكسل أو ملف CSV):</label>
+          <textarea 
+            class="form-control font-monospace" 
+            rows="8" 
+            placeholder="مثال:&#10;2026-10-15	REF-1002	إيداع نقاط بيع مدى	15400.00	0.00&#10;2026-10-18	CHK-9812	صرف شيك مورد	0.00	8250.00" 
+            [ngModel]="rawStatementText()" 
+            (ngModelChange)="rawStatementText.set($event)"></textarea>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="small text-muted">تاريخ نهاية كشف الحساب:</label>
+              <input type="date" class="form-control" [ngModel]="statementDate()" (ngModelChange)="statementDate.set($event)" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="small text-muted">الرصيد الختامي لكشف البنك (ر.س):</label>
+              <input type="number" class="form-control" [ngModel]="statementEndingBalance()" (ngModelChange)="statementEndingBalance.set($event)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeImportModal()">إلغاء</button>
+        <button 
+          class="btn btn-primary" 
+          [disabled]="isAutoMatching() || !rawStatementText().trim()" 
+          (click)="executeAutoMatch()">
+          <i class="pi pi-bolt me-1" *ngIf="!isAutoMatching()"></i>
+          <i class="pi pi-spin pi-spinner me-1" *ngIf="isAutoMatching()"></i>
+          تنفيذ خوارزمية المطابقة الآلية
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,538 @@
+<div class="fixed-assets-container">
+  <!-- Header Strip -->
+  <div class="header-strip">
+    <div class="header-titles">
+      <div class="breadcrumbs">المحاسبة المالية &gt; الأصول الثابتة</div>
+      <h1 class="main-title">
+        <i class="pi pi-box"></i>
+        سجل وإدارة الأصول الثابتة والإهلاك الآلي
+      </h1>
+      <p class="subtitle">إدارة دورة حياة الأصول الثابتة، تتبع القيم الدفترية، وتوليد قيود استهلاك الأصول آلياً وفق معيار IAS 16</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="openCreateModal()">
+        <i class="pi pi-plus-circle"></i>
+        إضافة أصل جديد
+      </button>
+      <button class="btn btn-primary" (click)="openDepreciationModal()">
+        <i class="pi pi-calculator"></i>
+        تشغيل الإهلاك الشهري الآلي
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div *ngIf="errorMessage()" class="alert alert-danger">
+    <i class="pi pi-exclamation-circle"></i>
+    <span>{{ errorMessage() }}</span>
+    <button class="alert-close" (click)="errorMessage.set('')">&times;</button>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert alert-success">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage() }}</span>
+    <button class="alert-close" (click)="successMessage.set('')">&times;</button>
+  </div>
+
+  <!-- 4-Card KPI Strip -->
+  <div class="kpi-grid">
+    <div class="kpi-card card-cost">
+      <div class="kpi-icon"><i class="pi pi-wallet"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">إجمالي تكلفة اقتناء الأصول</div>
+        <div class="kpi-value">{{ totalAcquisitionCost() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
+        <div class="kpi-sub">القيمة التاريخية لجميع الأصول المسجلة</div>
+      </div>
+    </div>
+
+    <div class="kpi-card card-accum">
+      <div class="kpi-icon"><i class="pi pi-chart-line"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">مجمع الإهلاك التراكمي</div>
+        <div class="kpi-value text-rose">{{ totalAccumulatedDepreciation() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
+        <div class="kpi-sub">إجمالي ما تم استهلاكه دفترياً</div>
+      </div>
+    </div>
+
+    <div class="kpi-card card-net">
+      <div class="kpi-icon"><i class="pi pi-database"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">صافي القيمة الدفترية الحالية</div>
+        <div class="kpi-value text-emerald">{{ netBookValue() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
+        <div class="kpi-sub">صافي الأصول القابلة للظهور في الميزانية</div>
+      </div>
+    </div>
+
+    <div class="kpi-card card-count">
+      <div class="kpi-icon"><i class="pi pi-check-square"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">الأصول النشطة قيد الاستهلاك</div>
+        <div class="kpi-value">{{ activeAssetsCount() }} <span class="sar">أصل</span></div>
+        <div class="kpi-sub">من إجمالي {{ assets().length }} أصل مسجل</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table Container -->
+  <div class="table-container">
+    <div class="table-toolbar">
+      <div class="toolbar-tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="statusFilter() === 0" 
+          (click)="statusFilter.set(0)">
+          الكل ({{ assets().length }})
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="statusFilter() === 1" 
+          (click)="statusFilter.set(1)">
+          نشط وقيد الاستهلاك ({{ activeAssetsCount() }})
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="statusFilter() === 2" 
+          (click)="statusFilter.set(2)">
+          مستهلك بالكامل
+        </button>
+      </div>
+
+      <div class="toolbar-actions">
+        <div class="search-box">
+          <i class="pi pi-search search-icon"></i>
+          <input 
+            type="text" 
+            placeholder="بحث برقم الأصل أو الاسم أو الموقع..." 
+            [ngModel]="searchTerm()" 
+            (ngModelChange)="searchTerm.set($event)" />
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="erp-table">
+        <thead>
+          <tr>
+            <th class="col-code">رمز الأصل</th>
+            <th>اسم الأصل</th>
+            <th>حساب الأصل</th>
+            <th class="col-date">تاريخ الاقتناء</th>
+            <th class="text-end">التكلفة (ر.س)</th>
+            <th class="text-end">الخردة</th>
+            <th class="text-center">العمر</th>
+            <th>طريقة الإهلاك</th>
+            <th class="text-end text-teal">الإهلاك الشهري</th>
+            <th class="text-end text-rose">مجمع الإهلاك</th>
+            <th class="text-end text-emerald">القيمة الدفترية</th>
+            <th class="col-status text-center">الحالة</th>
+            <th class="text-center">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isLoading()">
+            <td colspan="13" class="text-center py-4 text-muted">
+              <i class="pi pi-spin pi-spinner me-2"></i> جاري تحميل سجل الأصول الثابتة...
+            </td>
+          </tr>
+
+          <tr *ngIf="!isLoading() && filteredAssets().length === 0">
+            <td colspan="13" class="text-center py-4 text-muted">
+              <i class="pi pi-box text-2xl mb-2 d-block"></i>
+              لا توجد أصول مطابقة لمعايير البحث الحالية
+            </td>
+          </tr>
+
+          <tr *ngFor="let a of filteredAssets()">
+            <td><span class="badge badge-code">{{ a.assetCode }}</span></td>
+            <td>
+              <strong class="d-block">{{ a.nameAr }}</strong>
+              <small class="text-muted" *ngIf="a.location"><i class="pi pi-map-marker me-1"></i>{{ a.location }}</small>
+            </td>
+            <td><small>{{ a.assetAccountCode }} - {{ a.assetAccountNameAr }}</small></td>
+            <td>{{ a.purchaseDate | date:'yyyy-MM-dd' }}</td>
+            <td class="text-end fw-semibold">{{ a.acquisitionCost | number:'1.2-2' }}</td>
+            <td class="text-end text-muted">{{ a.salvageValue | number:'1.2-2' }}</td>
+            <td class="text-center">{{ a.usefulLifeMonths }} شهر</td>
+            <td><span class="badge badge-method">{{ a.depreciationMethodNameAr }}</span></td>
+            <td class="text-end text-teal fw-semibold">{{ a.monthlyDepreciationAmount | number:'1.2-2' }}</td>
+            <td class="text-end text-rose fw-semibold">{{ a.totalAccumulatedDepreciation | number:'1.2-2' }}</td>
+            <td class="text-end text-emerald fw-bold">{{ a.currentBookValue | number:'1.2-2' }}</td>
+            <td class="text-center">
+              <span class="badge" [class.badge-success]="a.status === 1" [class.badge-secondary]="a.status === 2" [class.badge-danger]="a.status === 3">
+                {{ a.statusNameAr }}
+              </span>
+            </td>
+            <td class="text-center">
+              <button 
+                *ngIf="a.status !== 3"
+                type="button" 
+                class="btn btn-sm btn-outline-danger" 
+                title="استبعاد أو بيع الأصل" 
+                (click)="openDisposalModal(a)">
+                <i class="pi pi-dollar me-1"></i> بيع / استبعاد
+              </button>
+              <span *ngIf="a.status === 3" class="text-muted small">مستبعد</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal: Create New Fixed Asset -->
+  <div class="modal-backdrop" *ngIf="showCreateModal()" (click)="closeCreateModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-plus-circle me-2"></i> تسجيل أصل ثابت جديد</h3>
+        <button class="modal-close" (click)="closeCreateModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-grid-2">
+          <div class="form-group">
+            <label>اسم الأصل (بالعربية) *</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="مثال: خوادم سحابية Dell PowerEdge" 
+              [ngModel]="newAsset().nameAr" 
+              (ngModelChange)="newAsset().nameAr = $event" />
+          </div>
+
+          <div class="form-group">
+            <label>اسم الأصل (بالإنجليزية)</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="e.g. Dell PowerEdge Servers" 
+              [ngModel]="newAsset().nameEn" 
+              (ngModelChange)="newAsset().nameEn = $event" />
+          </div>
+        </div>
+
+        <div class="modal-grid-3 mt-2">
+          <div class="form-group">
+            <label>حساب الأصل (12xxx) *</label>
+            <select 
+              class="form-control" 
+              [ngModel]="newAsset().assetAccountId" 
+              (ngModelChange)="newAsset().assetAccountId = $event">
+              <option *ngFor="let acc of assetAccounts()" [value]="acc.id">
+                {{ acc.accountCode }} - {{ acc.nameAr }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>حساب مجمع الإهلاك (12xxx) *</label>
+            <select 
+              class="form-control" 
+              [ngModel]="newAsset().accumulatedDepreciationAccountId" 
+              (ngModelChange)="newAsset().accumulatedDepreciationAccountId = $event">
+              <option *ngFor="let acc of accumAccounts()" [value]="acc.id">
+                {{ acc.accountCode }} - {{ acc.nameAr }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>حساب مصروف الإهلاك (53xxx) *</label>
+            <select 
+              class="form-control" 
+              [ngModel]="newAsset().depreciationExpenseAccountId" 
+              (ngModelChange)="newAsset().depreciationExpenseAccountId = $event">
+              <option *ngFor="let acc of expenseAccounts()" [value]="acc.id">
+                {{ acc.accountCode }} - {{ acc.nameAr }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-grid-4 mt-2">
+          <div class="form-group">
+            <label>تاريخ الشراء / الاقتناء *</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              [ngModel]="newAsset().purchaseDate" 
+              (ngModelChange)="newAsset().purchaseDate = $event" />
+          </div>
+
+          <div class="form-group">
+            <label>تكلفة الاقتناء (ر.س) *</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              class="form-control text-start ltr-input" 
+              [ngModel]="newAsset().acquisitionCost" 
+              (ngModelChange)="newAsset().acquisitionCost = $event" />
+          </div>
+
+          <div class="form-group">
+            <label>قيمة الخردة (Salvage Value)</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              class="form-control text-start ltr-input" 
+              [ngModel]="newAsset().salvageValue" 
+              (ngModelChange)="newAsset().salvageValue = $event" />
+          </div>
+
+          <div class="form-group">
+            <label>العمر الإنتاجي (بالشهور) *</label>
+            <input 
+              type="number" 
+              class="form-control text-start ltr-input" 
+              [ngModel]="newAsset().usefulLifeMonths" 
+              (ngModelChange)="newAsset().usefulLifeMonths = $event" />
+          </div>
+        </div>
+
+        <!-- Auto Calculation Card -->
+        <div class="calc-preview-card mt-3">
+          <div class="calc-item">
+            <span>القيمة القابلة للإهلاك:</span>
+            <strong>{{ (newAsset().acquisitionCost - newAsset().salvageValue) | number:'1.2-2' }} ر.س</strong>
+          </div>
+          <div class="calc-item highlight">
+            <span>قيمة الإهلاك الشهري المحسوبة:</span>
+            <strong class="text-teal">{{ calculatePreviewMonthly() | number:'1.2-2' }} ر.س / شهرياً</strong>
+          </div>
+        </div>
+
+        <div class="modal-grid-2 mt-2">
+          <div class="form-group">
+            <label>الرقم التسلسلي (Serial Number)</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="SN-XXXX-XXXX" 
+              [ngModel]="newAsset().serialNumber" 
+              (ngModelChange)="newAsset().serialNumber = $event" />
+          </div>
+
+          <div class="form-group">
+            <label>موقع / مكان تواجد الأصل</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="مثال: الفرع الرئيسي - غرفة الخوادم" 
+              [ngModel]="newAsset().location" 
+              (ngModelChange)="newAsset().location = $event" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCreateModal()">إلغاء</button>
+        <button class="btn btn-primary" [disabled]="isSaving()" (click)="saveAsset()">
+          <i class="pi pi-check" *ngIf="!isSaving()"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isSaving()"></i>
+          حفظ وتسجيل الأصل
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Run Monthly Depreciation -->
+  <div class="modal-backdrop" *ngIf="showDepreciationModal()" (click)="closeDepreciationModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="pi pi-calculator me-2"></i> معالج تشغيل الإهلاك الشهري الآلي</h3>
+        <button class="modal-close" (click)="closeDepreciationModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="dep-run-header">
+          <div class="form-group" style="max-width: 260px;">
+            <label>تاريخ تشغيل الإهلاك الدوري:</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              [ngModel]="depreciationDate()" 
+              (ngModelChange)="depreciationDate.set($event); loadDepreciationPreview()" />
+          </div>
+
+          <div class="dep-summary-pill" *ngIf="depreciationPreview()">
+            <span>الأصول المستحقة: <strong>{{ depreciationPreview()?.eligibleAssetsCount }}</strong></span>
+            <span>إجمالي الإهلاك: <strong class="text-emerald">{{ depreciationPreview()?.totalDepreciationAmount | number:'1.2-2' }} ر.س</strong></span>
+          </div>
+        </div>
+
+        <div class="table-responsive mt-3" style="max-height: 320px;">
+          <table class="erp-table">
+            <thead>
+              <tr>
+                <th>رمز الأصل</th>
+                <th>اسم الأصل</th>
+                <th class="text-end">التكلفة</th>
+                <th class="text-end">الرصيد الدفتري الحالي</th>
+                <th class="text-end text-teal">قسط الإهلاك المستحق</th>
+                <th class="text-end text-emerald">الرصيد الدفتري الجديد</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="isLoadingPreview()">
+                <td colspan="6" class="text-center py-4 text-muted">
+                  <i class="pi pi-spin pi-spinner me-2"></i> جاري احتساب مخصصات الإهلاك للأصول المؤهلة...
+                </td>
+              </tr>
+
+              <tr *ngIf="!isLoadingPreview() && (depreciationPreview()?.items?.length === 0)">
+                <td colspan="6" class="text-center py-4 text-muted">
+                  لا توجد أصول مستحقة للإهلاك في هذا التاريخ المحدد.
+                </td>
+              </tr>
+
+              <tr *ngFor="let item of depreciationPreview()?.items">
+                <td><span class="badge badge-code">{{ item.assetCode }}</span></td>
+                <td>{{ item.nameAr }}</td>
+                <td class="text-end">{{ item.acquisitionCost | number:'1.2-2' }}</td>
+                <td class="text-end">{{ item.currentBookValue | number:'1.2-2' }}</td>
+                <td class="text-end text-teal fw-bold">{{ item.monthlyDepreciationAmount | number:'1.2-2' }}</td>
+                <td class="text-end text-emerald fw-semibold">{{ item.newBookValue | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-info mt-3">
+          <i class="pi pi-info-circle"></i>
+          سيتم إنشاء وترحيل قيد يومية آلي معتمد متوازن (مدين: حسابات مصروف الاستهلاك 53xxx / دائن: حسابات مجمع الاستهلاك 12xxx).
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDepreciationModal()">إغلاق</button>
+        <button 
+          class="btn btn-primary" 
+          [disabled]="isRunningDepreciation() || !depreciationPreview() || (depreciationPreview()?.items?.length === 0)" 
+          (click)="executeDepreciation()">
+          <i class="pi pi-play" *ngIf="!isRunningDepreciation()"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isRunningDepreciation()"></i>
+          اعتماد وترحيل قيد الإهلاك الدوري
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Dispose or Sell Fixed Asset -->
+  <div class="modal-backdrop" *ngIf="showDisposalModal()" (click)="closeDisposalModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-danger-subtle">
+        <h3><i class="pi pi-dollar text-danger me-2"></i> استبعاد أو بيع أصل ثابت</h3>
+        <button class="modal-close" (click)="closeDisposalModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedAssetForDisposal() as asset">
+        <div class="card p-3 mb-3 bg-light border-0">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span class="badge badge-code mb-1">{{ asset.assetCode }}</span>
+              <h5 class="mb-0">{{ asset.nameAr }}</h5>
+            </div>
+            <div class="text-end">
+              <small class="text-muted d-block">القيمة الدفترية الحالية</small>
+              <strong class="text-primary fs-5">{{ asset.currentBookValue | number:'1.2-2' }} ر.س</strong>
+            </div>
+          </div>
+          <hr class="my-2" />
+          <div class="row text-center small text-muted">
+            <div class="col-4">التكلفة التاريخية: <strong class="text-dark">{{ asset.acquisitionCost | number:'1.2-2' }}</strong></div>
+            <div class="col-4">مجمع الإهلاك: <strong class="text-rose">{{ asset.totalAccumulatedDepreciation | number:'1.2-2' }}</strong></div>
+            <div class="col-4">الحساب: <strong class="text-dark">{{ asset.assetAccountCode }}</strong></div>
+          </div>
+        </div>
+
+        <div class="modal-grid-2">
+          <div class="form-group">
+            <label>تاريخ الاستبعاد / البيع *</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              [ngModel]="disposalDate()" 
+              (ngModelChange)="disposalDate.set($event)" />
+          </div>
+
+          <div class="form-group">
+            <label>سعر البيع الإجمالي (0 في حال الشطب/التخريد) *</label>
+            <input 
+              type="number" 
+              class="form-control" 
+              placeholder="0.00" 
+              [ngModel]="disposalSalePrice()" 
+              (ngModelChange)="disposalSalePrice.set($event)" />
+          </div>
+        </div>
+
+        <div class="form-group mt-2" *ngIf="disposalSalePrice() > 0">
+          <label>حساب إيداع القيمة البيعية (صندوق / بنك) *</label>
+          <select 
+            class="form-control" 
+            [ngModel]="disposalProceedsAccountId()" 
+            (ngModelChange)="disposalProceedsAccountId.set($event)">
+            <option *ngFor="let acc of cashBankAccounts()" [value]="acc.id">
+              {{ acc.accountCode }} - {{ acc.nameAr }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group mt-2">
+          <label>سبب الاستبعاد أو الشطب *</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="مثال: بيع الأصل لعدم الحاجة، تلف الأصل، تقادم تكنولوجي..." 
+            [ngModel]="disposalReason()" 
+            (ngModelChange)="disposalReason.set($event)" />
+        </div>
+
+        <div class="form-group mt-2">
+          <label>ملاحظات إضافية</label>
+          <textarea 
+            class="form-control" 
+            rows="2" 
+            placeholder="بيانات المشتري، رقم الفاتورة إن وجدت..." 
+            [ngModel]="disposalNotes()" 
+            (ngModelChange)="disposalNotes.set($event)"></textarea>
+        </div>
+
+        <!-- Real-time Gain / Loss Calculator Box -->
+        <div class="card p-3 mt-3 border" [class.border-success]="calculateDisposalGainLoss().isGain" [class.border-danger]="!calculateDisposalGainLoss().isGain">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span class="d-block fw-bold" [class.text-success]="calculateDisposalGainLoss().isGain" [class.text-danger]="!calculateDisposalGainLoss().isGain">
+                <i class="pi me-1" [class.pi-arrow-up]="calculateDisposalGainLoss().isGain" [class.pi-arrow-down]="!calculateDisposalGainLoss().isGain"></i>
+                {{ calculateDisposalGainLoss().isGain ? 'أرباح رأسمالية متوقعة من البيع (إيرادات أخرى)' : 'خسائر رأسمالية ناتجة عن الاستبعاد (مصروفات أخرى)' }}
+              </span>
+              <small class="text-muted">صافي الفارق بين سعر البيع والقيمة الدفترية المتبقية</small>
+            </div>
+            <div class="text-end">
+              <strong class="fs-4" [class.text-success]="calculateDisposalGainLoss().isGain" [class.text-danger]="!calculateDisposalGainLoss().isGain">
+                {{ calculateDisposalGainLoss().amount | number:'1.2-2' }} <small>ر.س</small>
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning mt-3 small">
+          <i class="pi pi-exclamation-triangle me-1"></i>
+          سيتم توليد وترحيل قيد يومية فوري لإقفال الأصل ومجمع استهلاكه، وإثبات المدين والدائن والأرباح أو الخسائر في دفتر الأستاذ العام وتحديث حالة الأصل إلى "مستبعد".
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDisposalModal()">إلغاء</button>
+        <button 
+          class="btn btn-danger" 
+          [disabled]="isDisposing() || !disposalReason()" 
+          (click)="executeDisposal()">
+          <i class="pi pi-check" *ngIf="!isDisposing()"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isDisposing()"></i>
+          تأكيد استبعاد الأصل وترحيل القيد المحاسبي
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

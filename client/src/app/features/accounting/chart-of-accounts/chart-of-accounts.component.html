@@ -1,4 +1,4 @@
-<div class="coa-container geometric-bg">
+<div class="coa-container geometric-bg" [attr.dir]="currentLang() === 'ar' ? 'rtl' : 'ltr'">
   
   <!-- Page Header & Action Bar -->
   <header class="coa-header">
@@ -10,26 +10,46 @@
           </svg>
         </div>
         <div>
-          <h1 class="page-title">شجرة دليل الحسابات الموحد (Chart of Accounts)</h1>
+          <h1 class="page-title">
+            {{ currentLang() === 'ar' ? 'شجرة دليل الحسابات الموحد (Chart of Accounts)' : 'Unified Chart of Accounts' }}
+          </h1>
           <p class="page-subtitle">
-            مصممة وفق معايير المحاسبة الدولية (IFRS/IAS) ومعايير الهيئة السعودية للمحاسبين (SOCPA) ومتطلبات (ZATCA)
+            {{ currentLang() === 'ar' 
+              ? 'مصممة وفق معايير المحاسبة الدولية (IFRS/IAS) ومعايير الهيئة السعودية للمحاسبين (SOCPA) ومتطلبات (ZATCA)' 
+              : 'Structured in accordance with IFRS/IAS, Saudi SOCPA standards, and ZATCA compliance requirements' }}
           </p>
         </div>
       </div>
 
       <div class="header-actions">
-        <button class="btn-secondary" (click)="refresh()" title="تحديث البيانات">
+        <input type="file" #csvFileInput accept=".csv" (change)="onFileSelected($event)" style="display:none">
+
+        <button class="btn-secondary" (click)="exportToCsv()" [title]="currentLang() === 'ar' ? 'تصدير دليل الحسابات إلى ملف CSV (Excel)' : 'Export COA to CSV'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span>{{ currentLang() === 'ar' ? 'تصدير CSV' : 'Export CSV' }}</span>
+        </button>
+
+        <button class="btn-secondary" (click)="csvFileInput.click()" [title]="currentLang() === 'ar' ? 'استيراد دليل الحسابات من ملف CSV' : 'Import COA from CSV'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          <span>{{ currentLang() === 'ar' ? 'استيراد CSV' : 'Import CSV' }}</span>
+        </button>
+
+        <button class="btn-secondary" (click)="refresh()" [title]="currentLang() === 'ar' ? 'تحديث البيانات' : 'Refresh Chart'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>تحديث الشجرة</span>
+          <span>{{ currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
         </button>
         
         <button class="btn-primary" (click)="openCreateAccount()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          <span>إضافة حساب جديد</span>
+          <span>{{ currentLang() === 'ar' ? 'إضافة حساب جديد' : '+ New Account' }}</span>
         </button>
       </div>
     </div>
@@ -37,33 +57,40 @@
     <!-- Quick Accounting Metrics Strip -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">إجمالي الحسابات</div>
+        <div class="kpi-label">{{ currentLang() === 'ar' ? 'إجمالي الحسابات' : 'Total Accounts' }}</div>
         <div class="kpi-value">{{ totalAccountsCount() }}</div>
-        <div class="kpi-sub">شاملة المجموعات والتحليلي</div>
+        <div class="kpi-sub">{{ currentLang() === 'ar' ? 'شاملة المجموعات والتحليلي' : 'All levels & sub-accounts' }}</div>
       </div>
 
       <div class="kpi-card accent-emerald">
-        <div class="kpi-label">الأصول (1)</div>
+        <div class="kpi-label">{{ currentLang() === 'ar' ? 'الأصول (1)' : 'Assets (1)' }}</div>
         <div class="kpi-value text-emerald">{{ assetsCount() }}</div>
-        <div class="kpi-sub">متداولة وغير متداولة</div>
+        <div class="kpi-sub">{{ currentLang() === 'ar' ? 'متداولة وغير متداولة' : 'Current & Non-Current' }}</div>
       </div>
 
       <div class="kpi-card accent-cyan">
-        <div class="kpi-label">الخصوم والملكية (2 + 3)</div>
+        <div class="kpi-label">{{ currentLang() === 'ar' ? 'الخصوم والملكية (2 + 3)' : 'Liabilities & Equity (2+3)' }}</div>
         <div class="kpi-value text-cyan">{{ liabilitiesAndEquityCount() }}</div>
-        <div class="kpi-sub">التزامات، حقوق ملكية، ورأس مال</div>
+        <div class="kpi-sub">{{ currentLang() === 'ar' ? 'التزامات، حقوق ملكية، ورأس مال' : 'Obligations & Capital' }}</div>
       </div>
 
       <div class="kpi-card accent-purple">
-        <div class="kpi-label">الإيرادات والمصروفات (4 + 5)</div>
-        <div class="kpi-value">{{ revenueAndExpensesCount() }}</div>
-        <div class="kpi-sub">قائمة الأرباح والخسائر</div>
+        <div class="kpi-label">{{ currentLang() === 'ar' ? 'الإيرادات والمصروفات (4 + 5)' : 'P&L Accounts (4+5)' }}</div>
+        <div class="kpi-value text-purple">{{ revenueAndExpensesCount() }}</div>
+        <div class="kpi-sub">{{ currentLang() === 'ar' ? 'قائمة الأرباح والخسائر' : 'Revenues & Expenses' }}</div>
+      </div>
+
+      <!-- Missing Group/Header Accounts Card (الحسابات التجميعية والرئيسية) -->
+      <div class="kpi-card accent-indigo">
+        <div class="kpi-label">{{ currentLang() === 'ar' ? 'حسابات رئيسية تجميعية' : 'Header / Group Accounts' }}</div>
+        <div class="kpi-value text-indigo">{{ groupAccountsCount() }}</div>
+        <div class="kpi-sub">{{ currentLang() === 'ar' ? 'عناوين ومجموعات لا تقبل القيد' : 'Non-postable group headers' }}</div>
       </div>
 
       <div class="kpi-card accent-amber">
-        <div class="kpi-label">حسابات فرعية تقبل القيد</div>
+        <div class="kpi-label">{{ currentLang() === 'ar' ? 'حسابات تقبل القيد المباشر' : 'Posting Accounts' }}</div>
         <div class="kpi-value text-amber">{{ postableCount() }}</div>
-        <div class="kpi-sub">تقبل سندات وقيد يومية مباشرة</div>
+        <div class="kpi-sub">{{ currentLang() === 'ar' ? 'تقبل سندات وفواتير مباشرة' : 'Direct journal vouchers' }}</div>
       </div>
     </div>
   </header>
@@ -78,7 +105,9 @@
         type="text"
         [value]="searchQuery()"
         (input)="searchQuery.set($any($event.target).value)"
-        placeholder="ابحث برمز الحساب، أو الاسم بالعربية، أو بالإنجليزية (مثال: 111، النقدية، Sales)..."
+        [placeholder]="currentLang() === 'ar' 
+          ? 'ابحث برمز الحساب، أو الاسم بالعربية، أو بالإنجليزية (مثال: 111، النقدية، Sales)...' 
+          : 'Search by account code, Arabic, or English name (e.g. 111, Cash, Alinma)...'"
         class="search-input"
       />
       @if (searchQuery()) {
@@ -94,57 +123,57 @@
           [class.active]="selectedTypeFilter() === null"
           (click)="selectedTypeFilter.set(null)"
         >
-          كافة الفئات
+          {{ currentLang() === 'ar' ? 'كافة الفئات' : 'All Categories' }}
         </button>
         <button
           class="pill-btn"
           [class.active]="selectedTypeFilter() === AccountType.Asset"
           (click)="selectedTypeFilter.set(AccountType.Asset)"
         >
-          الأصول (1)
+          {{ currentLang() === 'ar' ? 'الأصول (1)' : 'Assets (1)' }}
         </button>
         <button
           class="pill-btn"
           [class.active]="selectedTypeFilter() === AccountType.Liability"
           (click)="selectedTypeFilter.set(AccountType.Liability)"
         >
-          الالتزامات (2)
+          {{ currentLang() === 'ar' ? 'الالتزامات (2)' : 'Liabilities (2)' }}
         </button>
         <button
           class="pill-btn"
           [class.active]="selectedTypeFilter() === AccountType.Equity"
           (click)="selectedTypeFilter.set(AccountType.Equity)"
         >
-          الملكية (3)
+          {{ currentLang() === 'ar' ? 'الملكية (3)' : 'Equity (3)' }}
         </button>
         <button
           class="pill-btn"
           [class.active]="selectedTypeFilter() === AccountType.Revenue"
           (click)="selectedTypeFilter.set(AccountType.Revenue)"
         >
-          الإيرادات (4)
+          {{ currentLang() === 'ar' ? 'الإيرادات (4)' : 'Revenues (4)' }}
         </button>
         <button
           class="pill-btn"
           [class.active]="selectedTypeFilter() === AccountType.Expense"
           (click)="selectedTypeFilter.set(AccountType.Expense)"
         >
-          المصروفات (5)
+          {{ currentLang() === 'ar' ? 'المصروفات (5)' : 'Expenses (5)' }}
         </button>
       </div>
 
       <div class="tree-controls">
-        <button class="btn-ghost" (click)="expandAll()" title="فتح كافة الفروع">
+        <button class="btn-ghost" (click)="expandAll()" [title]="currentLang() === 'ar' ? 'فتح كافة الفروع' : 'Expand All'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
           </svg>
-          <span>توسيع الكل</span>
+          <span>{{ currentLang() === 'ar' ? 'توسيع الكل' : 'Expand All' }}</span>
         </button>
-        <button class="btn-ghost" (click)="collapseAll()" title="طي كافة الفروع">
+        <button class="btn-ghost" (click)="collapseAll()" [title]="currentLang() === 'ar' ? 'طي كافة الفروع' : 'Collapse All'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 11l7-7 7 7M5 19l7-7 7 7" />
           </svg>
-          <span>طي الكل</span>
+          <span>{{ currentLang() === 'ar' ? 'طي الكل' : 'Collapse All' }}</span>
         </button>
       </div>
     </div>
@@ -159,30 +188,30 @@
         
         <!-- Table Header -->
         <div class="table-header-row">
-          <div class="th col-code">رمز الحساب</div>
-          <div class="th col-name">اسم الحساب (عربي / English)</div>
-          <div class="th col-level">المستوى</div>
-          <div class="th col-nature">طبيعة الحساب</div>
-          <div class="th col-statement">القائمة المالية</div>
-          <div class="th col-standard">المعيار المرجعي</div>
-          <div class="th col-status">النوع</div>
-          <div class="th col-balance">الرصيد الدفتري</div>
-          <div class="th col-actions">إجراءات وإرشاد</div>
+          <div class="th col-code">{{ currentLang() === 'ar' ? 'رمز الحساب' : 'Account Code' }}</div>
+          <div class="th col-name">{{ currentLang() === 'ar' ? 'اسم الحساب (عربي / English)' : 'Account Title' }}</div>
+          <div class="th col-level">{{ currentLang() === 'ar' ? 'المستوى' : 'Level' }}</div>
+          <div class="th col-nature">{{ currentLang() === 'ar' ? 'طبيعة الحساب' : 'Nature' }}</div>
+          <div class="th col-statement">{{ currentLang() === 'ar' ? 'القائمة المالية' : 'Statement' }}</div>
+          <div class="th col-standard">{{ currentLang() === 'ar' ? 'المعيار المرجعي' : 'Standard' }}</div>
+          <div class="th col-status">{{ currentLang() === 'ar' ? 'النوع' : 'Status' }}</div>
+          <div class="th col-balance">{{ currentLang() === 'ar' ? 'الرصيد الدفتري' : 'Balance' }}</div>
+          <div class="th col-actions">{{ currentLang() === 'ar' ? 'إجراءات وإرشاد' : 'Actions' }}</div>
         </div>
 
         <!-- Accounts Tree Rows -->
         @if (coaService.isLoading()) {
           <div class="loading-state">
             <div class="spinner"></div>
-            <p>جارٍ تحميل وبناء شجرة الحسابات وفق المعايير الدولية...</p>
+            <p>{{ currentLang() === 'ar' ? 'جارٍ تحميل وبناء شجرة الحسابات وفق المعايير الدولية...' : 'Loading and constructing chart of accounts...' }}</p>
           </div>
         } @else if (filteredTree().length === 0) {
           <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3>لا توجد حسابات مطابقة لبحثك</h3>
-            <p>جرّب تعديل كلمة البحث أو فلتر الفئات لعرض الحسابات المطلوبة.</p>
+            <h3>{{ currentLang() === 'ar' ? 'لا توجد حسابات مطابقة لبحثك' : 'No accounts matching your search' }}</h3>
+            <p>{{ currentLang() === 'ar' ? 'جرّب تعديل كلمة البحث أو فلتر الفئات لعرض الحسابات المطلوبة.' : 'Try adjusting the search query or category filters.' }}</p>
           </div>
         } @else {
           <div class="tree-body">
@@ -201,16 +230,20 @@
       <div class="panel-header">
         <div class="panel-title-wrap">
           <div class="panel-badge">
-            دليل المعيار المحاسبي
+            {{ currentLang() === 'ar' ? 'دليل المعيار المحاسبي' : 'Accounting Standard Guide' }}
           </div>
           <h2 class="panel-title">
-            {{ coaService.inspectedAccount()?.nameAr || 'دليل المعيار والقيد النموذجي' }}
+            {{ currentLang() === 'en' 
+              ? (coaService.inspectedAccount()?.nameEn || coaService.inspectedAccount()?.nameAr || 'IFRS / SOCPA Standard Guidance')
+              : (coaService.inspectedAccount()?.nameAr || 'دليل المعيار والقيد النموذجي') }}
           </h2>
           @if (coaService.inspectedAccount(); as acc) {
-            <span class="panel-acc-code font-mono text-muted">رمز الحساب: {{ acc.accountCode }} | {{ acc.accountTypeNameAr }}</span>
+            <span class="panel-acc-code font-mono text-muted">
+              {{ currentLang() === 'ar' ? 'رمز الحساب: ' : 'Code: ' }}{{ acc.accountCode }} | {{ currentLang() === 'en' ? (acc.nameEn || acc.nameAr) : acc.accountTypeNameAr }}
+            </span>
           }
         </div>
-        <button class="close-panel-btn" (click)="closeDrawer()" title="إغلاق اللوحة الجانبية">✕</button>
+        <button class="close-panel-btn" (click)="closeDrawer()" title="Close">✕</button>
       </div>
 
       <div class="panel-scroll-body">
@@ -220,31 +253,31 @@
             <div class="guidance-banner">
               <div class="standard-tag">
                 <span class="code">{{ guidance.standardCode }}</span>
-                <span class="verified-pill">معتمد دولياً</span>
+                <span class="verified-pill">{{ currentLang() === 'ar' ? 'معتمد دولياً' : 'IFRS / SOCPA' }}</span>
               </div>
-              <h3 class="standard-title-ar">{{ guidance.standardTitleAr }}</h3>
-              <p class="standard-title-en" dir="ltr">{{ guidance.standardTitleEn }}</p>
+              <h3 class="standard-title-ar">{{ currentLang() === 'en' ? guidance.standardTitleEn : guidance.standardTitleAr }}</h3>
+              <p class="standard-title-en" dir="ltr">{{ currentLang() === 'en' ? guidance.standardTitleAr : guidance.standardTitleEn }}</p>
             </div>
 
             <!-- Accounting Nature Explainer (متى يزيد ومتى ينقص) -->
             <div class="guidance-card nature-card">
               <div class="card-title-row">
                 <div class="bullet-icon bg-emerald">⚖️</div>
-                <h4>القاعدة المحاسبية لطبيعة الحساب (مدين أم دائن)</h4>
+                <h4>{{ currentLang() === 'ar' ? 'القاعدة المحاسبية لطبيعة الحساب (مدين أم دائن)' : 'Accounting Nature & Rules (Dr / Cr)' }}</h4>
               </div>
               <div class="rules-dual-grid">
                 <div class="rule-box debit-rule">
                   <div class="rule-header">
-                    <span class="side-badge debit">حالة المدين (Debit)</span>
-                    <span class="rule-sign">+ الزيادة في الأصول والمصروفات</span>
+                    <span class="side-badge debit">{{ currentLang() === 'ar' ? 'حالة المدين (Debit)' : 'Debit Side (+)' }}</span>
+                    <span class="rule-sign">{{ currentLang() === 'ar' ? '+ الزيادة في الأصول والمصروفات' : 'Increases Assets & Expenses' }}</span>
                   </div>
                   <p class="rule-text">{{ guidance.debitRuleAr }}</p>
                 </div>
 
                 <div class="rule-box credit-rule">
                   <div class="rule-header">
-                    <span class="side-badge credit">حالة الدائن (Credit)</span>
-                    <span class="rule-sign">+ الزيادة في الخصوم والإيرادات</span>
+                    <span class="side-badge credit">{{ currentLang() === 'ar' ? 'حالة الدائن (Credit)' : 'Credit Side (+)' }}</span>
+                    <span class="rule-sign">{{ currentLang() === 'ar' ? '+ الزيادة في الخصوم والإيرادات' : 'Increases Liabilities & Revenues' }}</span>
                   </div>
                   <p class="rule-text">{{ guidance.creditRuleAr }}</p>
                 </div>
@@ -255,7 +288,7 @@
             <div class="guidance-card">
               <div class="card-title-row">
                 <div class="bullet-icon bg-cyan">📜</div>
-                <h4>شروط ومعايير الاعتراف المحاسبي (Recognition Criteria)</h4>
+                <h4>{{ currentLang() === 'ar' ? 'شروط ومعايير الاعتراف المحاسبي' : 'Recognition Criteria' }}</h4>
               </div>
               <p class="guidance-desc-text">{{ guidance.recognitionCriteriaAr }}</p>
             </div>
@@ -264,7 +297,7 @@
             <div class="guidance-card zatca-card">
               <div class="card-title-row">
                 <div class="bullet-icon bg-amber">🏛️</div>
-                <h4>المعالجة الزكوية والضريبية والفوترة الإلكترونية (ZATCA Phase 2)</h4>
+                <h4>{{ currentLang() === 'ar' ? 'المعالجة الزكوية والضريبية والفوترة الإلكترونية (ZATCA)' : 'ZATCA Tax & Zakat Treatment' }}</h4>
               </div>
               <p class="guidance-desc-text">{{ guidance.zatcaTaxImpactAr }}</p>
             </div>
@@ -274,60 +307,55 @@
               <div class="card-title-row">
                 <div class="bullet-icon bg-purple">💼</div>
                 <div>
-                  <h4>القيود المحاسبية النموذجية الخاصة بهذا الحساب</h4>
-                  <span class="sub-text">نماذج قيود يومية معيارية مطبقة وفق المحاسبة المزدوجة</span>
+                  <h4>{{ currentLang() === 'ar' ? 'القيود المحاسبية النموذجية الخاصة بهذا الحساب' : 'Sample Double-Entry Journal Entries' }}</h4>
+                  <span class="sub-text">{{ currentLang() === 'ar' ? 'نماذج قيود يومية معيارية مطبقة وفق المحاسبة المزدوجة' : 'Standard vouchers conforming to double-entry bookkeeping' }}</span>
                 </div>
               </div>
 
               @if (guidance.typicalJournalEntries.length > 0) {
-                <div class="vouchers-list">
-                  @for (voucher of guidance.typicalJournalEntries; track voucher.transactionTitleAr) {
-                    <div class="voucher-box">
-                      <div class="voucher-header">
-                        <span class="voucher-title">{{ voucher.transactionTitleAr }}</span>
-                        <span class="voucher-scenario">{{ voucher.scenarioDescriptionAr }}</span>
+                <div class="entries-stack">
+                  @for (entry of guidance.typicalJournalEntries; track entry.transactionTitleAr) {
+                    <div class="entry-box">
+                      <div class="entry-header">
+                        <strong class="entry-title">{{ currentLang() === 'en' ? entry.transactionTitleEn : entry.transactionTitleAr }}</strong>
+                        <p class="entry-scenario">{{ entry.scenarioDescriptionAr }}</p>
                       </div>
 
                       <div class="voucher-table">
                         <div class="vt-head">
-                          <span class="vth side">الطرف</span>
-                          <span class="vth acc">اسم الحساب المقيد</span>
-                          <span class="vth note">الشرح والتوجيه المحاسبي</span>
+                          <span class="vt-col-side">{{ currentLang() === 'ar' ? 'الطرف' : 'Side' }}</span>
+                          <span class="vt-col-acc">{{ currentLang() === 'ar' ? 'اسم الحساب' : 'Account' }}</span>
+                          <span class="vt-col-note">{{ currentLang() === 'ar' ? 'البيان والتوجيه' : 'Explanation' }}</span>
                         </div>
-                        @for (leg of voucher.legs; track leg.accountNameAr) {
+                        @for (leg of entry.legs; track leg.accountNameAr) {
                           <div class="vt-row" [class.is-debit]="leg.accountSide === 'Debit'" [class.is-credit]="leg.accountSide === 'Credit'">
-                            <span class="vt-side">
-                              <span class="side-pill" [class.side-dr]="leg.accountSide === 'Debit'" [class.side-cr]="leg.accountSide === 'Credit'">
-                                {{ leg.accountSide === 'Debit' ? 'مدين (Dr)' : 'دائن (Cr)' }}
+                            <span class="vt-col-side">
+                              <span class="side-tag" [class.dr]="leg.accountSide === 'Debit'" [class.cr]="leg.accountSide === 'Credit'">
+                                {{ leg.accountSide === 'Debit' ? (currentLang() === 'ar' ? 'مدين Dr' : 'Debit') : (currentLang() === 'ar' ? 'دائن Cr' : 'Credit') }}
                               </span>
                             </span>
-                            <span class="vt-acc">
-                              <strong>{{ leg.accountNameAr }}</strong>
-                              <small dir="ltr">{{ leg.accountNameEn }}</small>
+                            <span class="vt-col-acc">
+                              <strong>{{ currentLang() === 'en' ? leg.accountNameEn : leg.accountNameAr }}</strong>
                             </span>
-                            <span class="vt-note">{{ leg.explanationAr }}</span>
+                            <span class="vt-col-note text-muted">{{ leg.explanationAr }}</span>
                           </div>
                         }
                       </div>
                     </div>
                   }
                 </div>
-              } @else {
-                <p class="no-vouchers">لا توجد قيود استثنائية مسجلة لهذا المعيار؛ يخضع للقواعد العامة.</p>
               }
             </div>
 
           </div>
         }
-
       </div>
     </aside>
 
   </div>
-
 </div>
 
-<!-- Recursive Node Template for Hierarchical Accounts Tree -->
+<!-- Recursive Node Template -->
 <ng-template #nodeTemplate let-node let-depth="depth">
   <div 
     class="tree-row" 
@@ -336,91 +364,140 @@
     [class.level-leaf]="node.isPostable"
     [class.active-selected]="coaService.inspectedAccount()?.id === node.id"
   >
-    
-    <!-- Code Column with indentation & toggle -->
-    <div class="td col-code" [style.padding-right.rem]="depth * 1.5">
-      @if (node.hasChildren) {
-        <button class="expand-btn" (click)="toggleExpand(node); $event.stopPropagation()" [title]="node.isExpanded ? 'طي الحساب' : 'فتح الحساب'">
-          <span class="chevron" [class.open]="node.isExpanded">◀</span>
+    <!-- Code & Indent Column with Tree Grouping Expand/Collapse Toggle -->
+    <div class="td col-code" [style.padding-inline-start.px]="depth * 20 + 8">
+      @if (node.hasChildren || (node.subAccounts && node.subAccounts.length > 0)) {
+        <button 
+          type="button"
+          class="expand-btn" 
+          [class.open]="isNodeExpanded(node)"
+          (click)="toggleNode(node, $event)"
+          [title]="isNodeExpanded(node) 
+            ? (currentLang() === 'ar' ? 'طي تفريعات وتجميع الحساب' : 'Collapse branch') 
+            : (currentLang() === 'ar' ? 'توسيع تفريعات وتجميع الحساب' : 'Expand branch')"
+        >
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
         </button>
       } @else {
         <span class="leaf-dot">•</span>
       }
+
       <span class="code-badge font-mono">{{ node.accountCode }}</span>
     </div>
 
-    <!-- Name Column -->
+    <!-- Name Column (Adaptive Bilingual) -->
     <div class="td col-name">
       <div class="name-block">
-        <span class="name-ar font-medium">{{ node.nameAr }}</span>
-        <span class="name-en text-muted font-mono" dir="ltr">{{ node.nameEn }}</span>
+        @if (currentLang() === 'en') {
+          <span class="name-ar font-medium">{{ node.nameEn || node.nameAr }}</span>
+          <span class="name-en text-muted font-mono" dir="rtl">{{ node.nameAr }}</span>
+        } @else {
+          <span class="name-ar font-medium">{{ node.nameAr }}</span>
+          <span class="name-en text-muted font-mono" dir="ltr">{{ node.nameEn }}</span>
+        }
       </div>
     </div>
 
     <!-- Level Column -->
     <div class="td col-level">
-      <span class="level-badge">مستوى {{ node.level }}</span>
+      <span class="level-badge">
+        {{ currentLang() === 'ar' ? 'مستوى ' + node.level : 'L' + node.level }}
+      </span>
     </div>
 
     <!-- Nature Column (Debit / Credit) -->
     <div class="td col-nature">
       @if (node.accountNature === AccountNature.Debit) {
-        <span class="nature-pill nature-debit">مدين (Debit)</span>
+        <span class="nature-pill nature-debit">{{ currentLang() === 'ar' ? 'مدين (Debit)' : 'Debit' }}</span>
       } @else {
-        <span class="nature-pill nature-credit">دائن (Credit)</span>
+        <span class="nature-pill nature-credit">{{ currentLang() === 'ar' ? 'دائن (Credit)' : 'Credit' }}</span>
       }
     </div>
 
     <!-- Statement Column -->
     <div class="td col-statement">
       <span class="statement-tag" [class.stmt-bs]="node.financialStatement === FinancialStatement.BalanceSheet">
-        {{ node.financialStatement === FinancialStatement.BalanceSheet ? 'مركز مالي' : 'قائمة دخل' }}
+        {{ node.financialStatement === FinancialStatement.BalanceSheet 
+          ? (currentLang() === 'ar' ? 'مركز مالي' : 'Balance Sheet') 
+          : (currentLang() === 'ar' ? 'قائمة دخل' : 'Income Stmt') }}
       </span>
     </div>
 
     <!-- Standard Guidance Column -->
     <div class="td col-standard">
       @if (node.guidance?.standardCode) {
-        <span class="standard-pill" (click)="openInspectGuidance(node)" title="انقر لعرض شروح ومعايير القيود">
+        <span class="standard-pill" (click)="openInspectGuidance(node)" [title]="currentLang() === 'ar' ? 'عرض دليل ومعايير الحساب' : 'View IFRS standard guidance'">
           📘 {{ node.guidance?.standardCode }}
         </span>
       } @else {
         <span class="standard-pill default" (click)="openInspectGuidance(node)">
-          📘 معايير عامة
+          📘 {{ currentLang() === 'ar' ? 'معايير عامة' : 'General' }}
         </span>
       }
     </div>
 
-    <!-- Status Column -->
+    <!-- Status Column (نوع الحساب: تجميعي رئيسي أو فرعي يقبل القيد) -->
     <div class="td col-status">
       @if (node.isPostable) {
-        <span class="status-badge postable">فرعي يقبل القيد</span>
+        <span class="status-badge postable">{{ currentLang() === 'ar' ? 'يقبل القيد' : 'Postable' }}</span>
       } @else {
-        <span class="status-badge group">رئيسي تجميعي</span>
+        <span class="status-badge group" [title]="currentLang() === 'ar' ? 'حساب رئيسي تجميعي لا يقبل القيود المباشرة' : 'Header / Grouping Account'">
+          {{ currentLang() === 'ar' ? 'رئيسي تجميعي' : 'Header / Group' }}
+        </span>
       }
     </div>
 
     <!-- Balance Column -->
     <div class="td col-balance font-mono">
       <span class="balance-amount">{{ node.currentBalance | number:'1.2-2' }}</span>
-      <span class="currency-tag">ر.س</span>
+      <span class="currency-tag">{{ currentLang() === 'ar' ? 'ر.س' : 'SAR' }}</span>
     </div>
 
     <!-- Action Buttons -->
     <div class="td col-actions">
-      <button class="row-action-btn view-btn" (click)="openInspectGuidance(node)" title="عرض دليل المعيار والقيود المحاسبية">
+      <!-- Standard Guide Button -->
+      <button class="row-action-btn view-btn" (click)="openInspectGuidance(node)" [title]="currentLang() === 'ar' ? 'عرض دليل المعيار والقيود المحاسبية' : 'View Standard Guide'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>دليل المعيار</span>
+        <span>{{ currentLang() === 'ar' ? 'دليل المعيار' : 'Guide' }}</span>
       </button>
 
+      <!-- Add Sub-Account Button -->
       @if (!node.isPostable || node.level < 4) {
-        <button class="row-action-btn add-btn" (click)="openCreateAccount(node)" title="إضافة حساب فرعي تحته">
+        <button class="row-action-btn add-btn" (click)="openCreateAccount(node)" [title]="currentLang() === 'ar' ? 'إضافة حساب فرعي تحته' : 'Add Sub-Account'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          <span>إضافة فرعي</span>
+          <span>{{ currentLang() === 'ar' ? 'إضافة فرعي' : '+ Sub' }}</span>
+        </button>
+      }
+
+      <!-- Edit / Rename Button (Available for all accounts) -->
+      <button 
+        class="row-action-btn edit-btn" 
+        (click)="renameAccount(node, $event)" 
+        [title]="currentLang() === 'ar' ? 'تعديل أو إعادة تسمية الحساب' : 'Edit or Rename Account'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+        <span>{{ currentLang() === 'ar' ? 'تعديل' : 'Edit' }}</span>
+      </button>
+
+      <!-- Delete Button (Available for all non-root accounts, with friendly validation) -->
+      @if (node.level > 1) {
+        <button 
+          class="row-action-btn delete-btn" 
+          (click)="deleteAccount(node, $event)" 
+          [title]="node.subAccounts?.length ? (currentLang() === 'ar' ? 'حساب تجميعي يحتوي على حسابات فرعية' : 'Has sub-accounts') : (currentLang() === 'ar' ? 'حذف الحساب' : 'Delete account')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span>{{ currentLang() === 'ar' ? 'حذف' : 'Delete' }}</span>
         </button>
       }
     </div>
@@ -428,7 +505,7 @@
   </div>
 
   <!-- Recursive Child Nodes -->
-  @if (node.isExpanded && node.subAccounts?.length) {
+  @if ((isNodeExpanded(node) || searchQuery().trim().length > 0) && node.subAccounts?.length) {
     @for (child of node.subAccounts; track child.id) {
       <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: child, depth: depth + 1 }"></ng-container>
     }
