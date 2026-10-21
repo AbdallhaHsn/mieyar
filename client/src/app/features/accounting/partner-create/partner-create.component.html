@@ -1,0 +1,598 @@
+<div class="partner-create-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Top Header & Breadcrumb Bar -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="breadcrumb-trail">
+        <a routerLink="/dashboard" class="bc-link"><i class="pi pi-home"></i> {{ langService.currentLang() === 'ar' ? 'الرئيسية' : 'Home' }}</a>
+        <span class="bc-sep">/</span>
+        <a routerLink="/accounting/partners" class="bc-link">{{ langService.currentLang() === 'ar' ? 'العملاء والموردون' : 'Business Partners' }}</a>
+        <span class="bc-sep">/</span>
+        <span class="bc-current">{{ langService.currentLang() === 'ar' ? 'تسجيل شريك تجاري جديد' : 'New Business Partner' }}</span>
+      </div>
+
+      <div class="title-with-badge">
+        <div class="title-icon">
+          <i class="pi pi-user-plus"></i>
+        </div>
+        <div>
+          <h1 class="main-title">
+            {{ partnerType() === PartnerType.Customer ? 'تسجيل عميل جديد والامتثال الضريبي' : (partnerType() === PartnerType.Supplier ? 'تسجيل مورد جديد والبيانات الضريبية' : 'تسجيل شريك تجاري جديد (عميل / مورد)') }}
+          </h1>
+          <p class="sub-title">
+            توثيق بطاقة الشريك والعنوان الوطني المعتمد ومعرفات هيئة الزكاة والضريبة والجمارك (ZATCA) لإصدار الفواتير الضريبية
+          </p>
+        </div>
+        <span class="zatca-badge">
+          <i class="pi pi-shield"></i>
+          <span>متوافق مع ZATCA Phase 2</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn-secondary" routerLink="/accounting/partners">
+        <i class="pi pi-arrow-right"></i>
+        <span>العودة للقائمة</span>
+      </button>
+      <button type="button" class="btn-outline" (click)="savePartner(true)" [disabled]="isSaving()">
+        <i class="pi pi-plus-circle"></i>
+        <span>حفظ وإضافة آخر</span>
+      </button>
+      <button type="button" class="btn-primary" (click)="savePartner(false)" [disabled]="isSaving()">
+        <i class="pi pi-check" [class.pi-spin]="isSaving()"></i>
+        <span>{{ isSaving() ? 'جاري الحفظ...' : 'حفظ وتثبيت الشريك' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <div class="page-layout">
+
+    <!-- Form Section (Left / Center) -->
+    <main class="form-section">
+
+      <!-- SECTION 1: Commercial Identity & Partner Type -->
+      <section class="form-card">
+        <div class="card-header">
+          <div class="ch-icon emerald"><i class="pi pi-id-card"></i></div>
+          <div>
+            <h2 class="ch-title">1. الهوية التجارية والتصنيف المحاسبي</h2>
+            <span class="ch-desc">تحديد دور الشريك، الكود المحاسبي، والاسم التجاري المعتمد</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Partner Type Selector Pills -->
+          <div class="type-selector-strip">
+            <span class="type-label">نوع الشريك التجاري:</span>
+            <div class="type-pills-group">
+              <button 
+                type="button" 
+                class="type-pill" 
+                [class.active]="partnerType() === PartnerType.Customer"
+                (click)="setPartnerType(PartnerType.Customer)">
+                <i class="pi pi-user"></i>
+                <span>عميل تجاري (Customer - ذمم مدينة)</span>
+              </button>
+              <button 
+                type="button" 
+                class="type-pill" 
+                [class.active]="partnerType() === PartnerType.Supplier"
+                (click)="setPartnerType(PartnerType.Supplier)">
+                <i class="pi pi-truck"></i>
+                <span>مورد خدمات/بضائع (Supplier - ذمم دائنة)</span>
+              </button>
+              <button 
+                type="button" 
+                class="type-pill" 
+                [class.active]="partnerType() === PartnerType.Both"
+                (click)="setPartnerType(PartnerType.Both)">
+                <i class="pi pi-sync"></i>
+                <span>عميل ومورد معاً (Both)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-grid cols-2">
+            <!-- Partner Code -->
+            <div class="form-group">
+              <label class="required">كود الشريك في النظام</label>
+              <div class="input-with-action">
+                <input 
+                  type="text" 
+                  class="form-control font-code" 
+                  [value]="code()" 
+                  (input)="code.set($any($event.target).value)" 
+                  placeholder="مثال: CUST-1044" 
+                  required />
+                <button type="button" class="btn-action-icon" (click)="generateSmartCode(partnerType())" title="إعادة توليد الكود تلقائياً">
+                  <i class="pi pi-refresh"></i>
+                </button>
+              </div>
+              <small class="field-hint">كود فريد يحدد هوية الشريك بالقيود وسندات القبض وميزان المراجعة</small>
+            </div>
+
+            <!-- Commercial Registration / Quick Contact Phone -->
+            <div class="form-group">
+              <label>رقم الجوال / الهاتف المعتمد</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix font-code">+966</span>
+                <input 
+                  type="tel" 
+                  class="form-control" 
+                  [value]="phone()" 
+                  (input)="phone.set($any($event.target).value)" 
+                  placeholder="5x xxx xxxx" />
+              </div>
+              <small class="field-hint">للتواصل المباشر وإرسال إشعارات الفواتير وروابط الدفع الإلكتروني</small>
+            </div>
+
+            <!-- Arabic Name -->
+            <div class="form-group span-2">
+              <div class="label-with-tool">
+                <label class="required">الاسم التجاري الكامل (باللغة العربية)</label>
+                <span class="live-translate-badge" *ngIf="isAutoTranslating()">
+                  <i class="pi pi-spin pi-spinner"></i> جاري توليد الاسم الإنجليزي...
+                </span>
+              </div>
+              <input 
+                type="text" 
+                class="form-control fw-bold" 
+                [value]="nameAr()" 
+                (input)="onNameArChange($any($event.target).value)" 
+                placeholder="اسم الشركة أو المؤسسة أو العميل كما هو مسجل بالسجل التجاري أو الهيئة" 
+                required />
+              <small class="field-hint">الاسم القانوني الإلزامي في الفاتورة الضريبية وفق اشتراطات هيئة الزكاة</small>
+            </div>
+
+            <!-- English Name -->
+            <div class="form-group">
+              <div class="label-with-tool">
+                <label>الاسم باللغة الإنجليزية (Trade / Legal Name - EN)</label>
+                <button type="button" class="text-btn" (click)="translateManually()" title="ترجمة الاسم من العربية">
+                  <i class="pi pi-language"></i> ترجمة تلقائية
+                </button>
+              </div>
+              <input 
+                type="text" 
+                class="form-control font-latin" 
+                [value]="nameEn()" 
+                (input)="nameEn.set($any($event.target).value)" 
+                placeholder="e.g. Al-Fursan Trading & Contracting Co." />
+              <small class="field-hint">مستحسن لطباعة الفواتير الضريبية ثنائية اللغة (Bilingual Invoices)</small>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label>البريد الإلكتروني المالي (Financial / Billing Email)</label>
+              <div class="input-with-icon">
+                <i class="pi pi-envelope prefix-icon"></i>
+                <input 
+                  type="email" 
+                  class="form-control font-latin" 
+                  [value]="email()" 
+                  (input)="email.set($any($event.target).value)" 
+                  placeholder="billing@company.com" />
+              </div>
+              <small class="field-hint">لاستقبال الفواتير الإلكترونية بصيغة PDF/A-3 وملفات XML المعتمدة</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: ZATCA Compliance & Tax Identifiers -->
+      <section class="form-card">
+        <div class="card-header">
+          <div class="ch-icon cyan"><i class="pi pi-shield"></i></div>
+          <div>
+            <h2 class="ch-title">2. بيانات الامتثال الضريبي ومعرفات هيئة الزكاة (ZATCA)</h2>
+            <span class="ch-desc">الرقم الضريبي المكون من 15 رقماً والمعرفات البديلة للمشتري (Buyer Scheme ID)</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="form-grid cols-2">
+
+            <!-- Saudi VAT Number (15 digits) -->
+            <div class="form-group span-2">
+              <div class="label-with-tool">
+                <label>الرقم الضريبي للمنشأة (15 رقماً)</label>
+                <span class="validation-pill" [class.valid]="vatValidation().isValid" [class.invalid]="!vatValidation().isValid && !vatValidation().isEmpty">
+                  <i class="pi" [class.pi-check-circle]="vatValidation().isValid" [class.pi-times-circle]="!vatValidation().isValid && !vatValidation().isEmpty" [class.pi-info-circle]="vatValidation().isEmpty"></i>
+                  <span>{{ vatValidation().message }}</span>
+                </span>
+              </div>
+              <div class="input-with-vat-format">
+                <input 
+                  type="text" 
+                  maxlength="15" 
+                  class="form-control font-code vat-input" 
+                  [class.is-valid]="vatValidation().isValid"
+                  [class.is-invalid]="!vatValidation().isValid && !vatValidation().isEmpty"
+                  [value]="taxNumber()" 
+                  (input)="taxNumber.set($any($event.target).value)" 
+                  placeholder="مثال: 300000000000003" />
+                <span class="vat-counter">{{ taxNumber().length }}/15</span>
+              </div>
+              <small class="field-hint">إلزامي إذا كان العميل منشأة مسجلة بضريبة القيمة المضافة (B2B)، يبدأ بالرقم 3 وينتهي بالرقم 3</small>
+            </div>
+
+            <!-- Buyer Other ID Scheme -->
+            <div class="form-group">
+              <label class="required">نوع المعرّف التجاري الإضافي (Buyer ID Scheme)</label>
+              <select class="form-control form-select" [value]="otherIdType()" (change)="otherIdType.set($any($event.target).value)">
+                <option *ngFor="let opt of idSchemeOptions" [value]="opt.code">
+                  {{ opt.nameAr }}
+                </option>
+              </select>
+              <small class="field-hint">المعيار المعتمد في منصة فاتورة (UBL 2.1 SchemeID) لتوثيق هوية المشتري</small>
+            </div>
+
+            <!-- Buyer Other ID Value -->
+            <div class="form-group">
+              <label class="required">رقم / قيمة المعرّف التجاري</label>
+              <input 
+                type="text" 
+                class="form-control font-code" 
+                [value]="otherIdValue()" 
+                (input)="otherIdValue.set($any($event.target).value)" 
+                placeholder="أدخل رقم السجل التجاري أو الرقم الموحد 700" 
+                required />
+              <small class="field-hint">
+                {{ otherIdType() === 'CRN' ? 'رقم السجل التجاري الصادر من وزارة التجارة (10 أرقام)' : (otherIdType() === '700' ? 'الرقم الوطني الموحد للمنشآت (700xxxxxxx)' : 'رقم الترخيص أو الهوية المعتمدة') }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: Saudi National Address (Mandatory for Tax Invoices) -->
+      <section class="form-card highlight-border">
+        <div class="card-header">
+          <div class="ch-icon amber"><i class="pi pi-map-marker"></i></div>
+          <div class="ch-text-with-btn">
+            <div>
+              <div class="ch-title-row">
+                <h2 class="ch-title">3. العنوان الوطني السعودي المعتمد (National Address)</h2>
+                <span class="mandatory-badge">إلزامي للفواتير الضريبية B2B</span>
+              </div>
+              <span class="ch-desc">وفق اشتراطات ZATCA، لا تُقبل الفاتورة الضريبية في منصة فاتورة بدون تفصيل هذه الحقول الستة</span>
+            </div>
+            <button type="button" class="btn-sample-fill" (click)="fillSampleAddress()" title="تعبئة بيانات عنوان وطني تجريبي بالرياض">
+              <i class="pi pi-bolt"></i> تعبئة تجريبية
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="form-grid cols-3">
+
+            <!-- Street Name -->
+            <div class="form-group span-2">
+              <label class="required">اسم الشارع (Street Name)</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [value]="streetName()" 
+                (input)="streetName.set($any($event.target).value)" 
+                placeholder="مثال: طريق الملك فهد، شارع العليا العام، طريق الأمير سلطان" 
+                required />
+              <small class="field-hint">اسم الشارع الذي يقع عليه المقر الرئيسي أو فرع المشتري</small>
+            </div>
+
+            <!-- Building Number (4 digits) -->
+            <div class="form-group">
+              <div class="label-with-tool">
+                <label class="required">رقم المبنى (4 أرقام)</label>
+                <span class="sub-valid-pill" *ngIf="!buildingValidation().isEmpty" [class.ok]="buildingValidation().isValid">
+                  {{ buildingValidation().isValid ? '✓ سليم' : '4 أرقام' }}
+                </span>
+              </div>
+              <input 
+                type="text" 
+                maxlength="4" 
+                class="form-control font-code" 
+                [class.is-invalid]="!buildingValidation().isValid && !buildingValidation().isEmpty"
+                [value]="buildingNumber()" 
+                (input)="buildingNumber.set($any($event.target).value)" 
+                placeholder="مثال: 7254" 
+                required />
+              <small class="field-hint">رقم المبنى المعتمد في العنوان الوطني الموحد</small>
+            </div>
+
+            <!-- District / Subdivision -->
+            <div class="form-group">
+              <label class="required">اسم الحي (District)</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [value]="citySubdivisionName()" 
+                (input)="citySubdivisionName.set($any($event.target).value)" 
+                placeholder="مثال: حي العليا، حي الروضة، حي المروج" 
+                required />
+              <small class="field-hint">اسم الحي السكني أو التجاري</small>
+            </div>
+
+            <!-- City -->
+            <div class="form-group">
+              <label class="required">المدينة (City)</label>
+              <select class="form-control form-select" [value]="cityName()" (change)="cityName.set($any($event.target).value)">
+                <option *ngFor="let c of saudiCities" [value]="c">{{ c }}</option>
+              </select>
+              <input 
+                *ngIf="cityName() === 'أخرى'"
+                type="text" 
+                class="form-control mt-1" 
+                [value]="customCity()" 
+                (input)="customCity.set($any($event.target).value)" 
+                placeholder="اكتب اسم المدينة..." />
+            </div>
+
+            <!-- Postal Zone (5 digits) -->
+            <div class="form-group">
+              <div class="label-with-tool">
+                <label class="required">الرمز البريدي (5 أرقام)</label>
+                <span class="sub-valid-pill" *ngIf="!postalValidation().isEmpty" [class.ok]="postalValidation().isValid">
+                  {{ postalValidation().isValid ? '✓ سليم' : '5 أرقام' }}
+                </span>
+              </div>
+              <input 
+                type="text" 
+                maxlength="5" 
+                class="form-control font-code" 
+                [class.is-invalid]="!postalValidation().isValid && !postalValidation().isEmpty"
+                [value]="postalZone()" 
+                (input)="postalZone.set($any($event.target).value)" 
+                placeholder="مثال: 12214" 
+                required />
+              <small class="field-hint">الرمز البريدي التابع للمدينة والحي</small>
+            </div>
+
+            <!-- Additional Number (Plot ID - 4 digits) -->
+            <div class="form-group">
+              <div class="label-with-tool">
+                <label>الرقم الإضافي للمبنى (4 أرقام)</label>
+                <span class="sub-valid-pill" *ngIf="!plotValidation().isEmpty" [class.ok]="plotValidation().isValid">
+                  {{ plotValidation().isValid ? '✓' : '4 أرقام' }}
+                </span>
+              </div>
+              <input 
+                type="text" 
+                maxlength="4" 
+                class="form-control font-code" 
+                [value]="plotIdentification()" 
+                (input)="plotIdentification.set($any($event.target).value)" 
+                placeholder="مثال: 3411" />
+              <small class="field-hint">الرقم الإضافي بالعنوان الوطني (اختياري ومستحسن)</small>
+            </div>
+
+            <!-- Country Code -->
+            <div class="form-group">
+              <label class="required">الدولة (Country)</label>
+              <div class="input-with-icon">
+                <i class="pi pi-globe prefix-icon"></i>
+                <input 
+                  type="text" 
+                  class="form-control font-code" 
+                  [value]="countryCode()" 
+                  (input)="countryCode.set($any($event.target).value)" 
+                  placeholder="SA" 
+                  readonly />
+              </div>
+              <small class="field-hint">المملكة العربية السعودية (رمز ISO: SA)</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: Financial Policies & Credit Terms -->
+      <section class="form-card">
+        <div class="card-header">
+          <div class="ch-icon purple"><i class="pi pi-wallet"></i></div>
+          <div>
+            <h2 class="ch-title">4. السياسات الائتمانية ودليل الحسابات</h2>
+            <span class="ch-desc">ضبط الحد الائتماني المالي، فترة السداد، والربط مع حسابات الأستاذ العام (GL)</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="form-grid cols-2">
+            <!-- Credit Limit -->
+            <div class="form-group">
+              <label>الحد الائتماني المسموح به (SAR)</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix font-code">SAR</span>
+                <input 
+                  type="number" 
+                  step="5000" 
+                  min="0" 
+                  class="form-control font-code fw-bold" 
+                  [value]="creditLimit()" 
+                  (input)="creditLimit.set(+$any($event.target).value)" 
+                  placeholder="50000" />
+              </div>
+              <small class="field-hint">الحد الأقصى للرصيد المدين قبل إيقاف إصدار الفواتير الآجلة تلقائياً</small>
+            </div>
+
+            <!-- Payment Terms Days -->
+            <div class="form-group">
+              <label>فترة السداد الممنوحة (بالأيام)</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix"><i class="pi pi-calendar"></i></span>
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="365" 
+                  class="form-control font-code" 
+                  [value]="paymentTermsDays()" 
+                  (input)="paymentTermsDays.set(+$any($event.target).value)" 
+                  placeholder="30" />
+              </div>
+              <small class="field-hint">عدد الأيام المستحقة لسداد الفاتورة لحساب أعمار الديون (Aging Analysis)</small>
+            </div>
+
+            <!-- GL Account Picker -->
+            <div class="form-group span-2" *ngIf="accountsList().length > 0">
+              <label>حساب الأستاذ العام المربوط (Sub-Ledger GL Account)</label>
+              <app-account-picker
+                [accounts]="accountsList()"
+                [compact]="true"
+                label="اختر حساب العميل بدليل الحسابات (أو دعه فارغاً للربط بالحساب الرئيسي 113)"
+                placeholder="اختر حساب الأستاذ العام بدليل الحسابات..."
+                (accountSelect)="onAccountPicked($event)">
+              </app-account-picker>
+              <small class="field-hint">في حال تركه فارغاً، سيتم الترحيل التلقائي لحساب مراقبة العملاء التجاريين (11301)</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Action Strip -->
+      <div class="form-actions-bottom">
+        <button type="button" class="btn-secondary" routerLink="/accounting/partners">
+          <i class="pi pi-times"></i>
+          <span>إلغاء والعودة</span>
+        </button>
+
+        <div class="actions-right">
+          <button type="button" class="btn-outline" (click)="savePartner(true)" [disabled]="isSaving()">
+            <i class="pi pi-plus"></i>
+            <span>حفظ وإضافة شريك آخر</span>
+          </button>
+          <button type="button" class="btn-primary" (click)="savePartner(false)" [disabled]="isSaving()">
+            <i class="pi pi-check" [class.pi-spin]="isSaving()"></i>
+            <span>{{ isSaving() ? 'جاري الحفظ...' : 'حفظ وتثبيت بطاقة الشريك' }}</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Side Inspection & ZATCA Preview Panel (Right / 35%) -->
+    <aside class="side-panel">
+
+      <!-- Card A: Live Tax Invoice Buyer Preview -->
+      <div class="inspector-card">
+        <div class="ic-header">
+          <div class="ic-icon"><i class="pi pi-file-o"></i></div>
+          <div>
+            <h3 class="ic-title">معاينة بطاقة المشتري بالفاتورة</h3>
+            <span class="ic-sub">Buyer Details in Standard Tax Invoice</span>
+          </div>
+        </div>
+
+        <div class="buyer-preview-box">
+          <div class="bp-top">
+            <span class="bp-badge">المشتري / Buyer</span>
+            <span class="bp-code font-code">{{ code() || 'CUST-XXXX' }}</span>
+          </div>
+
+          <div class="bp-name-ar">{{ nameAr() || 'اسم العميل / المنشأة التجارية' }}</div>
+          <div class="bp-name-en font-latin">{{ nameEn() || 'Company Legal Trade Name' }}</div>
+
+          <div class="bp-divider"></div>
+
+          <div class="bp-rows">
+            <div class="bp-row">
+              <span class="bpr-label">الرقم الضريبي (VAT):</span>
+              <strong class="bpr-val font-code" [class.text-emerald]="vatValidation().isValid" [class.text-muted]="!taxNumber()">
+                {{ taxNumber() || 'غير مسجل ضريبياً' }}
+              </strong>
+            </div>
+
+            <div class="bp-row">
+              <span class="bpr-label">{{ otherIdType() }}:</span>
+              <strong class="bpr-val font-code">{{ otherIdValue() || 'لم يدخل بعد' }}</strong>
+            </div>
+
+            <div class="bp-row">
+              <span class="bpr-label">العنوان الوطني:</span>
+              <span class="bpr-val-addr">
+                <ng-container *ngIf="streetName() || citySubdivisionName(); else noAddr">
+                  مبنى {{ buildingNumber() || '----' }}، {{ streetName() || 'اسم الشارع' }}، {{ citySubdivisionName() || 'اسم الحي' }}، {{ effectiveCity() }} {{ postalZone() ? ('- ' + postalZone()) : '' }} {{ plotIdentification() ? ('(إضافي: ' + plotIdentification() + ')') : '' }}، المملكة العربية السعودية
+                </ng-container>
+                <ng-template #noAddr>
+                  <span class="text-muted">لم تكتمل تفاصيل العنوان الوطني بعد</span>
+                </ng-template>
+              </span>
+            </div>
+
+            <div class="bp-row" *ngIf="phone() || email()">
+              <span class="bpr-label">التواصل:</span>
+              <span class="bpr-val font-code">{{ phone() }} {{ email() ? ('• ' + email()) : '' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card B: ZATCA Compliance Score & Checklist -->
+      <div class="inspector-card">
+        <div class="ic-header">
+          <div class="ic-icon emerald"><i class="pi pi-verified"></i></div>
+          <div>
+            <h3 class="ic-title">مؤشر جاهزية الفاتورة الضريبية</h3>
+            <span class="ic-sub">ZATCA B2B Invoice Readiness</span>
+          </div>
+        </div>
+
+        <div class="compliance-meter-box">
+          <div class="meter-top">
+            <span class="meter-text">نسبة اكتمال متطلبات هيئة الزكاة:</span>
+            <strong class="meter-pct" [class.full]="complianceChecklist().score === 100">
+              {{ complianceChecklist().score }}%
+            </strong>
+          </div>
+
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="complianceChecklist().score" [class.full]="complianceChecklist().score === 100"></div>
+          </div>
+
+          <div class="checklist-items">
+            <div class="check-item" *ngFor="let item of complianceChecklist().items" [class.passed]="item.ok">
+              <i class="pi" [class.pi-check-circle]="item.ok" [class.pi-circle]="!item.ok"></i>
+              <span>{{ item.label }}</span>
+            </div>
+          </div>
+
+          <div class="readiness-banner" [class.ready]="complianceChecklist().canIssueStandardTaxInvoice">
+            <i class="pi" [class.pi-check-circle]="complianceChecklist().canIssueStandardTaxInvoice" [class.pi-exclamation-triangle]="!complianceChecklist().canIssueStandardTaxInvoice"></i>
+            <div>
+              <strong *ngIf="complianceChecklist().canIssueStandardTaxInvoice">جاهز للفواتير الضريبية (B2B)</strong>
+              <strong *ngIf="!complianceChecklist().canIssueStandardTaxInvoice">بيانات الفاتورة الضريبية غير مكتملة</strong>
+              <p *ngIf="complianceChecklist().canIssueStandardTaxInvoice">
+                بطاقة العميل مستوفية لكافة المعايير المعتمدة في منصة فاتورة (ZATCA Clearing).
+              </p>
+              <p *ngIf="!complianceChecklist().canIssueStandardTaxInvoice">
+                يجب استكمال حقول العنوان الوطني ومعرف المنشأة لتفادي رفض الفاتورة من هيئة الزكاة.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card C: ZATCA Guidance Note -->
+      <div class="inspector-card info-note-card">
+        <div class="ic-header">
+          <div class="ic-icon info"><i class="pi pi-info-circle"></i></div>
+          <div>
+            <h3 class="ic-title">إرشادات هيئة الزكاة (ZATCA)</h3>
+            <span class="ic-sub">مواصفات الفاتورة الضريبية والمبسطة</span>
+          </div>
+        </div>
+
+        <div class="guidance-content">
+          <p>
+            <b>الفاتورة الضريبية (B2B):</b> تصدر للمنشآت والشركات الخاضعة للضريبة، ويشترط نظاماً تضمين اسم المشتري، رقمه الضريبي، سجله التجاري، وتفاصيل العنوان الوطني الكاملة.
+          </p>
+          <p>
+            <b>الفاتورة المبسطة (B2C):</b> تصدر للأفراد والمستهلكين النهائيين، ويكفي فيها رمز الاستجابة السريع (QR Code) دون إلزامية بيانات العنوان التفصيلي للمشتري.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+</div>

@@ -20,6 +20,7 @@ import { PersonalWorkspaceComponent } from './features/personal-workspace/person
 import { TaxInvoicesComponent } from './features/invoicing/tax-invoices/tax-invoices.component';
 import { ChecksComponent } from './features/accounting/checks/checks.component';
 import { PartnersComponent } from './features/accounting/partners/partners.component';
+import { PartnerCreateComponent } from './features/accounting/partner-create/partner-create.component';
 
 export const routes: Routes = [
   {
@@ -80,6 +81,14 @@ export const routes: Routes = [
       {
         path: 'accounting/partners',
         component: PartnersComponent
+      },
+      {
+        path: 'accounting/partners/create',
+        component: PartnerCreateComponent
+      },
+      {
+        path: 'accounting/customers/create',
+        redirectTo: 'accounting/partners/create'
       },
       {
         path: 'accounting/journal-entries',

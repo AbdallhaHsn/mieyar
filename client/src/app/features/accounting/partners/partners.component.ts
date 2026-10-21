@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { LanguageService } from '../../../core/services/language.service';
 import Swal from 'sweetalert2';
@@ -22,6 +23,16 @@ export interface BusinessPartnerDto {
   commercialRegistration?: string;
   phone?: string;
   email?: string;
+  address?: string;
+  streetName?: string;
+  buildingNumber?: string;
+  plotIdentification?: string;
+  citySubdivisionName?: string;
+  cityName?: string;
+  postalZone?: string;
+  countryCode?: string;
+  otherIdType?: string;
+  otherIdValue?: string;
   creditLimit: number;
   paymentTermsDays: number;
   currentBalance: number;
@@ -43,7 +54,7 @@ export interface PartnerAgingBucketDto {
 @Component({
   selector: 'app-partners',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, RouterModule],
   template: `
     <div class="partners-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -70,10 +81,10 @@ export interface PartnerAgingBucketDto {
             <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
             <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
           </button>
-          <button class="btn-primary" (click)="openCreateModal()">
+          <a class="btn-primary" routerLink="/accounting/partners/create">
             <i class="pi pi-user-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إضافة عميل / مورد' : 'New Partner' }}</span>
-          </button>
+            <span>{{ langService.currentLang() === 'ar' ? 'إضافة شريك جديد (عميل / مورد)' : 'New Partner' }}</span>
+          </a>
         </div>
       </header>
 
@@ -162,6 +173,7 @@ export interface PartnerAgingBucketDto {
                 <th>{{ langService.currentLang() === 'ar' ? 'الاسم التجاري' : 'Name' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'النوع' : 'Type' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'الرقم الضريبي' : 'VAT / Tax #' }}</th>
+                <th>{{ langService.currentLang() === 'ar' ? 'العنوان والامتثال ZATCA' : 'National Address & ZATCA' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'الهاتف / الجوال' : 'Phone' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'شروط السداد' : 'Terms' }}</th>
                 <th>{{ langService.currentLang() === 'ar' ? 'الحد الائتماني' : 'Credit Limit' }}</th>
@@ -170,7 +182,7 @@ export interface PartnerAgingBucketDto {
             </thead>
             <tbody>
               <tr *ngIf="filteredPartners().length === 0">
-                <td colspan="8" class="empty-state">
+                <td colspan="9" class="empty-state">
                   <i class="pi pi-users"></i>
                   <p>{{ langService.currentLang() === 'ar' ? 'لا يوجد شركاء مطابقون' : 'No partners found' }}</p>
                 </td>
@@ -189,7 +201,19 @@ export interface PartnerAgingBucketDto {
                     {{ p.typeNameAr }}
                   </span>
                 </td>
-                <td>{{ p.taxNumber || '—' }}</td>
+                <td>
+                  <span *ngIf="p.taxNumber" class="font-code fw-semibold text-emerald">{{ p.taxNumber }}</span>
+                  <span *ngIf="!p.taxNumber" class="text-muted">—</span>
+                </td>
+                <td>
+                  <div *ngIf="p.buildingNumber && p.streetName" class="zatca-tag-wrap">
+                    <span class="addr-snippet">{{ p.streetName }}، {{ p.cityName || 'الرياض' }} ({{ p.buildingNumber }})</span>
+                    <span class="badge-zatca-ok"><i class="pi pi-check"></i> جاهز للفوترة</span>
+                  </div>
+                  <span *ngIf="!p.buildingNumber || !p.streetName" class="text-muted font-small">
+                    {{ p.cityName || p.address || 'العنوان غير مكتمل' }}
+                  </span>
+                </td>
                 <td>{{ p.phone || '—' }}</td>
                 <td>{{ p.paymentTermsDays }} {{ langService.currentLang() === 'ar' ? 'يوم' : 'days' }}</td>
                 <td>{{ p.creditLimit | number:'1.2-2' }} SAR</td>
@@ -252,95 +276,6 @@ export interface PartnerAgingBucketDto {
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Create Partner Modal -->
-      <div class="modal-backdrop" *ngIf="showCreateModal()" (click)="showCreateModal.set(false)">
-        <div class="modal-box" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h3>
-              <i class="pi pi-user-plus"></i>
-              {{ langService.currentLang() === 'ar' ? 'تسجيل شريك تجاري جديد (عميل / مورد)' : 'Register New Partner' }}
-            </h3>
-            <button class="close-btn" (click)="showCreateModal.set(false)">&times;</button>
-          </div>
-
-          <form (ngSubmit)="submitCreatePartner()" class="modal-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'نوع الشريك *' : 'Partner Type *' }}</label>
-                <select [(ngModel)]="newPartnerForm.type" name="type" class="form-control" required>
-                  <option [ngValue]="PartnerType.Customer">{{ langService.currentLang() === 'ar' ? 'عميل (Customer)' : 'Customer' }}</option>
-                  <option [ngValue]="PartnerType.Supplier">{{ langService.currentLang() === 'ar' ? 'مورد (Supplier / Vendor)' : 'Supplier' }}</option>
-                  <option [ngValue]="PartnerType.Both">{{ langService.currentLang() === 'ar' ? 'عميل ومورد معاً (Both)' : 'Both' }}</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'كود الشريك *' : 'Code *' }}</label>
-                <input type="text" [(ngModel)]="newPartnerForm.code" name="code" class="form-control" placeholder="مثال: CUST-002 أو SUPP-001" required />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'الاسم التجاري بالعربية *' : 'Arabic Name *' }}</label>
-                <input type="text" [(ngModel)]="newPartnerForm.nameAr" name="nameAr" class="form-control" placeholder="اسم الشركة أو المؤسسة" required />
-              </div>
-
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'الاسم بالإنجليزية' : 'English Name' }}</label>
-                <input type="text" [(ngModel)]="newPartnerForm.nameEn" name="nameEn" class="form-control" placeholder="e.g. Al-Fursan Trading Co." />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'الرقم الضريبي (15 رقم)' : 'VAT Number' }}</label>
-                <input type="text" maxlength="15" [(ngModel)]="newPartnerForm.taxNumber" name="taxNumber" class="form-control" placeholder="300000000000003" />
-              </div>
-
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'رقم السجل التجاري' : 'CR Number' }}</label>
-                <input type="text" [(ngModel)]="newPartnerForm.commercialRegistration" name="commercialRegistration" class="form-control" placeholder="1010xxxxxx" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'رقم الهاتف / الجوال' : 'Phone' }}</label>
-                <input type="text" [(ngModel)]="newPartnerForm.phone" name="phone" class="form-control" placeholder="+966 5x xxx xxxx" />
-              </div>
-
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'البريد الإلكتروني' : 'Email' }}</label>
-                <input type="email" [(ngModel)]="newPartnerForm.email" name="email" class="form-control" placeholder="billing@domain.com" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'الحد الائتماني المسموح (SAR)' : 'Credit Limit' }}</label>
-                <input type="number" step="1000" [(ngModel)]="newPartnerForm.creditLimit" name="creditLimit" class="form-control" placeholder="50000" />
-              </div>
-
-              <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'فترة السداد بالأيام' : 'Payment Terms (Days)' }}</label>
-                <input type="number" [(ngModel)]="newPartnerForm.paymentTermsDays" name="paymentTermsDays" class="form-control" placeholder="30" />
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn-cancel" (click)="showCreateModal.set(false)">
-                {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
-              </button>
-              <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
-                <i class="pi pi-check"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'حفظ وتثبيت الشريك' : 'Save Partner' }}</span>
-              </button>
-            </div>
-          </form>
         </div>
       </div>
 
@@ -813,19 +748,37 @@ export interface PartnerAgingBucketDto {
       gap: 0.4rem;
     }
 
-    .btn-cancel {
-      background: #F1F5F9;
-      border: 1px solid #E2E8F0;
-      color: #475569;
-      border-radius: 8px;
-      padding: 0.55rem 1rem;
-      font-weight: 600;
-      cursor: pointer;
+    .zatca-tag-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+
+      .addr-snippet {
+        font-size: 0.735rem;
+        color: #334155;
+      }
+
+      .badge-zatca-ok {
+        align-self: flex-start;
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+        font-size: 0.65rem;
+        font-weight: 750;
+        padding: 0.05rem 0.4rem;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+
+        i { font-size: 0.65rem; }
+      }
     }
   `]
 })
 export class PartnersComponent implements OnInit {
   private http = inject(HttpClient);
+  private router = inject(Router);
   langService = inject(LanguageService);
 
   activeTab = signal<'cards' | 'aging'>('cards');
@@ -896,19 +849,7 @@ export class PartnersComponent implements OnInit {
   }
 
   openCreateModal() {
-    this.newPartnerForm = {
-      code: `PART-${Math.floor(1000 + Math.random() * 9000)}`,
-      nameAr: '',
-      nameEn: '',
-      type: PartnerType.Customer,
-      taxNumber: '',
-      commercialRegistration: '',
-      phone: '',
-      email: '',
-      creditLimit: 50000,
-      paymentTermsDays: 30
-    };
-    this.showCreateModal.set(true);
+    this.router.navigate(['/accounting/partners/create']);
   }
 
   submitCreatePartner() {

@@ -18,6 +18,15 @@ public record BusinessPartnerDto(
     string? Phone,
     string? Email,
     string? Address,
+    string? StreetName,
+    string? BuildingNumber,
+    string? PlotIdentification,
+    string? CitySubdivisionName,
+    string? CityName,
+    string? PostalZone,
+    string CountryCode,
+    string? OtherIdType,
+    string? OtherIdValue,
     decimal CreditLimit,
     int PaymentTermsDays,
     Guid? GlAccountId,
@@ -38,6 +47,15 @@ public record BusinessPartnerDto(
         p.Phone,
         p.Email,
         p.Address,
+        p.StreetName,
+        p.BuildingNumber,
+        p.PlotIdentification,
+        p.CitySubdivisionName,
+        p.CityName,
+        p.PostalZone,
+        p.CountryCode,
+        p.OtherIdType,
+        p.OtherIdValue,
         p.CreditLimit,
         p.PaymentTermsDays,
         p.GlAccountId,
@@ -71,6 +89,15 @@ public record CreatePartnerCommand(
     string? Phone = null,
     string? Email = null,
     string? Address = null,
+    string? StreetName = null,
+    string? BuildingNumber = null,
+    string? PlotIdentification = null,
+    string? CitySubdivisionName = null,
+    string? CityName = null,
+    string? PostalZone = null,
+    string CountryCode = "SA",
+    string? OtherIdType = null,
+    string? OtherIdValue = null,
     decimal CreditLimit = 0m,
     int PaymentTermsDays = 30,
     Guid? GlAccountId = null
@@ -94,10 +121,24 @@ public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand,
         var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
         var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
 
+        // تحقق من تكرار الكود
         var existing = await _partnerRepository.GetByCodeAsync(companyId, request.Code, cancellationToken);
         if (existing != null)
         {
             return Result.Failure<BusinessPartnerDto>(Error.Conflict("Partner.CodeExists", $"رمز الطرف / العميل {request.Code} مسجل مسبقاً."));
+        }
+
+        // التحقق من صحة الرقم الضريبي السعودي إذا تم إدخاله
+        var taxNum = request.TaxNumber?.Trim();
+        if (!string.IsNullOrWhiteSpace(taxNum))
+        {
+            if (taxNum.Length != 15 || !taxNum.StartsWith("3") || !taxNum.EndsWith("3"))
+            {
+                return Result.Failure<BusinessPartnerDto>(Error.Validation(
+                    "Partner.InvalidVatNumber",
+                    "الرقم الضريبي السعودي يجب أن يتكون من 15 رقماً، ويبدأ بالرقم 3 وينتهي بالرقم 3 وفق اشتراطات هيئة الزكاة والضريبة والجمارك (ZATCA)."
+                ));
+            }
         }
 
         var partner = BusinessPartner.Create(
@@ -107,7 +148,7 @@ public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand,
             partnerType: request.PartnerType,
             nameAr: request.NameAr,
             nameEn: request.NameEn,
-            taxNumber: request.TaxNumber,
+            taxNumber: taxNum,
             commercialRegistration: request.CommercialRegistration,
             phone: request.Phone,
             email: request.Email,
@@ -115,7 +156,16 @@ public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand,
             creditLimit: request.CreditLimit,
             paymentTermsDays: request.PaymentTermsDays,
             glAccountId: request.GlAccountId,
-            createdBy: "System User"
+            createdBy: "System User",
+            streetName: request.StreetName,
+            buildingNumber: request.BuildingNumber,
+            plotIdentification: request.PlotIdentification,
+            citySubdivisionName: request.CitySubdivisionName,
+            cityName: request.CityName,
+            postalZone: request.PostalZone,
+            countryCode: request.CountryCode,
+            otherIdType: request.OtherIdType ?? (string.IsNullOrWhiteSpace(request.CommercialRegistration) ? null : "CRN"),
+            otherIdValue: request.OtherIdValue ?? request.CommercialRegistration
         );
 
         await _partnerRepository.AddAsync(partner, cancellationToken);

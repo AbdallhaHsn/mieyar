@@ -22,6 +22,20 @@ public class BusinessPartner : AggregateRoot<Guid>, IMustHaveTenant, IAuditableE
     public string? Phone { get; private set; }
     public string? Email { get; private set; }
     public string? Address { get; private set; }
+
+    // ZATCA Buyer National Address Details (وفق متطلبات هيئة الزكاة للفاتورة الضريبية)
+    public string? StreetName { get; private set; }
+    public string? BuildingNumber { get; private set; } // 4 أرقام
+    public string? PlotIdentification { get; private set; } // الرقم الإضافي للمبنى (4 أرقام)
+    public string? CitySubdivisionName { get; private set; } // اسم الحي
+    public string? CityName { get; private set; } // المدينة
+    public string? PostalZone { get; private set; } // الرمز البريدي (5 أرقام)
+    public string CountryCode { get; private set; } = "SA";
+
+    // ZATCA Buyer Identification Scheme (نوع المعرف التجاري الإضافي)
+    public string? OtherIdType { get; private set; } // CRN, 700, MOM, MLS, SAG, NAT, IQA, OTH
+    public string? OtherIdValue { get; private set; }
+
     public decimal CreditLimit { get; private set; } = 0m;
     public int PaymentTermsDays { get; private set; } = 30; // فترة السداد باليوم
     public Guid? GlAccountId { get; private set; } // حساب الأستاذ العام المربوط
@@ -50,7 +64,16 @@ public class BusinessPartner : AggregateRoot<Guid>, IMustHaveTenant, IAuditableE
         decimal creditLimit,
         int paymentTermsDays,
         Guid? glAccountId,
-        string? createdBy)
+        string? createdBy,
+        string? streetName = null,
+        string? buildingNumber = null,
+        string? plotIdentification = null,
+        string? citySubdivisionName = null,
+        string? cityName = null,
+        string? postalZone = null,
+        string? countryCode = "SA",
+        string? otherIdType = null,
+        string? otherIdValue = null)
     {
         return new BusinessPartner
         {
@@ -66,6 +89,15 @@ public class BusinessPartner : AggregateRoot<Guid>, IMustHaveTenant, IAuditableE
             Phone = phone?.Trim(),
             Email = email?.Trim(),
             Address = address?.Trim(),
+            StreetName = streetName?.Trim(),
+            BuildingNumber = buildingNumber?.Trim(),
+            PlotIdentification = plotIdentification?.Trim(),
+            CitySubdivisionName = citySubdivisionName?.Trim(),
+            CityName = cityName?.Trim(),
+            PostalZone = postalZone?.Trim(),
+            CountryCode = string.IsNullOrWhiteSpace(countryCode) ? "SA" : countryCode.Trim().ToUpper(),
+            OtherIdType = otherIdType?.Trim(),
+            OtherIdValue = string.IsNullOrWhiteSpace(otherIdValue) ? commercialRegistration?.Trim() : otherIdValue.Trim(),
             CreditLimit = creditLimit,
             PaymentTermsDays = paymentTermsDays > 0 ? paymentTermsDays : 30,
             GlAccountId = glAccountId,

@@ -293,6 +293,15 @@ using (var scope = app.Services.CreateScope())
                     [Phone] nvarchar(50) NULL,
                     [Email] nvarchar(100) NULL,
                     [Address] nvarchar(500) NULL,
+                    [StreetName] nvarchar(250) NULL,
+                    [BuildingNumber] nvarchar(10) NULL,
+                    [PlotIdentification] nvarchar(10) NULL,
+                    [CitySubdivisionName] nvarchar(150) NULL,
+                    [CityName] nvarchar(100) NULL,
+                    [PostalZone] nvarchar(10) NULL,
+                    [CountryCode] nvarchar(10) NOT NULL DEFAULT 'SA',
+                    [OtherIdType] nvarchar(20) NULL,
+                    [OtherIdValue] nvarchar(50) NULL,
                     [CreditLimit] decimal(18,4) NOT NULL,
                     [PaymentTermsDays] int NOT NULL,
                     [GlAccountId] uniqueidentifier NULL,
@@ -304,6 +313,22 @@ using (var scope = app.Services.CreateScope())
                     [LastModifiedBy] nvarchar(100) NULL,
                     CONSTRAINT [PK_BusinessPartners] PRIMARY KEY ([Id])
                 );
+            END
+            ELSE
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.BusinessPartners') AND name = 'StreetName')
+                BEGIN
+                    ALTER TABLE [dbo].[BusinessPartners] ADD
+                        [StreetName] nvarchar(250) NULL,
+                        [BuildingNumber] nvarchar(10) NULL,
+                        [PlotIdentification] nvarchar(10) NULL,
+                        [CitySubdivisionName] nvarchar(150) NULL,
+                        [CityName] nvarchar(100) NULL,
+                        [PostalZone] nvarchar(10) NULL,
+                        [CountryCode] nvarchar(10) NOT NULL CONSTRAINT DF_BP_Country DEFAULT 'SA',
+                        [OtherIdType] nvarchar(20) NULL,
+                        [OtherIdValue] nvarchar(50) NULL;
+                END
             END;
 
             IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'CurrencyRates' AND s.name = 'dbo')
