@@ -1,627 +1,517 @@
-<div class="invoice-create-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+<div class="erp-invoice-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
 
-  <!-- Top Action & Meta Bar -->
-  <header class="page-topbar">
-    <div class="topbar-right">
-      <a routerLink="/invoicing/tax-invoices" class="btn-back" title="العودة لقائمة الفواتير">
-        <i class="pi pi-arrow-right"></i>
-      </a>
-
-      <div class="title-group">
-        <h1 class="main-title">
-          <i class="pi pi-file-edit text-emerald"></i>
-          <span>إنشاء فاتورة ضريبية جديدة</span>
-        </h1>
-        <span class="seq-pill font-code">{{ invoiceNumber() }}</span>
-      </div>
-
-      <!-- Invoice Type Segmented Toggle -->
-      <div class="type-pills-strip">
-        <button 
-          type="button" 
-          class="pill-btn" 
-          [class.active]="invoiceType() === InvoiceType.StandardTaxInvoice && transactionType() === TransactionType.Invoice"
-          (click)="setInvoiceType(InvoiceType.StandardTaxInvoice); transactionType.set(TransactionType.Invoice)">
-          <i class="pi pi-building"></i>
-          <span>فاتورة ضريبية (B2B)</span>
-        </button>
-        <button 
-          type="button" 
-          class="pill-btn" 
-          [class.active]="invoiceType() === InvoiceType.SimplifiedTaxInvoice && transactionType() === TransactionType.Invoice"
-          (click)="setInvoiceType(InvoiceType.SimplifiedTaxInvoice); transactionType.set(TransactionType.Invoice)">
-          <i class="pi pi-user"></i>
-          <span>فاتورة مبسطة (B2C)</span>
-        </button>
-        <button 
-          type="button" 
-          class="pill-btn" 
-          [class.active]="transactionType() === TransactionType.CreditNote"
-          (click)="transactionType.set(TransactionType.CreditNote)">
-          <i class="pi pi-reply"></i>
-          <span>إشعار دائن (مرتجع)</span>
-        </button>
-        <button 
-          type="button" 
-          class="pill-btn" 
-          [class.active]="transactionType() === TransactionType.DebitNote"
-          (click)="transactionType.set(TransactionType.DebitNote)">
-          <i class="pi pi-plus-circle"></i>
-          <span>إشعار مدين</span>
-        </button>
-      </div>
-
-      <!-- ZATCA Phase 2 Status Indicator -->
-      <span class="zatca-pill" [class.ready]="zatcaChecklist().isFullyCompliant">
-        <i class="pi" [class.pi-check-circle]="zatcaChecklist().isFullyCompliant" [class.pi-shield]="!zatcaChecklist().isFullyCompliant"></i>
-        <span>{{ zatcaChecklist().isFullyCompliant ? 'جاهز للاعتماد الفوري' : 'قيد الاستكمال' }}</span>
-      </span>
-    </div>
-
-    <!-- Actions: Preview, Cancel, Save Draft, Instant Issue to ZATCA -->
-    <div class="topbar-actions">
-      <button type="button" class="btn-preview-toggle" (click)="showPreviewModal.set(true)" title="معاينة نموذج الفاتورة الرسمي A4">
-        <i class="pi pi-eye"></i>
-        <span>معاينة A4</span>
+  <!-- Top Action Bar (Matching Reference Screenshot) -->
+  <div class="erp-topbar">
+    <div class="topbar-actions-group">
+      <button type="button" class="erp-btn btn-zatca" (click)="saveInvoice(true)" [disabled]="isSubmitting()" title="حفظ واعتماد فوري لدى هيئة الزكاة">
+        <i class="pi pi-send"></i>
+        <span>اعتماد ZATCA</span>
       </button>
-      <button type="button" class="btn-secondary" routerLink="/invoicing/tax-invoices">
-        <i class="pi pi-times"></i>
-        <span>إلغاء</span>
-      </button>
-      <button type="button" class="btn-outline" (click)="saveInvoice(false)" [disabled]="isSubmitting()">
+
+      <button type="button" class="erp-btn btn-save" (click)="saveInvoice(false)" [disabled]="isSubmitting()">
         <i class="pi pi-save"></i>
-        <span>حفظ كمسودة</span>
+        <span>حفظ</span>
       </button>
-      <button type="button" class="btn-primary" (click)="saveInvoice(true)" [disabled]="isSubmitting()">
-        <i class="pi pi-send" [class.pi-spin]="isSubmitting()"></i>
-        <span>{{ isSubmitting() ? 'جاري الاعتماد...' : 'حفظ واعتماد فوري لدى ZATCA' }}</span>
+
+      <button type="button" class="erp-btn btn-cancel" routerLink="/invoicing/tax-invoices">
+        <i class="pi pi-times"></i>
+        <span>الغاء</span>
       </button>
     </div>
-  </header>
+  </div>
 
-  <!-- SECTION 1: Customer Information & Invoice Metadata -->
-  <section class="invoice-meta-card shadow-sm">
-    <div class="meta-card-grid">
+  <!-- Main Invoice Form Panel -->
+  <div class="erp-form-card">
 
-      <!-- Column A: Customer Selection & Information Card -->
-      <div class="customer-section">
-        <div class="section-header-bar">
-          <div class="sh-title">
-            <i class="pi pi-user-check text-emerald"></i>
-            <span>العميل / المشتري (Customer)</span>
-          </div>
-
-          <div class="sh-actions">
-            <button 
-              type="button" 
-              class="btn-pill-action" 
-              [class.active]="isCashCustomer()" 
-              (click)="selectCashCustomer()">
-              <i class="pi pi-wallet"></i>
-              <span>عميل نقدي (مبيعات عامة)</span>
-            </button>
-
-            <a routerLink="/accounting/partners/create" target="_blank" class="btn-link-action" title="إضافة عميل جديد في صفحة مستقلة">
-              <i class="pi pi-plus-circle"></i>
-              <span>+ إضافة عميل جديد</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- 1. Customer Selector Dropdown (When no partner or wanting to select) -->
-        <div class="partner-selector-box" *ngIf="!selectedPartner() && !isCashCustomer()">
+    <!-- Row 1: Invoice Type, Internal Flag & Status -->
+    <div class="erp-form-row">
+      <div class="field-item col-type">
+        <label class="field-label">نوع الفاتورة</label>
+        <div class="field-control">
           <select 
-            class="form-control form-select select-partner" 
-            [value]="selectedPartnerId()" 
-            (change)="onPartnerSelected($any($event.target).value)">
-            <option value="">-- اختر العميل من قائمة الشركاء المسجلين بالنظام --</option>
-            <option *ngFor="let p of partners()" [value]="p.id">
-              {{ p.code }} | {{ p.nameAr }} ({{ p.taxNumber ? 'الرقم الضريبي: ' + p.taxNumber : 'غير مسجل ضريبياً' }})
-            </option>
+            class="form-select" 
+            [value]="invoiceType()" 
+            (change)="invoiceType.set(+$any($event.target).value)">
+            <option [value]="InvoiceType.SimplifiedTaxInvoice">فاتورة مبسطة</option>
+            <option [value]="InvoiceType.StandardTaxInvoice">فاتورة ضريبية</option>
           </select>
         </div>
-
-        <!-- 2. Registered Partner Information Card (Displays automatically once selected) -->
-        <div class="customer-info-card" *ngIf="selectedPartner() && !isCashCustomer()">
-          <div class="cic-top-row">
-            <div class="cic-title">
-              <i class="pi pi-building text-primary"></i>
-              <strong class="cic-name-ar">{{ selectedPartner()?.nameAr }}</strong>
-              <span class="cic-code font-code">{{ selectedPartner()?.code }}</span>
-              <span class="status-chip" [class.ready]="isPartnerZatcaReady()">
-                {{ isPartnerZatcaReady() ? '✓ مكتمل لمتطلبات الزكاة' : '⚠️ يحتاج استكمال العنوان' }}
-              </span>
-            </div>
-
-            <div class="cic-controls">
-              <button 
-                type="button" 
-                class="btn-cic-override" 
-                (click)="showEditCustomerOverride.set(!showEditCustomerOverride())"
-                title="تعديل العنوان أو البيانات لهذه الفاتورة فقط">
-                <i class="pi pi-pencil"></i>
-                <span>{{ showEditCustomerOverride() ? 'إخفاء التعديل' : 'تعديل استثنائي' }}</span>
-              </button>
-              <button type="button" class="btn-cic-clear" (click)="clearPartner()" title="تغيير العميل">
-                <i class="pi pi-sync"></i>
-                <span>تغيير</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="cic-details-grid">
-            <div class="cic-data-cell">
-              <span class="c-lbl">الرقم الضريبي (VAT):</span>
-              <strong class="c-val font-code" [class.text-emerald]="vatValidation().isValid">
-                {{ selectedPartner()?.taxNumber || 'غير مسجل' }}
-              </strong>
-            </div>
-
-            <div class="cic-data-cell">
-              <span class="c-lbl">السجل التجاري (CRN):</span>
-              <strong class="c-val font-code">
-                {{ selectedPartner()?.commercialRegistration || selectedPartner()?.otherIdValue || '----' }}
-              </strong>
-            </div>
-
-            <div class="cic-data-cell">
-              <span class="c-lbl">الهاتف / التواصل:</span>
-              <span class="c-val font-code text-muted">{{ selectedPartner()?.phone || '----' }}</span>
-            </div>
-
-            <div class="cic-data-cell address-cell">
-              <span class="c-lbl">العنوان الوطني المعتمد:</span>
-              <span class="c-val">
-                <i class="pi pi-map-marker text-muted"></i>
-                <ng-container *ngIf="selectedPartner()?.streetName || selectedPartner()?.citySubdivisionName; else missingAddr">
-                  مبنى {{ selectedPartner()?.buildingNumber || '----' }}، {{ selectedPartner()?.streetName }}، {{ selectedPartner()?.citySubdivisionName }}، {{ selectedPartner()?.cityName || 'الرياض' }} {{ selectedPartner()?.postalZone ? ('- ' + selectedPartner()?.postalZone) : '' }}، SA
-                </ng-container>
-                <ng-template #missingAddr>
-                  <span class="text-amber">⚠️ العنوان الوطني غير مكتمل في ملف العميل (مطلوب للفواتير الضريبية B2B)</span>
-                </ng-template>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Cash Customer Card -->
-        <div class="customer-info-card cash-mode-card" *ngIf="isCashCustomer()">
-          <div class="cic-top-row">
-            <div class="cic-title">
-              <i class="pi pi-wallet text-cyan"></i>
-              <strong class="cic-name-ar">مبيعات نقدية / عميل عام (Cash / Walk-in Customer)</strong>
-              <span class="status-chip ready">✓ مطابق للفاتورة المبسطة B2C</span>
-            </div>
-            <button type="button" class="btn-cic-clear" (click)="clearPartner()" title="اختيار منشأة أو شريك مسجل">
-              <i class="pi pi-sync"></i>
-              <span>تغيير</span>
-            </button>
-          </div>
-          <p class="cash-card-note">
-            يتم إصدار الفاتورة كمبيعات فورية مبسطة (Simplified Tax Invoice B2C) طبقاً لاشتراطات هيئة الزكاة والضريبة والجمارك بدون اشتراط الرقم الضريبي أو العنوان التفصيلي للمشتري.
-          </p>
-        </div>
-
-        <!-- Collapsible Override Drawer (Shown only if user clicks 'تعديل استثنائي') -->
-        <div class="customer-override-box" *ngIf="showEditCustomerOverride()">
-          <div class="override-box-head">
-            <i class="pi pi-info-circle text-primary"></i>
-            <span>تعديل استثنائي لعنوان وتفاصيل التوريد الخاصة بهذه الفاتورة فقط:</span>
-          </div>
-          <div class="override-grid">
-            <div class="form-group">
-              <label>اسم الشارع</label>
-              <input type="text" class="form-control" [value]="buyerStreet()" (input)="buyerStreet.set($any($event.target).value)" />
-            </div>
-            <div class="form-group">
-              <label>رقم المبنى (4 أرقام)</label>
-              <input type="text" maxlength="4" class="form-control font-code" [value]="buyerBuildingNumber()" (input)="buyerBuildingNumber.set($any($event.target).value)" />
-            </div>
-            <div class="form-group">
-              <label>اسم الحي</label>
-              <input type="text" class="form-control" [value]="buyerCitySubdivisionName()" (input)="buyerCitySubdivisionName.set($any($event.target).value)" />
-            </div>
-            <div class="form-group">
-              <label>المدينة</label>
-              <select class="form-control form-select" [value]="buyerCity()" (change)="buyerCity.set($any($event.target).value)">
-                <option *ngFor="let c of saudiCities" [value]="c">{{ c }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>الرمز البريدي (5 أرقام)</label>
-              <input type="text" maxlength="5" class="form-control font-code" [value]="buyerPostalCode()" (input)="buyerPostalCode.set($any($event.target).value)" />
-            </div>
-            <div class="form-group">
-              <label>رقم الجوال</label>
-              <input type="tel" class="form-control font-code" [value]="buyerPhone()" (input)="buyerPhone.set($any($event.target).value)" />
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <!-- Column B: Invoice Metadata (Dates, Payment Means, Currency) -->
-      <div class="invoice-fields-section">
-        <div class="section-header-bar">
-          <div class="sh-title">
-            <i class="pi pi-calendar text-cyan"></i>
-            <span>بيانات وتواريخ الفاتورة (Invoice Meta)</span>
-          </div>
-        </div>
-
-        <div class="meta-fields-grid">
-          <div class="form-group">
-            <label>تاريخ الإصدار (Issue Date)</label>
-            <input 
-              type="date" 
-              class="form-control font-code" 
-              [value]="issueDate()" 
-              (input)="issueDate.set($any($event.target).value)" />
-          </div>
-
-          <div class="form-group">
-            <label>تاريخ التوريد الفعلي (Supply Date)</label>
-            <input 
-              type="date" 
-              class="form-control font-code" 
-              [value]="supplyDate()" 
-              (input)="supplyDate.set($any($event.target).value)" />
-          </div>
-
-          <div class="form-group">
-            <label>طريقة الدفع (Payment Means)</label>
-            <select class="form-control form-select" [value]="paymentMeansCode()" (change)="setPaymentMeans($any($event.target).value)">
-              <option value="10">نقدي (Cash)</option>
-              <option value="30">تحويل بنكي (Bank Transfer)</option>
-              <option value="48">بطاقة مدى / ائتمان (Mada / Card)</option>
-              <option value="42">مقاصة / حساب بنكي</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>العملة (Currency)</label>
-            <input type="text" class="form-control font-code text-center" [value]="currency()" readonly />
-          </div>
-        </div>
-
-        <!-- GL Integration Status Mini -->
-        <div class="gl-sync-pill">
-          <i class="pi pi-sync text-emerald"></i>
-          <span>الربط المحاسبي الآلي: مدين العملاء (11301) / دائن المبيعات (41001) وضريبة المخرجات (21301).</span>
-        </div>
+      <div class="field-item col-checkbox">
+        <label class="checkbox-inline">
+          <input 
+            type="checkbox" 
+            [checked]="isInternalInvoice()" 
+            (change)="isInternalInvoice.set($any($event.target).checked)" />
+          <span>فاتورة داخلية</span>
+        </label>
       </div>
 
-    </div>
-  </section>
-
-  <!-- SECTION 2: Full-Width Invoice Lines Table (جدول البنود المتسع) -->
-  <section class="invoice-lines-card shadow-sm">
-    <div class="lines-head-bar">
-      <div class="lh-title">
-        <i class="pi pi-list text-cyan"></i>
-        <span>بنود الفاتورة والسلع والخدمات (Invoice Lines)</span>
-        <span class="lines-count font-code">({{ lineItems().length }} بند)</span>
+      <div class="field-item col-status">
+        <label class="checkbox-inline">
+          <input 
+            type="checkbox" 
+            [checked]="invoiceStatusFlag()" 
+            (change)="invoiceStatusFlag.set($any($event.target).checked)" />
+          <span>الفاتورة الحالة</span>
+        </label>
+        <button type="button" class="btn-refresh-icon" (click)="generateInvoiceNumber()" title="تحديث رقم الفاتورة">
+          <i class="pi pi-refresh"></i>
+        </button>
       </div>
-
-      <button type="button" class="btn-add-line" (click)="addLineItem()">
-        <i class="pi pi-plus"></i>
-        <span>إضافة بند جديد (Add Line)</span>
-      </button>
     </div>
 
-    <div class="lines-table-responsive">
-      <table class="lines-table">
+    <!-- Row 2: Invoice Number & Date -->
+    <div class="erp-form-row">
+      <div class="field-item col-half">
+        <label class="field-label">رقم الفاتوره</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input font-code font-bold" 
+            [value]="invoiceNumber()" 
+            (input)="invoiceNumber.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-half">
+        <label class="field-label">التاريخ</label>
+        <div class="field-control">
+          <input 
+            type="date" 
+            class="form-input font-code" 
+            [value]="issueDate()" 
+            (input)="issueDate.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Project Link -->
+    <div class="erp-form-row">
+      <div class="field-item col-project-check">
+        <label class="checkbox-inline">
+          <input 
+            type="checkbox" 
+            [checked]="isProjectLinked()" 
+            (change)="isProjectLinked.set($any($event.target).checked)" />
+          <span>مرتبط بالمشروع</span>
+        </label>
+      </div>
+
+      <div class="field-item col-project-code">
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input" 
+            placeholder="رمز المشروع" 
+            [value]="projectCode()" 
+            (input)="projectCode.set($any($event.target).value)" 
+            [disabled]="!isProjectLinked()" />
+        </div>
+      </div>
+
+      <div class="field-item col-project-name">
+        <label class="field-label">الاسم</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input" 
+            placeholder="الاسم" 
+            [value]="projectName()" 
+            (input)="projectName.set($any($event.target).value)" 
+            [disabled]="!isProjectLinked()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Payment Method, Discount Days & Credit Date -->
+    <div class="erp-form-row">
+      <div class="field-item col-third">
+        <label class="field-label">طريقة الدفع</label>
+        <div class="field-control">
+          <select 
+            class="form-select" 
+            [value]="paymentMeansCode()" 
+            (change)="paymentMeansCode.set($any($event.target).value)">
+            <option value="10">نقدي</option>
+            <option value="30">تحويل بنكي</option>
+            <option value="48">مدى / بطاقة</option>
+            <option value="42">آجل</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <label class="field-label">الايام المخصومه</label>
+        <div class="field-control">
+          <input 
+            type="number" 
+            class="form-input font-code" 
+            [value]="discountDays()" 
+            (input)="discountDays.set(+$any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <label class="field-label">الرصيد الدائن حتى</label>
+        <div class="field-control">
+          <input 
+            type="date" 
+            class="form-input font-code" 
+            [value]="creditBalanceDate()" 
+            (input)="creditBalanceDate.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: Branch Code & Name -->
+    <div class="erp-form-row">
+      <div class="field-item col-third">
+        <label class="field-label">رمز الفرع</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input font-code" 
+            placeholder="رمز الفرع" 
+            [value]="branchCode()" 
+            (input)="branchCode.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <label class="field-label">اسم الفرع</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input" 
+            placeholder="اسم الفرع" 
+            [value]="branchName()" 
+            (input)="branchName.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <div class="field-control no-label-margin">
+          <input 
+            type="text" 
+            class="form-input font-latin" 
+            placeholder="اسم الفرع" 
+            [value]="branchNameEn()" 
+            (input)="branchNameEn.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 6: Salesman Code & Name -->
+    <div class="erp-form-row">
+      <div class="field-item col-third">
+        <label class="field-label">البائع</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input font-code" 
+            placeholder="رقم البائع" 
+            [value]="salesmanCode()" 
+            (input)="salesmanCode.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <label class="field-label">اسم البائع</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input" 
+            placeholder="اسم البائع" 
+            [value]="salesmanName()" 
+            (input)="salesmanName.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <div class="field-control no-label-margin">
+          <input 
+            type="text" 
+            class="form-input font-latin" 
+            placeholder="اسم البائع" 
+            [value]="salesmanNameEn()" 
+            (input)="salesmanNameEn.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 7: Customer Code (Select/Search) & Customer Name -->
+    <div class="erp-form-row">
+      <div class="field-item col-third">
+        <label class="field-label">العميل</label>
+        <div class="field-control customer-code-wrap">
+          <select 
+            class="form-select partner-select-code" 
+            [value]="selectedPartnerId()" 
+            (change)="onPartnerSelected($any($event.target).value)">
+            <option value="cash">CASH - عميل نقدي عام</option>
+            <option *ngFor="let p of partners()" [value]="p.id">
+              {{ p.code }} ({{ p.nameAr }})
+            </option>
+          </select>
+          <button type="button" class="btn-pencil-edit" (click)="openCustomerModal()" title="إضافة أو تعديل العميل في دليل الشركاء">
+            <i class="pi pi-pencil"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <label class="field-label">اسم العميل</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input font-bold" 
+            placeholder="اسم العميل" 
+            [value]="buyerName()" 
+            (input)="buyerName.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-item col-third">
+        <div class="field-control no-label-margin">
+          <input 
+            type="text" 
+            class="form-input font-latin" 
+            placeholder="اسم العميل" 
+            [value]="buyerNameEn()" 
+            (input)="buyerNameEn.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 8: Secondary ID Scheme & ID Number -->
+    <div class="erp-form-row">
+      <div class="field-item col-half">
+        <label class="field-label">نوع معرف آخر</label>
+        <div class="field-control">
+          <select 
+            class="form-select" 
+            [value]="buyerOtherIdType()" 
+            (change)="buyerOtherIdType.set($any($event.target).value)">
+            <option value="">اختر.....</option>
+            <option value="CRN">السجل التجاري (CRN)</option>
+            <option value="700">الرقم الموحد 700</option>
+            <option value="NAT">الهوية الوطنية</option>
+            <option value="IQA">رقم الإقامة</option>
+            <option value="MOM">ترخيص بلدي</option>
+            <option value="OTH">أخرى</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-item col-half">
+        <label class="field-label">رقم الهوية</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input font-code" 
+            placeholder="رقم الهوية" 
+            [value]="buyerOtherIdValue()" 
+            (input)="buyerOtherIdValue.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 9: Address Textarea & VAT Number -->
+    <div class="erp-form-row align-start">
+      <div class="field-item col-half">
+        <label class="field-label">العنوان إلى</label>
+        <div class="field-control">
+          <textarea 
+            class="form-textarea" 
+            rows="2" 
+            placeholder="العنوان إلى (العنوان الوطني السعودي للتوريد)..." 
+            [value]="buyerAddress()" 
+            (input)="buyerAddress.set($any($event.target).value)"></textarea>
+        </div>
+      </div>
+
+      <div class="field-item col-half">
+        <label class="field-label">رمز الضريبة/القيمة المضافة</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            maxlength="15" 
+            class="form-input font-code" 
+            placeholder="رمز الضريبة/القيمة المضافة (15 رقماً)" 
+            [value]="buyerVatNumber()" 
+            (input)="buyerVatNumber.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 10: Reference Number -->
+    <div class="erp-form-row">
+      <div class="field-item col-half">
+        <label class="field-label">رقم المرجع</label>
+        <div class="field-control">
+          <input 
+            type="text" 
+            class="form-input font-code" 
+            placeholder="رقم المرجع" 
+            [value]="referenceNumber()" 
+            (input)="referenceNumber.set($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Items Table Section (Matching Reference Screenshot) -->
+  <div class="erp-table-card">
+    <div class="erp-table-wrap">
+      <table class="erp-items-table">
         <thead>
           <tr>
-            <th class="col-num">#</th>
-            <th class="col-name">اسم السلعة أو الخدمة المباعة *</th>
-            <th class="col-code">الكود</th>
-            <th class="col-qty">الكمية</th>
-            <th class="col-price">سعر الوحدة (SAR)</th>
-            <th class="col-disc">الخصم (SAR)</th>
-            <th class="col-taxable">الخاضع للضريبة</th>
-            <th class="col-rate">نسبة الضريبة</th>
-            <th class="col-vat">مبلغ الضريبة</th>
-            <th class="col-total">الإجمالي شامل الضريبة</th>
-            <th class="col-del"></th>
+            <th class="th-seq">مسلسل</th>
+            <th class="th-name">اسم الصنف</th>
+            <th class="th-unit">الوحده</th>
+            <th class="th-qty">الكميه</th>
+            <th class="th-price">السعر</th>
+            <th class="th-disc">الخصم</th>
+            <th class="th-taxable">الخاضع للضريبة</th>
+            <th class="th-vat">الضريبة</th>
+            <th class="th-total">الإجمالي</th>
+            <th class="th-curr">رمز العمله</th>
+            <th class="th-del">حذف</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let line of lineItems(); let i = index">
-            <td class="font-code text-center text-muted col-num">{{ i + 1 }}</td>
-            <td class="col-name">
+            <td class="text-center font-code th-seq">{{ i + 1 }}</td>
+
+            <td class="th-name">
               <input 
                 type="text" 
-                class="table-input font-bold" 
+                class="erp-cell-input font-bold" 
                 [value]="line.itemNameAr" 
                 (input)="updateLine(i, 'itemNameAr', $any($event.target).value)" 
-                placeholder="وصف البند أو الخدمة كما يظهر بالفاتورة..." 
+                placeholder="اسم الصنف أو الخدمة..." 
                 required />
             </td>
-            <td class="col-code">
-              <input 
-                type="text" 
-                class="table-input font-code text-center" 
-                [value]="line.itemCode" 
-                (input)="updateLine(i, 'itemCode', $any($event.target).value)" 
-                placeholder="SRV-01" />
+
+            <td class="th-unit">
+              <select 
+                class="erp-cell-select" 
+                [value]="line.unit" 
+                (change)="updateLine(i, 'unit', $any($event.target).value)">
+                <option *ngFor="let u of availableUnits" [value]="u">{{ u }}</option>
+              </select>
             </td>
-            <td class="col-qty">
+
+            <td class="th-qty">
               <input 
                 type="number" 
                 min="1" 
                 step="1" 
-                class="table-input font-code text-center font-bold" 
+                class="erp-cell-input font-code text-center" 
                 [value]="line.quantity" 
                 (input)="updateLine(i, 'quantity', +$any($event.target).value)" />
             </td>
-            <td class="col-price">
-              <input 
-                type="number" 
-                min="0" 
-                step="50" 
-                class="table-input font-code text-left font-bold" 
-                [value]="line.unitPrice" 
-                (input)="updateLine(i, 'unitPrice', +$any($event.target).value)" />
-            </td>
-            <td class="col-disc">
+
+            <td class="th-price">
               <input 
                 type="number" 
                 min="0" 
                 step="10" 
-                class="table-input font-code text-left" 
+                class="erp-cell-input font-code text-left" 
+                [value]="line.unitPrice" 
+                (input)="updateLine(i, 'unitPrice', +$any($event.target).value)" />
+            </td>
+
+            <td class="th-disc">
+              <input 
+                type="number" 
+                min="0" 
+                step="5" 
+                class="erp-cell-input font-code text-left" 
                 [value]="line.discount" 
                 (input)="updateLine(i, 'discount', +$any($event.target).value)" />
             </td>
-            <td class="col-taxable font-code text-left font-bold text-dark">
+
+            <td class="th-taxable font-code text-left font-bold text-dark">
               {{ lineComputations()[i].taxable | number:'1.2-2' }}
             </td>
-            <td class="col-rate">
-              <select 
-                class="table-select font-code" 
-                [value]="line.vatRate" 
-                (change)="updateLine(i, 'vatRate', +$any($event.target).value)">
-                <option [value]="15">15%</option>
-                <option [value]="0">0% (صفرية)</option>
-              </select>
-            </td>
-            <td class="col-vat font-code text-left text-emerald font-bold">
+
+            <td class="th-vat font-code text-left text-emerald font-bold">
               {{ lineComputations()[i].vat | number:'1.2-2' }}
             </td>
-            <td class="col-total font-code text-left text-primary font-bold">
+
+            <td class="th-total font-code text-left text-primary font-bold">
               {{ lineComputations()[i].total | number:'1.2-2' }}
             </td>
-            <td class="col-del text-center">
+
+            <td class="th-curr text-center font-code">
+              {{ currency() }}
+            </td>
+
+            <td class="th-del text-center">
               <button 
                 type="button" 
-                class="btn-row-del" 
+                class="btn-cell-del" 
                 (click)="removeLineItem(i)" 
                 [disabled]="lineItems().length <= 1"
-                title="حذف البند">
-                <i class="pi pi-trash"></i>
+                title="حذف السطر">
+                <i class="pi pi-times"></i>
               </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-  </section>
 
-  <!-- SECTION 3: Bottom Summary, Tafqeet & ZATCA Readiness -->
-  <section class="invoice-bottom-grid">
+    <!-- Table Action & Totals Summary Footer -->
+    <div class="erp-table-footer">
+      <button type="button" class="btn-add-item" (click)="addLineItem()">
+        <i class="pi pi-plus"></i>
+        <span>إضافة صنف جديد</span>
+      </button>
 
-    <!-- Left/Right Columns: Tafqeet, Notes & ZATCA Compliance Checklist -->
-    <div class="bottom-notes-col">
-      <!-- Tafqeet Card -->
-      <div class="tafqeet-card">
-        <div class="tafqeet-title">
-          <i class="pi pi-align-right text-emerald"></i>
-          <span>المبلغ كتابة وتفقيطاً (بالريال السعودي):</span>
-        </div>
-        <div class="tafqeet-body font-bold">
-          {{ amountInWordsAr() }}
-        </div>
-      </div>
-
-      <!-- Notes Field -->
-      <div class="form-group notes-group">
-        <label>ملاحظات وشروط الفاتورة (Invoice Terms & Notes)</label>
-        <input 
-          type="text" 
-          class="form-control" 
-          [value]="notes()" 
-          (input)="notes.set($any($event.target).value)" 
-          placeholder="ملاحظات تظهر في أسفل الفاتورة الضريبية المطبوعة..." />
-      </div>
-
-      <!-- ZATCA Phase 2 Readiness Card -->
-      <div class="zatca-compliance-card">
-        <div class="zcc-header">
-          <div class="zcc-title">
-            <i class="pi pi-verified text-emerald"></i>
-            <span>مؤشر مطابقة هيئة الزكاة والضريبة والجمارك (ZATCA Phase 2)</span>
-          </div>
-          <span class="zcc-score font-code" [class.full]="zatcaChecklist().isFullyCompliant">
-            {{ zatcaChecklist().score }}%
-          </span>
+      <!-- Totals Bar -->
+      <div class="erp-totals-summary">
+        <div class="tot-box">
+          <span class="tot-label">المجموع قبل الخصم:</span>
+          <strong class="tot-val font-code">{{ subtotal() | number:'1.2-2' }} SAR</strong>
         </div>
 
-        <div class="progress-track">
-          <div class="progress-fill" [style.width.%]="zatcaChecklist().score" [class.full]="zatcaChecklist().isFullyCompliant"></div>
+        <div class="tot-box" *ngIf="totalDiscount() > 0">
+          <span class="tot-label text-red">الخصم:</span>
+          <strong class="tot-val font-code text-red">-{{ totalDiscount() | number:'1.2-2' }} SAR</strong>
         </div>
 
-        <div class="checklist-pills-wrap">
-          <div class="check-chip" *ngFor="let item of zatcaChecklist().items" [class.ok]="item.ok">
-            <i class="pi" [class.pi-check-circle]="item.ok" [class.pi-circle]="!item.ok"></i>
-            <span>{{ item.label }}</span>
-          </div>
+        <div class="tot-box">
+          <span class="tot-label">الخاضع للضريبة:</span>
+          <strong class="tot-val font-code">{{ totalTaxableAmount() | number:'1.2-2' }} SAR</strong>
+        </div>
+
+        <div class="tot-box vat">
+          <span class="tot-label">ضريبة القيمة المضافة (15%):</span>
+          <strong class="tot-val font-code text-emerald">{{ totalVatAmount() | number:'1.2-2' }} SAR</strong>
+        </div>
+
+        <div class="tot-box grand">
+          <span class="tot-label">الإجمالي النهائي:</span>
+          <strong class="tot-val font-code text-primary">{{ grandTotal() | number:'1.2-2' }} SAR</strong>
         </div>
       </div>
     </div>
 
-    <!-- Financial Breakdown & Grand Totals Column -->
-    <div class="bottom-totals-col">
-      <div class="totals-table-card shadow-sm">
-        <div class="tt-header">
-          <i class="pi pi-calculator text-primary"></i>
-          <span>المجاميع المالية للفاتورة</span>
-        </div>
-
-        <div class="tt-body">
-          <div class="tt-row">
-            <span class="tt-label">المجموع قبل الخصم:</span>
-            <strong class="tt-val font-code">{{ subtotal() | number:'1.2-2' }} SAR</strong>
-          </div>
-
-          <div class="tt-row disc-row" *ngIf="totalDiscount() > 0">
-            <span class="tt-label text-red">إجمالي الخصم الممنوح:</span>
-            <strong class="tt-val font-code text-red">-{{ totalDiscount() | number:'1.2-2' }} SAR</strong>
-          </div>
-
-          <div class="tt-row">
-            <span class="tt-label">الوعاء الخاضع للضريبة:</span>
-            <strong class="tt-val font-code">{{ totalTaxableAmount() | number:'1.2-2' }} SAR</strong>
-          </div>
-
-          <div class="tt-row vat-row">
-            <span class="tt-label">ضريبة القيمة المضافة (15%):</span>
-            <strong class="tt-val font-code text-emerald">{{ totalVatAmount() | number:'1.2-2' }} SAR</strong>
-          </div>
-
-          <div class="tt-divider"></div>
-
-          <div class="tt-row grand-row">
-            <span class="tt-label">الإجمالي النهائي المستحق:</span>
-            <strong class="tt-val font-code text-primary">{{ grandTotal() | number:'1.2-2' }} SAR</strong>
-          </div>
-        </div>
-
-        <div class="tt-actions">
-          <button type="button" class="btn-primary btn-block" (click)="saveInvoice(true)" [disabled]="isSubmitting()">
-            <i class="pi pi-send" [class.pi-spin]="isSubmitting()"></i>
-            <span>{{ isSubmitting() ? 'جاري الاعتماد...' : 'حفظ واعتماد فوري لدى ZATCA' }}</span>
-          </button>
-          <button type="button" class="btn-outline btn-block mt-2" (click)="saveInvoice(false)" [disabled]="isSubmitting()">
-            <i class="pi pi-save"></i>
-            <span>حفظ كمسودة (Draft)</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- MODAL: Full A4 Official Tax Invoice Preview -->
-  <div class="preview-modal-backdrop" *ngIf="showPreviewModal()" (click)="showPreviewModal.set(false)">
-    <div class="preview-modal-dialog" (click)="$event.stopPropagation()">
-      <div class="pm-head">
-        <div class="pm-title">
-          <i class="pi pi-file-pdf text-emerald"></i>
-          <span>معاينة الفاتورة الضريبية الرسمية (ZATCA A4 Preview)</span>
-        </div>
-        <button type="button" class="btn-pm-close" (click)="showPreviewModal.set(false)">
-          <i class="pi pi-times"></i>
-        </button>
+    <!-- Tafqeet & ZATCA Status Bar -->
+    <div class="erp-status-bar">
+      <div class="tafqeet-strip">
+        <strong>المبلغ كتابة:</strong>
+        <span>{{ amountInWordsAr() }}</span>
       </div>
 
-      <div class="pm-body">
-        <div class="a4-sheet">
-          <!-- A4 Sheet Header -->
-          <div class="sheet-top">
-            <div class="sheet-seller">
-              <h2 class="seller-name">شركة الربان للحلول والأنظمة المحاسبية</h2>
-              <p class="seller-meta font-code">الرقم الضريبي: 300000000000003 | س.ت: 1010789456</p>
-              <p class="seller-addr font-sm">طريق الملك فهد، حي العليا، الرياض 12214، المملكة العربية السعودية</p>
-            </div>
-            <div class="sheet-logo font-code">
-              <div class="invoice-badge-pill">
-                {{ invoiceType() === InvoiceType.StandardTaxInvoice ? 'فاتورة ضريبية قياسية (B2B)' : 'فاتورة ضريبية مبسطة (B2C)' }}
-              </div>
-              <div class="invoice-num-lg font-bold">{{ invoiceNumber() }}</div>
-            </div>
-          </div>
-
-          <div class="sheet-divider"></div>
-
-          <!-- A4 Buyer & Meta -->
-          <div class="sheet-grid-2">
-            <div class="sheet-box">
-              <h3 class="box-head">بيانات العميل / المشتري (Buyer)</h3>
-              <div class="box-row"><strong>الاسم:</strong> <span>{{ buyerName() || 'عميل نقدي' }}</span></div>
-              <div class="box-row font-code" *ngIf="buyerVatNumber()"><strong>الرقم الضريبي:</strong> <span>{{ buyerVatNumber() }}</span></div>
-              <div class="box-row font-code" *ngIf="buyerOtherIdValue()"><strong>السجل التجاري:</strong> <span>{{ buyerOtherIdValue() }}</span></div>
-              <div class="box-row font-sm" *ngIf="buyerStreet()">
-                <strong>العنوان:</strong>
-                <span>مبنى {{ buyerBuildingNumber() }}، {{ buyerStreet() }}، {{ buyerCitySubdivisionName() }}، {{ buyerCity() }} {{ buyerPostalCode() }}</span>
-              </div>
-            </div>
-
-            <div class="sheet-box">
-              <h3 class="box-head">بيانات التوريد والفاتورة</h3>
-              <div class="box-row font-code"><strong>تاريخ الإصدار:</strong> <span>{{ issueDate() }}</span></div>
-              <div class="box-row font-code"><strong>تاريخ التوريد:</strong> <span>{{ supplyDate() }}</span></div>
-              <div class="box-row"><strong>طريقة الدفع:</strong> <span>{{ paymentMeansCode() === '10' ? 'نقدي (Cash)' : 'تحويل بنكي' }}</span></div>
-              <div class="box-row"><strong>العملة:</strong> <span class="font-code">SAR (ريال سعودي)</span></div>
-            </div>
-          </div>
-
-          <!-- A4 Lines Table -->
-          <table class="sheet-table mt-3">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>البند / الخدمة</th>
-                <th class="text-center">الكمية</th>
-                <th class="text-left">سعر الوحدة</th>
-                <th class="text-left">الخصم</th>
-                <th class="text-left">الخاضع للضريبة</th>
-                <th class="text-left">الضريبة (15%)</th>
-                <th class="text-left">الإجمالي</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let line of lineItems(); let i = index">
-                <td class="text-center font-code">{{ i + 1 }}</td>
-                <td class="font-bold">{{ line.itemNameAr }}</td>
-                <td class="text-center font-code">{{ line.quantity }}</td>
-                <td class="text-left font-code">{{ line.unitPrice | number:'1.2-2' }}</td>
-                <td class="text-left font-code">{{ line.discount | number:'1.2-2' }}</td>
-                <td class="text-left font-code">{{ lineComputations()[i].taxable | number:'1.2-2' }}</td>
-                <td class="text-left font-code">{{ lineComputations()[i].vat | number:'1.2-2' }}</td>
-                <td class="text-left font-code font-bold">{{ lineComputations()[i].total | number:'1.2-2' }}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- A4 Sheet Footer & Totals -->
-          <div class="sheet-bottom mt-3">
-            <div class="sheet-tafqeet">
-              <div class="font-sm text-muted">المبلغ كتابة:</div>
-              <div class="font-bold text-dark">{{ amountInWordsAr() }}</div>
-              <div class="qr-mock-wrap mt-2">
-                <div class="qr-box">
-                  <i class="pi pi-qrcode"></i>
-                </div>
-                <div class="qr-desc font-sm">
-                  <span>رمز التحقق المشفر (ZATCA TLV Base64)</span>
-                  <span class="font-code text-muted">Hash & ECDSA Stamp</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="sheet-totals-box">
-              <div class="st-row"><span>المجموع قبل الخصم:</span> <strong class="font-code">{{ subtotal() | number:'1.2-2' }}</strong></div>
-              <div class="st-row" *ngIf="totalDiscount() > 0"><span>الخصم:</span> <strong class="font-code text-red">-{{ totalDiscount() | number:'1.2-2' }}</strong></div>
-              <div class="st-row"><span>الوعاء الضريبي:</span> <strong class="font-code">{{ totalTaxableAmount() | number:'1.2-2' }}</strong></div>
-              <div class="st-row"><span>ضريبة القيمة المضافة 15%:</span> <strong class="font-code text-emerald">{{ totalVatAmount() | number:'1.2-2' }}</strong></div>
-              <div class="st-row grand"><span>الإجمالي النهائي:</span> <strong class="font-code text-primary">{{ grandTotal() | number:'1.2-2' }} SAR</strong></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pm-foot">
-        <button type="button" class="btn-secondary" (click)="showPreviewModal.set(false)">إغلاق المعاينة</button>
+      <div class="zatca-strip" [class.ready]="zatcaChecklist().isFullyCompliant">
+        <i class="pi" [class.pi-check-circle]="zatcaChecklist().isFullyCompliant" [class.pi-info-circle]="!zatcaChecklist().isFullyCompliant"></i>
+        <span>{{ zatcaChecklist().isFullyCompliant ? 'مطابق لمتطلبات هيئة الزكاة والضريبة (جاهز للاعتماد)' : 'مسودة قيد الاستكمال' }}</span>
       </div>
     </div>
   </div>
