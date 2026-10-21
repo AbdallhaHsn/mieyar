@@ -63,22 +63,60 @@ public class InvoiceCryptoService : IInvoiceCryptoService
         sb.AppendLine($"    <cbc:InvoiceTypeCode name=\"{(int)invoice.InvoiceType}\">{(invoice.InvoiceType == Domain.Enums.InvoiceType.Standard ? "388" : "381")}</cbc:InvoiceTypeCode>");
         sb.AppendLine($"    <cbc:DocumentCurrencyCode>{invoice.Currency}</cbc:DocumentCurrencyCode>");
 
-        // Seller
+        // Seller (Supplier)
         sb.AppendLine("    <cac:AccountingSupplierParty>");
         sb.AppendLine("        <cac:Party>");
-        sb.AppendLine($"            <cac:PartyName><cbc:Name>{sellerName}</cbc:Name></cac:PartyName>");
-        sb.AppendLine($"            <cac:PartyTaxScheme><cbc:CompanyID>{sellerVat}</cbc:CompanyID></cac:PartyTaxScheme>");
+        sb.AppendLine("            <cac:PartyIdentification>");
+        sb.AppendLine("                <cbc:ID schemeID=\"CRN\">1010789456</cbc:ID>");
+        sb.AppendLine("            </cac:PartyIdentification>");
+        sb.AppendLine("            <cac:PostalAddress>");
+        sb.AppendLine("                <cbc:StreetName>طريق الملك فهد</cbc:StreetName>");
+        sb.AppendLine("                <cbc:BuildingNumber>7254</cbc:BuildingNumber>");
+        sb.AppendLine("                <cbc:CitySubdivisionName>حي العليا</cbc:CitySubdivisionName>");
+        sb.AppendLine("                <cbc:CityName>الرياض</cbc:CityName>");
+        sb.AppendLine("                <cbc:PostalZone>12214</cbc:PostalZone>");
+        sb.AppendLine("                <cac:Country>");
+        sb.AppendLine("                    <cbc:IdentificationCode>SA</cbc:IdentificationCode>");
+        sb.AppendLine("                </cac:Country>");
+        sb.AppendLine("            </cac:PostalAddress>");
+        sb.AppendLine("            <cac:PartyTaxScheme>");
+        sb.AppendLine($"                <cbc:CompanyID>{sellerVat}</cbc:CompanyID>");
+        sb.AppendLine("                <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>");
+        sb.AppendLine("            </cac:PartyTaxScheme>");
+        sb.AppendLine("            <cac:PartyLegalEntity>");
+        sb.AppendLine($"                <cbc:RegistrationName>{sellerName}</cbc:RegistrationName>");
+        sb.AppendLine("            </cac:PartyLegalEntity>");
         sb.AppendLine("        </cac:Party>");
         sb.AppendLine("    </cac:AccountingSupplierParty>");
 
-        // Buyer
+        // Buyer (Customer)
         sb.AppendLine("    <cac:AccountingCustomerParty>");
         sb.AppendLine("        <cac:Party>");
-        sb.AppendLine($"            <cac:PartyName><cbc:Name>{invoice.CustomerName}</cbc:Name></cac:PartyName>");
+        if (!string.IsNullOrWhiteSpace(invoice.CustomerCrNumber))
+        {
+            sb.AppendLine("            <cac:PartyIdentification>");
+            sb.AppendLine($"                <cbc:ID schemeID=\"CRN\">{invoice.CustomerCrNumber}</cbc:ID>");
+            sb.AppendLine("            </cac:PartyIdentification>");
+        }
+        if (!string.IsNullOrWhiteSpace(invoice.CustomerAddress))
+        {
+            sb.AppendLine("            <cac:PostalAddress>");
+            sb.AppendLine($"                <cbc:StreetName>{invoice.CustomerAddress}</cbc:StreetName>");
+            sb.AppendLine("                <cac:Country>");
+            sb.AppendLine("                    <cbc:IdentificationCode>SA</cbc:IdentificationCode>");
+            sb.AppendLine("                </cac:Country>");
+            sb.AppendLine("            </cac:PostalAddress>");
+        }
+        sb.AppendLine("            <cac:PartyTaxScheme>");
         if (!string.IsNullOrWhiteSpace(invoice.CustomerVatNumber))
         {
-            sb.AppendLine($"            <cac:PartyTaxScheme><cbc:CompanyID>{invoice.CustomerVatNumber}</cbc:CompanyID></cac:PartyTaxScheme>");
+            sb.AppendLine($"                <cbc:CompanyID>{invoice.CustomerVatNumber}</cbc:CompanyID>");
         }
+        sb.AppendLine("                <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>");
+        sb.AppendLine("            </cac:PartyTaxScheme>");
+        sb.AppendLine("            <cac:PartyLegalEntity>");
+        sb.AppendLine($"                <cbc:RegistrationName>{invoice.CustomerName}</cbc:RegistrationName>");
+        sb.AppendLine("            </cac:PartyLegalEntity>");
         sb.AppendLine("        </cac:Party>");
         sb.AppendLine("    </cac:AccountingCustomerParty>");
 

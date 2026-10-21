@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { InvoicesService, InvoiceDto, InvoiceType, InvoiceStatus, CreateInvoiceRequest } from '../../../core/services/invoices.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
@@ -18,11 +19,12 @@ interface InvoiceLineFormItem {
 @Component({
   selector: 'app-tax-invoices',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe, RouterModule],
   templateUrl: './tax-invoices.component.html',
   styleUrls: ['./tax-invoices.component.scss']
 })
 export class TaxInvoicesComponent implements OnInit {
+  private router = inject(Router);
   private invoicesService = inject(InvoicesService);
   companyContext = inject(CompanyContextService);
   langService = inject(LanguageService);
@@ -42,59 +44,12 @@ export class TaxInvoicesComponent implements OnInit {
   selectedStatus = signal<number | null>(null);
 
   // Modals
-  showCreateModal = signal<boolean>(false);
   showPreviewModal = signal<boolean>(false);
   selectedInvoice = signal<InvoiceDto | null>(null);
 
   // Enums for template
   InvoiceType = InvoiceType;
   InvoiceStatus = InvoiceStatus;
-
-  // New Invoice Form
-  newInvoice = signal({
-    invoiceNumber: '',
-    invoiceType: InvoiceType.StandardTaxInvoice,
-    issueDate: new Date().toISOString().substring(0, 10),
-    supplyDate: new Date().toISOString().substring(0, 10),
-    buyerName: '',
-    buyerVatNumber: '',
-    buyerNationalId: '',
-    buyerStreet: '',
-    buyerBuildingNumber: '',
-    buyerCity: 'الرياض',
-    buyerPostalCode: '',
-    buyerDistrict: '',
-    buyerCountryCode: 'SA',
-    paymentMeansCode: '10', // 10 = نقدي Cash
-    notes: 'شكراً لتعاملكم معنا'
-  });
-
-  lineItems = signal<InvoiceLineFormItem[]>([
-    {
-      itemName: 'خدمات استشارية مالية ومحاسبية',
-      itemCode: 'SRV-01',
-      quantity: 1,
-      unitPrice: 5000,
-      discountAmount: 0,
-      vatPercent: 15
-    }
-  ]);
-
-  // Form Computations
-  formSubtotal = computed(() => {
-    return this.lineItems().reduce((sum, item) => sum + (item.quantity * item.unitPrice - (item.discountAmount || 0)), 0);
-  });
-
-  formVatTotal = computed(() => {
-    return this.lineItems().reduce((sum, item) => {
-      const net = (item.quantity * item.unitPrice - (item.discountAmount || 0));
-      return sum + (net * (item.vatPercent / 100));
-    }, 0);
-  });
-
-  formGrandTotal = computed(() => {
-    return this.formSubtotal() + this.formVatTotal();
-  });
 
   // Filtered List
   filteredInvoices = computed(() => {
@@ -106,7 +61,7 @@ export class TaxInvoicesComponent implements OnInit {
     if (q) {
       list = list.filter(inv =>
         inv.invoiceNumber.toLowerCase().includes(q) ||
-        inv.buyerName.toLowerCase().includes(q) ||
+        (inv.buyerName || inv.customerName || '').toLowerCase().includes(q) ||
         (inv.buyerVatNumber && inv.buyerVatNumber.includes(q))
       );
     }
@@ -116,7 +71,7 @@ export class TaxInvoicesComponent implements OnInit {
     }
 
     if (status !== null) {
-      list = list.filter(inv => inv.invoiceStatus === status);
+      list = list.filter(inv => (inv.invoiceStatus ?? inv.status) === status);
     }
 
     return list;
@@ -148,139 +103,10 @@ export class TaxInvoicesComponent implements OnInit {
   }
 
   openCreate(): void {
-    // Generate next invoice number
-    const nextSeq = this.invoices().length + 1;
-    const invNum = `INV-${new Date().getFullYear()}-${nextSeq.toString().padStart(4, '0')}`;
-
-    this.newInvoice.set({
-      invoiceNumber: invNum,
-      invoiceType: InvoiceType.StandardTaxInvoice,
-      issueDate: new Date().toISOString().substring(0, 10),
-      supplyDate: new Date().toISOString().substring(0, 10),
-      buyerName: '',
-      buyerVatNumber: '',
-      buyerNationalId: '',
-      buyerStreet: '',
-      buyerBuildingNumber: '',
-      buyerCity: 'الرياض',
-      buyerPostalCode: '',
-      buyerDistrict: '',
-      buyerCountryCode: 'SA',
-      paymentMeansCode: '10',
-      notes: 'خاضعة لضريبة القيمة المضافة بنسبة 15% - معتمدة لدى هيئة الزكاة والضريبة والجمارك'
-    });
-
-    this.lineItems.set([
-      {
-        itemName: 'استشارات وتطوير أنظمة سحابية',
-        itemCode: 'IT-001',
-        quantity: 1,
-        unitPrice: 10000,
-        discountAmount: 0,
-        vatPercent: 15
-      }
-    ]);
-
-    this.showCreateModal.set(true);
+    this.router.navigate(['/invoicing/tax-invoices/create']);
   }
 
-  closeCreateModal(): void {
-    this.showCreateModal.set(false);
-  }
 
-  addLineItem(): void {
-    this.lineItems.update(items => [
-      ...items,
-      {
-        itemName: '',
-        itemCode: '',
-        quantity: 1,
-        unitPrice: 0,
-        discountAmount: 0,
-        vatPercent: 15
-      }
-    ]);
-  }
-
-  removeLineItem(index: number): void {
-    if (this.lineItems().length <= 1) return;
-    this.lineItems.update(items => items.filter((_, i) => i !== index));
-  }
-
-  saveInvoice(): void {
-    const inv = this.newInvoice();
-    if (!inv.buyerName.trim()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'بيانات غير مكتملة',
-        text: 'يرجى إدخال اسم العميل / المشتري.',
-        confirmButtonColor: '#0284c7'
-      });
-      return;
-    }
-
-    if (this.lineItems().length === 0 || this.lineItems().some(l => !l.itemName.trim() || l.unitPrice <= 0)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'بنود الفاتورة',
-        text: 'يرجى إدخال بند واحد على الأقل مع اسم وسعر صحيح.',
-        confirmButtonColor: '#0284c7'
-      });
-      return;
-    }
-
-    this.isSubmitting.set(true);
-
-    const payload: CreateInvoiceRequest = {
-      invoiceNumber: inv.invoiceNumber,
-      invoiceType: inv.invoiceType,
-      issueDate: inv.issueDate ? new Date(inv.issueDate).toISOString() : undefined,
-      supplyDate: inv.supplyDate ? new Date(inv.supplyDate).toISOString() : undefined,
-      buyerName: inv.buyerName,
-      buyerVatNumber: inv.buyerVatNumber || undefined,
-      buyerNationalId: inv.buyerNationalId || undefined,
-      buyerStreet: inv.buyerStreet || undefined,
-      buyerBuildingNumber: inv.buyerBuildingNumber || undefined,
-      buyerCity: inv.buyerCity || undefined,
-      buyerPostalCode: inv.buyerPostalCode || undefined,
-      buyerDistrict: inv.buyerDistrict || undefined,
-      buyerCountryCode: inv.buyerCountryCode || 'SA',
-      paymentMeansCode: inv.paymentMeansCode,
-      notes: inv.notes,
-      lines: this.lineItems().map(l => ({
-        itemName: l.itemName,
-        itemCode: l.itemCode || undefined,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        discountAmount: l.discountAmount || 0,
-        vatPercent: l.vatPercent || 15,
-        vatCategory: 'S'
-      }))
-    };
-
-    this.invoicesService.createInvoice(payload).subscribe({
-      next: (created) => {
-        this.isSubmitting.set(false);
-        this.showCreateModal.set(false);
-        Swal.fire({
-          icon: 'success',
-          title: 'تم حفظ الفاتورة بنجاح',
-          text: `تم إنشاء الفاتورة رقم ${created.invoiceNumber} كمسودة جاهزة للاعتماد والربط مع زاتكا.`,
-          confirmButtonColor: '#10b981'
-        });
-        this.loadInvoices();
-      },
-      error: (err) => {
-        this.isSubmitting.set(false);
-        Swal.fire({
-          icon: 'error',
-          title: 'فشل الحفظ',
-          text: err.error?.description || 'حدث خطأ أثناء حفظ الفاتورة.',
-          confirmButtonColor: '#ef4444'
-        });
-      }
-    });
-  }
 
   issueToZatca(invoice: InvoiceDto, event?: Event): void {
     if (event) event.stopPropagation();
@@ -380,13 +206,12 @@ export class TaxInvoicesComponent implements OnInit {
     switch (type) {
       case InvoiceType.StandardTaxInvoice: return 'فاتورة ضريبية (B2B)';
       case InvoiceType.SimplifiedTaxInvoice: return 'فاتورة ضريبية مبسطة (B2C)';
-      case InvoiceType.DebitNote: return 'إشعار مدين (Debit Note)';
-      case InvoiceType.CreditNote: return 'إشعار دائن (Credit Note)';
-      default: return 'فاتورة';
+      default: return 'فاتورة ضريبية';
     }
   }
 
-  getStatusBadgeClass(status: InvoiceStatus): string {
+  getStatusBadgeClass(status?: InvoiceStatus): string {
+    if (status === undefined || status === null) return 'badge-default';
     switch (status) {
       case InvoiceStatus.Cleared:
       case InvoiceStatus.Reported:
@@ -402,7 +227,8 @@ export class TaxInvoicesComponent implements OnInit {
     }
   }
 
-  getStatusLabel(status: InvoiceStatus): string {
+  getStatusLabel(status?: InvoiceStatus): string {
+    if (status === undefined || status === null) return 'مسودة';
     switch (status) {
       case InvoiceStatus.Cleared: return 'معتمدة ومطابقة (CLEARED)';
       case InvoiceStatus.Reported: return 'مبلغة لمنصة فاتورة (REPORTED)';

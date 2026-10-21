@@ -1193,7 +1193,13 @@ export class SidebarComponent {
           isOpen: false,
           items: [
             {
-              labelAr: 'الفواتير الضريبية (B2B)',
+              labelAr: 'إصدار فاتورة ضريبية جديدة',
+              labelEn: 'New Tax Invoice',
+              icon: 'pi pi-plus-circle',
+              route: '/invoicing/tax-invoices/create'
+            },
+            {
+              labelAr: 'سجل الفواتير الضريبية (B2B)',
               labelEn: 'Tax Invoices (B2B)',
               icon: 'pi pi-file',
               route: '/invoicing/tax-invoices'

@@ -43,6 +43,14 @@ public class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceCommand,
         var invoiceNumber = await _invoiceRepo.GenerateNextNumberAsync(companyId, req.TransactionType, year, cancellationToken);
         var lastPih = await _invoiceRepo.GetLastInvoiceHashAsync(companyId, cancellationToken);
 
+        var customerAddress = req.CustomerAddress;
+        if (string.IsNullOrWhiteSpace(customerAddress) && !string.IsNullOrWhiteSpace(req.BuyerStreet))
+        {
+            customerAddress = $"مبنى {req.BuyerBuildingNumber}، {req.BuyerStreet}، {req.BuyerDistrict}، {req.BuyerCity} {req.BuyerPostalCode}، {req.BuyerCountryCode}".Trim('،', ' ');
+        }
+
+        var crNumber = !string.IsNullOrWhiteSpace(req.CustomerCrNumber) ? req.CustomerCrNumber : req.BuyerOtherIdValue;
+
         var invoice = Invoice.Create(
             tenantId,
             companyId,
@@ -52,8 +60,8 @@ public class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceCommand,
             req.TransactionType,
             req.CustomerName,
             req.CustomerVatNumber,
-            req.CustomerCrNumber,
-            req.CustomerAddress,
+            crNumber,
+            customerAddress,
             lastPih,
             req.ReferenceInvoiceId,
             req.ReferenceInvoiceNumber,

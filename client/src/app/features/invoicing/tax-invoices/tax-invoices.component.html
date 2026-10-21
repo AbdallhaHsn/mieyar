@@ -32,12 +32,12 @@
           </svg>
         </button>
 
-        <button class="btn-primary" (click)="openCreate()">
+        <a class="btn-primary" routerLink="/invoicing/tax-invoices/create" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           <span>{{ currentLang() === 'ar' ? 'إنشاء فاتورة ضريبية جديدة' : '+ New Tax Invoice' }}</span>
-        </button>
+        </a>
       </div>
     </div>
 
@@ -89,8 +89,6 @@
         <option value="all">{{ currentLang() === 'ar' ? 'جميع أنواع الفواتير' : 'All Invoice Types' }}</option>
         <option [value]="InvoiceType.StandardTaxInvoice">{{ currentLang() === 'ar' ? 'فاتورة ضريبية قياسية (B2B)' : 'Standard Tax (B2B)' }}</option>
         <option [value]="InvoiceType.SimplifiedTaxInvoice">{{ currentLang() === 'ar' ? 'فاتورة ضريبية مبسطة (B2C)' : 'Simplified Tax (B2C)' }}</option>
-        <option [value]="InvoiceType.DebitNote">{{ currentLang() === 'ar' ? 'إشعار مدين (Debit Note)' : 'Debit Note' }}</option>
-        <option [value]="InvoiceType.CreditNote">{{ currentLang() === 'ar' ? 'إشعار دائن (Credit Note)' : 'Credit Note' }}</option>
       </select>
 
       <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event !== 'all' ? +$event : null)">
@@ -201,153 +199,7 @@
     </table>
   </div>
 
-  <!-- Create Invoice Modal -->
-  <div *ngIf="showCreateModal()" class="modal-backdrop">
-    <div class="modal-card max-w-4xl">
-      <div class="modal-header">
-        <div class="modal-title-cluster">
-          <div class="modal-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <div>
-            <h3>{{ currentLang() === 'ar' ? 'إنشاء فاتورة ضريبية جديدة (ZATCA Phase 2)' : 'Create Tax Invoice (ZATCA Phase 2)' }}</h3>
-            <p>{{ currentLang() === 'ar' ? 'إدخال بيانات العميل، الأصناف، والضريبة وحساب الإجماليات بدقة' : 'Fill buyer information and line items with tax calculation' }}</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" (click)="closeCreateModal()">✕</button>
-      </div>
 
-      <div class="modal-body">
-        <!-- Section: Invoice Header Info -->
-        <div class="form-section-title">{{ currentLang() === 'ar' ? '1. البيانات الأساسية للفاتورة' : '1. Basic Information' }}</div>
-        <div class="form-grid-3">
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'رقم الفاتورة المرجعي' : 'Invoice Number' }}</label>
-            <input type="text" [(ngModel)]="newInvoice().invoiceNumber" />
-          </div>
-
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'نوع الفاتورة' : 'Invoice Type' }}</label>
-            <select [(ngModel)]="newInvoice().invoiceType">
-              <option [value]="InvoiceType.StandardTaxInvoice">{{ currentLang() === 'ar' ? 'فاتورة ضريبية قياسية (B2B)' : 'Standard Tax (B2B)' }}</option>
-              <option [value]="InvoiceType.SimplifiedTaxInvoice">{{ currentLang() === 'ar' ? 'فاتورة ضريبية مبسطة (B2C)' : 'Simplified Tax (B2C)' }}</option>
-              <option [value]="InvoiceType.DebitNote">{{ currentLang() === 'ar' ? 'إشعار مدين (Debit Note)' : 'Debit Note' }}</option>
-              <option [value]="InvoiceType.CreditNote">{{ currentLang() === 'ar' ? 'إشعار دائن (Credit Note)' : 'Credit Note' }}</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'تاريخ الإصدار' : 'Issue Date' }}</label>
-            <input type="date" [(ngModel)]="newInvoice().issueDate" />
-          </div>
-        </div>
-
-        <!-- Section: Buyer Information -->
-        <div class="form-section-title">{{ currentLang() === 'ar' ? '2. بيانات العميل / المشتري (Buyer)' : '2. Buyer Details' }}</div>
-        <div class="form-grid-3">
-          <div class="form-group col-span-2">
-            <label>{{ currentLang() === 'ar' ? 'اسم العميل / الشركة *' : 'Buyer Name / Organization *' }}</label>
-            <input type="text" [(ngModel)]="newInvoice().buyerName" placeholder="مثال: شركة آفاق المستقبل المحدودة" />
-          </div>
-
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'الرقم الضريبي للمشتري (15 رقم)' : 'Buyer VAT Number' }}</label>
-            <input type="text" [(ngModel)]="newInvoice().buyerVatNumber" placeholder="300000000000003" />
-          </div>
-
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'المدينة' : 'City' }}</label>
-            <input type="text" [(ngModel)]="newInvoice().buyerCity" />
-          </div>
-
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'الحي' : 'District' }}</label>
-            <input type="text" [(ngModel)]="newInvoice().buyerDistrict" placeholder="مثال: حي الملقا" />
-          </div>
-
-          <div class="form-group">
-            <label>{{ currentLang() === 'ar' ? 'اسم الشارع' : 'Street' }}</label>
-            <input type="text" [(ngModel)]="newInvoice().buyerStreet" placeholder="مثال: طريق الملك فهد" />
-          </div>
-        </div>
-
-        <!-- Section: Invoice Line Items -->
-        <div class="form-section-title-between">
-          <span>{{ currentLang() === 'ar' ? '3. بنود الفاتورة والخدمات' : '3. Invoice Line Items' }}</span>
-          <button type="button" class="btn-add-line" (click)="addLineItem()">
-            + {{ currentLang() === 'ar' ? 'إضافة بند' : 'Add Item' }}
-          </button>
-        </div>
-
-        <div class="line-items-table-wrapper">
-          <table class="line-items-table">
-            <thead>
-              <tr>
-                <th style="width: 35%;">{{ currentLang() === 'ar' ? 'اسم الصنف أو الخدمة' : 'Item Description' }}</th>
-                <th style="width: 15%;">{{ currentLang() === 'ar' ? 'كود الصنف' : 'Item Code' }}</th>
-                <th style="width: 10%;">{{ currentLang() === 'ar' ? 'الكمية' : 'Qty' }}</th>
-                <th style="width: 15%;">{{ currentLang() === 'ar' ? 'سعر الوحدة' : 'Unit Price' }}</th>
-                <th style="width: 10%;">{{ currentLang() === 'ar' ? 'الخصم' : 'Discount' }}</th>
-                <th style="width: 10%;">{{ currentLang() === 'ar' ? 'الضريبة %' : 'VAT %' }}</th>
-                <th style="width: 5%;"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of lineItems(); let i = index">
-                <td>
-                  <input type="text" [(ngModel)]="item.itemName" placeholder="اسم الخدمة أو المنتج..." />
-                </td>
-                <td>
-                  <input type="text" [(ngModel)]="item.itemCode" placeholder="كود..." />
-                </td>
-                <td>
-                  <input type="number" min="1" [(ngModel)]="item.quantity" />
-                </td>
-                <td>
-                  <input type="number" min="0" step="0.01" [(ngModel)]="item.unitPrice" />
-                </td>
-                <td>
-                  <input type="number" min="0" step="0.01" [(ngModel)]="item.discountAmount" />
-                </td>
-                <td>
-                  <input type="number" [(ngModel)]="item.vatPercent" />
-                </td>
-                <td>
-                  <button type="button" class="btn-del-row" (click)="removeLineItem(i)" title="حذف البند">🗑️</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Financial Totals Summary Bar -->
-        <div class="invoice-summary-bar">
-          <div class="summary-metric">
-            <span class="lbl">{{ currentLang() === 'ar' ? 'المجموع الخاضع للضريبة:' : 'Subtotal:' }}</span>
-            <span class="val">{{ formSubtotal() | number:'1.2-2' }} SAR</span>
-          </div>
-          <div class="summary-metric">
-            <span class="lbl">{{ currentLang() === 'ar' ? 'إجمالي ضريبة 15%:' : 'VAT (15%):' }}</span>
-            <span class="val text-purple">{{ formVatTotal() | number:'1.2-2' }} SAR</span>
-          </div>
-          <div class="summary-metric grand">
-            <span class="lbl">{{ currentLang() === 'ar' ? 'الإجمالي النهائي المستحق:' : 'Grand Total:' }}</span>
-            <span class="val">{{ formGrandTotal() | number:'1.2-2' }} SAR</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeCreateModal()">{{ currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}</button>
-        <button class="btn-primary" [disabled]="isSubmitting()" (click)="saveInvoice()">
-          <span *ngIf="isSubmitting()" class="spinner-small"></span>
-          <span>{{ currentLang() === 'ar' ? 'حفظ الفاتورة كمسودة' : 'Save Invoice Draft' }}</span>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ZATCA Phase 2 E-Invoice Preview & QR Code Modal -->
   <div *ngIf="showPreviewModal() && selectedInvoice()" class="modal-backdrop">
@@ -473,7 +325,7 @@
           <div class="inv-totals-box">
             <div class="t-row">
               <span>إجمالي القيمة قبل الضريبة:</span>
-              <span>{{ selectedInvoice()?.subtotal | number:'1.2-2' }} SAR</span>
+              <span>{{ (selectedInvoice()?.subTotal || selectedInvoice()?.subtotal) | number:'1.2-2' }} SAR</span>
             </div>
             <div class="t-row">
               <span>مجموع الخصومات:</span>

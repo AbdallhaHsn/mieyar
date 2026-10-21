@@ -21,6 +21,7 @@ import { TaxInvoicesComponent } from './features/invoicing/tax-invoices/tax-invo
 import { ChecksComponent } from './features/accounting/checks/checks.component';
 import { PartnersComponent } from './features/accounting/partners/partners.component';
 import { PartnerCreateComponent } from './features/accounting/partner-create/partner-create.component';
+import { InvoiceCreateComponent } from './features/invoicing/invoice-create/invoice-create.component';
 
 export const routes: Routes = [
   {
@@ -121,6 +122,14 @@ export const routes: Routes = [
       {
         path: 'invoicing/tax-invoices',
         component: TaxInvoicesComponent
+      },
+      {
+        path: 'invoicing/tax-invoices/create',
+        component: InvoiceCreateComponent
+      },
+      {
+        path: 'invoicing/create',
+        redirectTo: 'invoicing/tax-invoices/create'
       },
       {
         path: 'invoicing/simplified',
