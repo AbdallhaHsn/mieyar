@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">عبدالله الصويعي | مهندس برمجيات ونظم مؤسسات ERP</title>
+  <meta name="description" content="الملف المهني للمهندس عبدالله الصويعي - خبير معمارية نظم المؤسسات ERP، حلول الفوترة الإلكترونية ZATCA، وتطبيقات الويب الحديثة.">
+  <meta name="theme-color" content="#090d16">
+  
+  <!-- Fonts: Cairo & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- PrimeIcons & SweetAlert2 -->
+  <link rel="stylesheet" href="https://unpkg.com/primeicons@7.0.0/primeicons.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Background Glow & Grid Effect -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-grid-overlay"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="#hero" class="nav-brand">
+        <div class="brand-avatar-mini">
+          <span class="avatar-initials">AS</span>
+          <span class="status-dot"></span>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name" id="nav-brand-name">عبدالله الصويعي</span>
+          <span class="brand-tag" id="nav-brand-tag">ERP Architect</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <nav class="nav-links">
+        <a href="#about" class="nav-link" data-i18n="nav.about">نبذة عني</a>
+        <a href="#projects" class="nav-link" data-i18n="nav.projects">الأنظمة والمشاريع</a>
+        <a href="#experience" class="nav-link" data-i18n="nav.experience">المسيرة المهنية</a>
+        <a href="#skills" class="nav-link" data-i18n="nav.skills">المهارات التقنية</a>
+        <a href="#contact" class="nav-link" data-i18n="nav.contact">تواصل معي</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="nav-actions">
+        <!-- Language Switcher -->
+        <button id="btn-lang-toggle" class="btn-icon" title="تبديل اللغة / Switch Language">
+          <i class="pi pi-globe"></i>
+          <span id="lang-label">EN</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" class="btn-icon" title="تبديل المظهر">
+          <i class="pi pi-sun" id="theme-icon"></i>
+        </button>
+
+        <!-- Admin Control Button -->
+        <button id="btn-admin-open" class="btn-icon btn-admin-trigger" title="لوحة التحكم بالبيانات (Admin)">
+          <i class="pi pi-cog"></i>
+        </button>
+
+        <!-- Mobile Menu Toggle -->
+        <button id="btn-mobile-menu" class="btn-icon mobile-only" title="القائمة">
+          <i class="pi pi-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title" data-i18n="nav.menu">القائمة</span>
+      <button class="btn-icon" id="btn-mobile-close"><i class="pi pi-times"></i></button>
+    </div>
+    <div class="drawer-links">
+      <a href="#about" class="drawer-link" data-i18n="nav.about">نبذة عني</a>
+      <a href="#projects" class="drawer-link" data-i18n="nav.projects">الأنظمة والمشاريع</a>
+      <a href="#experience" class="drawer-link" data-i18n="nav.experience">المسيرة المهنية</a>
+      <a href="#skills" class="drawer-link" data-i18n="nav.skills">المهارات التقنية</a>
+      <a href="#contact" class="drawer-link" data-i18n="nav.contact">تواصل معي</a>
+    </div>
+  </div>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+      <div class="container hero-container">
+        <!-- Text Column -->
+        <div class="hero-content">
+          <div class="badge-status" id="hero-badge">
+            <span class="badge-pulse"></span>
+            <span id="hero-status-text">متاح للمشاريع والاستشارات التقنية</span>
+          </div>
+
+          <h1 class="hero-title">
+            <span class="greeting" data-i18n="hero.greeting">مرحباً، أنا</span>
+            <span class="name-gradient" id="hero-name">عبدالله الصويعي</span>
+          </h1>
+
+          <h2 class="hero-subtitle" id="hero-title-text">
+            مهندس برمجيات متكامل وخبير معمارية نظم المؤسسات (ERP Architect)
+          </h2>
+
+          <p class="hero-bio" id="hero-bio-text">
+            متخصص في بناء وتصميم المنصات المحاسبية الكبرى وحلول الفوترة الإلكترونية المعتمدة (ZATCA - المرحلة الثانية). أمتلك خبرة عميقة في هندسة المعماريات الحديثة (Modular Monoliths) وبناء أنظمة تخدم بيئات الأعمال عالية الاعتمادية والسرعة.
+          </p>
+
+          <!-- Action Buttons -->
+          <div class="hero-cta">
+            <a href="#projects" class="btn btn-primary">
+              <i class="pi pi-th-large"></i>
+              <span data-i18n="hero.btnProjects">استكشف الأنظمة والمشاريع</span>
+            </a>
+            <a href="#contact" class="btn btn-secondary">
+              <i class="pi pi-send"></i>
+              <span data-i18n="hero.btnContact">ابدأ محادثة معي</span>
+            </a>
+            <a href="#" id="hero-cv-btn" class="btn btn-outline" target="_blank">
+              <i class="pi pi-download"></i>
+              <span data-i18n="hero.btnCv">تحميل الـ CV</span>
+            </a>
+          </div>
+
+          <!-- Social Links -->
+          <div class="hero-socials">
+            <a href="#" id="social-github" target="_blank" class="social-icon" title="GitHub"><i class="pi pi-github"></i></a>
+            <a href="#" id="social-linkedin" target="_blank" class="social-icon" title="LinkedIn"><i class="pi pi-linkedin"></i></a>
+            <a href="#" id="social-whatsapp" target="_blank" class="social-icon" title="WhatsApp"><i class="pi pi-whatsapp"></i></a>
+            <a href="#" id="social-email" class="social-icon" title="Email"><i class="pi pi-envelope"></i></a>
+          </div>
+        </div>
+
+        <!-- Avatar & Visual Column -->
+        <div class="hero-visual">
+          <div class="avatar-card-wrapper">
+            <div class="avatar-glow"></div>
+            <div class="avatar-frame">
+              <img src="" alt="Profile Avatar" id="hero-avatar" class="avatar-img">
+            </div>
+            
+            <!-- Floating Feature Badges -->
+            <div class="floating-badge badge-top-right">
+              <i class="pi pi-shield"></i>
+              <div>
+                <span class="float-title">ZATCA Compliant</span>
+                <span class="float-sub" data-i18n="hero.badgePhase2">المرحلة الثانية معتمدة</span>
+              </div>
+            </div>
+
+            <div class="floating-badge badge-bottom-left">
+              <i class="pi pi-bolt"></i>
+              <div>
+                <span class="float-title">High Performance</span>
+                <span class="float-sub">.NET 8 & Angular 19</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Counter Bar -->
+    <section class="stats-section">
+      <div class="container">
+        <div class="stats-grid" id="stats-grid">
+          <!-- Rendered dynamically from JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects & Systems Showcase -->
+    <section class="section projects-section" id="projects">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag" data-i18n="projects.tag">معرض الأنظمة والمشاريع</div>
+          <h2 class="section-title" data-i18n="projects.title">أنظمة سحابية متكاملة بنيت بأعلى المعايير</h2>
+          <p class="section-desc" data-i18n="projects.desc">
+            تصفح أبرز المنصات والمشاريع التي قمت بهندستها وتطويرها، متضمنة روابط حية ومباشرة للأنظمة الجاهزة للاستخدام.
+          </p>
+        </div>
+
+        <!-- Category Filter Tabs -->
+        <div class="filter-tabs" id="project-filters">
+          <button class="filter-tab active" data-category="all" data-i18n="projects.filterAll">جميع الأنظمة</button>
+          <button class="filter-tab" data-category="erp" data-i18n="projects.filterErp">أنظمة ERP والمحاسبة</button>
+          <button class="filter-tab" data-category="web" data-i18n="projects.filterWeb">تطبيقات الويب</button>
+          <button class="filter-tab" data-category="api" data-i18n="projects.filterApi">الربط والـ APIs</button>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="projects-grid" id="projects-grid">
+          <!-- Rendered dynamically from JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Career Journey / Experience Timeline -->
+    <section class="section experience-section" id="experience">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag" data-i18n="experience.tag">المسيرة المهنية</div>
+          <h2 class="section-title" data-i18n="experience.title">خبرات قيادية في هندسة وتطوير النظم</h2>
+          <p class="section-desc" data-i18n="experience.desc">
+            محطات عملية متخصصة في قيادة الفرق وتطوير برمجيات الأعمال المعقدة.
+          </p>
+        </div>
+
+        <div class="timeline" id="timeline-container">
+          <!-- Rendered dynamically from JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills & Tech Stack Grid -->
+    <section class="section skills-section" id="skills">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag" data-i18n="skills.tag">المهارات التقنية</div>
+          <h2 class="section-title" data-i18n="skills.title">التقنيات وحزم الأدوات المتقنة</h2>
+          <p class="section-desc" data-i18n="skills.desc">
+            معايير برمجية حديثة تشمل تطوير الواجهات، قواعد البيانات، البنى السحابية والتشفير الحكومي.
+          </p>
+        </div>
+
+        <div class="skills-grid" id="skills-grid">
+          <!-- Rendered dynamically from JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact & Connect Section -->
+    <section class="section contact-section" id="contact">
+      <div class="container">
+        <div class="contact-card">
+          <div class="contact-header">
+            <div class="section-tag" data-i18n="contact.tag">تواصل مباشر</div>
+            <h2 class="section-title" data-i18n="contact.title">هل لديك مشروع أو فرصة تعاون؟</h2>
+            <p class="section-desc" data-i18n="contact.desc">
+              أنا جاهز دائماً لمناقشة المشاريع الجديدة، هندسة الحلول المحاسبية، وتطوير الأنظمة السحابية.
+            </p>
+          </div>
+
+          <div class="contact-grid">
+            <!-- Contact Info Cards -->
+            <div class="contact-info-list">
+              <a href="#" id="contact-link-email" class="contact-info-item">
+                <div class="contact-icon-box"><i class="pi pi-envelope"></i></div>
+                <div>
+                  <span class="contact-label" data-i18n="contact.email">البريد الإلكتروني</span>
+                  <span class="contact-val" id="contact-email-val">contact@abdallaswe.tech</span>
+                </div>
+              </a>
+
+              <a href="#" id="contact-link-whatsapp" target="_blank" class="contact-info-item">
+                <div class="contact-icon-box"><i class="pi pi-whatsapp"></i></div>
+                <div>
+                  <span class="contact-label" data-i18n="contact.whatsapp">محادثة واتساب مباشرة</span>
+                  <span class="contact-val" id="contact-whatsapp-val">+966 50 000 0000</span>
+                </div>
+              </a>
+
+              <div class="contact-info-item">
+                <div class="contact-icon-box"><i class="pi pi-map-marker"></i></div>
+                <div>
+                  <span class="contact-label" data-i18n="contact.location">الموقع</span>
+                  <span class="contact-val" id="contact-location-val">الرياض، المملكة العربية السعودية</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Inquiry Form -->
+            <form class="contact-form" id="contact-form">
+              <div class="form-group">
+                <label data-i18n="contact.formName">الاسم الكامل</label>
+                <input type="text" id="msg-name" class="form-input" required placeholder="أدخل اسمك الكريم">
+              </div>
+              <div class="form-group">
+                <label data-i18n="contact.formEmail">البريد الإلكتروني أو الهاتف</label>
+                <input type="text" id="msg-contact" class="form-input" required placeholder="example@domain.com">
+              </div>
+              <div class="form-group">
+                <label data-i18n="contact.formMessage">الرسالة أو تفاصيل المشروع</label>
+                <textarea id="msg-body" class="form-input form-textarea" rows="4" required placeholder="اكتب تفاصيل طلبك أو استفسارك هنا..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="pi pi-send"></i>
+                <span data-i18n="contact.formSubmit">إرسال الرسالة فوراً</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-left">
+        <span class="footer-brand" id="footer-name">عبدالله الصويعي</span>
+        <span class="footer-copy">© 2026 جميع الحقوق محفوظة. تم تطوير المنصة بهندسة سحابية خفيفة وسريعة.</span>
+      </div>
+      <div class="footer-right">
+        <a href="#hero" class="footer-link"><i class="pi pi-arrow-up"></i> <span data-i18n="footer.toTop">للأعلى</span></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Admin CMS Drawer / Modal (Secret Secured Panel) -->
+  <div class="admin-modal" id="admin-modal">
+    <div class="admin-backdrop" id="admin-backdrop"></div>
+    <div class="admin-panel">
+      <!-- Admin Header -->
+      <div class="admin-panel-header">
+        <div class="admin-panel-title">
+          <i class="pi pi-sliders-h"></i>
+          <span data-i18n="admin.title">لوحة التحكم السريعة بالمحتوى (CMS)</span>
+        </div>
+        <button class="btn-icon" id="admin-close-btn"><i class="pi pi-times"></i></button>
+      </div>
+
+      <!-- Admin PIN Lock View -->
+      <div class="admin-lock-screen" id="admin-lock-screen">
+        <div class="lock-icon-box"><i class="pi pi-lock"></i></div>
+        <h3 data-i18n="admin.lockTitle">أدخل رمز الأمان (PIN) لتسجيل الدخول</h3>
+        <p class="lock-sub" data-i18n="admin.lockDesc">هذه اللوحة مخصصة لمالك الموقع لإدارة المشاريع والبيانات الشخصية بسهولة.</p>
+        <form id="admin-pin-form" class="admin-pin-form">
+          <input type="password" id="admin-pin-input" class="form-input pin-input" maxlength="10" placeholder="••••" required autofocus>
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="pi pi-key"></i>
+            <span data-i18n="admin.unlock">فتح لوحة التحكم</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin Authenticated Content View -->
+      <div class="admin-content-view" id="admin-content-view" style="display: none;">
+        <!-- Admin Navigation Tabs -->
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="tab-profile"><i class="pi pi-user"></i> <span data-i18n="admin.tabProfile">البيانات الشخصية</span></button>
+          <button class="admin-tab" data-tab="tab-projects"><i class="pi pi-th-large"></i> <span data-i18n="admin.tabProjects">المشاريع والروابط</span></button>
+          <button class="admin-tab" data-tab="tab-experiences"><i class="pi pi-briefcase"></i> <span data-i18n="admin.tabExp">الخبرات المهنية</span></button>
+          <button class="admin-tab" data-tab="tab-security"><i class="pi pi-shield"></i> <span data-i18n="admin.tabSecurity">تغيير الـ PIN</span></button>
+        </div>
+
+        <!-- Tab 1: Profile Settings -->
+        <div class="admin-tab-pane active" id="tab-profile">
+          <form id="form-admin-profile">
+            <div class="form-row">
+              <div class="form-group">
+                <label>الاسم بالعربية</label>
+                <input type="text" id="adm-nameAr" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label>Name in English</label>
+                <input type="text" id="adm-nameEn" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>المسمى الوظيفي (عربي)</label>
+                <input type="text" id="adm-titleAr" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label>Professional Title (EN)</label>
+                <input type="text" id="adm-titleEn" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>النبذة التعريفية (عربي)</label>
+              <textarea id="adm-bioAr" class="form-input" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Bio (English)</label>
+              <textarea id="adm-bioEn" class="form-input" rows="3"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" id="adm-email" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>رقم الواتساب (مثال: +966500000000)</label>
+                <input type="text" id="adm-phone" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>رابط GitHub</label>
+                <input type="url" id="adm-github" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>رابط LinkedIn</label>
+                <input type="url" id="adm-linkedin" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>رابط الـ CV للتحميل</label>
+                <input type="text" id="adm-resumeUrl" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>رابط صورة البروفايل (أو ارفع ملفاً أدناه)</label>
+                <input type="text" id="adm-avatarUrl" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>رفع صورة بروفايل جديدة من جهازك</label>
+              <input type="file" id="adm-avatarFile" accept="image/*" class="form-input">
+            </div>
+
+            <button type="submit" class="btn btn-primary"><i class="pi pi-check"></i> حفظ التعديلات الشخصية</button>
+          </form>
+        </div>
+
+        <!-- Tab 2: Projects Management -->
+        <div class="admin-tab-pane" id="tab-projects">
+          <div class="pane-action-bar">
+            <h4>إدارة المشاريع وروابط الأنظمة الحية</h4>
+            <button class="btn btn-primary btn-sm" id="btn-add-new-project"><i class="pi pi-plus"></i> إضافة مشروع جديد</button>
+          </div>
+          <div class="admin-projects-list" id="admin-projects-list">
+            <!-- Rendered from JS -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Experiences Management -->
+        <div class="admin-tab-pane" id="tab-experiences">
+          <div class="pane-action-bar">
+            <h4>إدارة الخبرات وسجل العمل</h4>
+            <button class="btn btn-primary btn-sm" id="btn-add-new-exp"><i class="pi pi-plus"></i> إضافة خبرة جديدة</button>
+          </div>
+          <div class="admin-exp-list" id="admin-exp-list">
+            <!-- Rendered from JS -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Security & PIN -->
+        <div class="admin-tab-pane" id="tab-security">
+          <h4>تغيير رمز الأمان (Admin PIN)</h4>
+          <form id="form-change-pin" style="max-width: 400px; margin-top: 15px;">
+            <div class="form-group">
+              <label>رمز الأمان الجديد (4 أرقام أو أكثر)</label>
+              <input type="password" id="adm-new-pin" class="form-input" required minlength="4" placeholder="••••">
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="pi pi-lock"></i> حفظ الرمز الجديد</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

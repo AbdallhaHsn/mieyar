@@ -1,0 +1,141 @@
+{
+  "profile": {
+    "nameAr": "عبدالله الصويعي",
+    "nameEn": "Abdalla Al-Swe",
+    "titleAr": "مهندس برمجيات متكامل وخبير معمارية نظم المؤسسات (ERP Architect)",
+    "titleEn": "Senior Full-Stack Engineer & Enterprise ERP Architect",
+    "bioAr": "مهندس برمجيات متخصص في بناء وتصميم المنصات المحاسبية الكبرى وحلول الفوترة الإلكترونية المعتمدة (ZATCA - المرحلة الثانية). أمتلك خبرة عميقة في هندسة المعماريات الحديثة (Modular Monoliths)، وبناء أنظمة تخدم بيئات الأعمال عالية الاعتمادية والسرعة.",
+    "bioEn": "Passionate software engineer specializing in large-scale ERP platforms, advanced financial engines, and ZATCA Phase 2 E-Invoicing cryptographic compliance. Dedicated to crafting modular, high-throughput architectures and responsive web experiences.",
+    "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+    "email": "contact@abdallaswe.tech",
+    "phone": "+966 50 000 0000",
+    "locationAr": "الرياض، المملكة العربية السعودية",
+    "locationEn": "Riyadh, Saudi Arabia",
+    "githubUrl": "https://github.com",
+    "linkedinUrl": "https://linkedin.com",
+    "whatsappUrl": "https://wa.me/966500000000",
+    "resumeUrl": "#",
+    "statusBadgeAr": "متاح للمشاريع والاستشارات التقنية",
+    "statusBadgeEn": "Available for Projects & Consulting",
+    "adminPin": "2026"
+  },
+  "stats": [
+    { "id": 1, "value": "5+", "labelAr": "سنوات خبرة", "labelEn": "Years Experience" },
+    { "id": 2, "value": "15+", "labelAr": "مشروع منجز", "labelEn": "Delivered Systems" },
+    { "id": 3, "value": "4", "labelAr": "منصات ERP كبرى", "labelEn": "Enterprise ERPs" },
+    { "id": 4, "value": "100%", "labelAr": "رضا الشركاء والعملاء", "labelEn": "Client Satisfaction" }
+  ],
+  "projects": [
+    {
+      "id": "alrobban-erp",
+      "category": "erp",
+      "featured": true,
+      "icon": "pi-chart-line",
+      "titleAr": "نظام الربان ERP المحاسبي المتكامل وفوترة ZATCA",
+      "titleEn": "Al-Roban Enterprise ERP & ZATCA Engine",
+      "descriptionAr": "منصة ERP عملاقة مبنية بنظام Modular Monolith تغطي الحسابات العامة، قيود اليومية، ميزان المراجعة، الفواتير الضريبية، والربط الحي مع هيئة الزكاة والضريبة والجمارك (المرحلة الثانية).",
+      "descriptionEn": "Enterprise ERP platform featuring General Ledger, Journal Entries, Trial Balance, POS, and certified ZATCA Phase 2 E-Invoicing cryptographic integration.",
+      "tags": [".NET 8", "Angular 19", "SQL Server 2022", "ZATCA Phase 2", "Redis", "Docker"],
+      "liveUrl": "https://erp.abdallaswe.tech",
+      "repoUrl": "",
+      "badgeAr": "يعمل حياً على السيرفر",
+      "badgeEn": "Live on Production"
+    },
+    {
+      "id": "procurement-inventory",
+      "category": "erp",
+      "featured": true,
+      "icon": "pi-box",
+      "titleAr": "منظومة المشتريات والمخازن وسلاسل الإمداد الذكية",
+      "titleEn": "Smart Procurement & Multi-Warehouse Hub",
+      "descriptionAr": "إدارة دورة المشتريات التراكمية (طلبات، عروض أسعار، أوامر شراء، وإذن استلام بضاعة GRN) مع تتبع المخزون اللحظي وسياسات التكلفة المحاسبية المعتمدة.",
+      "descriptionEn": "End-to-end procurement workflow, multi-branch stock movements, weighted average cost accounting, and supplier management.",
+      "tags": [".NET 8", "Angular 19", "PrimeNG", "PostgreSQL", "SignalR"],
+      "liveUrl": "https://erp.abdallaswe.tech",
+      "repoUrl": "",
+      "badgeAr": "متكامل مع الربان",
+      "badgeEn": "Integrated in Al-Roban"
+    },
+    {
+      "id": "projects-contracting",
+      "category": "erp",
+      "featured": true,
+      "icon": "pi-building",
+      "titleAr": "نظام إدارة مشاريع المقاولات والمستخلصات الدورية",
+      "titleEn": "Contracting Projects & Progress Billings Hub",
+      "descriptionAr": "إدارة كاملة لعقود المقاولات، احتساب نسب الإنجاز التراكمية، إصدار المستخلصات المعتمدة، وتتبع خطابات الضمان البنكية الابتدائية والنهائية ومخططات جانت.",
+      "descriptionEn": "Comprehensive contracting hub for milestone progress billings, bank guarantees lifecycle, timesheets, and Gantt charts.",
+      "tags": [".NET 8", "Angular 19", "AG Grid", "Chart.js"],
+      "liveUrl": "https://erp.abdallaswe.tech",
+      "repoUrl": "",
+      "badgeAr": "حل هندسي متقدم",
+      "badgeEn": "Advanced Solution"
+    },
+    {
+      "id": "hr-mudad-payroll",
+      "category": "erp",
+      "featured": false,
+      "icon": "pi-users",
+      "titleAr": "نظام الموارد البشرية ومسير الرواتب (حماية الأجور مدد)",
+      "titleEn": "HR & Mudad WPS Compliant Payroll Platform",
+      "descriptionAr": "إدارة شؤون الموظفين، سجل العهد، السلف والقروض، واحتساب الرواتب مع توليد ملفات حماية الأجور (WPS) المتوافقة كلياً مع منصة مدد والتأمينات الاجتماعية.",
+      "descriptionEn": "Employee records, financial custody, automated deductions/allowances, and Saudi Mudad WPS compliant payroll exports.",
+      "tags": [".NET 8", "Angular 19", "Mudad WPS", "GOSI"],
+      "liveUrl": "https://erp.abdallaswe.tech",
+      "repoUrl": "",
+      "badgeAr": "معتمد ومطابق",
+      "badgeEn": "Fully Compliant"
+    }
+  ],
+  "experiences": [
+    {
+      "id": "exp-1",
+      "companyAr": "سمارت أوشن للحلول البرمجية المتطورة",
+      "companyEn": "Smart Ocean Software Solutions",
+      "roleAr": "كبير مهندسي البرمجيات وقائد تقني (Tech Lead)",
+      "roleEn": "Senior Software Architect & Tech Lead",
+      "periodAr": "2023 - حتى الآن",
+      "periodEn": "2023 - Present",
+      "responsibilitiesAr": "قيادة وتصميم المعمارية التقنية لنظام الربان ERP المحاسبي، إدارة عمليات الربط والتكامل مع منصة فاتورة (ZATCA)، والإشراف على فرق التطوير وضمان أعلى معايير الأداء والأمان المحاسبي.",
+      "responsibilitiesEn": "Spearheaded technical architecture of Al-Roban ERP, led ZATCA Phase 2 Fatoora onboarding and ECDSA cryptographic signing, and orchestrated full-stack agile delivery."
+    },
+    {
+      "id": "exp-2",
+      "companyAr": "حلول الأعمال البرمجية المتكاملة",
+      "companyEn": "Enterprise Business Software",
+      "roleAr": "مطور Full-Stack رئيسي (.NET & Angular)",
+      "roleEn": "Lead Full-Stack Developer",
+      "periodAr": "2021 - 2023",
+      "periodEn": "2021 - 2023",
+      "responsibilitiesAr": "تطوير وحدات دفتر الأستاذ العام، شجرة الحسابات المرنة، محركات الدفع الإلكتروني، وتصميم واجهات ويب تفاعلية حديثة لمعالجة آلاف المعاملات اليومية.",
+      "responsibilitiesEn": "Engineered general ledger modules, flexible chart of accounts trees, payment gateways, and created high-performance responsive web dashboards."
+    }
+  ],
+  "skills": [
+    {
+      "categoryAr": "هندسة الواجهات الخلفية (Backend)",
+      "categoryEn": "Backend Architecture",
+      "items": [".NET 8 / C#", "ASP.NET Core Web API", "Node.js & Express", "Modular Monolith", "CQRS / MediatR", "SignalR WebSockets"]
+    },
+    {
+      "categoryAr": "الواجهات وتجربة المستخدم (Frontend)",
+      "categoryEn": "Frontend & UX Design",
+      "items": ["Angular 19 (Standalone)", "TypeScript", "PrimeNG (Aura)", "AG Grid (DataTables)", "Modern Vanilla CSS", "Responsive UI/UX"]
+    },
+    {
+      "categoryAr": "قواعد البيانات والتخزين المؤقت",
+      "categoryEn": "Databases & Caching",
+      "items": ["Microsoft SQL Server 2022", "PostgreSQL", "Redis Cache", "Dapper (High Perf)", "Entity Framework Core 8"]
+    },
+    {
+      "categoryAr": "الامتثال والأنظمة الحكومية",
+      "categoryEn": "Enterprise Compliance & Crypto",
+      "items": ["ZATCA Phase 2 (Fatoora)", "ECDSA secp256k1 & SHA256", "UBL 2.1 XML Invoices", "Mudad WPS Payroll", "Multi-Tenancy Security"]
+    },
+    {
+      "categoryAr": "السحابة والتشغيل (DevOps)",
+      "categoryEn": "DevOps & Cloud",
+      "items": ["Docker & Docker Compose", "Linux (Ubuntu Server)", "Nginx Reverse Proxy", "Git Workflows", "Let's Encrypt SSL/TLS"]
+    }
+  ]
+}
