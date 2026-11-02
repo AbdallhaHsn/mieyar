@@ -102,13 +102,13 @@ const i18n = {
 };
 
 let currentLang = localStorage.getItem('portfolio_lang') || 'ar';
-let currentTheme = localStorage.getItem('portfolio_theme') || 'dark';
+let currentTheme = 'light';
 let portfolioData = null;
 let currentProjectFilter = 'all';
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
-  applyTheme(currentTheme);
+  applyTheme('light');
   applyLanguage(currentLang);
   fetchPortfolioData();
   setupEventListeners();
@@ -117,19 +117,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // Setup UI Listeners
 function setupEventListeners() {
   // Lang Toggle
-  document.getElementById('btn-lang-toggle').addEventListener('click', () => {
-    currentLang = currentLang === 'ar' ? 'en' : 'ar';
-    localStorage.setItem('portfolio_lang', currentLang);
-    applyLanguage(currentLang);
-    if (portfolioData) renderAll();
-  });
+  const langBtn = document.getElementById('btn-lang-toggle');
+  if (langBtn) {
+    langBtn.addEventListener('click', () => {
+      currentLang = currentLang === 'ar' ? 'en' : 'ar';
+      localStorage.setItem('portfolio_lang', currentLang);
+      applyLanguage(currentLang);
+      if (portfolioData) renderAll();
+    });
+  }
 
-  // Theme Toggle
-  document.getElementById('btn-theme-toggle').addEventListener('click', () => {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('portfolio_theme', currentTheme);
-    applyTheme(currentTheme);
-  });
+  // Theme Toggle (Optional)
+  const themeBtn = document.getElementById('btn-theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      applyTheme('light');
+    });
+  }
 
   // Mobile Drawer
   const mobileDrawer = document.getElementById('mobile-drawer');
