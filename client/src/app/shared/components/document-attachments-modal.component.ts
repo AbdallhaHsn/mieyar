@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, signal, inject } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,7 +20,7 @@ export interface DocumentAttachmentDto {
 @Component({
   selector: 'app-document-attachments-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe, TranslatePipe],
   template: `
     <div class="modal-backdrop" *ngIf="isOpen" (click)="onClose()">
       <div class="modal-box" (click)="$event.stopPropagation()" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
@@ -31,9 +32,9 @@ export interface DocumentAttachmentDto {
               <i class="pi pi-paperclip"></i>
             </div>
             <div>
-              <h3>{{ langService.currentLang() === 'ar' ? 'المستندات والمرفقات المؤيدة' : 'Supporting Documents & Attachments' }}</h3>
+              <h3>{{ 'common.attachments.supportingDocumentsAttachments' | translate }}</h3>
               <p class="subtitle">
-                {{ langService.currentLang() === 'ar' ? 'المرجع:' : 'Reference:' }} 
+                {{ 'common.attachments.reference' | translate }} 
                 <strong>{{ entityTitle || entityNumber || entityId }}</strong>
                 ({{ entityType }})
               </p>
@@ -53,42 +54,42 @@ export interface DocumentAttachmentDto {
               <input 
                 type="text" 
                 [(ngModel)]="uploadDescription" 
-                [placeholder]="langService.currentLang() === 'ar' ? 'وصف المستند (مثال: صورة الفاتورة الضريبية، العقد...)' : 'Document description...'" 
+                [placeholder]="('common.attachments.documentDescription' | translate)" 
                 class="form-control desc-input" />
               
               <button class="btn-select-file" (click)="fileInput.click()" [disabled]="isUploading()">
                 <i class="pi pi-file-arrow-up"></i>
-                <span>{{ selectedFile ? selectedFile.name : (langService.currentLang() === 'ar' ? 'اختر ملفاً' : 'Choose File') }}</span>
+                <span>{{ selectedFile ? selectedFile.name : ('common.attachments.chooseFile' | translate) }}</span>
               </button>
 
               <button class="btn-upload" (click)="uploadFile()" [disabled]="!selectedFile || isUploading()">
                 <i class="pi pi-upload" [class.pi-spin]="isUploading()"></i>
-                <span>{{ isUploading() ? (langService.currentLang() === 'ar' ? 'جارٍ الرفع...' : 'Uploading...') : (langService.currentLang() === 'ar' ? 'رفع المستند' : 'Upload') }}</span>
+                <span>{{ isUploading() ? ('common.attachments.uploading' | translate) : ('common.attachments.upload' | translate) }}</span>
               </button>
             </div>
-            <small class="upload-hint">{{ langService.currentLang() === 'ar' ? 'الصيغ المدعومة: PDF, JPG, PNG, Excel (بحد أقصى 20 ميجابايت)' : 'Supported: PDF, JPG, PNG, Excel (Max 20MB)' }}</small>
+            <small class="upload-hint">{{ 'common.attachments.supportedPdfJpgPngExcel' | translate }}</small>
           </div>
 
           <!-- Attachments List Table -->
           <div class="attachments-list">
             <div *ngIf="isLoading()" class="loading-state">
               <i class="pi pi-spin pi-spinner text-emerald text-2xl"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'جارٍ تحميل المرفقات...' : 'Loading attachments...' }}</span>
+              <span>{{ 'common.attachments.loadingAttachments' | translate }}</span>
             </div>
 
             <div *ngIf="!isLoading() && attachments().length === 0" class="empty-state">
               <i class="pi pi-folder-open"></i>
-              <p>{{ langService.currentLang() === 'ar' ? 'لا توجد مستندات مرفقة مع هذه الحركة حتى الآن' : 'No attachments found for this transaction' }}</p>
+              <p>{{ 'common.attachments.noAttachmentsFoundForThis' | translate }}</p>
             </div>
 
             <table *ngIf="!isLoading() && attachments().length > 0" class="docs-table">
               <thead>
                 <tr>
-                  <th>{{ langService.currentLang() === 'ar' ? 'اسم الملف' : 'File Name' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'الوصف' : 'Description' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'الحجم' : 'Size' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'تاريخ الرفع' : 'Uploaded At' }}</th>
-                  <th class="text-center">{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+                  <th>{{ 'common.attachments.fileName' | translate }}</th>
+                  <th>{{ 'common.attachments.description' | translate }}</th>
+                  <th>{{ 'common.attachments.size' | translate }}</th>
+                  <th>{{ 'common.attachments.uploadedAt' | translate }}</th>
+                  <th class="text-center">{{ 'common.attachments.actions' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,10 +104,10 @@ export interface DocumentAttachmentDto {
                   <td>{{ (doc.fileSize / 1024) | number:'1.1-1' }} KB</td>
                   <td>{{ doc.uploadedAt | date:'yyyy-MM-dd HH:mm' }}</td>
                   <td class="text-center actions-cell">
-                    <button class="btn-icon download" (click)="downloadDoc(doc)" [title]="langService.currentLang() === 'ar' ? 'تنزيل الملف' : 'Download'">
+                    <button class="btn-icon download" (click)="downloadDoc(doc)" [title]="('common.attachments.download' | translate)">
                       <i class="pi pi-download"></i>
                     </button>
-                    <button class="btn-icon delete" (click)="deleteDoc(doc)" [title]="langService.currentLang() === 'ar' ? 'حذف الملف' : 'Delete'">
+                    <button class="btn-icon delete" (click)="deleteDoc(doc)" [title]="('common.attachments.delete' | translate)">
                       <i class="pi pi-trash"></i>
                     </button>
                   </td>
@@ -120,7 +121,7 @@ export interface DocumentAttachmentDto {
         <!-- Modal Footer -->
         <div class="modal-footer">
           <button class="btn-close" (click)="onClose()">
-            {{ langService.currentLang() === 'ar' ? 'إغلاق النافذة' : 'Close' }}
+            {{ 'common.attachments.close' | translate }}
           </button>
         </div>
 
@@ -208,6 +209,8 @@ export interface DocumentAttachmentDto {
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .upload-strip {
@@ -357,6 +360,7 @@ export interface DocumentAttachmentDto {
       border-top: 1px solid #E2E8F0;
       display: flex;
       justify-content: flex-end;
+      flex-shrink: 0;
     }
 
     .btn-close {
@@ -444,12 +448,12 @@ export class DocumentAttachmentsModalComponent implements OnInit, OnChanges {
         this.isUploading.set(false);
         this.selectedFile = null;
         this.uploadDescription = '';
-        Swal.fire({ icon: 'success', title: 'تم الرفع', text: 'تم إرفاق المستند بنجاح.', timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: this.langService.t('common.attachments.uploadedSuccess'), text: this.langService.t('common.attachments.uploadedSuccessMsg'), timer: 1500, showConfirmButton: false });
         this.loadAttachments();
       },
       error: (err) => {
         this.isUploading.set(false);
-        Swal.fire({ icon: 'error', title: 'خطأ في الرفع', text: err?.error?.description || 'فشل رفع المستند' });
+        Swal.fire({ icon: 'error', title: this.langService.t('common.attachments.uploadError'), text: err?.error?.description || this.langService.t('common.attachments.uploadErrorDefault') });
       }
     });
   }
@@ -460,20 +464,20 @@ export class DocumentAttachmentsModalComponent implements OnInit, OnChanges {
 
   deleteDoc(doc: DocumentAttachmentDto) {
     Swal.fire({
-      title: 'حذف المستند المرفق؟',
+      title: this.langService.t('common.attachments.deleteConfirmTitle'),
       text: doc.fileName,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'تأكيد الحذف',
-      cancelButtonText: 'إلغاء'
+      confirmButtonText: this.langService.t('common.attachments.deleteConfirmBtn'),
+      cancelButtonText: this.langService.t('common.cancel')
     }).then(result => {
       if (result.isConfirmed) {
         this.http.delete(`/api/documents/${doc.id}`).subscribe({
           next: () => {
-            Swal.fire({ icon: 'success', title: 'تم الحذف', text: 'تم حذف المستند بنجاح.', timer: 1500, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: this.langService.t('common.attachments.deletedSuccess'), text: this.langService.t('common.attachments.deletedSuccessMsg'), timer: 1500, showConfirmButton: false });
             this.loadAttachments();
           },
-          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل حذف المستند' })
+          error: (err) => Swal.fire({ icon: 'error', title: this.langService.t('common.attachments.deleteError'), text: err?.error?.description || this.langService.t('common.attachments.deleteErrorDefault') })
         });
       }
     });

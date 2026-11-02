@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using AlRobban.Modules.IdentityAndAccess.Application.Commands.Login;
 using AlRobban.Modules.IdentityAndAccess.Application.Services;
+using AlRobban.WebAPI.Security;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlRobban.WebAPI.Controllers;
@@ -17,6 +19,8 @@ public class AuthController : ControllerBase
         _mediator = mediator;
     }
 
+    [AllowAnonymous]
+    [SkipTenantEnforcement]
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

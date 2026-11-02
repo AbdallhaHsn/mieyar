@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -13,7 +14,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
   imports: [
     CommonModule, 
     FloatingStickyNoteComponent
-  ],
+  , TranslatePipe],
   template: `
     <header class="erp-topbar">
       <!-- Search Input -->
@@ -21,7 +22,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
         <i class="pi pi-search search-icon"></i>
         <input 
           type="text" 
-          [placeholder]="langService.currentLang() === 'ar' ? 'بحث سريع في الحسابات، القيود... (Ctrl + K)' : 'Search accounts, entries... (Ctrl + K)'" 
+          [placeholder]="('layout.topbar.searchAccountsEntriesCtrlK' | translate)" 
         />
       </div>
 
@@ -34,7 +35,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
           class="topbar-tool-btn" 
           [class.active]="isNotesActive()"
           (click)="openNotesPage()"
-          [title]="langService.currentLang() === 'ar' ? 'صفحة الملاحظات اللاصقة الخاصة (Sticky Notes) - خاصة بحسابك فقط' : 'My Private Sticky Notes'"
+          [title]="('layout.topbar.myPrivateStickyNotes' | translate)"
         >
           <div class="tool-icon-wrapper">
             <i class="pi pi-bookmark text-amber"></i>
@@ -42,7 +43,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
               {{ notesService.totalCount() }}
             </span>
           </div>
-          <span class="tool-label">{{ langService.currentLang() === 'ar' ? 'ملاحظاتي' : 'Notes' }}</span>
+          <span class="tool-label">{{ 'layout.topbar.notes' | translate }}</span>
         </button>
 
         <!-- Personal Feature 2: Calendar & Agenda (التقويم وأجندة المهام والمناسبات) -->
@@ -51,7 +52,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
           class="topbar-tool-btn" 
           [class.active]="isCalendarActive()"
           (click)="openCalendarPage()"
-          [title]="langService.currentLang() === 'ar' ? 'صفحة التقويم وأجندة تنظيم العمل والمناسبات - خاصة بحسابك فقط' : 'Calendar & Work Agenda'"
+          [title]="('layout.topbar.calendarWorkAgenda' | translate)"
         >
           <div class="tool-icon-wrapper">
             <i class="pi pi-calendar text-emerald"></i>
@@ -59,21 +60,21 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
               {{ calendarService.pendingTodayCount() }}
             </span>
           </div>
-          <span class="tool-label">{{ langService.currentLang() === 'ar' ? 'التقويم' : 'Calendar' }}</span>
+          <span class="tool-label">{{ 'layout.topbar.calendar' | translate }}</span>
         </button>
 
         <!-- Language Switcher in Navbar -->
         <button 
           class="lang-btn" 
           (click)="langService.toggleLanguage()"
-          [title]="langService.currentLang() === 'ar' ? 'التحويل إلى اللغة الإنجليزية (English)' : 'Switch to Arabic (العربية)'"
+          [title]="('layout.topbar.switchToArabic' | translate)"
         >
           <svg class="lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="2" y1="12" x2="22" y2="12"></line>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
           </svg>
-          <span class="lang-text">{{ langService.currentLang() === 'ar' ? 'English' : 'العربية' }}</span>
+          <span class="lang-text">{{ 'layout.topbar.label' | translate }}</span>
         </button>
 
         <!-- User Profile -->
@@ -84,7 +85,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
           <span class="user-name">
             {{ langService.currentLang() === 'ar' ? authService.currentUser()?.fullNameAr : authService.currentUser()?.fullNameEn }}
           </span>
-          <button class="logout-btn" (click)="authService.logout()" title="خروج">
+          <button class="logout-btn" (click)="authService.logout()" [title]="'ui.topbar.a8bdc0' | translate">
             <i class="pi pi-sign-out"></i>
           </button>
         </div>

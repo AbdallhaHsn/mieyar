@@ -21,7 +21,10 @@ public record CreateVoucherCommand(
     string? ReferenceNumber,
     Guid? FiscalPeriodId,
     List<CreateVoucherLineRequest> Lines,
-    bool AutoPost = false) : IRequest<Result<VoucherDto>>;
+    bool AutoPost = false) : IRequest<Result<VoucherDto>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class CreateVoucherCommandHandler : IRequestHandler<CreateVoucherCommand, Result<VoucherDto>>
 {

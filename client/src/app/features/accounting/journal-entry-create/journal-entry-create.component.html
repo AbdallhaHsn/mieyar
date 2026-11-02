@@ -3,10 +3,10 @@
   <!-- Top Navigation & Status Bar -->
   <header class="create-header">
     <div class="header-left">
-      <button type="button" class="btn-back" (click)="cancel()" title="العودة">
+      <button type="button" class="btn-back" (click)="cancel()" [title]="'ui.journalEntryCreate.5e987a' | translate">
         <i class="pi pi-arrow-right" *ngIf="langService.currentLang() === 'ar'"></i>
         <i class="pi pi-arrow-left" *ngIf="langService.currentLang() !== 'ar'"></i>
-        <span>{{ langService.currentLang() === 'ar' ? 'العودة للقيود' : 'Back to Entries' }}</span>
+        <span>{{ 'accounting.journal.create.ui.backToEntries' | translate }}</span>
       </button>
 
       <div class="header-title-box">
@@ -15,11 +15,11 @@
         </div>
         <div>
           <h1 class="page-title">
-            {{ langService.currentLang() === 'ar' ? 'إنشاء قيد يومية عامة فائق السرعة' : 'High-Speed Journal Entry' }}
+            {{ 'accounting.journal.create.ui.highspeedJournalEntry' | translate }}
           </h1>
           <span class="compliance-pill">
             <i class="pi pi-shield"></i>
-            {{ langService.currentLang() === 'ar' ? 'معتمد وفق معايير المحاسبة SOCPA & IFRS' : 'SOCPA & IFRS Double-Entry Engine' }}
+            {{ 'accounting.journal.create.ui.socpaIfrsDoubleentryEngine' | translate }}
           </span>
         </div>
       </div>
@@ -31,7 +31,7 @@
       <div class="status-chip" [class.online]="isOnline()" [class.offline]="!isOnline()">
         <span class="status-dot"></span>
         <span class="status-text">
-          {{ isOnline() ? (langService.currentLang() === 'ar' ? 'متصل بالسيرفر' : 'Online') : (langService.currentLang() === 'ar' ? 'وضع عدم الاتصال (Offline)' : 'Offline Mode') }}
+          {{ isOnline() ? ('accounting.journal.create.ui.online' | translate) : ('accounting.journal.create.ui.offlineMode' | translate) }}
         </span>
       </div>
 
@@ -41,22 +41,22 @@
         <i class="pi pi-check-circle" *ngIf="autoSaveStatus() === 'saved'"></i>
         <i class="pi pi-save" *ngIf="autoSaveStatus() === 'idle'"></i>
         <i class="pi pi-cloud-offline" *ngIf="autoSaveStatus() === 'offline'"></i>
-        <span *ngIf="autoSaveStatus() === 'saving'">{{ langService.currentLang() === 'ar' ? 'جاري الحفظ التلقائي...' : 'Saving...' }}</span>
-        <span *ngIf="autoSaveStatus() === 'saved'">{{ langService.currentLang() === 'ar' ? 'محفوظ محلياً (' + lastSavedTime() + ')' : 'Auto-saved (' + lastSavedTime() + ')' }}</span>
-        <span *ngIf="autoSaveStatus() === 'offline'">{{ langService.currentLang() === 'ar' ? 'محفوظ في المتصفح بأمان' : 'Safely Saved Locally' }}</span>
-        <span *ngIf="autoSaveStatus() === 'idle'">{{ langService.currentLang() === 'ar' ? 'حفظ ذكي مستمر' : 'Smart Auto-Save' }}</span>
+        <span *ngIf="autoSaveStatus() === 'saving'">{{ 'accounting.journal.create.ui.saving' | translate }}</span>
+        <span *ngIf="autoSaveStatus() === 'saved'">{{ ('ui.journalEntryCreate.7ffa59' | translate) + lastSavedTime() + ')' }}</span>
+        <span *ngIf="autoSaveStatus() === 'offline'">{{ 'accounting.journal.create.ui.safelySavedLocally' | translate }}</span>
+        <span *ngIf="autoSaveStatus() === 'idle'">{{ 'accounting.journal.create.ui.smartAutosave' | translate }}</span>
       </div>
 
       <!-- Quick Action Buttons -->
-      <button type="button" class="btn-icon" (click)="showShortcutsModal.set(true)" title="اختصارات لوحة المفاتيح">
+      <button type="button" class="btn-icon" (click)="showShortcutsModal.set(true)" [title]="'accounting.journal.create.shortcuts' | translate">
         <i class="pi pi-keyboard"></i>
       </button>
 
-      <button type="button" class="btn-icon" (click)="exportDraftToJson()" title="تصدير نسخة احتياطية من القيد">
+      <button type="button" class="btn-icon" (click)="exportDraftToJson()" [title]="'accounting.journal.create.exportDraft' | translate">
         <i class="pi pi-download"></i>
       </button>
 
-      <button type="button" class="btn-icon text-danger" (click)="discardRecoveredDraft()" title="تفريغ المسودة والبدء بقيد فارغ">
+      <button type="button" class="btn-icon text-danger" (click)="discardRecoveredDraft()" [title]="'accounting.journal.create.discardDraft' | translate">
         <i class="pi pi-trash"></i>
       </button>
     </div>
@@ -69,22 +69,20 @@
         <i class="pi pi-bolt"></i>
       </div>
       <div class="banner-text">
-        <strong>{{ langService.currentLang() === 'ar' ? 'تم استرجاع مسودة قيد سابقة تلقائياً!' : 'Previous Journal Draft Auto-Recovered!' }}</strong>
+        <strong>{{ 'accounting.journal.create.ui.previousJournalDraftAutorecovered' | translate }}</strong>
         <p>
-          {{ langService.currentLang() === 'ar' 
-            ? 'تم العثور على قيد محفوظ يحتوي على (' + recoveredDraftInfo()?.count + ') أسطر من جلسة سابقة (محفوظ بتاريخ ' + recoveredDraftInfo()?.time + '). تم استرجاع كل البيانات لحمايتك من الضياع.' 
-            : 'Found an unsaved draft with ' + recoveredDraftInfo()?.count + ' lines from session at ' + recoveredDraftInfo()?.time + '. Restored safely.' }}
+          {{ ('ui.journalEntryCreate.592f73' | translate) + recoveredDraftInfo()?.count + ' lines from session at ' + recoveredDraftInfo()?.time + '. Restored safely.' }}
         </p>
       </div>
     </div>
     <div class="banner-actions">
       <button type="button" class="btn-banner-action" (click)="dismissRecoveryBanner()">
         <i class="pi pi-check"></i>
-        <span>{{ langService.currentLang() === 'ar' ? 'متابعة التحرير' : 'Continue Editing' }}</span>
+        <span>{{ 'accounting.journal.create.ui.continueEditing' | translate }}</span>
       </button>
       <button type="button" class="btn-banner-dismiss" (click)="discardRecoveredDraft()">
         <i class="pi pi-times"></i>
-        <span>{{ langService.currentLang() === 'ar' ? 'مسح المسودة وبدء جديد' : 'Discard Draft' }}</span>
+        <span>{{ 'accounting.journal.create.ui.discardDraft' | translate }}</span>
       </button>
     </div>
   </div>
@@ -93,8 +91,8 @@
   <div class="offline-banner" *ngIf="!isOnline()">
     <div class="banner-icon"><i class="pi pi-wifi text-amber"></i></div>
     <div class="banner-text">
-      <strong>{{ langService.currentLang() === 'ar' ? 'أنت تعمل حالياً بدون اتصال بالإنترنت (Offline Mode)' : 'Working in Offline Mode' }}</strong>
-      <span>{{ langService.currentLang() === 'ar' ? 'نظام الحفظ الذكي يعمل بكفاءة 100% ويقوم بتخزين كل رقم وسطر تدخله في ذاكرة المتصفح المحلية. يمكنك إكمال القيد بأمان وسيتاح الترحيل فور عودة الإنترنت.' : 'All rows and amounts are continuously preserved in local storage. Posting will resume once reconnected.' }}</span>
+      <strong>{{ 'accounting.journal.create.ui.workingInOfflineMode' | translate }}</strong>
+      <span>{{ 'accounting.journal.create.ui.allRowsAndAmountsAre' | translate }}</span>
     </div>
   </div>
 
@@ -106,7 +104,7 @@
       <div class="card-header-strip">
         <div class="section-title">
           <i class="pi pi-file-edit text-emerald"></i>
-          <h3>{{ langService.currentLang() === 'ar' ? 'بيانات وترويسة القيد المحاسبي' : 'Journal Entry Header Details' }}</h3>
+          <h3>{{ 'accounting.journal.create.ui.journalEntryHeaderDetails' | translate }}</h3>
         </div>
         <div class="entry-type-pills">
           <button 
@@ -114,28 +112,28 @@
             class="type-pill" 
             [class.active]="entryModel.entryType === 1" 
             (click)="entryModel.entryType = 1; triggerAutoSave()">
-            {{ langService.currentLang() === 'ar' ? 'قيد يومية عادي' : 'Daily Entry' }}
+            {{ 'accounting.journal.create.ui.dailyEntry' | translate }}
           </button>
           <button 
             type="button" 
             class="type-pill" 
             [class.active]="entryModel.entryType === 2" 
             (click)="entryModel.entryType = 2; triggerAutoSave()">
-            {{ langService.currentLang() === 'ar' ? 'قيد افتتاحي' : 'Opening Entry' }}
+            {{ 'accounting.journal.create.ui.openingEntry' | translate }}
           </button>
           <button 
             type="button" 
             class="type-pill" 
             [class.active]="entryModel.entryType === 3" 
             (click)="entryModel.entryType = 3; triggerAutoSave()">
-            {{ langService.currentLang() === 'ar' ? 'تسوية جردية' : 'Adjustment' }}
+            {{ 'accounting.journal.create.ui.adjustment' | translate }}
           </button>
           <button 
             type="button" 
             class="type-pill" 
             [class.active]="entryModel.entryType === 4" 
             (click)="entryModel.entryType = 4; triggerAutoSave()">
-            {{ langService.currentLang() === 'ar' ? 'إقفال سنوي' : 'Closing Entry' }}
+            {{ 'accounting.journal.create.ui.closingEntry' | translate }}
           </button>
         </div>
       </div>
@@ -143,7 +141,7 @@
       <div class="form-grid">
         <!-- Field 1: Entry Date -->
         <div class="field-box">
-          <label>{{ langService.currentLang() === 'ar' ? 'تاريخ القيد:' : 'Entry Date:' }} <span class="required">*</span></label>
+          <label>{{ 'accounting.journal.create.ui.entryDate' | translate }} <span class="required">*</span></label>
           <div class="input-with-icon">
             <i class="pi pi-calendar"></i>
             <input type="date" class="form-control" [(ngModel)]="entryModel.entryDate" (ngModelChange)="triggerAutoSave()" />
@@ -152,7 +150,7 @@
 
         <!-- Field 2: Reference Number -->
         <div class="field-box">
-          <label>{{ langService.currentLang() === 'ar' ? 'رقم المرجع / السند:' : 'Reference No:' }}</label>
+          <label>{{ 'accounting.journal.create.ui.referenceNo' | translate }}</label>
           <div class="input-with-icon">
             <i class="pi pi-hashtag"></i>
             <input 
@@ -160,44 +158,44 @@
               class="form-control" 
               [(ngModel)]="entryModel.referenceNumber" 
               (ngModelChange)="triggerAutoSave()"
-              [placeholder]="langService.currentLang() === 'ar' ? 'مثال: INV-2026-004' : 'e.g. INV-2026-004'" 
+              [placeholder]="'accounting.journal.create.ui.egInv2026004' | translate" 
             />
           </div>
         </div>
 
         <!-- Field 3: Entry Type Select -->
         <div class="field-box">
-          <label>{{ langService.currentLang() === 'ar' ? 'نوع الحركة المحاسبية:' : 'Entry Category:' }}</label>
+          <label>{{ 'accounting.journal.create.ui.entryCategory' | translate }}</label>
           <div class="input-with-icon">
             <i class="pi pi-tag"></i>
             <select class="form-control" [(ngModel)]="entryModel.entryType" (ngModelChange)="triggerAutoSave()">
-              <option [value]="1">{{ langService.currentLang() === 'ar' ? 'قيد يومية عادي (Daily)' : 'Daily Entry' }}</option>
-              <option [value]="2">{{ langService.currentLang() === 'ar' ? 'قيد افتتاحي (Opening)' : 'Opening Entry' }}</option>
-              <option [value]="3">{{ langService.currentLang() === 'ar' ? 'قيد تسوية جردية (Adjustment)' : 'Adjustment Entry' }}</option>
-              <option [value]="4">{{ langService.currentLang() === 'ar' ? 'قيد إقفال سنوي (Closing)' : 'Closing Entry' }}</option>
+              <option [value]="1">{{ 'accounting.journal.create.ui.dailyEntry1' | translate }}</option>
+              <option [value]="2">{{ 'accounting.journal.create.ui.openingEntry1' | translate }}</option>
+              <option [value]="3">{{ 'accounting.journal.create.ui.adjustmentEntry' | translate }}</option>
+              <option [value]="4">{{ 'accounting.journal.create.ui.closingEntry1' | translate }}</option>
             </select>
           </div>
         </div>
 
         <!-- Smart Unified Narration Field with Instant Bidirectional Translation -->
-        <div class="narration-smart-container col-span-full">
+        <div class="narration-smart-container col-span-full" [dir]="'accounting.journal.create.ui.ltr' | translate">
           <div class="narration-header-bar">
             <div class="label-group">
               <label class="smart-label">
                 <i class="pi pi-sparkles text-emerald"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'البيان العام للقيد (إدخال موحد مع ترجمة ذكية فورية):' : 'General Narration (Smart Unified Entry):' }}</span>
+                <span>{{ 'accounting.journal.create.ui.generalNarrationSmartUnifiedEntry' | translate }}</span>
                 <span class="required">*</span>
               </label>
 
               <!-- Language & Translation Status Badge -->
               <div class="lang-detector-badge" *ngIf="primaryInputText().trim()">
                 <span class="badge-lang" [class.ar]="detectedLanguage() === 'ar'" [class.en]="detectedLanguage() === 'en'">
-                  {{ detectedLanguage() === 'ar' ? 'مدخل بالعربية' : 'Entered in English' }}
+                  {{ detectedLanguage() === 'ar' ? ('ui.journalEntryCreate.a05b60' | translate) : 'Entered in English' }}
                 </span>
                 <i class="pi pi-arrow-left arrow-direction" *ngIf="langService.currentLang() === 'ar'"></i>
                 <i class="pi pi-arrow-right arrow-direction" *ngIf="langService.currentLang() !== 'ar'"></i>
                 <span class="badge-target">
-                  {{ detectedLanguage() === 'ar' ? 'يترجم للإنجليزية تلقائياً' : 'Auto-translating to Arabic' }}
+                  {{ detectedLanguage() === 'ar' ? ('ui.journalEntryCreate.761091' | translate) : 'Auto-translating to Arabic' }}
                 </span>
               </div>
             </div>
@@ -209,9 +207,9 @@
                 class="btn-toggle-translate" 
                 [class.active]="isAutoTranslateActive()" 
                 (click)="toggleAutoTranslate()"
-                title="تفعيل/تعطيل الترجمة الفورية">
+                [title]="'ui.journalEntryCreate.01bf6e' | translate">
                 <i class="pi pi-language"></i>
-                <span>{{ isAutoTranslateActive() ? (langService.currentLang() === 'ar' ? 'الترجمة التلقائية نشطة' : 'Auto-Translate Active') : (langService.currentLang() === 'ar' ? 'تفعيل الترجمة التلقائية' : 'Enable Auto-Translate') }}</span>
+                <span>{{ isAutoTranslateActive() ? ('accounting.journal.create.ui.autotranslateActive' | translate) : ('accounting.journal.create.ui.enableAutotranslate' | translate) }}</span>
               </button>
 
               <button 
@@ -219,9 +217,9 @@
                 class="btn-text-action" 
                 (click)="propagateGeneralDescription()" 
                 *ngIf="primaryInputText().trim()"
-                title="تعميم هذا البيان على أسطر القيد الفارغة">
+                [title]="'ui.journalEntryCreate.d2d4c0' | translate">
                 <i class="pi pi-copy"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تعميم على أسطر القيد' : 'Propagate to lines' }}</span>
+                <span>{{ 'accounting.journal.create.ui.propagateToLines' | translate }}</span>
               </button>
             </div>
           </div>
@@ -234,9 +232,7 @@
               class="form-control smart-input smart-textarea" 
               [ngModel]="primaryInputText()" 
               (ngModelChange)="onPrimaryNarrationChange($event)"
-              [placeholder]="langService.currentLang() === 'ar' 
-                ? 'اكتب البيان بالعربية أو الإنجليزية (مثال: سداد مصروف إيجار المقر لشهر أكتوبر أو October rent payment)...' 
-                : 'Type narration in Arabic or English...'"
+              [placeholder]="'accounting.journal.create.ui.narrationPlaceholder' | translate"
             ></textarea>
           </div>
 
@@ -247,8 +243,8 @@
                 <i class="pi pi-globe text-cyan"></i>
                 <span class="title-text">
                   {{ detectedLanguage() === 'ar' 
-                    ? (langService.currentLang() === 'ar' ? 'الترجمة الإنجليزية التلقائية المقابلة:' : 'Auto-Translated English:') 
-                    : (langService.currentLang() === 'ar' ? 'الترجمة العربية التلقائية المقابلة:' : 'Auto-Translated Arabic:') }}
+                    ? ('accounting.journal.create.ui.autotranslatedEnglish' | translate) 
+                    : ('accounting.journal.create.ui.autotranslatedArabic' | translate) }}
                 </span>
               </div>
 
@@ -262,9 +258,9 @@
                   type="button" 
                   class="btn-edit-translation" 
                   (click)="toggleManualTranslation()"
-                  title="تعديل الترجمة يدويًا">
+                  [title]="'accounting.journal.create.ui.editManually' | translate">
                   <i class="pi pi-pencil"></i>
-                  <span>{{ showManualTranslation() ? (langService.currentLang() === 'ar' ? 'إخفاء التعديل' : 'Close') : (langService.currentLang() === 'ar' ? 'تعديل الترجمة يدويًا' : 'Edit Manually') }}</span>
+                  <span>{{ showManualTranslation() ? ('accounting.journal.create.ui.close' | translate) : ('accounting.journal.create.ui.editManually' | translate) }}</span>
                 </button>
               </div>
             </div>
@@ -273,8 +269,8 @@
             <div class="manual-override-panel" *ngIf="showManualTranslation()">
               <label class="override-label">
                 {{ detectedLanguage() === 'ar' 
-                  ? (langService.currentLang() === 'ar' ? 'تعديل النص الإنجليزي المقابل:' : 'Edit English text:') 
-                  : (langService.currentLang() === 'ar' ? 'تعديل النص العربي المقابل:' : 'Edit Arabic text:') }}
+                  ? ('accounting.journal.create.ui.editEnglishText' | translate) 
+                  : ('accounting.journal.create.ui.editArabicText' | translate) }}
               </label>
               <input 
                 type="text" 
@@ -294,45 +290,45 @@
         <div class="toolbar-left">
           <div class="section-title">
             <i class="pi pi-list text-cyan"></i>
-            <h3>{{ langService.currentLang() === 'ar' ? 'أسطر وأطراف القيد المحاسبي المزدوج' : 'Double-Entry Lines Grid' }}</h3>
+            <h3>{{ 'accounting.journal.create.ui.doubleentryLinesGrid' | translate }}</h3>
           </div>
           <div class="lines-counter">
-            <span class="count-badge">{{ lines().length }} {{ langService.currentLang() === 'ar' ? 'سطر' : 'Lines' }}</span>
+            <span class="count-badge">{{ lines().length }} {{ 'accounting.journal.create.ui.lines' | translate }}</span>
             <span class="valid-badge" *ngIf="validLinesCount() > 0">
               <i class="pi pi-check"></i>
-              {{ validLinesCount() }} {{ langService.currentLang() === 'ar' ? 'مكتمل' : 'Completed' }}
+              {{ validLinesCount() }} {{ 'accounting.journal.create.ui.completed' | translate }}
             </span>
           </div>
         </div>
 
         <!-- Rapid Actions -->
         <div class="toolbar-actions">
-          <button type="button" class="btn-action primary" (click)="addLine()" title="إضافة سطر جديد (Alt + N أو F2)">
+          <button type="button" class="btn-action primary" (click)="addLine()" [title]="'ui.journalEntryCreate.66e5ff' | translate">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إضافة سطر (Alt+N)' : 'Add Line (Alt+N)' }}</span>
+            <span>{{ 'accounting.journal.create.ui.addLineAltn' | translate }}</span>
           </button>
 
           <button 
             type="button" 
             class="btn-action balance" 
             (click)="autoBalance()" 
-            title="موازنة القيد التلقائية بحساب الفارق (Alt + B)">
+            [title]="'ui.journalEntryCreate.57a396' | translate">
             <i class="pi pi-sliders-h"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'موازنة تلقائية (Alt+B)' : 'Auto Balance (Alt+B)' }}</span>
+            <span>{{ 'accounting.journal.create.ui.autoBalanceAltb' | translate }}</span>
           </button>
 
-          <button type="button" class="btn-action excel" (click)="openExcelModal()" title="لصق بيانات جدول من Excel (Alt + E)">
+          <button type="button" class="btn-action excel" (click)="openExcelModal()" [title]="'ui.journalEntryCreate.f5ec08' | translate">
             <i class="pi pi-file-excel"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'لصق من Excel' : 'Paste from Excel' }}</span>
+            <span>{{ 'accounting.journal.create.ui.pasteFromExcel' | translate }}</span>
           </button>
 
           <button 
             type="button" 
             class="btn-action secondary" 
             (click)="propagateGeneralDescription()"
-            title="ملء البيان للأسطر الفارغة من البيان العام">
+            [title]="'ui.journalEntryCreate.d709e9' | translate">
             <i class="pi pi-sync"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'تعبئة البيان' : 'Fill Descriptions' }}</span>
+            <span>{{ 'accounting.journal.create.ui.fillDescriptions' | translate }}</span>
           </button>
         </div>
       </div>
@@ -343,12 +339,12 @@
           <thead>
             <tr>
               <th class="col-num">#</th>
-              <th class="col-account">{{ langService.currentLang() === 'ar' ? 'الحساب المحاسبي (ابحث بالكود أو الاسم)' : 'Account (Search by code or name)' }} <span class="required">*</span></th>
-              <th class="col-cost-center">{{ langService.currentLang() === 'ar' ? 'مركز التكلفة' : 'Cost Center' }}</th>
-              <th class="col-desc">{{ langService.currentLang() === 'ar' ? 'بيان السطر المحاسبي' : 'Line Narration' }}</th>
-              <th class="col-amount debit-head">{{ langService.currentLang() === 'ar' ? 'مدين (Debit SAR)' : 'Debit (SAR)' }}</th>
-              <th class="col-amount credit-head">{{ langService.currentLang() === 'ar' ? 'دائن (Credit SAR)' : 'Credit (SAR)' }}</th>
-              <th class="col-actions">{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+              <th class="col-account">{{ 'accounting.journal.create.ui.accountSearchByCodeOr' | translate }} <span class="required">*</span></th>
+              <th class="col-cost-center">{{ 'accounting.journal.create.ui.costCenter' | translate }}</th>
+              <th class="col-desc">{{ 'accounting.journal.create.ui.lineNarration' | translate }}</th>
+              <th class="col-amount debit-head">{{ 'accounting.journal.create.ui.debitSar' | translate }}</th>
+              <th class="col-amount credit-head">{{ 'accounting.journal.create.ui.creditSar' | translate }}</th>
+              <th class="col-actions">{{ 'accounting.journal.create.ui.actions' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -358,10 +354,10 @@
                 <div class="row-num-box">
                   <span class="index-num">{{ i + 1 }}</span>
                   <div class="move-buttons">
-                    <button type="button" class="btn-move" (click)="moveLineUp(i)" [disabled]="i === 0" title="تحريك لأعلى">
+                    <button type="button" class="btn-move" (click)="moveLineUp(i)" [disabled]="i === 0" [title]="'ui.journalEntryCreate.eb9080' | translate">
                       <i class="pi pi-chevron-up"></i>
                     </button>
-                    <button type="button" class="btn-move" (click)="moveLineDown(i)" [disabled]="i === lines().length - 1" title="تحريك لأسفل">
+                    <button type="button" class="btn-move" (click)="moveLineDown(i)" [disabled]="i === lines().length - 1" [title]="'ui.journalEntryCreate.2ff088' | translate">
                       <i class="pi pi-chevron-down"></i>
                     </button>
                   </div>
@@ -380,11 +376,11 @@
                     [class.is-empty]="!line.accountId">
                     <div class="account-info" *ngIf="line.accountId">
                       <span class="code-badge font-mono">{{ line.accountCode }}</span>
-                      <span class="name-text">{{ langService.currentLang() === 'ar' ? line.accountNameAr : line.accountNameEn }}</span>
+                      <span class="name-text">{{ langService.currentLang() === 'ar' ? line.accountNameAr : (line.accountNameEn || line.accountNameAr) }}</span>
                     </div>
                     <div class="placeholder-text" *ngIf="!line.accountId">
                       <i class="pi pi-search"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'اختر الحساب المحاسبي...' : 'Select Account...' }}</span>
+                      <span>{{ 'accounting.journal.create.ui.selectAccount' | translate }}</span>
                     </div>
                     <div class="trigger-controls">
                       <button 
@@ -392,7 +388,7 @@
                         class="btn-clear-account" 
                         *ngIf="line.accountId" 
                         (click)="clearSelectedAccount(line, $event)"
-                        title="مسح الحساب المختار">
+                        [title]="'ui.journalEntryCreate.37e7e8' | translate">
                         <i class="pi pi-times"></i>
                       </button>
                       <i class="pi pi-chevron-down caret-icon" [class.rotated]="line.isPickerOpen"></i>
@@ -411,7 +407,7 @@
                         [(ngModel)]="line.searchFilter" 
                         (ngModelChange)="onAccountFilterChange(line, i)"
                         (keydown)="onAccountSearchKeydown($event, line, i)"
-                        [placeholder]="langService.currentLang() === 'ar' ? 'ابحث برقم الحساب أو الاسم (مثال: 10101 أو بنك الراجحي)...' : 'Search code or name...'"
+                        [placeholder]="'accounting.journal.create.ui.searchCodeOrName' | translate"
                         autofocus
                       />
                       <button 
@@ -440,12 +436,12 @@
                       <div class="stats-left">
                         <span class="count-tag">
                           <i class="pi pi-list"></i>
-                          {{ langService.currentLang() === 'ar' ? 'الحسابات الفرعية (' + getFilteredAccounts(line.searchFilter).length + '):' : 'Postable Accounts (' + getFilteredAccounts(line.searchFilter).length + '):' }}
+                          {{ ('ui.journalEntryCreate.0adae2' | translate) + getFilteredAccounts(line.searchFilter).length + '):' }}
                         </span>
                         <!-- Quick Match Pill -->
                         <span class="match-pill" *ngIf="isExactMatch(line.searchFilter) || getFilteredAccounts(line.searchFilter).length === 1">
                           <i class="pi pi-bolt"></i>
-                          {{ langService.currentLang() === 'ar' ? 'اضغط Enter أو Tab للاختيار الفوري' : 'Press Enter or Tab to select' }}
+                          {{ 'accounting.journal.create.ui.pressEnterOrTabTo' | translate }}
                         </span>
                       </div>
                       <button 
@@ -453,9 +449,9 @@
                         class="btn-toggle-instant" 
                         [class.active]="autoSelectExactMatch()" 
                         (click)="toggleAutoSelectExactMatch()" 
-                        title="تفعيل/تعطيل الاختيار التلقائي الفوري بمجرد كتابة رقم الحساب">
+                        [title]="'ui.journalEntryCreate.7ae8c3' | translate">
                         <i class="pi pi-bolt"></i>
-                        <span>{{ autoSelectExactMatch() ? (langService.currentLang() === 'ar' ? 'اختيار فوري بالكود نشط' : 'Instant Code Select On') : (langService.currentLang() === 'ar' ? 'تفعيل الاختيار الفوري' : 'Enable Instant Select') }}</span>
+                        <span>{{ autoSelectExactMatch() ? ('accounting.journal.create.ui.instantCodeSelectOn' | translate) : ('accounting.journal.create.ui.enableInstantSelect' | translate) }}</span>
                       </button>
                     </div>
 
@@ -468,10 +464,7 @@
                         (click)="selectAccount(line, acc, i)">
                         <div class="acc-meta">
                           <span class="code font-mono">{{ acc.accountCode }}</span>
-                          <div class="name-block">
-                            <span class="primary-name">{{ langService.currentLang() === 'ar' ? acc.nameAr : acc.nameEn }}</span>
-                            <span class="sub-name" *ngIf="acc.nameEn && langService.currentLang() === 'ar'">{{ acc.nameEn }}</span>
-                          </div>
+                          <span class="primary-name" style="font-size: 0.78rem; font-weight: 600;">{{ langService.currentLang() === 'ar' ? acc.nameAr : (acc.nameEn || acc.nameAr) }}</span>
                         </div>
                         <div class="pills-meta">
                           <span class="key-hint" *ngIf="accIdx === highlightedAccountIndex()">
@@ -479,14 +472,14 @@
                           </span>
                           <span class="type-pill-sm">{{ acc.accountTypeNameAr }}</span>
                           <span class="nature-pill" [class.debit]="acc.accountNature === 1" [class.credit]="acc.accountNature === 2">
-                            {{ acc.accountNature === 1 ? (langService.currentLang() === 'ar' ? 'مدين' : 'Debit') : (langService.currentLang() === 'ar' ? 'دائن' : 'Credit') }}
+                            {{ acc.accountNature === 1 ? ('accounting.journal.create.ui.debit' | translate) : ('accounting.journal.create.ui.credit' | translate) }}
                           </span>
                         </div>
                       </div>
 
                       <div class="dropdown-empty" *ngIf="getFilteredAccounts(line.searchFilter).length === 0">
                         <i class="pi pi-info-circle"></i>
-                        <span>{{ langService.currentLang() === 'ar' ? 'لا يوجد حساب فرعي يقبل الحركة بهذا الاسم' : 'No matching postable accounts found' }}</span>
+                        <span>{{ 'accounting.journal.create.ui.noMatchingPostableAccountsFound' | translate }}</span>
                       </div>
                     </div>
                   </div>
@@ -501,7 +494,7 @@
                   [(ngModel)]="line.costCenterId" 
                   (ngModelChange)="triggerAutoSave()"
                   (keydown)="onCostCenterKeyDown($event, i)">
-                  <option [ngValue]="undefined">{{ langService.currentLang() === 'ar' ? '— بدون مركز تكلفة —' : '— None —' }}</option>
+                  <option [ngValue]="undefined">{{ 'accounting.journal.create.ui.none' | translate }}</option>
                   <option *ngFor="let cc of costCenters" [value]="cc.id">
                     {{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : cc.nameEn }}
                   </option>
@@ -517,7 +510,7 @@
                   [(ngModel)]="line.description" 
                   (ngModelChange)="triggerAutoSave()"
                   (keydown)="onDescKeyDown($event, i)"
-                  [placeholder]="langService.currentLang() === 'ar' ? 'بيان تفصيلي للسطر...' : 'Line description...'" 
+                  [placeholder]="'accounting.journal.create.ui.lineDescription' | translate" 
                 />
               </td>
 
@@ -564,7 +557,7 @@
                     type="button" 
                     class="btn-row-action duplicate" 
                     (click)="duplicateLine(i)" 
-                    title="تكرار هذا السطر">
+                    [title]="'ui.journalEntryCreate.8d27f2' | translate">
                     <i class="pi pi-clone"></i>
                   </button>
                   <button 
@@ -572,7 +565,7 @@
                     class="btn-row-action delete" 
                     (click)="removeLine(i)" 
                     [disabled]="lines().length <= 2"
-                    title="حذف هذا السطر">
+                    [title]="'ui.journalEntryCreate.2a0cc0' | translate">
                     <i class="pi pi-trash"></i>
                   </button>
                 </div>
@@ -586,16 +579,16 @@
       <div class="table-bottom-bar">
         <button type="button" class="btn-add-bottom" (click)="addLine()">
           <i class="pi pi-plus-circle"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'إضافة سطر محاسبي جديد (اضغط Tab أو Enter من خانة الدائن للتوليد السريع)' : 'Add New Row (or press Tab/Enter on Credit field)' }}</span>
+          <span>{{ 'accounting.journal.create.ui.addNewRowOrPress' | translate }}</span>
         </button>
         <div class="keyboard-hint">
-          <kbd>Alt</kbd> + <kbd>N</kbd> {{ langService.currentLang() === 'ar' ? 'إضافة سطر' : 'Add' }}
+          <kbd>Alt</kbd> + <kbd>N</kbd> {{ 'accounting.journal.create.ui.add' | translate }}
           &bull;
-          <kbd>Alt</kbd> + <kbd>B</kbd> {{ langService.currentLang() === 'ar' ? 'موازنة' : 'Balance' }}
+          <kbd>Alt</kbd> + <kbd>B</kbd> {{ 'accounting.journal.create.ui.balance' | translate }}
           &bull;
-          <kbd>Alt</kbd> + <kbd>S</kbd> {{ langService.currentLang() === 'ar' ? 'مسودة' : 'Draft' }}
+          <kbd>Alt</kbd> + <kbd>S</kbd> {{ 'accounting.journal.create.ui.draft' | translate }}
           &bull;
-          <kbd>Alt</kbd> + <kbd>P</kbd> {{ langService.currentLang() === 'ar' ? 'ترحيل' : 'Post' }}
+          <kbd>Alt</kbd> + <kbd>P</kbd> {{ 'accounting.journal.create.ui.post' | translate }}
         </div>
       </div>
     </section>
@@ -609,18 +602,18 @@
       <!-- Balance Overview Cards -->
       <div class="balance-cards">
         <div class="stat-card debit">
-          <span class="stat-label">{{ langService.currentLang() === 'ar' ? 'إجمالي المدين (Debit)' : 'Total Debit' }}</span>
+          <span class="stat-label">{{ 'accounting.journal.create.ui.totalDebit' | translate }}</span>
           <strong class="stat-value font-mono">{{ totalDebit() | number:'1.2-2' }} <small>SAR</small></strong>
         </div>
 
         <div class="stat-card credit">
-          <span class="stat-label">{{ langService.currentLang() === 'ar' ? 'إجمالي الدائن (Credit)' : 'Total Credit' }}</span>
+          <span class="stat-label">{{ 'accounting.journal.create.ui.totalCredit' | translate }}</span>
           <strong class="stat-value font-mono">{{ totalCredit() | number:'1.2-2' }} <small>SAR</small></strong>
         </div>
 
         <!-- Dynamic Difference & Balance State -->
         <div class="stat-card diff" [class.balanced]="isBalanced()" [class.unbalanced]="!isBalanced()">
-          <span class="stat-label">{{ langService.currentLang() === 'ar' ? 'الفرق (التباين)' : 'Difference' }}</span>
+          <span class="stat-label">{{ 'accounting.journal.create.ui.difference' | translate }}</span>
           <div class="diff-val-box font-mono">
             <strong>{{ difference() | number:'1.2-2' }} <small>SAR</small></strong>
             <button 
@@ -628,9 +621,9 @@
               class="btn-quick-balance" 
               (click)="autoBalance()" 
               *ngIf="!isBalanced() && (totalDebit() > 0 || totalCredit() > 0)"
-              title="موازنة فورية">
+              [title]="'ui.journalEntryCreate.2b8834' | translate">
               <i class="pi pi-sliders-h"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'موازنة' : 'Balance' }}</span>
+              <span>{{ 'accounting.journal.create.ui.balance' | translate }}</span>
             </button>
           </div>
         </div>
@@ -641,8 +634,8 @@
           <i class="pi pi-exclamation-triangle" *ngIf="!isBalanced()"></i>
           <span>
             {{ isBalanced() 
-              ? (langService.currentLang() === 'ar' ? 'القيد متوازن تماماً (جاهز للترحيل)' : 'Entry is Perfectly Balanced') 
-              : (langService.currentLang() === 'ar' ? 'القيد غير متوازن' : 'Entry is Unbalanced') }}
+              ? ('accounting.journal.create.ui.entryIsPerfectlyBalanced' | translate) 
+              : ('accounting.journal.create.ui.entryIsUnbalanced' | translate) }}
           </span>
         </div>
       </div>
@@ -650,7 +643,7 @@
       <!-- Main Action Buttons -->
       <div class="dock-actions">
         <button type="button" class="btn-dock cancel" (click)="cancel()">
-          {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+          {{ 'accounting.journal.create.ui.cancel' | translate }}
         </button>
 
         <button 
@@ -659,7 +652,7 @@
           (click)="submitEntry(false)" 
           [disabled]="isSubmitting()">
           <i class="pi pi-save"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'حفظ كمسودة (Alt+S)' : 'Save as Draft (Alt+S)' }}</span>
+          <span>{{ 'accounting.journal.create.ui.saveAsDraftAlts' | translate }}</span>
         </button>
 
         <button 
@@ -668,7 +661,7 @@
           (click)="submitEntry(true)" 
           [disabled]="isSubmitting() || !isBalanced()">
           <i class="pi pi-send"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'ترحيل القيد فوراً (Alt+P)' : 'Post Entry (Alt+P)' }}</span>
+          <span>{{ 'accounting.journal.create.ui.postEntryAltp' | translate }}</span>
         </button>
       </div>
 
@@ -681,7 +674,7 @@
       <header class="modal-header">
         <div class="modal-title">
           <i class="pi pi-file-excel text-emerald"></i>
-          <h3>{{ langService.currentLang() === 'ar' ? 'استيراد ولصق أسطر القيد من Excel / Sheets' : 'Paste Rows from Excel / Sheets' }}</h3>
+          <h3>{{ 'accounting.journal.create.ui.pasteRowsFromExcelSheets' | translate }}</h3>
         </div>
         <button type="button" class="btn-close" (click)="closeExcelModal()"><i class="pi pi-times"></i></button>
       </header>
@@ -690,12 +683,8 @@
         <div class="excel-guide">
           <i class="pi pi-info-circle text-cyan"></i>
           <div>
-            <strong>{{ langService.currentLang() === 'ar' ? 'طريقة الاستخدام السريعة:' : 'Quick How-To:' }}</strong>
-            <p>
-              {{ langService.currentLang() === 'ar' 
-                ? 'انسخ الأعمدة من ملف Excel أو Google Sheets (رقم الحساب، البيان، المدين، الدائن) ثم الصقها في الحقل أدناه مباشرة. سيقوم النظام بتحليل الأسطر ومطابقة الحسابات وتوزيع المبالغ آلياً.' 
-                : 'Copy columns from Excel (Account Code, Description, Debit, Credit) and paste below. The system will auto-match accounts and populate rows.' }}
-            </p>
+            <strong>{{ 'accounting.journal.create.ui.quickHowto' | translate }}</strong>
+            <p>{{ 'accounting.journal.create.ui.excelGuideDesc' | translate }}</p>
           </div>
         </div>
 
@@ -704,24 +693,24 @@
           [(ngModel)]="excelRawText" 
           (ngModelChange)="onExcelTextChange()"
           rows="9"
-          [placeholder]="langService.currentLang() === 'ar' ? 'الصق محتوى جدول الإكسل هنا (Ctrl + V)...' : 'Paste table data here (Ctrl + V)...'">
+          [placeholder]="'accounting.journal.create.ui.pasteTableDataHereCtrl' | translate">
         </textarea>
 
         <div class="excel-footer-info" *ngIf="excelPreviewCount() > 0">
           <span class="preview-badge">
             <i class="pi pi-check"></i>
-            {{ langService.currentLang() === 'ar' ? 'تم رصد ' + excelPreviewCount() + ' سطر جاهز للاستيراد' : excelPreviewCount() + ' lines detected' }}
+            {{ excelPreviewCount() }} {{ 'accounting.journal.create.ui.linesReady' | translate }}
           </span>
         </div>
       </div>
 
       <footer class="modal-footer">
         <button type="button" class="btn-modal cancel" (click)="closeExcelModal()">
-          {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+          {{ 'accounting.journal.create.ui.cancel' | translate }}
         </button>
         <button type="button" class="btn-modal confirm" (click)="importExcelData()">
           <i class="pi pi-download"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'استيراد وتوليد الأسطر' : 'Import Rows' }}</span>
+          <span>{{ 'accounting.journal.create.ui.importRows' | translate }}</span>
         </button>
       </footer>
     </div>
@@ -733,7 +722,7 @@
       <header class="modal-header">
         <div class="modal-title">
           <i class="pi pi-keyboard text-emerald"></i>
-          <h3>{{ langService.currentLang() === 'ar' ? 'اختصارات لوحة المفاتيح للمحاسب السريع' : 'Keyboard Shortcuts for Rapid Entry' }}</h3>
+          <h3>{{ 'accounting.journal.create.ui.keyboardShortcutsForRapidEntry' | translate }}</h3>
         </div>
         <button type="button" class="btn-close" (click)="showShortcutsModal.set(false)"><i class="pi pi-times"></i></button>
       </header>
@@ -741,39 +730,39 @@
       <div class="modal-body">
         <div class="shortcuts-grid">
           <div class="shortcut-item">
-            <div class="keys"><kbd>Alt</kbd> + <kbd>N</kbd> <span class="or">أو</span> <kbd>F2</kbd></div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'إضافة سطر محاسبي جديد فوري' : 'Add New Journal Line' }}</span>
+            <div class="keys"><kbd>Alt</kbd> + <kbd>N</kbd> <span class="or">{{ 'ui.journalEntryCreate.d2624f' | translate }}</span> <kbd>F2</kbd></div>
+            <span class="desc">{{ 'accounting.journal.create.ui.addNewJournalLine' | translate }}</span>
           </div>
           <div class="shortcut-item">
             <div class="keys"><kbd>Alt</kbd> + <kbd>B</kbd></div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'موازنة القيد التلقائية بحساب الفارق' : 'Auto Balance Entry' }}</span>
+            <span class="desc">{{ 'accounting.journal.create.ui.autoBalanceEntry' | translate }}</span>
           </div>
           <div class="shortcut-item">
             <div class="keys"><kbd>Alt</kbd> + <kbd>E</kbd></div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'فتح نافذة لصق بيانات الإكسل' : 'Open Excel Paste Importer' }}</span>
+            <span class="desc">{{ 'accounting.journal.create.ui.openExcelPasteImporter' | translate }}</span>
           </div>
           <div class="shortcut-item">
             <div class="keys"><kbd>Alt</kbd> + <kbd>S</kbd></div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'حفظ القيد كمسودة في السيرفر' : 'Save Entry as Draft' }}</span>
+            <span class="desc">{{ 'accounting.journal.create.ui.saveEntryAsDraft' | translate }}</span>
           </div>
           <div class="shortcut-item">
             <div class="keys"><kbd>Alt</kbd> + <kbd>P</kbd></div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'ترحيل القيد المالي فوراً' : 'Post Entry Immediately' }}</span>
+            <span class="desc">{{ 'accounting.journal.create.ui.postEntryImmediately' | translate }}</span>
           </div>
           <div class="shortcut-item">
-            <div class="keys"><kbd>Enter</kbd> / <kbd>Tab</kbd> في الدائن</div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'الانتقال للسطر الجديد تلقائياً في نهاية الجدول' : 'Auto-adds new line on last row' }}</span>
+            <div class="keys"><kbd>Enter</kbd> / <kbd>Tab</kbd> {{ 'ui.journalEntryCreate.09a120' | translate }}</div>
+            <span class="desc">{{ 'accounting.journal.create.ui.autoaddsNewLineOnLast' | translate }}</span>
           </div>
           <div class="shortcut-item">
             <div class="keys"><kbd>Esc</kbd></div>
-            <span class="desc">{{ langService.currentLang() === 'ar' ? 'إغلاق القوائم المنسدلة والنوافذ' : 'Close dropdowns or modals' }}</span>
+            <span class="desc">{{ 'accounting.journal.create.ui.closeDropdownsOrModals' | translate }}</span>
           </div>
         </div>
       </div>
 
       <footer class="modal-footer">
         <button type="button" class="btn-modal confirm" (click)="showShortcutsModal.set(false)">
-          {{ langService.currentLang() === 'ar' ? 'فهمت ذلك' : 'Got it' }}
+          {{ 'accounting.journal.create.ui.gotIt' | translate }}
         </button>
       </footer>
     </div>

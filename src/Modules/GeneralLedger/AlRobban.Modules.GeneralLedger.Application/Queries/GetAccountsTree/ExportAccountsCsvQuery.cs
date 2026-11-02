@@ -2,6 +2,7 @@ using System.Text;
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Domain.Repositories;
 using AlRobban.Shared.Kernel.Primitives;
+using AlRobban.Shared.Application.Abstractions;
 using MediatR;
 
 namespace AlRobban.Modules.GeneralLedger.Application.Queries.GetAccountsTree;
@@ -13,15 +14,17 @@ public record AccountsCsvExportDto(byte[] FileBytes, string FileName, string Con
 public class ExportAccountsCsvQueryHandler : IRequestHandler<ExportAccountsCsvQuery, Result<AccountsCsvExportDto>>
 {
     private readonly IAccountRepository _accountRepository;
+    private readonly ICurrentTenantContext _tenantContext;
 
-    public ExportAccountsCsvQueryHandler(IAccountRepository accountRepository)
+    public ExportAccountsCsvQueryHandler(IAccountRepository accountRepository, ICurrentTenantContext tenantContext)
     {
         _accountRepository = accountRepository;
+        _tenantContext = tenantContext;
     }
 
     public async Task<Result<AccountsCsvExportDto>> Handle(ExportAccountsCsvQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var accounts = await _accountRepository.GetAllByCompanyAsync(companyId, cancellationToken);
 
         var sortedAccounts = accounts.OrderBy(a => a.AccountCode).ToList();

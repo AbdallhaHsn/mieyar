@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface GeneralLedgerAccountOverview {
   accountId: string;
@@ -73,7 +74,7 @@ export interface AccountStatement {
 })
 export class GeneralLedgerService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:5000/api/general-ledger';
+  private baseUrl = `${environment.apiUrl}/api/general-ledger`;
 
   getOverview(params: {
     companyId?: string;

@@ -21,7 +21,7 @@ public class GetAllCompaniesQueryHandler : IQueryHandler<GetAllCompaniesQuery, I
         GetAllCompaniesQuery request,
         CancellationToken cancellationToken)
     {
-        var companies = await _companyRepository.GetAllActiveAsync(cancellationToken);
+        var companies = await _companyRepository.GetAllAsync(cancellationToken);
 
         var dtos = companies.Select(company => new CompanyDto(
             company.Id,

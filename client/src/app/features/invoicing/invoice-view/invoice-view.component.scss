@@ -1,0 +1,1563 @@
+.invoice-view-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+  background: #F8FAFC;
+  font-family: var(--font-arabic);
+}
+
+/* ==========================================================================
+   Top Header Strip (Control Bar) - No Print
+   ========================================================================== */
+.view-header-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .header-start-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #F1F5F9;
+      color: #334155;
+      border: 1px solid #CBD5E1;
+      padding: 0.45rem 0.95rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      i {
+        font-size: 0.85rem;
+        transition: transform 0.2s ease;
+      }
+
+      &:hover {
+        background: #E2E8F0;
+        color: #0F172A;
+        border-color: #94A3B8;
+
+        i {
+          transform: translateX(3px);
+        }
+      }
+    }
+
+    .doc-meta-cluster {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+
+      .inv-num-pill {
+        font-family: monospace;
+        font-size: 0.9rem;
+        font-weight: 800;
+        background: #EFF6FF;
+        color: #1D4ED8;
+        border: 1px solid #BFDBFE;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+
+        &.is-cn {
+          background: #FFF1F2;
+          color: #BE123C;
+          border-color: #FECDD3;
+        }
+      }
+
+      .badge-ref-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #FFF1F2;
+        color: #9F1239;
+        border: 1px dashed #FDA4AF;
+        padding: 0.22rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 600;
+
+        i { font-size: 0.75rem; color: #E11D48; }
+        strong { font-family: monospace; }
+      }
+
+      .badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 700;
+
+        .status-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+        }
+
+        &.badge-success {
+          background: #ECFDF5;
+          color: #047857;
+          border: 1px solid #A7F3D0;
+          .status-dot { background: #10B981; }
+        }
+
+        &.badge-info {
+          background: #F0F9FF;
+          color: #0369A1;
+          border: 1px solid #BAE6FD;
+          .status-dot { background: #0284C7; }
+        }
+
+        &.badge-draft {
+          background: #F8FAFC;
+          color: #475569;
+          border: 1px solid #CBD5E1;
+          .status-dot { background: #94A3B8; }
+        }
+      }
+
+      .btn-gl-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ECFDF5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+        padding: 0.22rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #D1FAE5;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+
+  .header-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+
+    .format-switcher {
+      display: inline-flex;
+      background: #F1F5F9;
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid #E2E8F0;
+
+      .fmt-btn {
+        border: none;
+        background: transparent;
+        padding: 0.45rem 0.85rem;
+        border-radius: 7px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #64748B;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &.active {
+          background: #FFFFFF;
+          color: #0284C7;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+      }
+    }
+
+    .btn-issue-zatca {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+      transition: all 0.2s;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+      }
+    }
+
+    .btn-xml {
+      background: #F0F9FF;
+      color: #0284C7;
+      border: 1px solid #BAE6FD;
+      border-radius: 8px;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #E0F2FE;
+        border-color: #7DD3FC;
+      }
+    }
+
+    .btn-print {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+      transition: all 0.2s;
+
+      &:hover {
+        background: #0284C7;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Document Canvas & Placement
+   ========================================================================== */
+.view-sheet-canvas {
+  flex: 1;
+  background: #E2E8F0;
+  padding: 2rem 1.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 145px);
+
+  &.thermal-canvas {
+    background: #F1F5F9;
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* ==========================================================================
+   A4 Standard Sheet Styling (Compact & Single-Page Optimised)
+   ========================================================================== */
+.invoice-a4-sheet {
+  width: 100%;
+  max-width: 860px;
+  background: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08);
+  padding: 1.6rem 2.2rem;
+  color: #0F172A;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+
+  .a4-top-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #059669 0%, #0284C7 100%);
+
+    &.accent-cn {
+      background: linear-gradient(90deg, #EA580C 0%, #E11D48 100%);
+    }
+  }
+}
+
+/* Document Header Grid (Right = Company Info, Left = Doc Title & QR) */
+/* Document Header Grid (Balanced 2 Symmetrical Halves: Right = Company & Logo | Left = Title & ZATCA QR) */
+.a4-header-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 2px solid #F1F5F9;
+
+  /* Right Half: Company Brand & Logo */
+  .company-brand-box {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    flex: 1 1 auto;
+    min-width: 0;
+
+    .company-logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      .company-brand-logo {
+        max-height: 85px;
+        height: 80px;
+        width: auto;
+        max-width: 155px;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+      }
+
+      .logo-fallback-box {
+        width: 72px;
+        height: 72px;
+        border-radius: 12px;
+        background: #0B1528;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: #38BDF8;
+      }
+    }
+
+    .brand-info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      min-width: 0;
+
+      .company-text {
+        .company-name-ar {
+          margin: 0;
+          font-size: 1.18rem;
+          font-weight: 900;
+          color: #0F172A;
+          line-height: 1.2;
+          letter-spacing: -0.2px;
+          white-space: nowrap;
+        }
+
+        .company-name-en {
+          margin: 0.1rem 0 0 0;
+          font-size: 0.68rem;
+          color: #64748B;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+        }
+      }
+
+      .company-credentials-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin-top: 0.15rem;
+
+        .cred-row {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.74rem;
+          color: #334155;
+          white-space: nowrap;
+
+          .c-label {
+            color: #64748B;
+            font-weight: 600;
+            font-size: 0.70rem;
+            white-space: nowrap;
+          }
+
+          .c-val {
+            font-weight: 700;
+            color: #0F172A;
+            font-size: 0.74rem;
+            white-space: nowrap;
+
+            &.mono {
+              font-family: 'JetBrains Mono', 'Courier New', monospace;
+              letter-spacing: 0.4px;
+            }
+
+            &.text-success {
+              color: #059669;
+            }
+          }
+
+          &.cred-inline-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            white-space: nowrap;
+
+            .cred-item {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.3rem;
+              white-space: nowrap;
+            }
+
+            .c-sep {
+              color: #CBD5E1;
+              font-size: 0.75rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Left Side: ZATCA Phase 2 QR Container */
+  .header-qr-container {
+    flex-shrink: 0;
+
+    .zatca-qr-container {
+      .qr-box-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.35rem;
+        border: 1.5px solid #059669;
+        background: #FFFFFF;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.1);
+
+        .real-qr-img {
+          width: 88px;
+          height: 88px;
+          object-fit: contain;
+        }
+
+        .qr-tag {
+          font-size: 0.60rem;
+          font-weight: 700;
+          color: #059669;
+          margin-top: 0.2rem;
+          white-space: nowrap;
+        }
+      }
+
+      .qr-placeholder-box {
+        width: 88px;
+        height: 88px;
+        border: 1.5px dashed #CBD5E1;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 0.4rem;
+        font-size: 0.68rem;
+        color: #94A3B8;
+      }
+    }
+  }
+}
+
+/* 2. Full-Width Executive Document Title Ribbon */
+.document-title-ribbon {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-right: 3.5px solid #0284C7;
+  border-radius: 5px;
+  margin-bottom: 0.45rem;
+  gap: 0.75rem;
+
+  .dtr-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+
+    .main-title {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+    }
+
+    .dtr-divider {
+      color: #CBD5E1;
+      font-weight: 300;
+      font-size: 0.82rem;
+    }
+
+    .sub-title {
+      margin: 0;
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+  }
+
+  .dtr-badges-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      background: #0284C7;
+      color: #FFFFFF;
+      font-size: 0.60rem;
+      font-weight: 700;
+      padding: 0.12rem 0.5rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+
+      &.type-pill-cn {
+        background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%);
+        box-shadow: 0 1px 4px rgba(225, 29, 72, 0.2);
+      }
+
+      &.type-pill-returned {
+        background: #DC2626;
+      }
+
+      &.type-pill-partial-returned {
+        background: #D97706;
+      }
+    }
+
+    .ref-inv-banner-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.12rem 0.45rem;
+      background: #FFF1F2;
+      border: 1px dashed #FDA4AF;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      color: #9F1239;
+      font-weight: 600;
+      white-space: nowrap;
+
+      i { font-size: 0.65rem; color: #E11D48; }
+      strong { font-family: monospace; letter-spacing: 0.4px; }
+    }
+  }
+
+  &.is-cn-ribbon {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+    border-right-color: #E11D48;
+
+    .dtr-title-group {
+      .main-title { color: #9F1239; }
+      .dtr-divider { color: #FDA4AF; }
+      .sub-title { color: #BE123C; }
+    }
+  }
+
+  &.is-returned-ribbon {
+    background: #FEF2F2;
+    border-color: #FCA5A5;
+    border-right-color: #DC2626;
+  }
+
+  &.is-partial-returned-ribbon {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+    border-right-color: #D97706;
+  }
+}
+
+/* ==========================================================================
+   Horizontal Meta Strips (Full Width, Tabular, Clean)
+   ========================================================================== */
+.horizontal-meta-strip {
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #F8FAFC;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+
+  /* 1. Invoice Details Horizontal Strip */
+  &.inv-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+
+    &.strip-cn {
+      background: #FFF1F2;
+      border-color: #FECDD3;
+    }
+
+    .strip-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+
+      .s-title {
+        font-size: 0.62rem;
+        font-weight: 600;
+        color: #64748B;
+      }
+
+      .s-data {
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #0F172A;
+
+        &.mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+        &.highlight-inv { color: #0284C7; font-size: 0.78rem; }
+      }
+    }
+  }
+
+  /* 2. Horizontal Buyer Details Strip (ZATCA Official Standards - Ultra-Compact) */
+  &.buyer-strip {
+    padding: 0.3rem 0.55rem;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    margin-bottom: 0.45rem;
+
+    &.is-cash-mode {
+      background: #F8FAFC;
+      border-color: #E2E8F0;
+    }
+
+    .strip-head-badge {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.25rem;
+      padding-bottom: 0.2rem;
+      border-bottom: 1px solid #E2E8F0;
+      width: 100%;
+
+      .shb-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: #0F172A;
+
+        i { font-size: 0.72rem; color: #0284C7; }
+      }
+
+      .shb-badge {
+        .zatca-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.2rem;
+          font-size: 0.58rem;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 9999px;
+
+          &.zatca-b2b {
+            background: #ECFDF5;
+            color: #065F46;
+            border: 1px solid #A7F3D0;
+            i { color: #059669; }
+          }
+
+          &.zatca-b2c {
+            background: #F0F9FF;
+            color: #0369A1;
+            border: 1px solid #BAE6FD;
+            i { color: #0284C7; }
+          }
+        }
+      }
+    }
+
+    .strip-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.4rem;
+      margin-bottom: 0.35rem;
+
+      .b-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+
+        &.name-item {
+          grid-column: span 1;
+        }
+
+        .b-lbl {
+          font-size: 0.58rem;
+          font-weight: 700;
+          color: #64748B;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.2rem;
+
+          i { font-size: 0.60rem; color: #94A3B8; }
+        }
+
+        .b-val {
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: #0F172A;
+          word-break: break-word;
+
+          &.highlight-name {
+            color: #0F172A;
+            font-size: 0.72rem;
+          }
+
+          &.mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+          &.text-success { color: #059669; }
+
+          .vat-check-icon {
+            color: #059669;
+            margin-inline-start: 3px;
+            font-size: 0.68rem;
+          }
+        }
+
+        .b-sub-val {
+          font-size: 0.54rem;
+          color: #64748B;
+          line-height: 1.2;
+        }
+
+        .b-fallback-badge {
+          .badge-status-pill {
+            display: inline-block;
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: #F1F5F9;
+            color: #475569;
+            border: 1px solid #E2E8F0;
+
+            &.non-vat {
+              background: #F8FAFC;
+              color: #64748B;
+              font-style: italic;
+            }
+          }
+        }
+
+        .contact-chips {
+          display: flex;
+          flex-direction: column;
+          gap: 0.1rem;
+
+          .font-phone {
+            font-size: 0.66rem;
+            color: #0F172A;
+            i { font-size: 0.60rem; color: #0284C7; }
+          }
+
+          .font-email {
+            font-size: 0.62rem;
+            color: #475569;
+            i { font-size: 0.60rem; color: #64748B; }
+          }
+        }
+      }
+    }
+
+    /* ZATCA National Address Sub-Banner */
+    .national-address-banner {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 5px;
+      padding: 0.3rem 0.55rem;
+
+      .nab-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.3rem;
+
+        .nab-title {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.62rem;
+          font-weight: 800;
+          color: #334155;
+
+          i { font-size: 0.68rem; color: #EA580C; }
+        }
+
+        .nab-country-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          padding: 1.5px 7px;
+          border-radius: 4px;
+
+          .c-lbl {
+            color: #64748B;
+            font-weight: 600;
+            font-size: 0.58rem;
+          }
+
+          .c-val {
+            color: #0F172A;
+            font-weight: 700;
+            font-size: 0.62rem;
+          }
+        }
+      }
+
+      .nab-details-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: stretch;
+        width: 100%;
+
+        .nab-cell {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          padding: 2.5px 7px;
+          border-radius: 4px;
+          flex: 1 1 0px;
+          min-width: 95px;
+
+          &.cell-street {
+            flex: 1.8 1 0px;
+            min-width: 145px;
+          }
+
+          &.cell-district {
+            flex: 1.3 1 0px;
+            min-width: 115px;
+          }
+
+          &.cell-city {
+            flex: 1.1 1 0px;
+            min-width: 100px;
+          }
+
+          .c-lbl {
+            color: #64748B;
+            font-weight: 600;
+            font-size: 0.58rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+
+          .c-val {
+            color: #0F172A;
+            font-weight: 700;
+            font-size: 0.64rem;
+            word-break: break-word;
+
+            &.mono {
+              font-family: 'JetBrains Mono', 'Courier New', monospace;
+              letter-spacing: 0.3px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Items Table (Clean & Compact)
+   ========================================================================== */
+.a4-table-container {
+  margin-bottom: 0.9rem;
+
+  .a4-invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.76rem;
+
+    thead th {
+      background: #0B1528 !important;
+      color: #FFFFFF !important;
+      padding: 0.55rem 0.5rem;
+      font-weight: 700;
+      text-align: right;
+      line-height: 1.2;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+
+      .en-sub {
+        font-size: 0.62rem;
+        font-weight: 400;
+        color: #94A3B8;
+        display: block;
+        direction: ltr;
+        unicode-bidi: isolate;
+      }
+    }
+
+    tbody td {
+      padding: 0.5rem 0.5rem;
+      border-bottom: 1px solid #E2E8F0;
+      color: #1E293B;
+
+      .item-name-text { font-weight: 700; color: #0F172A; }
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #F8FAFC;
+    }
+  }
+}
+
+/* ==========================================================================
+   Summary & Totals Grid (Tafqeet Right, Totals Left - No Colons)
+   ========================================================================== */
+.a4-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 330px;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 0.9rem;
+  page-break-inside: avoid;
+  break-inside: avoid;
+
+  .summary-left-pane {
+    .tafqeet-box {
+      background: #FEFCE8;
+      border: 1px solid #FEF08A;
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+
+      .tafqeet-label {
+        font-size: 0.7rem;
+        color: #854D0E;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+
+      .tafqeet-text {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #713F12;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .totals-table-box {
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    overflow: hidden;
+
+    .t-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.48rem 0.8rem;
+      font-size: 0.78rem;
+      border-bottom: 1px solid #F1F5F9;
+
+      .lbl-ar {
+        color: #475569;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+
+        .lbl-en {
+          font-size: 0.65rem;
+          color: #94A3B8;
+          font-weight: 500;
+        }
+      }
+
+      .val {
+        font-weight: 700;
+        color: #0F172A;
+      }
+
+      &.vat-row {
+        background: #FAF5FF;
+        .lbl-ar, .val { color: #6B21A8; font-weight: 800; }
+        .lbl-en { color: #A855F7; }
+      }
+
+      &.net-total-row {
+        background: #0B1528 !important;
+        color: #FFFFFF !important;
+        padding: 0.65rem 0.8rem;
+        font-size: 0.9rem;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+
+        .lbl-ar, .val { color: #FFFFFF !important; font-weight: 900; }
+        .lbl-en { color: #94A3B8 !important; }
+
+        &.total-row-cn {
+          background: linear-gradient(135deg, #9F1239 0%, #BE123C 100%) !important;
+        }
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Seller Details at the Bottom of Invoice (بيانات البائع اسفل الفاتورة)
+   ========================================================================== */
+.seller-footer-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  margin-bottom: 1.1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .seller-info-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+
+    i {
+      font-size: 0.78rem;
+      color: #0284C7;
+    }
+
+    .lbl {
+      color: #64748B;
+      font-weight: 600;
+    }
+
+    .val {
+      color: #0F172A;
+      font-weight: 700;
+
+      &.mono { font-family: monospace; }
+    }
+  }
+}
+
+/* ==========================================================================
+   Footer Signatures & Official Seal (Compact, Fits on 1 Page)
+   ========================================================================== */
+.a4-footer-signatures {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #CBD5E1;
+  page-break-inside: avoid;
+  break-inside: avoid;
+
+  .sig-block {
+    text-align: center;
+    width: 170px;
+
+    .sig-title { font-size: 0.76rem; font-weight: 700; color: #1E293B; display: block; }
+    .sig-line { height: 1px; background: #94A3B8; margin: 1.8rem 0 0.3rem 0; }
+    .sig-sub { font-size: 0.62rem; color: #64748B; }
+
+    &.official-seal-block {
+      .seal-placeholder {
+        margin-top: 0.35rem;
+        display: flex;
+        justify-content: center;
+
+        .seal-inner {
+          width: 70px;
+          height: 70px;
+          border: 2px dashed #059669;
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: #059669;
+          font-size: 0.62rem;
+          font-weight: 700;
+          text-align: center;
+          padding: 0.2rem;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+
+          small { font-size: 0.52rem; color: #64748B; margin-top: 1px; }
+        }
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Thermal Receipt Sheet (80mm)
+   ========================================================================== */
+.thermal-receipt-sheet {
+  width: 80mm;
+  background: #FFFFFF;
+  padding: 12px 10px;
+  font-family: monospace, var(--font-arabic);
+  font-size: 11px;
+  color: #000;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  margin: 0 auto;
+
+  .thermal-header {
+    text-align: center;
+    margin-bottom: 8px;
+
+    .thermal-logo { 
+      font-size: 20px; 
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .thermal-real-logo {
+        max-width: 64px;
+        max-height: 42px;
+        object-fit: contain;
+      }
+    }
+    .thermal-company { font-size: 13px; font-weight: bold; margin: 2px 0; }
+    .thermal-company-en { font-size: 10px; color: #475569; margin: 1px 0 3px 0; }
+    .thermal-vat, .thermal-cr { font-size: 10px; margin: 1px 0; }
+    .thermal-title { font-size: 12px; font-weight: bold; margin: 4px 0 2px 0; }
+    .thermal-ref { font-size: 10px; color: #BE123C; margin: 2px 0; }
+    .thermal-doc-num { font-size: 12px; font-weight: bold; margin: 2px 0; }
+    .thermal-date { font-size: 10px; color: #555; margin: 1px 0; }
+  }
+
+  .thermal-buyer {
+    font-size: 10px;
+    padding: 4px 0;
+    p { margin: 1px 0; }
+  }
+
+  .thermal-divider {
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+  }
+
+  .thermal-divider-double {
+    border-top: 2px solid #000;
+    margin: 6px 0;
+  }
+
+  .thermal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+
+    th { text-align: right; border-bottom: 1px solid #000; padding: 3px 1px; }
+    td { padding: 3px 1px; }
+  }
+
+  .thermal-totals {
+    font-size: 10px;
+    margin: 4px 0;
+
+    .thermal-tot-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 2px 0;
+
+      &.thermal-grand {
+        font-size: 12px;
+        font-weight: bold;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 4px 0;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  .thermal-tafqeet {
+    font-size: 9px;
+    text-align: center;
+    margin: 4px 0;
+    padding: 3px;
+    background: #f9f9f9;
+  }
+
+  .thermal-qr {
+    text-align: center;
+    margin: 8px 0;
+
+    .thermal-qr-img {
+      width: 105px;
+      height: 105px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .thermal-qr-caption {
+      font-size: 8px;
+      color: #666;
+      margin-top: 3px;
+    }
+  }
+
+  .thermal-cashier-footer {
+    text-align: center;
+    font-size: 9px;
+    margin: 6px 0 2px 0;
+    color: #333;
+    border-top: 1px dashed #999;
+    padding-top: 4px;
+  }
+
+  .thermal-footer {
+    text-align: center;
+    font-size: 9px;
+    margin-top: 6px;
+    color: #444;
+
+    p { margin: 2px 0; }
+  }
+}
+
+/* ==========================================================================
+   Fully Returned Invoice Watermark & Official Stamp
+   ========================================================================== */
+.sheet-returned {
+  border: 1px solid #fecdd3 !important;
+
+  .a4-top-accent.accent-returned {
+    background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%) !important;
+  }
+}
+
+.invoice-returned-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-28deg);
+  font-size: 4.8rem;
+  font-weight: 900;
+  color: rgba(225, 29, 72, 0.08);
+  border: 8px dashed rgba(225, 29, 72, 0.12);
+  padding: 1.5rem 4rem;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 5;
+  text-align: center;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+
+  small {
+    font-size: 1.8rem;
+    letter-spacing: 4px;
+    font-family: Arial, sans-serif;
+  }
+}
+
+.official-stamp-returned {
+  position: absolute;
+  top: 1.6rem;
+  left: 2.2rem;
+  z-index: 15;
+  pointer-events: none;
+  transform: rotate(-10deg);
+  opacity: 0.92;
+
+  .stamp-outer-ring {
+    border: 3px double #dc2626;
+    border-radius: 8px;
+    padding: 3px;
+    background: rgba(254, 242, 242, 0.75);
+    backdrop-filter: blur(1px);
+
+    .stamp-inner-ring {
+      border: 1.5px solid #dc2626;
+      border-radius: 5px;
+      padding: 0.35rem 0.75rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 130px;
+
+      .stamp-company {
+        font-size: 0.58rem;
+        font-weight: 700;
+        color: #991b1b;
+        white-space: nowrap;
+      }
+
+      .stamp-main {
+        font-size: 1.05rem;
+        font-weight: 900;
+        color: #b91c1c;
+        letter-spacing: 0.5px;
+        margin: 1px 0;
+      }
+
+      .stamp-ref {
+        font-size: 0.62rem;
+        font-weight: 800;
+        color: #dc2626;
+        font-family: monospace;
+      }
+
+      .stamp-en {
+        font-size: 0.55rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #991b1b;
+        font-family: Arial, sans-serif;
+      }
+    }
+  }
+}
+
+.invoice-returned-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  margin-bottom: 0.85rem;
+  color: #9f1239;
+  font-size: 0.78rem;
+
+  .ira-badge {
+    background: #e11d48;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+
+  .ira-text {
+    line-height: 1.4;
+    strong {
+      color: #881337;
+    }
+  }
+}
+
+.type-pill-returned {
+  background: #fff1f2 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+
+.total-row-returned {
+  background: #f8fafc !important;
+}
+
+.returned-row {
+  color: #e11d48;
+  border-top: 1px dashed #fecdd3;
+  margin-top: 2px;
+  padding-top: 2px;
+}
+
+.net-settled-row {
+  border-top: 1px solid #cbd5e1;
+  margin-top: 2px;
+  padding-top: 2px;
+}
+
+.thermal-returned-box {
+  background: #000;
+  color: #fff;
+  font-size: 9px;
+  font-weight: bold;
+  text-align: center;
+  padding: 3px 0;
+  margin: 4px 0;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Partial Return Specific Styles (أنماط المرتجع الجزئي الاحترافية)
+   ========================================================================== */
+
+.invoice-partial-returned-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  margin-bottom: 0.85rem;
+  color: #92400e;
+  font-size: 0.78rem;
+
+  .ipra-badge {
+    background: #d97706;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+
+  .ipra-text {
+    line-height: 1.4;
+    strong {
+      color: #78350f;
+    }
+  }
+}
+
+.type-pill-partial-returned {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+.total-row-partial {
+  background: #fafaf9 !important;
+}
+
+.partial-refund {
+  color: #d97706;
+  border-top: 1px dashed #fde68a;
+  margin-top: 2px;
+  padding-top: 2px;
+}
+
+.net-remaining-row {
+  border-top: 2px solid #059669;
+  margin-top: 3px;
+  padding: 4px 6px;
+  background: #f0fdf4;
+  border-radius: 4px;
+}
+
+.line-returned-qty-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin-top: 3px;
+
+  .ret-qty-badge {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .rem-qty-badge {
+    color: #059669;
+    font-size: 0.65rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+}
+
+.tafqeet-partial-box {
+  border-color: #fde68a;
+  background: #fefce8;
+
+  .tafqeet-original-sub {
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+}
+
+.text-amber {
+  color: #d97706 !important;
+}
+
+.text-success {
+  color: #059669 !important;
+}
+
+.thermal-partial-box {
+  background: #334155;
+  color: #fff;
+  font-size: 9px;
+  font-weight: bold;
+  text-align: center;
+  padding: 3px 0;
+  margin: 4px 0;
+  letter-spacing: 0.5px;
+}
+
+.thermal-ret-tag {
+  color: #dc2626;
+  font-size: 8px;
+  font-weight: bold;
+}
+
+.thermal-ret-row {
+  color: #b45309;
+  border-top: 1px dashed #94a3b8;
+}
+
+.thermal-net-rem {
+  border-top: 1.5px solid #000;
+  font-weight: bold;
+  font-size: 10px;
+}
+

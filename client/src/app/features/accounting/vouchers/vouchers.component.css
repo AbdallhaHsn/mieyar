@@ -457,13 +457,14 @@
 
 .modal-dialog {
   background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.2);
   width: 100%;
-  max-height: 90vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .modal-lg { max-width: 900px; width: 95%; }
@@ -471,10 +472,11 @@
 .modal-sm { max-width: 480px; }
 
 .modal-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
+  padding: 14px 20px;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -520,16 +522,22 @@
 .modal-body {
   padding: 16px 20px;
   overflow-y: auto;
-  min-height: 460px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal-footer {
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 12px 18px;
+  padding: 14px 20px;
   border-top: 1px solid #e2e8f0;
   background: #f8fafc;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
 }
 
 /* Form Styles */
@@ -648,18 +656,25 @@
 
 .btn-del {
   background: #fee2e2;
-  color: #b91c1c;
-  border: none;
-  border-radius: 4px;
-  width: 24px;
-  height: 24px;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
   cursor: pointer;
-  font-size: 12px;
-  display: flex;
+  font-size: 13px;
+  font-weight: bold;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease-in-out;
 }
-.btn-del:hover { background: #fca5a5; }
+.btn-del:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
+  transform: scale(1.08);
+}
 
 /* Tafqeet Summary Box */
 .tafqeet-summary-box {
@@ -705,118 +720,279 @@
   gap: 8px;
 }
 
-/* Printable Official Voucher Design */
-.print-body {
-  background: #ffffff;
-  padding: 24px;
+/* ==========================================================================
+   Executive Official Voucher Preview & A4 Print Layout Standard
+   Matching Exact Design Specification
+   ========================================================================== */
+
+/* 1. Modal Overlay & Dialog */
+.modal-overlay.print-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  overflow-y: auto;
 }
 
-.official-voucher {
-  border: 2px solid #0f172a;
-  padding: 20px;
+.modal-dialog.modal-print {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 980px;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+}
+
+/* 2. Modal Header */
+.modal-header.modal-header-print {
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-header-print .modal-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.modal-header-print .print-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-print-primary {
+  background: #1d4ed8;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.25);
+}
+
+.btn-print-primary:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.modal-header-print .close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.modal-header-print .close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* 3. Modal Body Container */
+.modal-body.print-body {
+  padding: 24px;
+  background: #f8fafc;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* 4. Voucher Sheet (The Framed Official Document) */
+.official-voucher-sheet {
   background: #ffffff;
   color: #0f172a;
+  width: 100%;
+  max-width: 880px;
+  padding: 24px 30px;
   box-sizing: border-box;
+  border: 2px solid #1e293b;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
+/* Header Section */
 .voucher-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 2px solid #0f172a;
-  padding-bottom: 14px;
-  margin-bottom: 14px;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #1e293b;
+}
+
+.company-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.company-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.voucher-company-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.company-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .company-title {
-  margin: 0 0 4px 0;
+  margin: 0;
   font-size: 18px;
   font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.company-sub-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
 }
 
 .company-sub {
   font-size: 11px;
-  color: #475569;
+  color: #64748b;
+  font-family: inherit;
 }
 
+/* Voucher Badge / Stamp Box (Top Left in RTL) */
 .voucher-title-box {
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  padding: 8px 24px;
   text-align: center;
-  border: 2px solid #0f172a;
-  border-radius: 6px;
-  padding: 8px 18px;
-  background: #f8fafc;
-}
-.box-receipt {
-  background: #f0fdf4;
-  border-color: #059669;
-}
-.box-payment {
-  background: #eef2ff;
-  border-color: #4f46e5;
+  min-width: 145px;
+  background: #ffffff;
 }
 
-.voucher-title {
-  margin: 0;
-  font-size: 16px;
+.voucher-title-box.box-payment {
+  border-color: #2563eb;
+}
+
+.voucher-title-box .voucher-title {
+  font-size: 15px;
   font-weight: 800;
+  color: #065f46;
+  margin-bottom: 2px;
 }
 
-.voucher-no {
+.voucher-title-box.box-payment .voucher-title {
+  color: #1e40af;
+}
+
+.voucher-title-box .voucher-no {
   font-size: 14px;
-  font-weight: 700;
-  margin-top: 2px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
 }
 
-.voucher-status-stamp {
-  font-size: 10.5px;
+.voucher-title-box .voucher-status-stamp {
+  font-size: 11px;
   font-weight: 700;
   color: #059669;
 }
 
+.voucher-title-box.box-payment .voucher-status-stamp {
+  color: #2563eb;
+}
+
+/* Metadata Bar (Light gray bordered strip) */
 .voucher-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  background: #f8fafc;
+  margin: 16px 0;
+  padding: 10px 18px;
   border: 1px solid #cbd5e1;
-  padding: 8px 12px;
   border-radius: 6px;
-  margin-bottom: 14px;
-  font-size: 11.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  background: #ffffff;
 }
 
-.meta-item .lbl {
+.voucher-meta-grid .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voucher-meta-grid .meta-item .lbl {
   color: #64748b;
-  margin-left: 4px;
-}
-.meta-item .val {
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
 }
 
+.voucher-meta-grid .meta-item .val {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+/* Formal Voucher Statements Box */
 .formal-voucher-content {
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
 }
 
 .formal-line {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 5px 0;
+  align-items: center;
+  padding: 8px 0;
   border-bottom: 1px dotted #cbd5e1;
-  font-size: 13px;
+  font-size: 13.5px;
 }
+
 .formal-line:last-child {
   border-bottom: none;
 }
 
 .formal-label {
-  font-weight: 600;
+  width: 175px;
+  flex-shrink: 0;
   color: #475569;
-  min-width: 150px;
+  font-weight: 700;
 }
 
 .formal-value {
@@ -824,109 +1000,180 @@
   color: #0f172a;
 }
 
-.highlight-amount {
-  font-size: 14.5px;
+.highlight-amount .formal-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
 }
 
-.tafqeet-calligraphy {
-  font-weight: 700;
-  color: #1e3a8a;
-  background: #eff6ff;
-  padding: 2px 8px;
+.tafqeet-line .formal-value {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   border-radius: 4px;
+  padding: 6px 14px;
+  color: #0284c7;
+  font-weight: 700;
+  width: 100%;
 }
 
-/* Print Table */
+/* Breakdown Table */
 .print-table-wrapper {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .print-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  border: 2px solid #1e293b;
+  font-size: 13px;
 }
 
-.print-table th, .print-table td {
-  border: 1px solid #0f172a;
-  padding: 6px 8px;
-  text-align: right;
+.print-table th,
+.print-table td {
+  border: 1px solid #1e293b;
+  padding: 8px 12px;
 }
 
 .print-table th {
-  background: #f1f5f9;
+  background: #ffffff;
+  color: #0f172a;
   font-weight: 700;
+  text-align: center;
+  border-bottom: 2px solid #1e293b;
+}
+
+.print-table tbody td {
+  color: #0f172a;
 }
 
 .print-table tfoot td {
-  background: #f8fafc;
-  font-weight: 700;
+  border-top: 2px solid #1e293b;
+  font-weight: 800;
+  background: #ffffff;
 }
 
-/* Signatures */
+/* Divider Line */
+.voucher-divider-line {
+  border-bottom: 2px solid #1e293b;
+  margin: 16px 0 20px 0;
+}
+
+/* Signatures Matrix */
 .signatures-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  border-top: 1px solid #0f172a;
-  padding-top: 14px;
+  gap: 16px;
+  text-align: center;
 }
 
 .signature-box {
-  text-align: center;
-  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.sig-title {
-  font-weight: 700;
-  color: #334155;
-  margin-bottom: 24px;
-}
-
-.sig-space {
-  height: 20px;
-}
-
-.sig-name {
-  color: #64748b;
-  font-size: 11px;
-}
-
-.cancel-warning {
+.signature-box .sig-title {
   font-size: 12.5px;
-  color: #9f1239;
-  background: #fff1f2;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 26px;
 }
 
-/* Print Media Query */
+.signature-box .sig-space {
+  height: 6px;
+}
+
+.signature-box .sig-name {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Print Optimization (@media print)
+   ========================================================================== */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  .no-print {
+  /* Hide all app chrome & non-printable elements */
+  .page-header,
+  .kpi-strip,
+  .filter-bar,
+  .table-card,
+  .modal-header,
+  .no-print,
+  .alert,
+  app-pagination {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  .modal-overlay {
-    position: static;
-    background: transparent;
-    padding: 0;
+
+  .modal-overlay.print-modal-backdrop {
+    position: static !important;
+    display: block !important;
+    visibility: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    inset: auto !important;
+    backdrop-filter: none !important;
+    z-index: auto !important;
   }
-  .modal-dialog {
-    box-shadow: none;
-    border: none;
-    max-width: 100%;
-    max-height: none;
+
+  .modal-dialog.modal-print {
+    position: static !important;
+    display: block !important;
+    visibility: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
-  #printable-voucher, #printable-voucher * {
-    visibility: visible;
+
+  .modal-body.print-body {
+    display: block !important;
+    visibility: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    background: transparent !important;
   }
-  #printable-voucher {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+
+  #printable-voucher.official-voucher-sheet {
+    display: flex !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 10mm 12mm !important;
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #printable-voucher * {
+    visibility: visible !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

@@ -8,7 +8,10 @@ using MediatR;
 
 namespace AlRobban.Modules.GeneralLedger.Application.Commands.Vouchers;
 
-public record PostVoucherCommand(Guid VoucherId) : IRequest<Result<VoucherDto>>;
+public record PostVoucherCommand(Guid VoucherId) : IRequest<Result<VoucherDto>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class PostVoucherCommandHandler : IRequestHandler<PostVoucherCommand, Result<VoucherDto>>
 {

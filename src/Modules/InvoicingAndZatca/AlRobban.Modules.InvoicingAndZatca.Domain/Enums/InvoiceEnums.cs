@@ -10,7 +10,8 @@ public enum TransactionType
 {
     Invoice = 1,    // فاتورة بيع
     CreditNote = 2, // إشعار دائن (مرتجع مبيعات)
-    DebitNote = 3   // إشعار مدين (تسوية بالإضافة)
+    DebitNote = 3,  // إشعار مدين (تسوية بالإضافة)
+    Quotation = 4   // عرض أسعار
 }
 
 public enum InvoiceStatus
@@ -21,4 +22,11 @@ public enum InvoiceStatus
     Reported = 4,   // مبلّغة ومسجلة لدى هيئة زكاة (B2C Reporting)
     Rejected = 5,   // مرفوضة
     Cancelled = 6   // ملغاة بإشعار دائن
+}
+
+public enum InvoicePaymentStatus
+{
+    Unpaid = 1,        // غير محصلة (آجل)
+    PartiallyPaid = 2, // محصلة جزئياً
+    Paid = 3           // محصلة بالكامل
 }

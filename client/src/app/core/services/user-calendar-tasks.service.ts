@@ -73,49 +73,13 @@ export class UserCalendarTasksService {
       const key = this.getStorageKey(userId);
       const data = localStorage.getItem(key);
       if (data) {
-        this.tasks.set(JSON.parse(data));
+        const parsed = (JSON.parse(data) as CalendarTask[])
+          // Drop untouched sample tasks that were auto-seeded by earlier versions
+          .filter(t => !(t.id.startsWith('task_def_') && !t.completed));
+        this.tasks.set(parsed);
+        this.saveToStorage(userId, parsed);
       } else {
-        // Initialize sample daily accounting tasks for this user
-        const today = this.todayStr;
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().substring(0, 10);
-
-        const defaults: CalendarTask[] = [
-          {
-            id: 'task_def_1',
-            title: 'مراجعة وترحيل قيود اليومية المعلقة',
-            description: 'التأكد من اكتمال التوجيه المحاسبي لمراكز التكلفة ومطابقة إجمالي المدين والدائن.',
-            date: today,
-            time: '11:00',
-            priority: 'urgent',
-            category: 'accounting',
-            completed: false,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 'task_def_2',
-            title: 'مطابقة تسوية البنك مع الإيداعات النقدية',
-            description: 'مراجعة كشف البنك للعمليات الواردة والصادرة وتسجيل الفروقات إن وجدت.',
-            date: today,
-            time: '14:30',
-            priority: 'medium',
-            category: 'audit',
-            completed: false,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 'task_def_3',
-            title: 'تجهيز مسودة الإقرار الضريبي الشهري',
-            description: 'حصر فواتير المشتريات والمبيعات للتحقق من نسب ضريبة القيمة المضافة 15%.',
-            date: tomorrow,
-            time: '10:00',
-            priority: 'normal',
-            category: 'tax',
-            completed: false,
-            createdAt: new Date().toISOString()
-          }
-        ];
-        this.tasks.set(defaults);
-        this.saveToStorage(userId, defaults);
+        this.tasks.set([]);
       }
     } catch {
       this.tasks.set([]);

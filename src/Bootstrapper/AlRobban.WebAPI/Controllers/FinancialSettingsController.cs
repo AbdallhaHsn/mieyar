@@ -1,3 +1,5 @@
+﻿using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using AlRobban.Modules.GeneralLedger.Application.Commands.CostCenters;
 using AlRobban.Modules.GeneralLedger.Application.Commands.CreateFiscalYear;
 using AlRobban.Modules.GeneralLedger.Application.Commands.TogglePeriodStatus;
@@ -12,6 +14,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/financial-settings")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class FinancialSettingsController : ControllerBase
 {
     private readonly IMediator _mediator;

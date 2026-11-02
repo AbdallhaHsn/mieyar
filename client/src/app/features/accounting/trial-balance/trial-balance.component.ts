@@ -7,6 +7,7 @@ import { FinancialSettingsService, CostCenter } from '../../../core/services/fin
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { TafqeetService } from '../../../core/services/tafqeet.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 interface FlatRowItem {
   account: TrialBalanceAccount;
@@ -19,7 +20,7 @@ interface FlatRowItem {
 @Component({
   selector: 'app-trial-balance',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="tb-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -28,14 +29,14 @@ interface FlatRowItem {
         <div class="tb-header-inner">
           <div class="tb-header-left">
             <div class="tb-breadcrumb">
-              <a routerLink="/dashboard" class="bc-link"><i class="pi pi-home"></i> {{ langService.currentLang() === 'ar' ? 'الرئيسية' : 'Home' }}</a>
+              <a routerLink="/dashboard" class="bc-link"><i class="pi pi-home"></i> {{ 'nav.dashboard' | translate }}</a>
               <span class="bc-sep">/</span>
-              <span>{{ langService.currentLang() === 'ar' ? 'المحاسبة والمالية' : 'Accounting' }}</span>
+              <span>{{ 'accounting.coa.title' | translate }}</span>
               <span class="bc-sep">/</span>
-              <span class="bc-highlight">{{ langService.currentLang() === 'ar' ? 'ميزان المراجعة' : 'Trial Balance' }}</span>
+              <span class="bc-highlight">{{ 'accounting.trialBalance.breadcrumb' | translate }}</span>
             </div>
             <div class="tb-title-row">
-              <h1 class="tb-title">{{ langService.currentLang() === 'ar' ? 'ميزان المراجعة بالمجاميع والأرصدة' : 'Trial Balance (Totals & Balances)' }}</h1>
+              <h1 class="tb-title">{{ 'accounting.trialBalance.title' | translate }}</h1>
               <span class="socpa-badge"><i class="pi pi-verified"></i> SOCPA & IFRS Compliant</span>
             </div>
           </div>
@@ -47,11 +48,11 @@ interface FlatRowItem {
               <div class="pill-info">
                 <span class="health-text">
                   {{ report()!.isBalanced 
-                    ? (langService.currentLang() === 'ar' ? 'الميزان متوازن تماماً (0.00)' : 'Perfect Balance (0.00)') 
-                    : (langService.currentLang() === 'ar' ? 'يوجد فارق غير متوازن!' : 'Out of Balance!') }}
+                    ? ('accounting.trialBalance.perfectBalance' | translate) 
+                    : ('accounting.trialBalance.outOfBalance' | translate) }}
                 </span>
                 <span class="health-sub font-mono" *ngIf="!report()!.isBalanced">
-                  الفرق: {{ report()!.balanceDifference | number:'1.2-2' }} SAR
+                  {{ 'accounting.trialBalance.diff' | translate }} {{ report()!.balanceDifference | number:'1.2-2' }} SAR
                 </span>
               </div>
             </div>
@@ -64,13 +65,13 @@ interface FlatRowItem {
         <!-- Opening Segment -->
         <div class="metric-segment">
           <div class="seg-top">
-            <span class="seg-lbl"><i class="pi pi-history"></i> {{ langService.currentLang() === 'ar' ? 'الأرصدة الافتتاحية' : 'Opening Balances' }}</span>
-            <span class="seg-tag" [class.tag-ok]="isOpeningBalanced()">{{ isOpeningBalanced() ? (langService.currentLang() === 'ar' ? 'متطابق' : 'Equal') : (langService.currentLang() === 'ar' ? 'فارق' : 'Diff') }}</span>
+            <span class="seg-lbl"><i class="pi pi-history"></i> {{ 'accounting.trialBalance.openingBalances' | translate }}</span>
+            <span class="seg-tag" [class.tag-ok]="isOpeningBalanced()">{{ isOpeningBalanced() ? ('accounting.trialBalance.equal' | translate) : ('accounting.trialBalance.difference' | translate) }}</span>
           </div>
           <div class="seg-numbers font-mono">
-            <span class="num-box"><small>{{ langService.currentLang() === 'ar' ? 'مدين:' : 'Dr:' }}</small> <strong>{{ report()!.totalOpeningDebit | number:'1.2-2' }}</strong></span>
+            <span class="num-box"><small>{{ 'accounting.trialBalance.dr' | translate }}</small> <strong>{{ report()!.totalOpeningDebit | number:'1.2-2' }}</strong></span>
             <span class="num-sep">/</span>
-            <span class="num-box"><small>{{ langService.currentLang() === 'ar' ? 'دائن:' : 'Cr:' }}</small> <strong>{{ report()!.totalOpeningCredit | number:'1.2-2' }}</strong></span>
+            <span class="num-box"><small>{{ 'accounting.trialBalance.cr' | translate }}</small> <strong>{{ report()!.totalOpeningCredit | number:'1.2-2' }}</strong></span>
           </div>
         </div>
 
@@ -79,13 +80,13 @@ interface FlatRowItem {
         <!-- Period Movement Segment -->
         <div class="metric-segment">
           <div class="seg-top">
-            <span class="seg-lbl"><i class="pi pi-sync"></i> {{ langService.currentLang() === 'ar' ? 'حركات الفترة (المجاميع)' : 'Period Movement' }}</span>
-            <span class="seg-tag" [class.tag-ok]="isPeriodBalanced()">{{ isPeriodBalanced() ? (langService.currentLang() === 'ar' ? 'متوازن' : 'Equal') : (langService.currentLang() === 'ar' ? 'فارق' : 'Diff') }}</span>
+            <span class="seg-lbl"><i class="pi pi-sync"></i> {{ 'accounting.trialBalance.periodMovement' | translate }}</span>
+            <span class="seg-tag" [class.tag-ok]="isPeriodBalanced()">{{ isPeriodBalanced() ? ('accounting.trialBalance.equal' | translate) : ('accounting.trialBalance.difference' | translate) }}</span>
           </div>
           <div class="seg-numbers font-mono">
-            <span class="num-box text-emerald"><small>{{ langService.currentLang() === 'ar' ? 'مدين:' : 'Dr:' }}</small> <strong>{{ report()!.totalPeriodDebit | number:'1.2-2' }}</strong></span>
+            <span class="num-box text-emerald"><small>{{ 'accounting.trialBalance.dr' | translate }}</small> <strong>{{ report()!.totalPeriodDebit | number:'1.2-2' }}</strong></span>
             <span class="num-sep">/</span>
-            <span class="num-box text-cyan"><small>{{ langService.currentLang() === 'ar' ? 'دائن:' : 'Cr:' }}</small> <strong>{{ report()!.totalPeriodCredit | number:'1.2-2' }}</strong></span>
+            <span class="num-box text-cyan"><small>{{ 'accounting.trialBalance.cr' | translate }}</small> <strong>{{ report()!.totalPeriodCredit | number:'1.2-2' }}</strong></span>
           </div>
         </div>
 
@@ -94,13 +95,13 @@ interface FlatRowItem {
         <!-- Ending Balances Segment -->
         <div class="metric-segment">
           <div class="seg-top">
-            <span class="seg-lbl"><i class="pi pi-wallet"></i> {{ langService.currentLang() === 'ar' ? 'الأرصدة الختامية' : 'Ending Balances' }}</span>
-            <span class="seg-tag" [class.tag-ok]="report()!.isBalanced">{{ report()!.isBalanced ? (langService.currentLang() === 'ar' ? 'متطابق وموزون' : 'Balanced') : (langService.currentLang() === 'ar' ? 'غير متطابق' : 'Diff') }}</span>
+            <span class="seg-lbl"><i class="pi pi-wallet"></i> {{ 'accounting.trialBalance.endingBalances' | translate }}</span>
+            <span class="seg-tag" [class.tag-ok]="report()!.isBalanced">{{ report()!.isBalanced ? ('accounting.trialBalance.balanced' | translate) : ('accounting.trialBalance.difference' | translate) }}</span>
           </div>
           <div class="seg-numbers font-mono">
-            <span class="num-box text-emerald font-bold"><small>{{ langService.currentLang() === 'ar' ? 'مدين:' : 'Dr:' }}</small> <strong>{{ report()!.totalEndingDebit | number:'1.2-2' }}</strong></span>
+            <span class="num-box text-emerald font-bold"><small>{{ 'accounting.trialBalance.dr' | translate }}</small> <strong>{{ report()!.totalEndingDebit | number:'1.2-2' }}</strong></span>
             <span class="num-sep">/</span>
-            <span class="num-box text-cyan font-bold"><small>{{ langService.currentLang() === 'ar' ? 'دائن:' : 'Cr:' }}</small> <strong>{{ report()!.totalEndingCredit | number:'1.2-2' }}</strong></span>
+            <span class="num-box text-cyan font-bold"><small>{{ 'accounting.trialBalance.cr' | translate }}</small> <strong>{{ report()!.totalEndingCredit | number:'1.2-2' }}</strong></span>
           </div>
         </div>
       </section>
@@ -113,7 +114,7 @@ interface FlatRowItem {
           <div class="form-group date-group">
             <label>
               <i class="pi pi-calendar"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'من تاريخ:' : 'From Date:' }}</span>
+              <span>{{ 'accounting.trialBalance.fromDate' | translate }}</span>
             </label>
             <input type="date" class="form-control" [(ngModel)]="fromDate" (change)="onFilterChanged()" />
           </div>
@@ -122,7 +123,7 @@ interface FlatRowItem {
           <div class="form-group date-group">
             <label>
               <i class="pi pi-calendar"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إلى تاريخ:' : 'To Date:' }}</span>
+              <span>{{ 'accounting.trialBalance.toDate' | translate }}</span>
             </label>
             <input type="date" class="form-control" [(ngModel)]="toDate" (change)="onFilterChanged()" />
           </div>
@@ -131,12 +132,12 @@ interface FlatRowItem {
           <div class="form-group cc-group">
             <label>
               <i class="pi pi-compass"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'مركز التكلفة:' : 'Cost Center:' }}</span>
+              <span>{{ 'accounting.trialBalance.costCenter' | translate }}</span>
             </label>
             <select class="form-control" [(ngModel)]="selectedCostCenterId" (change)="onFilterChanged()">
-              <option value="">{{ langService.currentLang() === 'ar' ? 'جميع مراكز التكلفة' : 'All Cost Centers' }}</option>
+              <option value="">{{ 'accounting.trialBalance.allCostCenters' | translate }}</option>
               <option *ngFor="let cc of costCenters" [value]="cc.id">
-                {{ cc.code }} - {{ cc.nameAr }}
+                {{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : (cc.nameEn || cc.nameAr) }}
               </option>
             </select>
           </div>
@@ -145,14 +146,14 @@ interface FlatRowItem {
           <div class="form-group level-group">
             <label>
               <i class="pi pi-sitemap"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'مستوى الحسابات:' : 'Tree Level:' }}</span>
+              <span>{{ 'accounting.trialBalance.treeLevel' | translate }}</span>
             </label>
             <select class="form-control" [(ngModel)]="selectedMaxLevel" (change)="onFilterChanged()">
-              <option [ngValue]="null">{{ langService.currentLang() === 'ar' ? 'كافة المستويات الشجرية' : 'All Levels' }}</option>
-              <option [ngValue]="1">{{ langService.currentLang() === 'ar' ? 'المستوى 1 (رئيسي فقط)' : 'Level 1 (Major Only)' }}</option>
-              <option [ngValue]="2">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 2 (مجموعات رئيسية)' : 'Up to Level 2' }}</option>
-              <option [ngValue]="3">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 3' : 'Up to Level 3' }}</option>
-              <option [ngValue]="4">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 4 (الحسابات التحليلية)' : 'Up to Level 4' }}</option>
+              <option [ngValue]="null">{{ 'accounting.trialBalance.allLevels' | translate }}</option>
+              <option [ngValue]="1">{{ 'accounting.trialBalance.level1' | translate }}</option>
+              <option [ngValue]="2">{{ 'accounting.trialBalance.level2' | translate }}</option>
+              <option [ngValue]="3">{{ 'accounting.trialBalance.level3' | translate }}</option>
+              <option [ngValue]="4">{{ 'accounting.trialBalance.level4' | translate }}</option>
             </select>
           </div>
 
@@ -160,12 +161,12 @@ interface FlatRowItem {
           <div class="form-group search-group">
             <label>
               <i class="pi pi-search"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'بحث سريع:' : 'Search:' }}</span>
+              <span>{{ 'accounting.trialBalance.quickSearch' | translate }}</span>
             </label>
             <input 
               type="text" 
               class="form-control" 
-              [placeholder]="langService.currentLang() === 'ar' ? 'رقم أو اسم الحساب...' : 'Code or name...'" 
+              [placeholder]="'accounting.trialBalance.searchPlaceholder' | translate" 
               [(ngModel)]="searchTerm" 
               (input)="onSearchInput()" />
           </div>
@@ -175,52 +176,52 @@ interface FlatRowItem {
         <!-- Filter Sub-bar: Presets & View Controls -->
         <div class="filter-subbar">
           <div class="presets-group">
-            <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'فترات قياسية:' : 'Presets:' }}</span>
-            <button class="preset-btn" (click)="setPreset('thisMonth')">{{ langService.currentLang() === 'ar' ? 'هذا الشهر' : 'This Month' }}</button>
-            <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ langService.currentLang() === 'ar' ? 'الربع الحالي' : 'This Quarter' }}</button>
-            <button class="preset-btn active" (click)="setPreset('thisYear')">{{ langService.currentLang() === 'ar' ? 'السنة المالية الحالية' : 'Current Year' }}</button>
+            <span class="preset-label">{{ 'accounting.trialBalance.presets' | translate }}</span>
+            <button class="preset-btn" (click)="setPreset('thisMonth')">{{ 'accounting.trialBalance.thisMonth' | translate }}</button>
+            <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ 'accounting.trialBalance.thisQuarter' | translate }}</button>
+            <button class="preset-btn active" (click)="setPreset('thisYear')">{{ 'accounting.trialBalance.thisYear' | translate }}</button>
           </div>
 
           <div class="options-group">
             <!-- Hide Zero Balances Toggle -->
-            <label class="toggle-control" title="إخفاء الحسابات التي لا توجد بها أرصدة أو حركات">
+            <label class="toggle-control" [title]="'accounting.trialBalance.hideZero' | translate">
               <input type="checkbox" [(ngModel)]="hideZeroBalances" (change)="onFilterChanged()" />
               <span class="toggle-slider"></span>
-              <span class="toggle-text">{{ langService.currentLang() === 'ar' ? 'إخفاء الحسابات الصفرية' : 'Hide Zero Balances' }}</span>
+              <span class="toggle-text">{{ 'accounting.trialBalance.hideZero' | translate }}</span>
             </label>
 
             <!-- Flat view vs Hierarchical toggle -->
-            <button class="mode-toggle-btn" [class.active]="viewMode === 'tree'" (click)="toggleViewMode('tree')" title="عرض هرمي شجري">
+            <button class="mode-toggle-btn" [class.active]="viewMode === 'tree'" (click)="toggleViewMode('tree')" [title]="'accounting.trialBalance.treeView' | translate">
               <i class="pi pi-align-right"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'عرض شجري' : 'Tree' }}</span>
+              <span>{{ 'accounting.trialBalance.treeView' | translate }}</span>
             </button>
-            <button class="mode-toggle-btn" [class.active]="viewMode === 'flat'" (click)="toggleViewMode('flat')" title="عرض جدول منبسط">
+            <button class="mode-toggle-btn" [class.active]="viewMode === 'flat'" (click)="toggleViewMode('flat')" [title]="'accounting.trialBalance.flatView' | translate">
               <i class="pi pi-table"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'عرض تفصيلي' : 'Flat' }}</span>
+              <span>{{ 'accounting.trialBalance.flatView' | translate }}</span>
             </button>
 
             <!-- Expand / Collapse All -->
             <button class="secondary-btn" *ngIf="viewMode === 'tree'" (click)="toggleExpandAll()">
               <i [class]="allExpanded ? 'pi pi-folder' : 'pi pi-folder-open'"></i>
-              <span>{{ allExpanded ? (langService.currentLang() === 'ar' ? 'طي الكل' : 'Collapse') : (langService.currentLang() === 'ar' ? 'توسيع الكل' : 'Expand') }}</span>
+              <span>{{ allExpanded ? ('accounting.trialBalance.collapseAll' | translate) : ('accounting.trialBalance.expandAll' | translate) }}</span>
             </button>
 
             <!-- Refresh Button -->
             <button class="secondary-btn" (click)="loadTrialBalance()" [disabled]="loading()">
               <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+              <span>{{ 'common.refresh' | translate }}</span>
             </button>
 
             <!-- Export Styled Excel -->
             <button class="secondary-btn btn-export" (click)="exportToExcel()">
               <i class="pi pi-file-excel"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'تصدير Excel منسق' : 'Export Excel' }}</span>
+              <span>{{ 'accounting.trialBalance.table.exportExcelBtn' | translate }}</span>
             </button>
 
             <!-- Official Print Button -->
             <button class="primary-btn btn-print" (click)="openPrintModal()">
               <i class="pi pi-print"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'طباعة الميزان الرسمي A4' : 'Print Report' }}</span>
+              <span>{{ 'accounting.trialBalance.table.printBtn' | translate }}</span>
             </button>
           </div>
         </div>
@@ -231,10 +232,10 @@ interface FlatRowItem {
         <div class="table-top-header">
           <div class="table-title-box">
             <i class="pi pi-calculator text-emerald"></i>
-            <h3 class="table-title-text">{{ langService.currentLang() === 'ar' ? 'جدول ميزان المراجعة بالمجاميع والأرصدة (Standard 6-Column Matrix)' : '6-Column Trial Balance Grid' }}</h3>
+            <h3 class="table-title-text">{{ 'accounting.trialBalance.matrixTitle' | translate }}</h3>
           </div>
           <span class="count-badge" *ngIf="report()">
-            {{ displayedRows.length }} {{ langService.currentLang() === 'ar' ? 'سطراً معروضاً' : 'rows' }}
+            {{ displayedRows.length }} {{ 'accounting.trialBalance.rowsDisplayed' | translate }}
           </span>
         </div>
 
@@ -244,32 +245,32 @@ interface FlatRowItem {
             <!-- Multi-level Header Row Group -->
             <thead>
               <tr class="header-group-row">
-                <th rowspan="2" class="th-code">{{ langService.currentLang() === 'ar' ? 'رمز الحساب' : 'Code' }}</th>
-                <th rowspan="2" class="th-name">{{ langService.currentLang() === 'ar' ? 'اسم الحساب المحاسبي' : 'Account Name' }}</th>
-                <th rowspan="2" class="th-type">{{ langService.currentLang() === 'ar' ? 'الطبيعة' : 'Nature' }}</th>
+                <th rowspan="2" class="th-code">{{ 'accounting.trialBalance.table.code' | translate }}</th>
+                <th rowspan="2" class="th-name">{{ 'accounting.trialBalance.table.accountName' | translate }}</th>
+                <th rowspan="2" class="th-type">{{ 'accounting.trialBalance.table.nature' | translate }}</th>
                 
                 <!-- Group 1: Opening Balances -->
-                <th colspan="2" class="th-group-opening">{{ langService.currentLang() === 'ar' ? 'الأرصدة الافتتاحية' : 'Opening Balances' }}</th>
+                <th colspan="2" class="th-group-opening">{{ 'accounting.trialBalance.table.openingGroup' | translate }}</th>
                 
                 <!-- Group 2: Period Movements -->
-                <th colspan="2" class="th-group-movement">{{ langService.currentLang() === 'ar' ? 'حركة الفترة (المجاميع)' : 'Period Movement' }}</th>
+                <th colspan="2" class="th-group-movement">{{ 'accounting.trialBalance.table.movementGroup' | translate }}</th>
                 
                 <!-- Group 3: Ending Balances -->
-                <th colspan="2" class="th-group-ending">{{ langService.currentLang() === 'ar' ? 'الأرصدة الختامية' : 'Ending Balances' }}</th>
+                <th colspan="2" class="th-group-ending">{{ 'accounting.trialBalance.table.endingGroup' | translate }}</th>
                 
-                <th rowspan="2" class="th-drill">{{ langService.currentLang() === 'ar' ? 'كشف الحساب' : 'Ledger' }}</th>
+                <th rowspan="2" class="th-drill">{{ 'accounting.trialBalance.table.ledger' | translate }}</th>
               </tr>
 
               <!-- Sub-headers: Debit & Credit for each group -->
               <tr class="sub-header-row">
-                <th class="th-sub-debit">{{ langService.currentLang() === 'ar' ? 'مدين' : 'Debit' }}</th>
-                <th class="th-sub-credit">{{ langService.currentLang() === 'ar' ? 'دائن' : 'Credit' }}</th>
+                <th class="th-sub-debit">{{ 'accounting.trialBalance.table.debit' | translate }}</th>
+                <th class="th-sub-credit">{{ 'accounting.trialBalance.table.credit' | translate }}</th>
 
-                <th class="th-sub-debit text-emerald">{{ langService.currentLang() === 'ar' ? 'مدين' : 'Debit' }}</th>
-                <th class="th-sub-credit text-cyan">{{ langService.currentLang() === 'ar' ? 'دائن' : 'Credit' }}</th>
+                <th class="th-sub-debit text-emerald">{{ 'accounting.trialBalance.table.debit' | translate }}</th>
+                <th class="th-sub-credit text-cyan">{{ 'accounting.trialBalance.table.credit' | translate }}</th>
 
-                <th class="th-sub-debit text-emerald">{{ langService.currentLang() === 'ar' ? 'مدين' : 'Debit' }}</th>
-                <th class="th-sub-credit text-cyan">{{ langService.currentLang() === 'ar' ? 'دائن' : 'Credit' }}</th>
+                <th class="th-sub-debit text-emerald">{{ 'accounting.trialBalance.table.debit' | translate }}</th>
+                <th class="th-sub-credit text-cyan">{{ 'accounting.trialBalance.table.credit' | translate }}</th>
               </tr>
             </thead>
 
@@ -280,7 +281,7 @@ interface FlatRowItem {
               <tr *ngIf="loading()">
                 <td colspan="10" class="td-state td-loading">
                   <i class="pi pi-spin pi-spinner"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'جاري استخراج وتجميع ميزان المراجعة بالمجاميع والأرصدة...' : 'Calculating Trial Balance...' }}</span>
+                  <span>{{ 'accounting.trialBalance.table.calculating' | translate }}</span>
                 </td>
               </tr>
 
@@ -288,7 +289,7 @@ interface FlatRowItem {
               <tr *ngIf="!loading() && displayedRows.length === 0">
                 <td colspan="10" class="td-state td-empty">
                   <i class="pi pi-inbox"></i>
-                  <p>{{ langService.currentLang() === 'ar' ? 'لا توجد بيانات أو حسابات مطابقة لمعايير البحث المحددة' : 'No trial balance accounts found' }}</p>
+                  <p>{{ 'accounting.trialBalance.table.noData' | translate }}</p>
                 </td>
               </tr>
 
@@ -325,13 +326,13 @@ interface FlatRowItem {
                       <!-- Account Category Icon -->
                       <i [class]="getAccountTypeIcon(row.account.accountType)" class="acc-type-icon"></i>
 
-                      <span class="account-name-text">
-                        {{ row.account.nameAr }}
+                      <span class="account-name-text" [title]="langService.currentLang() === 'ar' ? row.account.nameAr : (row.account.nameEn || row.account.nameAr)">
+                        {{ langService.currentLang() === 'ar' ? row.account.nameAr : (row.account.nameEn || row.account.nameAr) }}
                       </span>
 
                       <!-- Level Tag -->
                       <span class="level-tag" [class.tag-main]="row.level === 1" [class.tag-sub]="row.level > 1">
-                        {{ row.level === 1 ? (langService.currentLang() === 'ar' ? 'رئيسي' : 'Major') : 'L' + row.level }}
+                        {{ row.level === 1 ? ('accounting.trialBalance.table.major' | translate) : 'L' + row.level }}
                       </span>
                     </div>
                   </td>
@@ -339,7 +340,7 @@ interface FlatRowItem {
                   <!-- Account Nature -->
                   <td class="td-type text-center">
                     <span class="nature-pill" [class.nature-debit]="row.account.accountNature === 1" [class.nature-credit]="row.account.accountNature === 2">
-                      {{ row.account.accountNature === 1 ? (langService.currentLang() === 'ar' ? 'مدين' : 'Debit') : (langService.currentLang() === 'ar' ? 'دائن' : 'Credit') }}
+                      {{ row.account.accountNature === 1 ? ('accounting.trialBalance.table.debit' | translate) : ('accounting.trialBalance.table.credit' | translate) }}
                     </span>
                   </td>
 
@@ -379,9 +380,9 @@ interface FlatRowItem {
                       class="drilldown-btn" 
                       *ngIf="row.account.isPostable" 
                       (click)="drilldownToStatement(row.account.accountId)"
-                      title="فتح كشف حساب تفصيلي في دفتر الأستاذ">
+                      [title]="'ui.trialBalance.b3b8c7' | translate">
                       <i class="pi pi-external-link"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'كشف' : 'View' }}</span>
+                      <span>{{ 'accounting.trialBalance.table.viewLedger' | translate }}</span>
                     </button>
                     <span class="group-placeholder" *ngIf="!row.account.isPostable">—</span>
                   </td>
@@ -399,7 +400,7 @@ interface FlatRowItem {
                 <td colspan="3" class="td-total-lbl">
                   <div class="total-badge-box">
                     <i class="pi pi-check-circle text-emerald"></i>
-                    <strong>{{ langService.currentLang() === 'ar' ? 'إجمالي ميزان المراجعة العام (Grand Total):' : 'Grand Totals:' }}</strong>
+                    <strong>{{ 'accounting.trialBalance.table.grandTotals' | translate }}</strong>
                   </div>
                 </td>
                 
@@ -425,17 +426,13 @@ interface FlatRowItem {
                     <i [class]="report()!.isBalanced ? 'pi pi-verified' : 'pi pi-times-circle'"></i>
                     <span>
                       {{ report()!.isBalanced 
-                        ? (langService.currentLang() === 'ar' 
-                            ? 'إثبات توازن الميزان: مجموع الأرصدة المدينة يطابق تماماً مجموع الأرصدة الدائنة (متوازن 100% وفق معايير الهيئة السعودية للمحاسبين SOCPA)' 
-                            : 'Trial Balance Proof: Total Debits match Total Credits (100% in compliance with SOCPA & IFRS)')
-                        : (langService.currentLang() === 'ar' 
-                            ? 'تنبيه تدقيق: يوجد عدم توازن بين طرفي الميزان! يرجى مراجعة القيود غير المرحلة أو غير المتزنة.' 
-                            : 'Audit Warning: Trial Balance is out of balance!') }}
+                        ? ('accounting.trialBalance.perfectBalance' | translate) 
+                        : ('accounting.trialBalance.outOfBalance' | translate) }}
                     </span>
                   </div>
                 </td>
                 <td colspan="3" class="td-proof-diff font-mono">
-                  <span>{{ langService.currentLang() === 'ar' ? 'فارق التوازن:' : 'Difference:' }}</span>
+                  <span>{{ 'accounting.trialBalance.table.balanceDiff' | translate }}</span>
                   <strong>{{ report()!.balanceDifference | number:'1.2-2' }} SAR</strong>
                 </td>
               </tr>
@@ -456,16 +453,16 @@ interface FlatRowItem {
           <div class="print-action-bar no-print">
             <div class="print-act-left">
               <i class="pi pi-print text-emerald"></i>
-              <strong>{{ langService.currentLang() === 'ar' ? 'معاينة ميزان المراجعة المعتمد للطباعة A4' : 'A4 Trial Balance Print Preview' }}</strong>
+              <strong>{{ 'accounting.trialBalance.table.previewTitle' | translate }}</strong>
             </div>
             <div class="print-act-right">
               <button class="secondary-btn" (click)="closePrintModal()">
                 <i class="pi pi-times"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إغلاق' : 'Close' }}</span>
+                <span>{{ 'common.close' | translate }}</span>
               </button>
               <button class="primary-btn" (click)="triggerPrint()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إرسال إلى الطابعة / حفظ PDF' : 'Print / Save PDF' }}</span>
+                <span>{{ 'accounting.trialBalance.table.printAction' | translate }}</span>
               </button>
             </div>
           </div>
@@ -483,27 +480,27 @@ interface FlatRowItem {
                   <h2 class="company-name-ar">{{ companyContext.activeCompany().nameAr }}</h2>
                   <span class="company-name-en">{{ companyContext.activeCompany().nameEn }}</span>
                   <div class="tax-info font-mono">
-                    <span>الرقم الضريبي VAT: {{ companyContext.activeCompany().vatNumber }}</span>
-                    <span>س.ت CR: {{ companyContext.activeCompany().commercialRegistration }}</span>
+                    <span>{{ 'ui.trialBalance.909baf' | translate }} {{ companyContext.activeCompany().vatNumber }}</span>
+                    <span>{{ 'ui.trialBalance.173691' | translate }} {{ companyContext.activeCompany().commercialRegistration }}</span>
                   </div>
                 </div>
               </div>
 
               <div class="header-doc-title">
-                <h1 class="doc-main-title">ميزان المراجعة بالمجاميع والأرصدة</h1>
+                <h1 class="doc-main-title">{{ 'accounting.trialBalance.title' | translate }}</h1>
                 <span class="doc-sub-title">TRIAL BALANCE REPORT (TOTALS & BALANCES)</span>
                 <div class="doc-meta-badge font-mono">
-                  <span>الفترة: من {{ fromDate }} إلى {{ toDate }}</span>
+                  <span>{{ 'ui.trialBalance.fadae1' | translate }} {{ fromDate }} {{ 'accounting.financialStatements.ui.to1' | translate }} {{ toDate }}</span>
                 </div>
               </div>
 
               <div class="header-qr-side">
                 <div class="official-audit-badge">
                   <i class="pi pi-shield"></i>
-                  <span>معتمد رسمياً</span>
+                  <span>{{ 'ui.trialBalance.9efe36' | translate }}</span>
                   <small>SOCPA / IFRS</small>
                 </div>
-                <span class="print-date font-mono">تاريخ الاستخراج: {{ printDate | date:'yyyy-MM-dd HH:mm' }}</span>
+                <span class="print-date font-mono">{{ 'ui.trialBalance.7980bf' | translate }} {{ printDate | date:'yyyy-MM-dd HH:mm' }}</span>
               </div>
             </div>
 
@@ -512,20 +509,20 @@ interface FlatRowItem {
             <!-- Summary KPI Strip on Print Document -->
             <div class="paper-summary-strip" *ngIf="report()">
               <div class="summary-box">
-                <span class="s-label">الافتتاحي (مدين / دائن)</span>
+                <span class="s-label">{{ 'ui.trialBalance.da9e36' | translate }}</span>
                 <strong class="s-val font-mono">{{ report()!.totalOpeningDebit | number:'1.2-2' }} SAR</strong>
               </div>
               <div class="summary-box">
-                <span class="s-label">حركة الفترة (مدين / دائن)</span>
+                <span class="s-label">{{ 'ui.trialBalance.a8c76a' | translate }}</span>
                 <strong class="s-val font-mono text-emerald">{{ report()!.totalPeriodDebit | number:'1.2-2' }} SAR</strong>
               </div>
               <div class="summary-box">
-                <span class="s-label">الختامي (مدين / دائن)</span>
+                <span class="s-label">{{ 'ui.trialBalance.25603a' | translate }}</span>
                 <strong class="s-val font-mono text-cyan">{{ report()!.totalEndingDebit | number:'1.2-2' }} SAR</strong>
               </div>
               <div class="summary-box">
-                <span class="s-label">حالة التوازن</span>
-                <strong class="s-val text-emerald font-mono">{{ report()!.isBalanced ? 'متوازن تماماً (0.00)' : 'فارق: ' + report()!.balanceDifference }}</strong>
+                <span class="s-label">{{ 'ui.trialBalance.ae847b' | translate }}</span>
+                <strong class="s-val text-emerald font-mono">{{ report()!.isBalanced ? ('ui.trialBalance.672649' | translate) : ('ui.trialBalance.2b2d02' | translate) + report()!.balanceDifference }}</strong>
               </div>
             </div>
 
@@ -533,20 +530,20 @@ interface FlatRowItem {
             <table class="paper-data-table" *ngIf="report()">
               <thead>
                 <tr class="p-head-top">
-                  <th rowspan="2" class="p-th-code">كود الحساب</th>
-                  <th rowspan="2" class="p-th-name">اسم الحساب المحاسبي</th>
-                  <th rowspan="2" class="p-th-nature">الطبيعة</th>
-                  <th colspan="2" class="p-th-group">الرصيد الافتتاحي</th>
-                  <th colspan="2" class="p-th-group">حركة الفترة</th>
-                  <th colspan="2" class="p-th-group">الرصيد الختامي</th>
+                  <th rowspan="2" class="p-th-code">{{ 'accounting.trialBalance.table.code' | translate }}</th>
+                  <th rowspan="2" class="p-th-name">{{ 'accounting.trialBalance.table.accountName' | translate }}</th>
+                  <th rowspan="2" class="p-th-nature">{{ 'accounting.trialBalance.table.nature' | translate }}</th>
+                  <th colspan="2" class="p-th-group">{{ 'accounting.trialBalance.table.openingGroup' | translate }}</th>
+                  <th colspan="2" class="p-th-group">{{ 'accounting.trialBalance.table.movementGroup' | translate }}</th>
+                  <th colspan="2" class="p-th-group">{{ 'accounting.trialBalance.table.endingGroup' | translate }}</th>
                 </tr>
                 <tr class="p-head-sub">
-                  <th>مدين</th>
-                  <th>دائن</th>
-                  <th>مدين</th>
-                  <th>دائن</th>
-                  <th>مدين</th>
-                  <th>دائن</th>
+                  <th>{{ 'accounting.trialBalance.table.debit' | translate }}</th>
+                  <th>{{ 'accounting.trialBalance.table.credit' | translate }}</th>
+                  <th>{{ 'accounting.trialBalance.table.debit' | translate }}</th>
+                  <th>{{ 'accounting.trialBalance.table.credit' | translate }}</th>
+                  <th>{{ 'accounting.trialBalance.table.debit' | translate }}</th>
+                  <th>{{ 'accounting.trialBalance.table.credit' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -559,11 +556,11 @@ interface FlatRowItem {
                   <td class="font-mono text-center">{{ row.account.accountCode }}</td>
                   
                   <td [style.padding-inline-start.px]="(row.level - 1) * 14">
-                    <strong>{{ row.account.nameAr }}</strong>
+                    <strong>{{ langService.currentLang() === 'ar' ? row.account.nameAr : (row.account.nameEn || row.account.nameAr) }}</strong>
                   </td>
 
                   <td class="text-center">
-                    {{ row.account.accountNature === 1 ? 'مدين' : 'دائن' }}
+                    {{ row.account.accountNature === 1 ? ('accounting.trialBalance.table.debit' | translate) : ('accounting.trialBalance.table.credit' | translate) }}
                   </td>
 
                   <td class="font-mono text-end">{{ row.account.openingDebit > 0 ? (row.account.openingDebit | number:'1.2-2') : '—' }}</td>
@@ -578,7 +575,7 @@ interface FlatRowItem {
               </tbody>
               <tfoot>
                 <tr class="p-foot-total font-mono">
-                  <td colspan="3" class="text-center font-bold">المجموع العام لميزان المراجعة</td>
+                  <td colspan="3" class="text-center font-bold">{{ 'accounting.trialBalance.table.grandTotals' | translate }}</td>
                   <td class="text-end">{{ report()!.totalOpeningDebit | number:'1.2-2' }}</td>
                   <td class="text-end">{{ report()!.totalOpeningCredit | number:'1.2-2' }}</td>
                   <td class="text-end">{{ report()!.totalPeriodDebit | number:'1.2-2' }}</td>
@@ -591,32 +588,32 @@ interface FlatRowItem {
 
             <!-- Arabic Tafqeet Closing Text -->
             <div class="tafqeet-strip">
-              <span class="tf-label">تفقيط مجاميع الميزان الختامي:</span>
+              <span class="tf-label">{{ 'ui.trialBalance.3098ae' | translate }}</span>
               <strong class="tf-text">{{ getTafqeetText() }}</strong>
             </div>
 
             <!-- Corporate Tripartite Signatures Matrix -->
             <div class="paper-signatures-matrix">
               <div class="sig-box">
-                <span class="sig-title">المحاسب المالي المسؤول</span>
+                <span class="sig-title">{{ 'ui.trialBalance.f6a2a7' | translate }}</span>
                 <span class="sig-name">Financial Accountant</span>
-                <div class="sig-line">التوقيع: ............................</div>
+                <div class="sig-line">{{ 'ui.trialBalance.297f65' | translate }}</div>
               </div>
               <div class="sig-box">
-                <span class="sig-title">رئيس قسم الحسابات والمراجعة</span>
+                <span class="sig-title">{{ 'ui.trialBalance.b20743' | translate }}</span>
                 <span class="sig-name">Chief Accountant / Auditor</span>
-                <div class="sig-line">التوقيع: ............................</div>
+                <div class="sig-line">{{ 'ui.trialBalance.297f65' | translate }}</div>
               </div>
               <div class="sig-box">
-                <span class="sig-title">المدير المالي التنفيذي (CFO)</span>
+                <span class="sig-title">{{ 'hr.payroll.cfoTitle' | translate }}</span>
                 <span class="sig-name">Chief Financial Officer</span>
-                <div class="sig-line">التوقيع والختم: ............................</div>
+                <div class="sig-line">{{ 'ui.trialBalance.e7da75' | translate }}</div>
               </div>
             </div>
 
             <!-- Official Footer Note -->
             <div class="paper-footer-legal">
-              <span>نظام الربان المحاسبي المتكامل | Al-Roban ERP | تم استخراج هذا الميزان آلياً من واقع القيود المرحلة ودفتر الأستاذ العام المعتمد.</span>
+              <span>{{ 'ui.trialBalance.1e895b' | translate }}</span>
             </div>
 
           </div>

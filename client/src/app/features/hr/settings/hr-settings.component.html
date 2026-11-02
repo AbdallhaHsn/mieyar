@@ -1,0 +1,144 @@
+<div class="hr-page-container" [attr.dir]="isArabic ? 'rtl' : 'ltr'">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1>{{ 'hr.settings.title' | translate }}</h1>
+        <span class="badge-tag">{{ 'hr.settings.hrBadge' | translate }}</span>
+        <span class="badge-tag policy-tag">{{ 'hr.settings.policyBadge' | translate }}</span>
+      </div>
+      <p class="subtitle">
+        {{ 'hr.settings.subtitle' | translate }}
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="saveSettings()" [disabled]="saving || loading">
+        <i class="pi pi-check" *ngIf="!saving"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="saving"></i>
+        <span>{{ 'hr.settings.savePolicies' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <i class="pi pi-spin pi-spinner text-primary text-3xl"></i>
+    <p>{{ 'common.loading' | translate }}</p>
+  </div>
+
+  <div class="settings-grid" *ngIf="!loading">
+    <!-- Policy Card 1: Employee Advances & Loans -->
+    <div class="policy-card">
+      <div class="card-header">
+        <div class="card-icon advance-icon">
+          <i class="pi pi-credit-card"></i>
+        </div>
+        <div>
+          <h3>{{ 'hr.settings.advancesCardTitle' | translate }}</h3>
+          <p>{{ 'hr.settings.advancesCardSubtitle' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Max Percentage of Basic Salary -->
+        <div class="setting-item">
+          <div class="setting-text">
+            <span class="setting-title">{{ 'hr.settings.maxPercentageTitle' | translate }}</span>
+            <span class="setting-desc">
+              {{ 'hr.settings.maxPercentageDesc' | translate }}
+            </span>
+          </div>
+          <div class="setting-control input-with-suffix">
+            <input type="number" min="10" max="500" [(ngModel)]="settings.maxAdvanceSalaryPercentage" class="form-control" />
+            <span class="suffix">%</span>
+          </div>
+        </div>
+
+        <!-- Max Installments -->
+        <div class="setting-item">
+          <div class="setting-text">
+            <span class="setting-title">{{ 'hr.settings.maxInstallmentTermMonths' | translate }}</span>
+            <span class="setting-desc">
+              {{ 'hr.settings.maximumMonthsAllowedToAmortize' | translate }}
+            </span>
+          </div>
+          <div class="setting-control input-with-suffix">
+            <input type="number" min="1" max="48" [(ngModel)]="settings.maxAdvanceInstallments" class="form-control" />
+            <span class="suffix">{{ 'hr.settings.months' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Require Manager Approval -->
+        <div class="setting-item toggle-item">
+          <div class="setting-text">
+            <span class="setting-title">{{ 'hr.settings.mandatoryMultitierApproval' | translate }}</span>
+            <span class="setting-desc">
+              {{ 'hr.settings.advanceRequestsMustPassApprova' | translate }}
+            </span>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="requireApproval" [(ngModel)]="settings.requireManagerApprovalForAdvance" />
+            <label for="requireApproval"></label>
+          </div>
+        </div>
+
+        <!-- Auto Deduct from Payroll -->
+        <div class="setting-item toggle-item">
+          <div class="setting-text">
+            <span class="setting-title">{{ 'hr.settings.autodeductInstallmentsFromPayr' | translate }}</span>
+            <span class="setting-desc">
+              {{ 'hr.settings.automaticallyDeductInstallment' | translate }}
+            </span>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="autoDeduct" [(ngModel)]="settings.autoDeductFromPayroll" />
+            <label for="autoDeduct"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Policy Card 2: Custody & Exit Clearance -->
+    <div class="policy-card">
+      <div class="card-header">
+        <div class="card-icon custody-icon">
+          <i class="pi pi-box"></i>
+        </div>
+        <div>
+          <h3>{{ 'hr.settings.custodyClearancePolicies' | translate }}</h3>
+          <p>{{ 'hr.settings.assetTrackingAndEndofserviceCl' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Custody Notice Days -->
+        <div class="setting-item">
+          <div class="setting-text">
+            <span class="setting-title">{{ 'hr.settings.advanceReturnAlertPeriod' | translate }}</span>
+            <span class="setting-desc">
+              {{ 'hr.settings.daysBeforeExpectedReturnDate' | translate }}
+            </span>
+          </div>
+          <div class="setting-control input-with-suffix">
+            <input type="number" min="1" max="60" [(ngModel)]="settings.autoNotifyReturnCustodyBeforeDays" class="form-control" />
+            <span class="suffix">{{ 'hr.settings.days' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Block Clearance If Custody Active -->
+        <div class="setting-item toggle-item">
+          <div class="setting-text">
+            <span class="setting-title">{{ 'hr.settings.blockExitClearanceIfCustody' | translate }}</span>
+            <span class="setting-desc">
+              {{ 'hr.settings.preventFinalEosbClearanceSettl' | translate }}
+            </span>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="blockClearance" [(ngModel)]="settings.blockExitClearanceIfCustodyActive" />
+            <label for="blockClearance"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

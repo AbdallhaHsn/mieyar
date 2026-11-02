@@ -1,0 +1,389 @@
+<div class="hr-page-container" [attr.dir]="isArabic ? 'rtl' : 'ltr'">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1>{{ 'hr.custody.title' | translate }}</h1>
+        <span class="badge-tag">{{ 'hr.custody.hrBadge' | translate }}</span>
+        <span class="badge-tag clearance-tag">{{ 'hr.custody.clearanceBadge' | translate }}</span>
+      </div>
+      <p class="subtitle">
+        {{ 'hr.custody.subtitle' | translate }}
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="loadData()" [disabled]="loading">
+        <i class="pi pi-refresh" [class.pi-spin]="loading"></i>
+        <span>{{ 'hr.custody.refresh' | translate }}</span>
+      </button>
+      <button class="btn btn-primary" (click)="openNewModal()">
+        <i class="pi pi-plus"></i>
+        <span>{{ 'hr.custody.newCustody' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon total">
+        <i class="pi pi-briefcase"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.custody.kpis.totalCustodies' | translate }}</span>
+        <span class="metric-value">{{ totalCustodiesCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon active">
+        <i class="pi pi-user-check"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.custody.kpis.activeCustodies' | translate }}</span>
+        <span class="metric-value active-val">{{ activeCustodiesCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon returned">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.custody.kpis.returnedCustodies' | translate }}</span>
+        <span class="metric-value">{{ returnedCustodiesCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon damaged">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.custody.damagedOrLostKpi' | translate }}</span>
+        <span class="metric-value damaged-val">{{ lostOrDamagedCount }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applyFilter()"
+        [placeholder]="'hr.custody.searchPlaceholder' | translate"
+      />
+      <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''; applyFilter()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="status-tabs">
+      <button [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'; applyFilter()">
+        {{ 'hr.custody.statusAll' | translate }}
+      </button>
+      <button [class.active]="statusFilter === '1'" (click)="statusFilter = '1'; applyFilter()">
+        {{ 'hr.custody.statusActive' | translate }}
+        <span class="count-pill" *ngIf="activeCustodiesCount > 0">{{ activeCustodiesCount }}</span>
+      </button>
+      <button [class.active]="statusFilter === '2'" (click)="statusFilter = '2'; applyFilter()">
+        {{ 'hr.custody.statusReturned' | translate }}
+      </button>
+      <button [class.active]="statusFilter === '3'" (click)="statusFilter = '3'; applyFilter()">
+        {{ 'hr.custody.statusDamaged' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-container">
+    <div *ngIf="loading" class="table-loading">
+      <i class="pi pi-spin pi-spinner text-primary text-3xl"></i>
+      <p>{{ 'hr.custody.loading' | translate }}</p>
+    </div>
+
+    <table *ngIf="!loading && paginatedCustodies.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'hr.custody.colNumber' | translate }}</th>
+          <th>{{ 'hr.custody.colEmployee' | translate }}</th>
+          <th>{{ 'hr.custody.colType' | translate }}</th>
+          <th>{{ 'hr.custody.colItem' | translate }}</th>
+          <th>{{ 'hr.custody.colSerial' | translate }}</th>
+          <th>{{ 'hr.custody.colValue' | translate }}</th>
+          <th>{{ 'hr.custody.colDate' | translate }}</th>
+          <th>{{ 'hr.custody.colStatus' | translate }}</th>
+          <th class="actions-header">{{ 'hr.custody.colActions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of paginatedCustodies">
+          <td>
+            <div class="custody-code-badge">
+              <i class="pi pi-tag"></i>
+              <span>{{ c.custodyNumber }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="employee-cell">
+              <span class="emp-name">{{ isArabic ? c.employeeNameAr : c.employeeNameEn }}</span>
+              <span class="emp-sub">#{{ c.employeeNumber }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="type-badge" [ngClass]="getTypeBadgeClass(c.type)">
+              {{ getTypeLabel(c.type) }}
+            </span>
+          </td>
+          <td>
+            <div class="item-name-cell">
+              <strong>{{ isArabic ? c.itemNameAr : c.itemNameEn }}</strong>
+              <small *ngIf="c.conditionOnAssignment" class="condition-text">
+                {{ 'hr.custody.conditionPrefix' | translate }}{{ c.conditionOnAssignment }}
+              </small>
+            </div>
+          </td>
+          <td>
+            <span class="serial-code">{{ c.serialOrAssetNumber || '-' }}</span>
+          </td>
+          <td>
+            <span class="value-text" *ngIf="c.valueOrAmount">
+              {{ c.valueOrAmount | number:'1.2-2' }} <small>{{ 'hr.custody.currency' | translate }}</small>
+            </span>
+            <span *ngIf="!c.valueOrAmount" class="text-muted">-</span>
+          </td>
+          <td>
+            <span class="date-text">{{ c.assignedDate | date:'yyyy/MM/dd' }}</span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusBadgeClass(c.status)">
+              {{ getStatusLabel(c.status) }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <!-- Active: Return & Clearance button -->
+            <ng-container *ngIf="c.status === 1">
+              <button class="btn-action return-btn" (click)="openReturnModal(c)" [title]="'hr.custody.btnReturnAndClear' | translate">
+                <i class="pi pi-check-square"></i>
+                <span>{{ 'hr.custody.returnAndClear' | translate }}</span>
+              </button>
+            </ng-container>
+
+            <!-- Returned: view notes -->
+            <ng-container *ngIf="c.status === 2">
+              <span class="text-xs text-emerald-600 font-medium" [title]="c.returnNotes || ''">
+                <i class="pi pi-verified"></i>
+                {{ 'hr.custody.clearedBadge' | translate }}
+              </span>
+            </ng-container>
+
+            <!-- Lost or Damaged -->
+            <ng-container *ngIf="c.status === 3 || c.status === 4">
+              <span class="text-xs text-rose-600 font-medium" [title]="c.returnNotes || ''">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ 'hr.custody.damagedBadge' | translate }}
+              </span>
+            </ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!loading && paginatedCustodies.length === 0" class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <h3>{{ 'hr.custody.emptyTitle' | translate }}</h3>
+      <p>{{ 'hr.custody.emptyDesc' | translate }}</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-footer" *ngIf="filteredCustodies.length > pageSize">
+      <app-pagination
+        [totalItems]="filteredCustodies.length"
+        [pageSize]="pageSize"
+        [currentPage]="currentPage"
+        (pageChange)="currentPage = $event"
+      ></app-pagination>
+    </div>
+  </div>
+</div>
+
+<!-- ================= NEW CUSTODY MODAL ================= -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="pi pi-box"></i>
+        <h3>{{ 'hr.custody.modalTitle' | translate }}</h3>
+      </div>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form (ngSubmit)="saveCustody()">
+        <div class="form-grid">
+          <!-- Employee -->
+          <div class="form-group full-width">
+            <label>{{ 'hr.custody.colEmployee' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="form.employeeId" name="employeeId" required class="form-control">
+              <option value="" disabled>{{ 'hr.custody.selectEmpPrompt' | translate }}</option>
+              <option *ngFor="let emp of employees" [value]="emp.id">
+                {{ isArabic ? emp.fullNameAr : emp.fullNameEn }} ({{ emp.employeeNumber }}) - {{ isArabic ? emp.jobTitleAr : emp.jobTitleEn }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Custody Type -->
+          <div class="form-group">
+            <label>{{ 'hr.custody.colType' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="form.type" name="type" class="form-control">
+              <option [value]="1">{{ 'hr.custody.typeTangible' | translate }}</option>
+              <option [value]="2">{{ 'hr.custody.typeCash' | translate }}</option>
+              <option [value]="3">{{ 'hr.custody.typeCard' | translate }}</option>
+              <option [value]="4">{{ 'hr.custody.typeLicense' | translate }}</option>
+              <option [value]="5">{{ 'hr.custody.typeFuel' | translate }}</option>
+              <option [value]="6">{{ 'hr.custody.typeOther' | translate }}</option>
+            </select>
+          </div>
+
+          <!-- Serial / Asset Number -->
+          <div class="form-group">
+            <label>{{ 'hr.custody.serialOrAssetCode' | translate }}</label>
+            <input type="text" [(ngModel)]="form.serialOrAssetNumber" name="serialOrAssetNumber" class="form-control" placeholder="e.g. SN-882349" />
+          </div>
+
+          <!-- Item Name Arabic (Single-Entry Auto-Translation) -->
+          <div class="form-group full-width">
+            <label>
+              {{ 'hr.custody.itemNameArLabel' | translate }}
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="form.itemNameAr"
+              name="itemNameAr"
+              (ngModelChange)="onItemNameArChange()"
+              required
+              class="form-control"
+              [placeholder]="'hr.custody.itemNameArPlaceholder' | translate"
+            />
+          </div>
+
+          <!-- Item Name English (Auto-Translated) -->
+          <div class="form-group full-width">
+            <div class="label-with-action">
+              <label>{{ 'hr.custody.itemNameEnLabel' | translate }}</label>
+              <button type="button" class="btn-translate-badge" (click)="triggerReTranslate()" [title]="'roles.instantTranslate' | translate">
+                <i class="pi pi-globe"></i>
+                <span>{{ 'hr.custody.reTranslateBtn' | translate }}</span>
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="form.itemNameEn"
+              name="itemNameEn"
+              class="form-control"
+              placeholder="Auto-translated name..."
+            />
+          </div>
+
+          <!-- Value or Amount -->
+          <div class="form-group">
+            <label>{{ 'hr.custody.estimatedValueLabel' | translate }}</label>
+            <input type="number" [(ngModel)]="form.valueOrAmount" name="valueOrAmount" min="0" class="form-control" />
+          </div>
+
+          <!-- Assigned Date -->
+          <div class="form-group">
+            <label>{{ 'hr.custody.assignedDateLabel' | translate }}</label>
+            <input type="date" [(ngModel)]="form.assignedDate" name="assignedDate" class="form-control" />
+          </div>
+
+          <!-- Condition on Assignment -->
+          <div class="form-group full-width">
+            <label>{{ 'hr.custody.conditionLabel' | translate }}</label>
+            <input type="text" [(ngModel)]="form.conditionOnAssignment" name="conditionOnAssignment" class="form-control" [placeholder]="'hr.custody.conditionPlaceholder' | translate" />
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group full-width">
+            <label>{{ 'hr.custody.notesLabel' | translate }}</label>
+            <textarea [(ngModel)]="form.notes" name="notes" rows="2" class="form-control"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            <i class="pi pi-check" *ngIf="!loading"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
+            <span>{{ 'hr.custody.assignBtn' | translate }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RETURN / CLEARANCE MODAL ================= -->
+<div class="modal-backdrop" *ngIf="showReturnModal" (click)="showReturnModal = false">
+  <div class="modal-dialog sm-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="pi pi-verified text-emerald-600"></i>
+        <h3>{{ 'hr.custody.returnModalTitle' | translate }}</h3>
+      </div>
+      <button class="close-btn" (click)="showReturnModal = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedCustody">
+      <div class="custody-summary-box">
+        <div class="row">
+          <span>{{ 'hr.custody.empLabel' | translate }}</span>
+          <strong>{{ isArabic ? selectedCustody.employeeNameAr : selectedCustody.employeeNameEn }}</strong>
+        </div>
+        <div class="row">
+          <span>{{ 'hr.custody.itemLabel' | translate }}</span>
+          <strong>{{ isArabic ? selectedCustody.itemNameAr : selectedCustody.itemNameEn }}</strong>
+        </div>
+        <div class="row" *ngIf="selectedCustody.serialOrAssetNumber">
+          <span>{{ 'hr.custody.serialLabel' | translate }}</span>
+          <strong class="font-mono">{{ selectedCustody.serialOrAssetNumber }}</strong>
+        </div>
+      </div>
+
+      <div class="form-group mt-4">
+        <label>{{ 'hr.custody.returnStatusLabel' | translate }}</label>
+        <select [(ngModel)]="returnForm.status" class="form-control">
+          <option [value]="2">{{ 'hr.custody.returnGoodCondition' | translate }}</option>
+          <option [value]="3">{{ 'hr.custody.returnLostDamaged' | translate }}</option>
+          <option [value]="4">{{ 'hr.custody.returnWriteOff' | translate }}</option>
+        </select>
+      </div>
+
+      <div class="form-group mt-3">
+        <label>{{ 'hr.custody.inspectionNotesLabel' | translate }}</label>
+        <textarea [(ngModel)]="returnForm.returnNotes" rows="3" class="form-control"></textarea>
+      </div>
+
+      <div class="modal-footer mt-4">
+        <button type="button" class="btn btn-secondary" (click)="showReturnModal = false">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="button" class="btn btn-success" (click)="submitReturn()" [disabled]="loading">
+          <i class="pi pi-check"></i>
+          <span>{{ 'hr.custody.confirmReturnBtn' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

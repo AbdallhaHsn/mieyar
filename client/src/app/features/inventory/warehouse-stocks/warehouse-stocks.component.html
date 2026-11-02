@@ -1,0 +1,244 @@
+<div class="warehouse-stocks-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Header Bar -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="breadcrumbs">
+        <i class="pi pi-box"></i>
+        <span>{{ 'inventory.stocks.breadcrumbMain' | translate }}</span>
+        <i class="pi pi-angle-left"></i>
+        <strong>{{ 'inventory.stocks.breadcrumbCurrent' | translate }}</strong>
+      </div>
+      <h1>
+        {{ 'inventory.stocks.title' | translate }}
+      </h1>
+      <p class="subtitle">
+        {{ 'inventory.stocks.subtitle' | translate }}
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadData()" [disabled]="isLoading()">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        <span>{{ 'inventory.stocks.refresh' | translate }}</span>
+      </button>
+
+      <a routerLink="/purchasing/inventory/transfers" class="btn btn-emerald">
+        <i class="pi pi-arrows-h"></i>
+        <span>{{ 'inventory.stocks.transferBtn' | translate }}</span>
+      </a>
+
+      <a routerLink="/purchasing/inventory/adjustments" class="btn btn-primary">
+        <i class="pi pi-sliders-h"></i>
+        <span>{{ 'inventory.stocks.adjustBtn' | translate }}</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- KPI Metrics Grid -->
+  <section class="kpi-grid">
+    <div class="kpi-card border-emerald">
+      <div class="kpi-icon-box bg-emerald">
+        <i class="pi pi-dollar"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ 'inventory.stocks.kpis.totalValuation' | translate }}
+        </span>
+        <strong class="kpi-value text-emerald">
+          {{ totalValuation() | number:'1.2-2' }} <small>{{ 'inventory.warehouseStocks.sar' | translate }}</small>
+        </strong>
+        <span class="kpi-subtext">
+          {{ 'inventory.stocks.kpis.totalValuationSub' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <div class="kpi-card border-blue">
+      <div class="kpi-icon-box bg-blue">
+        <i class="pi pi-database"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ 'inventory.warehouseStocks.totalStockUnits' | translate }}
+        </span>
+        <strong class="kpi-value text-blue">
+          {{ totalQuantity() | number:'1.0-2' }}
+        </strong>
+        <span class="kpi-subtext">
+          {{ 'inventory.warehouseStocks.totalRegisteredItemsInStock' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <div class="kpi-card border-amber" [class.highlight]="lowStockCount() > 0">
+      <div class="kpi-icon-box bg-amber">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ 'inventory.warehouseStocks.lowStockReorderAlerts' | translate }}
+        </span>
+        <strong class="kpi-value text-amber">
+          {{ lowStockCount() }}
+        </strong>
+        <span class="kpi-subtext">
+          {{ 'inventory.warehouseStocks.requiresProcurementOrder' | translate }}
+        </span>
+      </div>
+    </div>
+
+    <div class="kpi-card border-purple">
+      <div class="kpi-icon-box bg-purple">
+        <i class="pi pi-building"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ 'inventory.warehouseStocks.monitoredWarehouses' | translate }}
+        </span>
+        <strong class="kpi-value text-purple">
+          {{ warehouses().length || 1 }}
+        </strong>
+        <span class="kpi-subtext">
+          {{ 'inventory.warehouseStocks.centralBranchWarehouses' | translate }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Control Toolbar -->
+  <section class="toolbar-card">
+    <div class="search-box">
+      <i class="pi pi-search"></i>
+      <input 
+        type="text" 
+        [placeholder]="('inventory.warehouseStocks.searchByCodeItemName' | translate)"
+        [(ngModel)]="searchQuery" 
+      />
+      <button *ngIf="searchQuery()" class="clear-btn" (click)="searchQuery.set('')">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="filter-actions">
+      <!-- Warehouse Selector -->
+      <div class="select-wrapper">
+        <i class="pi pi-building select-icon"></i>
+        <select [(ngModel)]="selectedWarehouseFilter">
+          <option value="ALL">
+            {{ 'inventory.warehouseStocks.allWarehouses' | translate }}
+          </option>
+          <option *ngFor="let wh of warehouses()" [value]="wh.code">
+            🏢 {{ wh.code }} - {{ langService.currentLang() === 'ar' ? wh.nameAr : (wh.nameEn || wh.nameAr) }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Low Stock Filter Toggle -->
+      <button 
+        type="button" 
+        class="filter-chip" 
+        [class.active]="lowStockOnly()"
+        (click)="lowStockOnly.set(!lowStockOnly())">
+        <i class="pi pi-bell"></i>
+        <span>{{ 'inventory.warehouseStocks.lowStockOnly' | translate }}</span>
+        <span class="chip-badge" *ngIf="lowStockCount() > 0">{{ lowStockCount() }}</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Main Data Table Card -->
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'inventory.warehouseStocks.itemCode' | translate }}</th>
+            <th>{{ 'inventory.warehouseStocks.itemName' | translate }}</th>
+            <th>{{ 'inventory.warehouseStocks.warehouse' | translate }}</th>
+            <th>{{ 'inventory.warehouseStocks.binLocation' | translate }}</th>
+            <th class="text-center">{{ 'inventory.warehouseStocks.inStock' | translate }}</th>
+            <th class="text-center">{{ 'inventory.warehouseStocks.minLevel' | translate }}</th>
+            <th class="text-end">{{ 'inventory.warehouseStocks.avgCost' | translate }}</th>
+            <th class="text-end">{{ 'inventory.warehouseStocks.totalValue' | translate }}</th>
+            <th class="text-center">{{ 'inventory.warehouseStocks.status' | translate }}</th>
+            <th class="text-center">{{ 'inventory.warehouseStocks.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filteredStocks().length === 0 && !isLoading()">
+            <td colspan="10" class="empty-row">
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>{{ 'inventory.warehouseStocks.noMatchingStockRecordsFound' | translate }}</p>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngFor="let row of paginatedStocks()">
+            <td class="font-mono font-bold text-blue">
+              {{ row.itemCode }}
+            </td>
+            <td>
+              <div class="item-name-cell">
+                <strong class="name-ar">{{ row.itemNameAr }}</strong>
+                <span class="name-en" *ngIf="row.itemNameEn">{{ row.itemNameEn }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="wh-tag">
+                <i class="pi pi-building me-1"></i>
+                {{ row.warehouseCode }} - {{ langService.currentLang() === 'ar' ? row.warehouseNameAr : (row.warehouseNameEn || row.warehouseNameAr) }}
+              </span>
+            </td>
+            <td>
+              <span class="bin-tag" *ngIf="row.binLocation">
+                <i class="pi pi-map-marker"></i>
+                {{ row.binLocation }}
+              </span>
+              <span class="text-muted" *ngIf="!row.binLocation">-</span>
+            </td>
+            <td class="text-center">
+              <strong class="font-mono text-lg" [class.text-danger]="row.quantity <= 0">
+                {{ row.quantity | number:'1.0-2' }}
+              </strong>
+            </td>
+            <td class="text-center text-muted font-mono">
+              {{ row.minStockLevel > 0 ? (row.minStockLevel | number:'1.0-2') : '-' }}
+            </td>
+            <td class="text-end font-mono">
+              {{ row.costPrice | number:'1.2-2' }}
+            </td>
+            <td class="text-end font-mono font-bold text-emerald">
+              {{ row.totalValue | number:'1.2-2' }}
+            </td>
+            <td class="text-center">
+              <span class="badge" [ngClass]="getStockBadgeClass(row)">
+                {{ getStockStatusLabel(row) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="action-buttons">
+                <a routerLink="/purchasing/inventory/transfers" [queryParams]="{ itemId: row.itemId, fromWh: row.warehouseCode }" class="action-btn" [title]="'inventory.stocks.transferBtn' | translate">
+                  <i class="pi pi-arrows-h"></i>
+                </a>
+                <a routerLink="/purchasing/inventory/adjustments" [queryParams]="{ itemId: row.itemId, wh: row.warehouseCode }" class="action-btn text-purple" [title]="'accounting.journal.create.ui.adjustment' | translate">
+                  <i class="pi pi-sliders-h"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <app-pagination 
+      [totalItems]="filteredStocks().length" 
+      [(currentPage)]="currentPage" 
+      [(pageSize)]="pageSize" 
+      [pageSizeOptions]="[5, 10, 20, 50]" 
+      [itemLabelAr]="'ui.warehouseStocks.8cfe63' | translate" 
+      itemLabelEn="Stocks">
+    </app-pagination>
+  </div>
+</div>

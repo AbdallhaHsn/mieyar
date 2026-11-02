@@ -1,3 +1,5 @@
+﻿using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Application.Queries.TrialBalance;
 using MediatR;
@@ -7,6 +9,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/trial-balance")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class TrialBalanceController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -4,6 +4,10 @@ using AlRobban.Modules.IdentityAndAccess.Infrastructure.Extensions;
 using AlRobban.Modules.GeneralLedger.Infrastructure.Extensions;
 using AlRobban.Modules.InvoicingAndZatca.Infrastructure.Extensions;
 using AlRobban.Modules.DocumentManagement.Infrastructure.Extensions;
+using AlRobban.Modules.Purchasing.Infrastructure.Extensions;
+using AlRobban.Modules.HumanResources.Infrastructure.Extensions;
+using AlRobban.Modules.Projects.Infrastructure.Extensions;
+using AlRobban.Modules.Manufacturing.Infrastructure.Extensions;
 using AlRobban.Shared.Application.Abstractions;
 using AlRobban.Shared.Application.Behaviors;
 using AlRobban.Shared.Infrastructure.Dapper;
@@ -11,6 +15,7 @@ using AlRobban.Shared.Infrastructure.MultiTenancy;
 using AlRobban.Shared.Infrastructure.Persistence.Interceptors;
 using AlRobban.Shared.Infrastructure.Security;
 using AlRobban.WebAPI.Hubs;
+using AlRobban.WebAPI.Startup;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -34,24 +39,47 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // 2. OpenTelemetry Tracing & Metrics
+var enableOtConsole = builder.Configuration.GetValue<bool>("OpenTelemetry:EnableConsoleExporter", false);
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService(serviceName: "AlRobban.Accounting.API"))
-    .WithTracing(tracing => tracing
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddConsoleExporter())
-    .WithMetrics(metrics => metrics
-        .AddAspNetCoreInstrumentation()
-        .AddConsoleExporter());
+    .WithTracing(tracing =>
+    {
+        tracing.AddAspNetCoreInstrumentation()
+               .AddHttpClientInstrumentation();
+        if (enableOtConsole)
+        {
+            tracing.AddConsoleExporter();
+        }
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics.AddAspNetCoreInstrumentation();
+        if (enableOtConsole)
+        {
+            metrics.AddConsoleExporter();
+        }
+    });
 
 // 3. Core Framework & Services
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<AlRobban.WebAPI.Security.TenantEnforcementFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
+builder.Services.AddHttpClient();
 
-// JWT Authentication Configuration
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "AlRobbanEnterpriseAccountingSuperSecretKey2026!#$@%";
+// JWT Authentication Configuration (secret is mandatory - never hardcoded)
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecretKey) || Encoding.UTF8.GetByteCount(jwtSecretKey) < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:SecretKey is missing or shorter than 32 bytes. Configure it via user-secrets, appsettings.Development.json or the Jwt__SecretKey environment variable.");
+}
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AlRobban.Security";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "AlRobban.Client";
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,16 +87,42 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.SaveToken = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ClockSkew = TimeSpan.Zero
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromSeconds(30)
     };
+
+    // Allow SignalR WebSocket connections to authenticate via ?access_token=
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken) &&
+                context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// Secure by default: every endpoint requires an authenticated user unless [AllowAnonymous]
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
 });
 
 // 4. Multi-Tenancy & Infrastructure
@@ -82,12 +136,17 @@ builder.Services.AddIdentityAndAccessModule(builder.Configuration);
 builder.Services.AddGeneralLedgerModule(builder.Configuration);
 builder.Services.AddInvoicingAndZatcaModule(builder.Configuration);
 builder.Services.AddDocumentManagementModule(builder.Configuration);
+builder.Services.AddPurchasingModule(builder.Configuration);
+builder.Services.AddHumanResourcesModule(builder.Configuration);
+builder.Services.AddProjectsModule(builder.Configuration);
+builder.Services.AddManufacturingModule(builder.Configuration);
 
 // 5. MediatR & Pipeline Behaviors
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(ICurrentTenantContext).Assembly);
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
 });
 builder.Services.AddValidatorsFromAssembly(typeof(ICurrentTenantContext).Assembly);
 
@@ -98,13 +157,13 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "AlRobban_";
 });
 
-// 7. CORS Configuration (Allows Angular Client)
+// 7. CORS Configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClientApp", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
-            .AllowAnyHeader()
+        policy.SetIsOriginAllowed(_ => true)
+            .WithHeaders("Authorization", "Content-Type", "X-Tenant-Id", "Accept")
             .AllowAnyMethod()
             .AllowCredentials();
     });
@@ -160,6 +219,37 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Friendly landing for direct browser visits & SignalR Hub status
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.TrimEnd('/') ?? "";
+    var accept = context.Request.Headers.Accept.ToString();
+    var isBrowserHtml = accept.Contains("text/html");
+
+    // Redirect root to Swagger UI when opened in browser
+    if (string.IsNullOrEmpty(path))
+    {
+        if (isBrowserHtml)
+        {
+            context.Response.Redirect("/swagger");
+            return;
+        }
+    }
+
+    // Render informative status page when /hubs/notifications is opened directly in browser
+    if (path.Equals("/hubs/notifications", StringComparison.OrdinalIgnoreCase) &&
+        HttpMethods.IsGet(context.Request.Method) &&
+        isBrowserHtml &&
+        !context.Request.Headers.ContainsKey("Upgrade"))
+    {
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.WriteAsync(GetHubStatusHtml());
+        return;
+    }
+
+    await next();
+});
+
 app.UseSerilogRequestLogging();
 if (!app.Environment.IsDevelopment())
 {
@@ -170,283 +260,216 @@ app.UseCors("AllowClientApp");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map Endpoints & SignalR Hub
+// Map Endpoints & SignalR Hub (AllowAnonymous so SignalR negotiation and public hub status succeed)
 app.MapControllers();
-app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<NotificationHub>("/hubs/notifications").AllowAnonymous();
 
-// System Health & Info Endpoint
-app.MapGet("/api/system/status", (ICurrentTenantContext tenantContext) => Results.Ok(new
+// System Health Endpoint (anonymous, intentionally minimal - no tenant or feature disclosure)
+app.MapGet("/api/system/status", () => Results.Ok(new
 {
-    System = "Al-Roban Accounting & ERP Platform",
-    Version = "1.0.0-Preview",
     Status = "Healthy",
-    ServerTimeUtc = DateTime.UtcNow,
-    ActiveTenant = tenantContext.TenantId ?? Guid.Empty,
-    Features = new[]
-    {
-        "General Ledger & Chart of Accounts",
-        "ZATCA Phase 2 E-Invoicing (UBL 2.1 & ECDSA Signatures)",
-        "Dapper High-Speed Financial Reporting",
-        "Multi-Tenancy with SESSION_CONTEXT",
-        "SignalR Live Financial Notifications",
-        "Distributed Redis Caching"
-    }
-})).WithName("GetSystemStatus").WithOpenApi();
+    ServerTimeUtc = DateTime.UtcNow
+})).AllowAnonymous().WithName("GetSystemStatus").WithOpenApi();
 
-// Ensure DB Schemas and Tables
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var idDb = scope.ServiceProvider.GetRequiredService<AlRobban.Modules.IdentityAndAccess.Infrastructure.Persistence.IdentityAndAccessDbContext>();
-        var glDb = scope.ServiceProvider.GetRequiredService<AlRobban.Modules.GeneralLedger.Infrastructure.Persistence.GeneralLedgerDbContext>();
-        var invDb = scope.ServiceProvider.GetRequiredService<AlRobban.Modules.InvoicingAndZatca.Infrastructure.Persistence.InvoicingDbContext>();
-        var docDb = scope.ServiceProvider.GetRequiredService<AlRobban.Modules.DocumentManagement.Infrastructure.Persistence.DocumentManagementDbContext>();
-        await idDb.Database.EnsureCreatedAsync();
-        await glDb.Database.EnsureCreatedAsync();
-        await invDb.Database.EnsureCreatedAsync();
-        await docDb.Database.EnsureCreatedAsync();
+// Apply EF Core migrations for all modules (fail-fast; legacy databases are baselined, never re-created)
+await app.MigrateDatabasesAsync();
 
-        // Ensure Recurring Entries & PDC & Partners & Currencies tables exist in DB
-        await glDb.Database.ExecuteSqlRawAsync(@"
-            IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'RecurringJournalEntries' AND s.name = 'dbo')
-            BEGIN
-                CREATE TABLE [dbo].[RecurringJournalEntries] (
-                    [Id] uniqueidentifier NOT NULL,
-                    [TenantId] uniqueidentifier NOT NULL,
-                    [CompanyId] uniqueidentifier NOT NULL,
-                    [Title] nvarchar(200) NOT NULL,
-                    [DescriptionAr] nvarchar(500) NOT NULL,
-                    [DescriptionEn] nvarchar(500) NOT NULL,
-                    [Frequency] int NOT NULL,
-                    [StartDate] datetime2 NOT NULL,
-                    [EndDate] datetime2 NULL,
-                    [NextRunDate] datetime2 NOT NULL,
-                    [LastRunDate] datetime2 NULL,
-                    [ExecutionCount] int NOT NULL,
-                    [IsActive] bit NOT NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    [CreatedBy] nvarchar(100) NULL,
-                    [LastModifiedAtUtc] datetime2 NULL,
-                    [LastModifiedBy] nvarchar(100) NULL,
-                    CONSTRAINT [PK_RecurringJournalEntries] PRIMARY KEY ([Id])
-                );
-            END;
-
-            IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'RecurringJournalEntryLines' AND s.name = 'dbo')
-            BEGIN
-                CREATE TABLE [dbo].[RecurringJournalEntryLines] (
-                    [Id] uniqueidentifier NOT NULL,
-                    [TenantId] uniqueidentifier NOT NULL,
-                    [RecurringEntryId] uniqueidentifier NOT NULL,
-                    [AccountId] uniqueidentifier NOT NULL,
-                    [Debit] decimal(18,4) NOT NULL,
-                    [Credit] decimal(18,4) NOT NULL,
-                    [Description] nvarchar(500) NOT NULL,
-                    [CostCenterId] uniqueidentifier NULL,
-                    CONSTRAINT [PK_RecurringJournalEntryLines] PRIMARY KEY ([Id]),
-                    CONSTRAINT [FK_RecurringJournalEntryLines_RecurringJournalEntries] FOREIGN KEY ([RecurringEntryId]) REFERENCES [dbo].[RecurringJournalEntries] ([Id]) ON DELETE CASCADE
-                );
-            END;
-
-            IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'PostDatedChecks' AND s.name = 'dbo')
-            BEGIN
-                CREATE TABLE [dbo].[PostDatedChecks] (
-                    [Id] uniqueidentifier NOT NULL,
-                    [TenantId] uniqueidentifier NOT NULL,
-                    [CompanyId] uniqueidentifier NOT NULL,
-                    [CheckNumber] nvarchar(50) NOT NULL,
-                    [BankName] nvarchar(100) NOT NULL,
-                    [DrawerName] nvarchar(250) NOT NULL,
-                    [Amount] decimal(18,4) NOT NULL,
-                    [Currency] nvarchar(10) NOT NULL,
-                    [IssueDate] datetime2 NOT NULL,
-                    [DueDate] datetime2 NOT NULL,
-                    [CheckType] int NOT NULL,
-                    [Status] int NOT NULL,
-                    [BankAccountId] uniqueidentifier NULL,
-                    [PartnerAccountId] uniqueidentifier NULL,
-                    [AssociatedJournalEntryId] uniqueidentifier NULL,
-                    [BounceReason] nvarchar(500) NULL,
-                    [BounceFee] decimal(18,4) NOT NULL,
-                    [Notes] nvarchar(max) NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    [CreatedBy] nvarchar(100) NULL,
-                    [LastModifiedAtUtc] datetime2 NULL,
-                    [LastModifiedBy] nvarchar(100) NULL,
-                    CONSTRAINT [PK_PostDatedChecks] PRIMARY KEY ([Id])
-                );
-            END;
-
-            IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'BusinessPartners' AND s.name = 'dbo')
-            BEGIN
-                CREATE TABLE [dbo].[BusinessPartners] (
-                    [Id] uniqueidentifier NOT NULL,
-                    [TenantId] uniqueidentifier NOT NULL,
-                    [CompanyId] uniqueidentifier NOT NULL,
-                    [Code] nvarchar(50) NOT NULL,
-                    [PartnerType] int NOT NULL,
-                    [NameAr] nvarchar(250) NOT NULL,
-                    [NameEn] nvarchar(250) NOT NULL,
-                    [TaxNumber] nvarchar(50) NULL,
-                    [CommercialRegistration] nvarchar(50) NULL,
-                    [Phone] nvarchar(50) NULL,
-                    [Email] nvarchar(100) NULL,
-                    [Address] nvarchar(500) NULL,
-                    [StreetName] nvarchar(250) NULL,
-                    [BuildingNumber] nvarchar(10) NULL,
-                    [PlotIdentification] nvarchar(10) NULL,
-                    [CitySubdivisionName] nvarchar(150) NULL,
-                    [CityName] nvarchar(100) NULL,
-                    [PostalZone] nvarchar(10) NULL,
-                    [CountryCode] nvarchar(10) NOT NULL DEFAULT 'SA',
-                    [OtherIdType] nvarchar(20) NULL,
-                    [OtherIdValue] nvarchar(50) NULL,
-                    [CreditLimit] decimal(18,4) NOT NULL,
-                    [PaymentTermsDays] int NOT NULL,
-                    [GlAccountId] uniqueidentifier NULL,
-                    [CurrentBalance] decimal(18,4) NOT NULL,
-                    [IsActive] bit NOT NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    [CreatedBy] nvarchar(100) NULL,
-                    [LastModifiedAtUtc] datetime2 NULL,
-                    [LastModifiedBy] nvarchar(100) NULL,
-                    CONSTRAINT [PK_BusinessPartners] PRIMARY KEY ([Id])
-                );
-            END
-            ELSE
-            BEGIN
-                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.BusinessPartners') AND name = 'StreetName')
-                BEGIN
-                    ALTER TABLE [dbo].[BusinessPartners] ADD
-                        [StreetName] nvarchar(250) NULL,
-                        [BuildingNumber] nvarchar(10) NULL,
-                        [PlotIdentification] nvarchar(10) NULL,
-                        [CitySubdivisionName] nvarchar(150) NULL,
-                        [CityName] nvarchar(100) NULL,
-                        [PostalZone] nvarchar(10) NULL,
-                        [CountryCode] nvarchar(10) NOT NULL CONSTRAINT DF_BP_Country DEFAULT 'SA',
-                        [OtherIdType] nvarchar(20) NULL,
-                        [OtherIdValue] nvarchar(50) NULL;
-                END
-            END;
-
-            IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'CurrencyRates' AND s.name = 'dbo')
-            BEGIN
-                CREATE TABLE [dbo].[CurrencyRates] (
-                    [Id] uniqueidentifier NOT NULL,
-                    [TenantId] uniqueidentifier NOT NULL,
-                    [CompanyId] uniqueidentifier NOT NULL,
-                    [CurrencyCode] nvarchar(10) NOT NULL,
-                    [CurrencyNameAr] nvarchar(100) NOT NULL,
-                    [CurrencyNameEn] nvarchar(100) NOT NULL,
-                    [ExchangeRateToSar] decimal(18,4) NOT NULL,
-                    [EffectiveDate] datetime2 NOT NULL,
-                    [IsActive] bit NOT NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    [CreatedBy] nvarchar(100) NULL,
-                    [LastModifiedAtUtc] datetime2 NULL,
-                    [LastModifiedBy] nvarchar(100) NULL,
-                    CONSTRAINT [PK_CurrencyRates] PRIMARY KEY ([Id])
-                );
-            END;
-
-            IF NOT EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'DocumentAttachments' AND s.name = 'dbo')
-            BEGIN
-                CREATE TABLE [dbo].[DocumentAttachments] (
-                    [Id] uniqueidentifier NOT NULL,
-                    [TenantId] uniqueidentifier NOT NULL,
-                    [CompanyId] uniqueidentifier NOT NULL,
-                    [EntityType] nvarchar(100) NOT NULL,
-                    [EntityId] uniqueidentifier NOT NULL,
-                    [FileName] nvarchar(250) NOT NULL,
-                    [ContentType] nvarchar(100) NOT NULL,
-                    [FileSizeBytes] bigint NOT NULL,
-                    [FileContentBase64] nvarchar(max) NOT NULL,
-                    [Description] nvarchar(max) NULL,
-                    [IsDeleted] bit NOT NULL,
-                    [CreatedAtUtc] datetime2 NOT NULL,
-                    [CreatedBy] nvarchar(100) NULL,
-                    [LastModifiedAtUtc] datetime2 NULL,
-                    [LastModifiedBy] nvarchar(100) NULL,
-                    CONSTRAINT [PK_DocumentAttachments] PRIMARY KEY ([Id])
-                );
-            END;
-        ");
-
-        // Ensure 'inv' schema and tables exist for ZATCA E-Invoicing
-        await invDb.Database.ExecuteSqlRawAsync(@"
-            IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'inv')
-                EXEC('CREATE SCHEMA inv');
-
-            IF EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'InvoiceLines' AND s.name = 'inv')
-                DROP TABLE [inv].[InvoiceLines];
-
-            IF EXISTS (SELECT * FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE t.name = 'Invoices' AND s.name = 'inv')
-                DROP TABLE [inv].[Invoices];
-
-            CREATE TABLE [inv].[Invoices] (
-                [Id] uniqueidentifier NOT NULL,
-                [TenantId] uniqueidentifier NOT NULL,
-                [CompanyId] uniqueidentifier NOT NULL,
-                [InvoiceNumber] nvarchar(50) NOT NULL,
-                [Uuid] uniqueidentifier NOT NULL,
-                [IssueDate] datetime2 NOT NULL,
-                [IssueTime] time NOT NULL,
-                [InvoiceType] int NOT NULL,
-                [TransactionType] int NOT NULL,
-                [Status] int NOT NULL,
-                [Currency] nvarchar(10) NOT NULL,
-                [CustomerName] nvarchar(250) NOT NULL,
-                [CustomerVatNumber] nvarchar(50) NULL,
-                [CustomerCrNumber] nvarchar(50) NULL,
-                [CustomerAddress] nvarchar(500) NULL,
-                [ReferenceInvoiceId] uniqueidentifier NULL,
-                [ReferenceInvoiceNumber] nvarchar(50) NULL,
-                [ModificationReason] nvarchar(500) NULL,
-                [SubTotal] decimal(18,4) NOT NULL,
-                [TotalDiscount] decimal(18,4) NOT NULL,
-                [TotalTaxableAmount] decimal(18,4) NOT NULL,
-                [TotalVat] decimal(18,4) NOT NULL,
-                [TotalAmount] decimal(18,4) NOT NULL,
-                [PreviousInvoiceHash] nvarchar(200) NOT NULL,
-                [InvoiceHash] nvarchar(200) NULL,
-                [CryptographicStamp] nvarchar(max) NULL,
-                [QrCodePayload] nvarchar(max) NULL,
-                [AssociatedJournalEntryId] uniqueidentifier NULL,
-                [AssociatedJournalEntryNumber] nvarchar(50) NULL,
-                [CreatedAtUtc] datetime2 NOT NULL,
-                [CreatedBy] nvarchar(100) NULL,
-                [LastModifiedAtUtc] datetime2 NULL,
-                [LastModifiedBy] nvarchar(100) NULL,
-                CONSTRAINT [PK_Invoices] PRIMARY KEY ([Id])
-            );
-            CREATE UNIQUE INDEX [IX_Invoices_CompanyId_InvoiceNumber] ON [inv].[Invoices] ([CompanyId], [InvoiceNumber]);
-
-            CREATE TABLE [inv].[InvoiceLines] (
-                [Id] uniqueidentifier NOT NULL,
-                [TenantId] uniqueidentifier NOT NULL,
-                [InvoiceId] uniqueidentifier NOT NULL,
-                [LineNumber] int NOT NULL,
-                [ItemNameAr] nvarchar(250) NOT NULL,
-                [ItemNameEn] nvarchar(250) NULL,
-                [Quantity] decimal(18,4) NOT NULL,
-                [UnitPrice] decimal(18,4) NOT NULL,
-                [SubTotal] decimal(18,4) NOT NULL,
-                [Discount] decimal(18,4) NOT NULL,
-                [TaxableAmount] decimal(18,4) NOT NULL,
-                [VatRate] decimal(18,4) NOT NULL,
-                [VatAmount] decimal(18,4) NOT NULL,
-                [TotalAmount] decimal(18,4) NOT NULL,
-                CONSTRAINT [PK_InvoiceLines] PRIMARY KEY ([Id]),
-                CONSTRAINT [FK_InvoiceLines_Invoices_InvoiceId] FOREIGN KEY ([InvoiceId]) REFERENCES [inv].[Invoices] ([Id]) ON DELETE CASCADE
-            );
-        ");
-    }
-    catch (Exception ex)
-    {
-        Log.Warning(ex, "Database initialization warning: {Message}", ex.Message);
-    }
-}
+static string GetHubStatusHtml() => """
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>منفذ الإشعارات والربط اللحظي - نظام الربان ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --emerald: #059669;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Cairo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            padding: 24px;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            max-width: 660px;
+            width: 100%;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+            text-align: center;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.35);
+            padding: 6px 18px;
+            border-radius: 9999px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin-bottom: 22px;
+        }
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 12px #10b981;
+            animation: pulse 1.8s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+        h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.75;
+            margin-bottom: 28px;
+        }
+        .info-grid {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 30px;
+            text-align: right;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .info-val {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            direction: ltr;
+            text-align: right;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="status-badge">
+            <span class="pulse-dot"></span>
+            الخدمة نشطة ومتصلة • Online & Operational
+        </div>
+        <h1>منفذ الإشعارات والربط اللحظي (SignalR Hub)</h1>
+        <p class="subtitle">
+            يعمل منفذ الربط المباشر لنظام <strong>الربان ERP</strong> بكفاءة تامة. هذا المسار مخصص لبروتوكول WebSocket لنقل التنبيهات والأحداث الحية تلقائياً بين الخادم والواجهة.
+        </p>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">المسار المباشر (Hub Path):</span>
+                <span class="info-val">/hubs/notifications</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">بروتوكول الاتصال:</span>
+                <span class="info-val">WebSockets / Server-Sent Events</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">الحالة التشغيلية:</span>
+                <span class="info-val" style="color: #34d399;">Active (200 OK)</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">الهيكل المعماري:</span>
+                <span class="info-val">Al-Roban Modular Monolith</span>
+            </div>
+        </div>
+        <div class="btn-group">
+            <a href="http://localhost:4200" class="btn btn-primary">
+                🚀 الدخول إلى واجهة النظام (Angular UI)
+            </a>
+            <a href="/swagger" class="btn btn-secondary">
+                📑 توثيق الـ API (Swagger UI)
+            </a>
+            <a href="/api/system/status" class="btn btn-secondary">
+                🩺 فحص صحة النظام (Health API)
+            </a>
+        </div>
+        <p class="footer-note">نظام الربان المحاسبي والإداري المتكامل — Al-Roban ERP Core API</p>
+    </div>
+</body>
+</html>
+""";
 
 app.Run();
+
+public partial class Program { }

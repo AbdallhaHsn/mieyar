@@ -21,6 +21,17 @@ public abstract class AppDbContextBase : DbContext
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Evaluated per query by EF against the current context instance (never cached across requests).
+    /// </summary>
+    public Guid? CurrentTenantId => _tenantContext.TenantId;
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+        configurationBuilder.Properties<decimal>().HavePrecision(18, 4);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -41,18 +52,18 @@ public abstract class AppDbContextBase : DbContext
                 filterExpression = notDeleted;
             }
 
-            // 2. Multi-Tenant Filter (Safe handling when TenantId is null or set)
+            // 2. Multi-Tenant Filter (DENY BY DEFAULT: no resolved tenant => no rows)
             if (typeof(IMustHaveTenant).IsAssignableFrom(clrType))
             {
                 var tenantProperty = Expression.Property(parameter, nameof(IMustHaveTenant.TenantId));
                 var currentTenantIdExpr = Expression.Property(
-                    Expression.Constant(_tenantContext),
-                    nameof(ICurrentTenantContext.TenantId));
+                    Expression.Constant(this),
+                    nameof(CurrentTenantId));
 
-                var hasNoTenant = Expression.Equal(currentTenantIdExpr, Expression.Constant(null, typeof(Guid?)));
                 var convertedTenantProp = Expression.Convert(tenantProperty, typeof(Guid?));
                 var tenantMatch = Expression.Equal(convertedTenantProp, currentTenantIdExpr);
-                var tenantCondition = Expression.OrElse(hasNoTenant, tenantMatch);
+                var hasTenant = Expression.NotEqual(currentTenantIdExpr, Expression.Constant(null, typeof(Guid?)));
+                var tenantCondition = Expression.AndAlso(hasTenant, tenantMatch);
 
                 filterExpression = filterExpression != null
                     ? Expression.AndAlso(filterExpression, tenantCondition)

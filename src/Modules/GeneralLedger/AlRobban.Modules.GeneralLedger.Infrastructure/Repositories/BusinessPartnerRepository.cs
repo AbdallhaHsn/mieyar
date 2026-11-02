@@ -21,7 +21,9 @@ public class BusinessPartnerRepository : IBusinessPartnerRepository
 
     public async Task<BusinessPartner?> GetByCodeAsync(Guid companyId, string code, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.BusinessPartners.FirstOrDefaultAsync(p => p.CompanyId == companyId && p.Code == code, cancellationToken);
+        return await _dbContext.BusinessPartners
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.CompanyId == companyId && p.Code == code, cancellationToken);
     }
 
     public async Task<IReadOnlyList<BusinessPartner>> GetListAsync(Guid companyId, PartnerType? partnerType = null, string? searchTerm = null, CancellationToken cancellationToken = default)
@@ -42,7 +44,10 @@ public class BusinessPartnerRepository : IBusinessPartnerRepository
             query = query.Where(p => p.NameAr.ToLower().Contains(term) || p.NameEn.ToLower().Contains(term) || p.Code.ToLower().Contains(term));
         }
 
-        return await query.OrderBy(p => p.Code).ToListAsync(cancellationToken);
+        return await query
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .ThenByDescending(p => p.Code)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(BusinessPartner partner, CancellationToken cancellationToken = default)

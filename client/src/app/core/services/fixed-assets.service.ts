@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export enum DepreciationMethod {
   StraightLine = 1,
@@ -144,11 +145,79 @@ export interface DisposeFixedAssetResultDto {
   message: string;
 }
 
+export interface FixedAssetFinancialReportDto {
+  companyId: string;
+  asOfDate: string;
+  fiscalYear?: number;
+  totals: FixedAssetReportTotalsDto;
+  categories: FixedAssetCategorySummaryDto[];
+  movementSchedule: FixedAssetMovementCategoryDto[];
+  disposals: FixedAssetDisposalReportItemDto[];
+}
+
+export interface FixedAssetReportTotalsDto {
+  totalAssetsCount: number;
+  activeCount: number;
+  fullyDepreciatedCount: number;
+  disposedCount: number;
+  totalAcquisitionCost: number;
+  totalSalvageValue: number;
+  totalAccumulatedDepreciation: number;
+  totalNetBookValue: number;
+  totalPeriodDepreciation: number;
+  totalGainsOnDisposals: number;
+  totalLossesOnDisposals: number;
+}
+
+export interface FixedAssetCategorySummaryDto {
+  assetAccountId: string;
+  accountCode: string;
+  accountNameAr: string;
+  assetCount: number;
+  totalCost: number;
+  totalSalvage: number;
+  totalAccumulated: number;
+  netBookValue: number;
+  depreciationRatioPercent: number;
+  assets: FixedAssetDto[];
+}
+
+export interface FixedAssetMovementCategoryDto {
+  categoryNameAr: string;
+  accountCode: string;
+  openingCost: number;
+  additionsCost: number;
+  disposalsCost: number;
+  closingCost: number;
+  openingAccumulated: number;
+  periodDepreciation: number;
+  disposalsAccumulated: number;
+  closingAccumulated: number;
+  openingBookValue: number;
+  closingBookValue: number;
+}
+
+export interface FixedAssetDisposalReportItemDto {
+  assetId: string;
+  assetCode: string;
+  nameAr: string;
+  nameEn: string;
+  disposalDate?: string;
+  reason?: string;
+  acquisitionCost: number;
+  accumulatedDepreciationAtDisposal: number;
+  bookValueAtDisposal: number;
+  salePrice: number;
+  gainOrLossAmount: number;
+  isGain: boolean;
+  journalEntryNumber?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class FixedAssetsService {
-  private readonly baseUrl = 'http://localhost:5000/api/fixed-assets';
+  private readonly baseUrl = `${environment.apiUrl}/api/fixed-assets`;
 
   constructor(private http: HttpClient) {}
 
@@ -158,6 +227,14 @@ export class FixedAssetsService {
     if (status) params = params.set('status', status.toString());
     if (searchTerm) params = params.set('searchTerm', searchTerm);
     return this.http.get<FixedAssetDto[]>(this.baseUrl, { params });
+  }
+
+  getFinancialReport(companyId?: string, asOfDate?: string, fiscalYear?: number): Observable<FixedAssetFinancialReportDto> {
+    let params = new HttpParams();
+    if (companyId) params = params.set('companyId', companyId);
+    if (asOfDate) params = params.set('asOfDate', asOfDate);
+    if (fiscalYear) params = params.set('fiscalYear', fiscalYear.toString());
+    return this.http.get<FixedAssetFinancialReportDto>(`${this.baseUrl}/financial-report`, { params });
   }
 
   createAsset(request: CreateFixedAssetRequest): Observable<FixedAssetDto> {
@@ -179,3 +256,4 @@ export class FixedAssetsService {
     return this.http.post<DisposeFixedAssetResultDto>(`${this.baseUrl}/${id}/dispose`, request);
   }
 }
+

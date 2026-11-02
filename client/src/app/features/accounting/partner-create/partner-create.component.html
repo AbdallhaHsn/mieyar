@@ -1,16 +1,16 @@
-<div class="partner-create-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+<div class="partner-create-page">
 
   <!-- Top Action & Navigation Bar -->
   <header class="page-topbar">
     <div class="topbar-right">
-      <a routerLink="/accounting/partners" class="btn-back" title="العودة لدليل الشركاء">
+      <a routerLink="/accounting/partners" class="btn-back" [title]="'ui.partnerCreate.e995a4' | translate">
         <i class="pi pi-arrow-right"></i>
       </a>
 
       <div class="title-group">
         <h1 class="main-title">
           <i class="pi pi-user-plus text-emerald"></i>
-          <span>{{ partnerType() === PartnerType.Customer ? 'إضافة عميل جديد' : (partnerType() === PartnerType.Supplier ? 'إضافة مورد جديد' : 'إضافة شريك تجاري') }}</span>
+          <span>{{ partnerType() === PartnerType.Customer ? ('accounting.partnerCreate.titleCustomer' | translate) : (partnerType() === PartnerType.Supplier ? ('accounting.partnerCreate.titleSupplier' | translate) : ('accounting.partnerCreate.titlePartner' | translate)) }}</span>
         </h1>
         <span class="head-code font-code">{{ code() }}</span>
       </div>
@@ -23,7 +23,7 @@
           [class.active]="partnerType() === PartnerType.Customer"
           (click)="setPartnerType(PartnerType.Customer)">
           <i class="pi pi-user"></i>
-          <span>عميل (مدين)</span>
+          <span>{{ 'accounting.partnerCreate.customerType' | translate }}</span>
         </button>
         <button 
           type="button" 
@@ -31,7 +31,7 @@
           [class.active]="partnerType() === PartnerType.Supplier"
           (click)="setPartnerType(PartnerType.Supplier)">
           <i class="pi pi-truck"></i>
-          <span>مورد (دائن)</span>
+          <span>{{ 'accounting.partnerCreate.supplierType' | translate }}</span>
         </button>
         <button 
           type="button" 
@@ -39,7 +39,7 @@
           [class.active]="partnerType() === PartnerType.Both"
           (click)="setPartnerType(PartnerType.Both)">
           <i class="pi pi-sync"></i>
-          <span>عميل ومورد</span>
+          <span>{{ 'accounting.partnerCreate.bothType' | translate }}</span>
         </button>
       </div>
     </div>
@@ -47,12 +47,12 @@
     <div class="topbar-actions">
       <button type="button" class="btn-cancel" routerLink="/accounting/partners">
         <i class="pi pi-times"></i>
-        <span>إلغاء</span>
+        <span>{{ 'common.cancel' | translate }}</span>
       </button>
 
       <button type="button" class="btn-save-direct" (click)="savePartner(false)" [disabled]="isSaving()">
         <i class="pi pi-check" [class.pi-spin]="isSaving()"></i>
-        <span>{{ isSaving() ? 'جاري الحفظ...' : 'حفظ الشريك' }}</span>
+        <span>{{ isSaving() ? ('accounting.partnerCreate.saving' | translate) : ('accounting.partnerCreate.savePartner' | translate) }}</span>
       </button>
     </div>
   </header>
@@ -72,8 +72,8 @@
           <span *ngIf="currentStep() <= 1">1</span>
         </div>
         <div class="step-meta">
-          <span class="step-title">معلومات الشريك والضريبة</span>
-          <span class="step-desc">الاسم، الرقم الضريبي، والمعرّف</span>
+          <span class="step-title">{{ 'ui.partnerCreate.217823' | translate }}</span>
+          <span class="step-desc">{{ 'ui.partnerCreate.3f93cb' | translate }}</span>
         </div>
       </div>
 
@@ -90,8 +90,8 @@
           <span *ngIf="currentStep() <= 2">2</span>
         </div>
         <div class="step-meta">
-          <span class="step-title">العنوان الوطني السعودي</span>
-          <span class="step-desc">متطلبات هيئة الزكاة (ZATCA)</span>
+          <span class="step-title">{{ 'ui.partnerCreate.8607f9' | translate }}</span>
+          <span class="step-desc">{{ 'ui.partnerCreate.ce669f' | translate }}</span>
         </div>
       </div>
 
@@ -106,8 +106,8 @@
           <span>3</span>
         </div>
         <div class="step-meta">
-          <span class="step-title">السياسات المالية والمراجعة</span>
-          <span class="step-desc">الائتمان، الحساب المحاسبي، والتأكيد</span>
+          <span class="step-title">{{ 'ui.partnerCreate.25fb27' | translate }}</span>
+          <span class="step-desc">{{ 'ui.partnerCreate.550e2d' | translate }}</span>
         </div>
       </div>
 
@@ -130,8 +130,8 @@
         <div class="pane-header">
           <div class="ph-icon"><i class="pi pi-id-card text-emerald"></i></div>
           <div class="ph-text">
-            <h2 class="ph-title">الخطوة 1: المعلومات الأساسية والهوية الضريبية</h2>
-            <p class="ph-desc">أدخل الاسم التجاري القانوني والبيانات الضريبية المعتمدة للشريك.</p>
+            <h2 class="ph-title">{{ 'ui.partnerCreate.080c4c' | translate }}</h2>
+            <p class="ph-desc">{{ 'ui.partnerCreate.9a4b51' | translate }}</p>
           </div>
         </div>
 
@@ -140,9 +140,9 @@
           <!-- Row 1: Partner Code & Phone -->
           <div class="form-field">
             <div class="label-row">
-              <label class="field-label required">كود الشريك (Partner Code)</label>
-              <button type="button" class="btn-text-action" (click)="generateSmartCode(partnerType())" title="توليد كود تلقائي جديد">
-                <i class="pi pi-refresh"></i> توليد كود
+              <label class="field-label required">{{ 'ui.partnerCreate.a2a2e2' | translate }}</label>
+              <button type="button" class="btn-text-action" (click)="generateSmartCode(partnerType())" [title]="'ui.partnerCreate.05c6a7' | translate">
+                <i class="pi pi-refresh"></i> {{ 'ui.partnerCreate.4a41b7' | translate }}
               </button>
             </div>
             <input 
@@ -155,7 +155,7 @@
           </div>
 
           <div class="form-field">
-            <label class="field-label">رقم الجوال / الهاتف</label>
+            <label class="field-label">{{ 'ui.partnerCreate.6ead57' | translate }}</label>
             <input 
               type="tel" 
               class="form-control font-code" 
@@ -164,41 +164,43 @@
               placeholder="05x xxx xxxx" />
           </div>
 
-          <!-- Row 2: Name in Arabic (Full Width) -->
-          <div class="form-field col-span-2">
-            <div class="label-row">
-              <label class="field-label required">الاسم التجاري للمنشأة (باللغة العربية كما بالسجل)</label>
-              <button 
-                type="button" 
-                class="btn-text-action" 
-                (click)="translateManually()" 
-                [disabled]="!nameAr()"
-                title="ترجمة الاسم آلياً للإنجليزية">
-                <i class="pi pi-language"></i> ترجمة تلقائية
-              </button>
-            </div>
+          <!-- Row 2: Bilingual Partner Names (العربية والإنجليزية جنباً إلى جنب) -->
+          <div class="form-field">
+            <label class="field-label required">{{ 'ui.partnerCreate.90f445' | translate }}</label>
             <input 
               type="text" 
               class="form-control font-bold" 
               [value]="nameAr()" 
-              (input)="onNameArChange($any($event.target).value)" 
-              placeholder="مثال: شركة الأفق السعيد للتجارة العامة والمقاولات" 
+              (input)="onNameArInput($any($event.target).value)" 
+              [placeholder]="'ui.partnerCreate.63b90e' | translate" 
               required />
           </div>
 
-          <!-- Row 3: Name in English & Email -->
           <div class="form-field">
-            <label class="field-label">الاسم بالإنجليزية (Legal Name - EN)</label>
+            <div class="label-row">
+              <label class="field-label required">{{ 'ui.partnerCreate.4de1e2' | translate }}</label>
+              <button 
+                type="button" 
+                class="btn-text-action" 
+                (click)="translateManually()" 
+                [disabled]="!nameAr().trim()"
+                [title]="'accounting.accountCreate.instantTranslateTitle' | translate">
+                <i class="pi pi-sync"></i> {{ 'roles.instantTranslate' | translate }}
+              </button>
+            </div>
             <input 
               type="text" 
-              class="form-control font-latin" 
+              class="form-control font-bold font-latin" 
+              dir="ltr"
               [value]="nameEn()" 
-              (input)="nameEn.set($any($event.target).value)" 
-              placeholder="e.g. Al-Ofuq Al-Saeed Trading Co." />
+              (input)="onNameEnInput($any($event.target).value)" 
+              placeholder="e.g. Al-Ofuq Al-Saeed Trading Co..." 
+              required />
           </div>
 
-          <div class="form-field">
-            <label class="field-label">البريد الإلكتروني للفوترة</label>
+          <!-- Email -->
+          <div class="form-field col-span-2">
+            <label class="field-label">{{ 'ui.partnerCreate.c737b6' | translate }}</label>
             <input 
               type="email" 
               class="form-control font-latin" 
@@ -209,14 +211,14 @@
 
           <!-- Divider -->
           <div class="grid-divider col-span-2">
-            <span>البيانات الضريبية والتجارية (ZATCA Identification)</span>
+            <span>{{ 'ui.partnerCreate.f206c8' | translate }}</span>
           </div>
 
           <!-- Row 4: VAT Number (15 digits) -->
           <div class="form-field col-span-2">
             <div class="label-row">
               <label class="field-label">
-                الرقم الضريبي السعودي (VAT Number - 15 رقماً)
+                {{ 'ui.partnerCreate.04c06b' | translate }}
               </label>
               <span class="status-indicator" [class.valid]="vatValidation().isValid" [class.invalid]="!vatValidation().isValid && !vatValidation().isEmpty">
                 {{ vatValidation().message }}
@@ -234,27 +236,27 @@
                 placeholder="300000000000003" />
               <span class="counter font-code">{{ taxNumber().length }}/15</span>
             </div>
-            <span class="field-hint">مطلوب لإصدار الفواتير الضريبية (B2B) للشركات والمؤسسات.</span>
+            <span class="field-hint">{{ 'ui.partnerCreate.eadd53' | translate }}</span>
           </div>
 
           <!-- Row 5: Scheme ID Type & Scheme Value -->
           <div class="form-field">
-            <label class="field-label">نوع المعرّف التجاري (Scheme ID)</label>
+            <label class="field-label">{{ 'ui.partnerCreate.c73811' | translate }}</label>
             <select class="form-control form-select" [value]="otherIdType()" (change)="otherIdType.set($any($event.target).value)">
               <option *ngFor="let opt of idSchemeOptions" [value]="opt.code">
-                {{ opt.nameAr }}
+                {{ langService.currentLang() === 'en' ? opt.nameEn : opt.nameAr }}
               </option>
             </select>
           </div>
 
           <div class="form-field">
-            <label class="field-label">رقم المعرّف / السجل التجاري</label>
+            <label class="field-label">{{ 'ui.partnerCreate.e9d3f5' | translate }}</label>
             <input 
               type="text" 
               class="form-control font-code" 
               [value]="otherIdValue()" 
               (input)="otherIdValue.set($any($event.target).value)" 
-              placeholder="مثال: 1010123456" />
+              [placeholder]="'ui.partnerCreate.28ed74' | translate" />
           </div>
 
         </div>
@@ -267,11 +269,11 @@
         <div class="pane-header">
           <div class="ph-icon"><i class="pi pi-map-marker text-cyan"></i></div>
           <div class="ph-text">
-            <h2 class="ph-title">الخطوة 2: العنوان الوطني السعودي المعتمد</h2>
-            <p class="ph-desc">العنوان الوطني المكون من 6 عناصر إلزامي لإصدار واعتماد الفواتير الضريبية (B2B) لدى هيئة الزكاة.</p>
+            <h2 class="ph-title">{{ 'ui.partnerCreate.51e208' | translate }}</h2>
+            <p class="ph-desc">{{ 'ui.partnerCreate.8ba345' | translate }}</p>
           </div>
-          <button type="button" class="btn-prefill-addr" (click)="fillSampleAddress()" title="تعبئة بيانات تجريبية">
-            <i class="pi pi-bolt"></i> تعبئة تجريبية
+          <button type="button" class="btn-prefill-addr" (click)="fillSampleAddress()" [title]="'ui.partnerCreate.69cb0d' | translate">
+            <i class="pi pi-bolt"></i> {{ 'ui.partnerCreate.3e63be' | translate }}
           </button>
         </div>
 
@@ -279,20 +281,20 @@
           
           <!-- Row 1: Street Name (Full Width) -->
           <div class="form-field col-span-2">
-            <label class="field-label required">اسم الشارع (Street Name)</label>
+            <label class="field-label required">{{ 'ui.partnerCreate.3da29c' | translate }}</label>
             <input 
               type="text" 
               class="form-control" 
               [value]="streetName()" 
               (input)="streetName.set($any($event.target).value)" 
-              placeholder="مثال: طريق الملك فهد الفرعي" 
+              [placeholder]="'ui.partnerCreate.665aec' | translate" 
               required />
           </div>
 
           <!-- Row 2: Building Number & District -->
           <div class="form-field">
             <div class="label-row">
-              <label class="field-label required">رقم المبنى (4 أرقام)</label>
+              <label class="field-label required">{{ 'ui.partnerCreate.565d4a' | translate }}</label>
               <span class="sub-status" *ngIf="!buildingValidation().isEmpty" [class.ok]="buildingValidation().isValid">
                 {{ buildingValidation().message }}
               </span>
@@ -308,34 +310,36 @@
           </div>
 
           <div class="form-field">
-            <label class="field-label required">اسم الحي (District)</label>
+            <label class="field-label required">{{ 'ui.partnerCreate.162495' | translate }}</label>
             <input 
               type="text" 
               class="form-control" 
               [value]="citySubdivisionName()" 
               (input)="citySubdivisionName.set($any($event.target).value)" 
-              placeholder="حي العليا" 
+              [placeholder]="'ui.partnerCreate.4b835c' | translate" 
               required />
           </div>
 
           <!-- Row 3: City & Postal Zone -->
           <div class="form-field">
-            <label class="field-label required">المدينة (City)</label>
+            <label class="field-label required">{{ 'ui.partnerCreate.17ffd2' | translate }}</label>
             <select class="form-control form-select" [value]="cityName()" (change)="cityName.set($any($event.target).value)">
-              <option *ngFor="let c of saudiCities" [value]="c">{{ c }}</option>
+              <option *ngFor="let c of saudiCities" [value]="c.ar">
+                {{ langService.currentLang() === 'en' ? c.en : c.ar }}
+              </option>
             </select>
             <input 
-              *ngIf="cityName() === 'أخرى'" 
+              *ngIf="cityName() === 'أخرى' || cityName() === 'Other'" 
               type="text" 
               class="form-control mt-2" 
               [value]="customCity()" 
               (input)="customCity.set($any($event.target).value)" 
-              placeholder="اكتب اسم المدينة..." />
+              [placeholder]="'ui.partnerCreate.e592e3' | translate" />
           </div>
 
           <div class="form-field">
             <div class="label-row">
-              <label class="field-label required">الرمز البريدي (5 أرقام)</label>
+              <label class="field-label required">{{ 'ui.partnerCreate.68e8f2' | translate }}</label>
               <span class="sub-status" *ngIf="!postalValidation().isEmpty" [class.ok]="postalValidation().isValid">
                 {{ postalValidation().message }}
               </span>
@@ -352,7 +356,7 @@
 
           <!-- Row 4: Additional Plot Number & Country -->
           <div class="form-field">
-            <label class="field-label">الرقم الإضافي للمبنى (4 أرقام - اختياري)</label>
+            <label class="field-label">{{ 'ui.partnerCreate.736065' | translate }}</label>
             <input 
               type="text" 
               maxlength="4" 
@@ -363,7 +367,7 @@
           </div>
 
           <div class="form-field">
-            <label class="field-label">رمز الدولة (Country Code)</label>
+            <label class="field-label">{{ 'ui.partnerCreate.65cc05' | translate }}</label>
             <input 
               type="text" 
               class="form-control font-code" 
@@ -375,7 +379,7 @@
           <div class="zatca-summary-box col-span-2">
             <div class="zsb-head">
               <i class="pi pi-shield text-emerald"></i>
-              <strong>مؤشر الامتثال الوطني لهيئة الزكاة (ZATCA Phase 2):</strong>
+              <strong>{{ 'ui.partnerCreate.cf7c0e' | translate }}</strong>
               <span class="score-badge font-code" [class.full]="complianceChecklist().isFullyCompliant">
                 {{ complianceChecklist().score }}%
               </span>
@@ -398,8 +402,8 @@
         <div class="pane-header">
           <div class="ph-icon"><i class="pi pi-wallet text-indigo"></i></div>
           <div class="ph-text">
-            <h2 class="ph-title">الخطوة 3: السياسات المالية والمراجعة النهائية</h2>
-            <p class="ph-desc">حدد حساب دفتر الأستاذ وحدود الائتمان، وراجع ملخص بطاقة الشريك قبل الحفظ.</p>
+            <h2 class="ph-title">{{ 'ui.partnerCreate.aadb54' | translate }}</h2>
+            <p class="ph-desc">{{ 'ui.partnerCreate.3b1789' | translate }}</p>
           </div>
         </div>
 
@@ -407,18 +411,18 @@
           
           <!-- Row 1: GL Account Link -->
           <div class="form-field col-span-2">
-            <label class="field-label">الحساب المحاسبي المرتبط في دليل الحسابات (GL Account)</label>
+            <label class="field-label">{{ 'ui.partnerCreate.dcfa61' | translate }}</label>
             <app-account-picker 
               [accounts]="accountsList()"
-              [placeholder]="partnerType() === PartnerType.Customer ? 'اختيار حساب المدينين (مثال: 11301 - العملاء)' : 'اختيار حساب الدائنين (مثال: 21101 - الموردون)'"
+              [placeholder]="partnerType() === PartnerType.Customer ? ('ui.partnerCreate.66e26f' | translate) : ('ui.partnerCreate.76bb2f' | translate)"
               (accountSelect)="onAccountPicked($event)">
             </app-account-picker>
-            <span class="field-hint">في حال تركه فارغاً، سيتم الترحيل تلقائياً لحساب المراقبة الافتراضي للشريك.</span>
+            <span class="field-hint">{{ 'ui.partnerCreate.7145ba' | translate }}</span>
           </div>
 
           <!-- Row 2: Credit Limit & Payment Terms -->
           <div class="form-field">
-            <label class="field-label">الحد الائتماني (Credit Limit - SAR)</label>
+            <label class="field-label">{{ 'ui.partnerCreate.5929be' | translate }}</label>
             <input 
               type="number" 
               min="0" 
@@ -430,7 +434,7 @@
           </div>
 
           <div class="form-field">
-            <label class="field-label">شروط وفترة السداد (أيام)</label>
+            <label class="field-label">{{ 'ui.partnerCreate.dba513' | translate }}</label>
             <input 
               type="number" 
               min="0" 
@@ -445,38 +449,38 @@
           <div class="final-review-card col-span-2">
             <h3 class="frc-title">
               <i class="pi pi-check-circle text-emerald"></i>
-              <span>مراجعة ملخص بيانات الشريك قبل التثبيت:</span>
+              <span>{{ 'ui.partnerCreate.8b829e' | translate }}</span>
             </h3>
 
             <div class="frc-grid">
               <div class="frc-item">
-                <span class="frc-lbl">كود ونوع الشريك:</span>
-                <strong class="frc-val font-code">{{ code() }} ({{ partnerType() === PartnerType.Customer ? 'عميل' : (partnerType() === PartnerType.Supplier ? 'مورد' : 'عميل ومورد') }})</strong>
+                <span class="frc-lbl">{{ 'ui.partnerCreate.abe587' | translate }}</span>
+                <strong class="frc-val font-code">{{ code() }} ({{ partnerType() === PartnerType.Customer ? ('accounting.partners.table.customer' | translate) : (partnerType() === PartnerType.Supplier ? ('accounting.partners.table.supplier' | translate) : ('accounting.partnerCreate.bothType' | translate)) }})</strong>
               </div>
 
               <div class="frc-item">
-                <span class="frc-lbl">الاسم التجاري:</span>
+                <span class="frc-lbl">{{ 'ui.partnerCreate.5ef7b3' | translate }}</span>
                 <strong class="frc-val">{{ nameAr() }}</strong>
               </div>
 
               <div class="frc-item">
-                <span class="frc-lbl">الرقم الضريبي:</span>
-                <span class="frc-val font-code" [class.text-emerald]="vatValidation().isValid">{{ taxNumber() || 'غير مسجل' }}</span>
+                <span class="frc-lbl">{{ 'pos.receipt.vatLabel' | translate }}</span>
+                <span class="frc-val font-code" [class.text-emerald]="vatValidation().isValid">{{ taxNumber() || ('settings.branches.na' | translate) }}</span>
               </div>
 
               <div class="frc-item">
-                <span class="frc-lbl">السجل التجاري / المعرف:</span>
-                <span class="frc-val font-code">{{ otherIdValue() || 'غير مسجل' }} ({{ otherIdType() }})</span>
+                <span class="frc-lbl">{{ 'ui.partnerCreate.82fae3' | translate }}</span>
+                <span class="frc-val font-code">{{ otherIdValue() || ('settings.branches.na' | translate) }} ({{ otherIdType() }})</span>
               </div>
 
               <div class="frc-item col-span-2">
-                <span class="frc-lbl">العنوان الوطني المعتمد:</span>
+                <span class="frc-lbl">{{ 'ui.partnerCreate.3b55af' | translate }}</span>
                 <span class="frc-val font-sm">
                   <ng-container *ngIf="streetName() || citySubdivisionName(); else noAddrTxt">
-                    مبنى {{ buildingNumber() || '----' }}، {{ streetName() }}، {{ citySubdivisionName() }}، {{ effectiveCity() }} {{ postalZone() ? ('- ' + postalZone()) : '' }}، SA
+                    {{ 'ui.partnerCreate.8beacd' | translate }} {{ buildingNumber() || '----' }}{{ 'ui.partnerCreate.2e1a34' | translate }} {{ streetName() }}{{ 'ui.partnerCreate.2e1a34' | translate }} {{ citySubdivisionName() }}{{ 'ui.partnerCreate.2e1a34' | translate }} {{ effectiveCity() }} {{ postalZone() ? ('- ' + postalZone()) : '' }}{{ 'ui.partnerCreate.9a7d86' | translate }}
                   </ng-container>
                   <ng-template #noAddrTxt>
-                    <span class="text-amber">لم يتم إدخال العنوان الوطني</span>
+                    <span class="text-amber">{{ 'ui.partnerCreate.3af2c4' | translate }}</span>
                   </ng-template>
                 </span>
               </div>
@@ -487,7 +491,7 @@
       </div>
 
       <!-- ===================================================================
-           BOTTOM WIZARD CONTROLS (Next, Previous, Submit)
+            <span>{{ 'accounting.yearEndClosing.summary.previous' | translate }}</span>
            =================================================================== -->
       <footer class="wizard-footer">
         <div class="footer-left">
@@ -497,7 +501,7 @@
             (click)="prevStep()" 
             [disabled]="currentStep() === 1">
             <i class="pi pi-arrow-right"></i>
-            <span>السابق</span>
+            <span>{{ 'accounting.yearEndClosing.summary.previous' | translate }}</span>
           </button>
         </div>
 
@@ -508,7 +512,7 @@
             class="btn-nav btn-next" 
             *ngIf="currentStep() < 3" 
             (click)="nextStep()">
-            <span>{{ currentStep() === 1 ? 'التالي: العنوان الوطني' : 'التالي: السياسات المالية والمراجعة' }}</span>
+            <span>{{ currentStep() === 1 ? ('ui.partnerCreate.b0678b' | translate) : ('ui.partnerCreate.02db04' | translate) }}</span>
             <i class="pi pi-arrow-left"></i>
           </button>
 
@@ -520,7 +524,7 @@
               (click)="savePartner(true)" 
               [disabled]="isSaving()">
               <i class="pi pi-plus-circle"></i>
-              <span>حفظ وإضافة آخر</span>
+              <span>{{ 'ui.partnerCreate.eeb9ec' | translate }}</span>
             </button>
 
             <button 
@@ -529,7 +533,7 @@
               (click)="savePartner(false)" 
               [disabled]="isSaving()">
               <i class="pi pi-check" [class.pi-spin]="isSaving()"></i>
-              <span>{{ isSaving() ? 'جاري الحفظ...' : 'حفظ وتثبيت الشريك' }}</span>
+              <span>{{ isSaving() ? ('branches.saving' | translate) : ('ui.partnerCreate.aa88c7' | translate) }}</span>
             </button>
           </ng-container>
         </div>

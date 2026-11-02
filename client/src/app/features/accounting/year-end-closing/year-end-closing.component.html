@@ -1,0 +1,614 @@
+<div class="closing-container">
+  
+  <!-- Header Strip -->
+  <header class="header-strip">
+    <div class="header-titles">
+      <div class="breadcrumbs">{{ 'accounting.yearEndClosing.breadcrumbs' | translate }}</div>
+      <h1 class="main-title">
+        <i class="pi pi-lock text-emerald"></i>
+        {{ 'accounting.yearEndClosing.title' | translate }}
+      </h1>
+      <p class="subtitle">
+        {{ 'accounting.yearEndClosing.subtitle' | translate }}
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline" routerLink="/accounting/financial-settings">
+        <i class="pi pi-sliders-h"></i>
+        {{ 'accounting.yearEndClosing.financialSettings' | translate }}
+      </button>
+
+      <button class="btn btn-secondary" [disabled]="isLoading()" (click)="loadInitialData()">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        {{ 'common.refresh' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Alerts -->
+  <div *ngIf="errorMessage()" class="alert alert-danger">
+    <i class="pi pi-exclamation-circle"></i>
+    <span>{{ errorMessage() }}</span>
+    <button class="alert-close" (click)="errorMessage.set('')">&times;</button>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert alert-success">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage() }}</span>
+    <button class="alert-close" (click)="successMessage.set('')">&times;</button>
+  </div>
+
+  <!-- Fiscal Year Selector Bar -->
+  <div class="year-control-card">
+    <div class="year-control-grid">
+      <div class="form-group flex-grow-1">
+        <label>{{ 'accounting.yearEndClosing.selectYear' | translate }}</label>
+        <app-searchable-select
+          [items]="yearOptions()"
+          [value]="selectedYearId()"
+          (valueChange)="onYearSelected($event)"
+          [placeholder]="'accounting.financialSettings.years.yearNumber' | translate"
+          [searchPlaceholder]="'common.search' | translate">
+        </app-searchable-select>
+      </div>
+
+      <div class="year-meta-box" *ngIf="selectedYear()">
+        <div class="meta-item">
+          <span class="meta-label">{{ 'accounting.financialSettings.years.periods' | translate }}:</span>
+          <strong>{{ selectedYear()?.startDate | date:'yyyy-MM-dd' }} &larr; {{ selectedYear()?.endDate | date:'yyyy-MM-dd' }}</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ 'accounting.financialSettings.years.status' | translate }}:</span>
+          <span class="badge" [class.badge-danger]="selectedYear()?.isClosed" [class.badge-success]="!selectedYear()?.isClosed">
+            <i class="pi" [class.pi-lock]="selectedYear()?.isClosed" [class.pi-unlock]="!selectedYear()?.isClosed"></i>
+            {{ selectedYear()?.isClosed ? ('accounting.financialSettings.years.closed' | translate) : ('accounting.financialSettings.years.open' | translate) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Action for Reopening if closed -->
+      <div class="reopen-col" *ngIf="selectedYear()?.isClosed">
+        <button class="btn btn-warning btn-sm" (click)="openReopenModal()">
+          <i class="pi pi-unlock"></i>
+          {{ 'accounting.financialSettings.years.unlockPeriod' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stepper Navigation -->
+  <div class="wizard-stepper">
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 1" 
+      [class.completed]="currentStep() > 1"
+      (click)="goToStep(1)">
+      <div class="step-num">1</div>
+      <div class="step-label">
+        <strong>{{ 'accounting.yearEndClosing.steps.step1' | translate }}</strong>
+      </div>
+    </div>
+
+    <div class="step-divider" [class.active]="currentStep() >= 2"></div>
+
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 2" 
+      [class.completed]="currentStep() > 2"
+      (click)="goToStep(2)">
+      <div class="step-num">2</div>
+      <div class="step-label">
+        <strong>{{ 'accounting.yearEndClosing.steps.step2' | translate }}</strong>
+      </div>
+    </div>
+
+    <div class="step-divider" [class.active]="currentStep() >= 3"></div>
+
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 3" 
+      [class.completed]="currentStep() > 3"
+      (click)="goToStep(3)">
+      <div class="step-num">3</div>
+      <div class="step-label">
+        <strong>{{ 'accounting.yearEndClosing.steps.step3' | translate }}</strong>
+      </div>
+    </div>
+
+    <div class="step-divider" [class.active]="currentStep() >= 4"></div>
+
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 4" 
+      (click)="goToStep(4)">
+      <div class="step-num">4</div>
+      <div class="step-label">
+        <strong>{{ 'accounting.yearEndClosing.steps.step4' | translate }}</strong>
+      </div>
+  </div>
+
+  <!-- STEP 1: Audit Diagnostics -->
+  <div class="step-content-card" *ngIf="currentStep() === 1">
+    <div class="content-header">
+      <h3><i class="pi pi-shield text-primary me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.step1Title' | translate }}</h3>
+      <span class="step-badge">{{ 'accounting.yearEndClosing.wizardDetails.step1Badge' | translate }}</span>
+    </div>
+
+    <div *ngIf="isLoading()" class="loading-box text-center py-5">
+      <i class="pi pi-spin pi-spinner text-emerald fs-1"></i>
+      <p class="mt-2 text-muted">{{ 'accounting.yearEndClosing.wizardDetails.auditingProgress' | translate }}</p>
+    </div>
+
+    <div *ngIf="!isLoading() && auditData()" class="audit-body">
+      <!-- Blocking Errors Alert -->
+      <div *ngIf="auditData()!.blockingErrors && auditData()!.blockingErrors.length > 0" class="audit-alert alert-block">
+        <div class="alert-icon"><i class="pi pi-times-circle"></i></div>
+        <div class="alert-content">
+          <h4>{{ 'accounting.yearEndClosing.wizardDetails.blockingTitle' | translate }}</h4>
+          <ul>
+            <li *ngFor="let err of auditData()!.blockingErrors">{{ err }}</li>
+          </ul>
+          <div class="alert-action" *ngIf="auditData()!.draftJournalEntriesCount > 0">
+            <button class="btn btn-sm btn-outline-danger" (click)="navigateToJournal()">
+              <i class="pi pi-external-link"></i> {{ 'accounting.yearEndClosing.wizardDetails.goToDrafts' | translate }} ({{ auditData()!.draftJournalEntriesCount }})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warnings Alert -->
+      <div *ngIf="auditData()!.warnings && auditData()!.warnings.length > 0" class="audit-alert alert-warn">
+        <div class="alert-icon"><i class="pi pi-exclamation-triangle"></i></div>
+        <div class="alert-content">
+          <h4>{{ 'accounting.yearEndClosing.wizardDetails.warningsTitle' | translate }}</h4>
+          <ul>
+            <li *ngFor="let warn of auditData()!.warnings">{{ warn }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Readiness Banner -->
+      <div *ngIf="auditData()!.canClose" class="readiness-banner ready">
+        <i class="pi pi-check-circle"></i>
+        <div>
+          <h4>{{ 'accounting.yearEndClosing.wizardDetails.readyTitle' | translate }}</h4>
+          <p>{{ 'accounting.yearEndClosing.wizardDetails.readyDesc' | translate }}</p>
+        </div>
+      </div>
+
+      <div *ngIf="!auditData()!.canClose && !selectedYear()?.isClosed" class="readiness-banner not-ready">
+        <i class="pi pi-ban"></i>
+        <div>
+          <h4>{{ 'accounting.yearEndClosing.wizardDetails.notReadyTitle' | translate }}</h4>
+          <p>{{ 'accounting.yearEndClosing.wizardDetails.notReadyDesc' | translate }}</p>
+        </div>
+      </div>
+
+      <!-- KPI Overview Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card card-rev">
+          <div class="kpi-icon"><i class="pi pi-arrow-up-right"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-label">{{ 'accounting.yearEndClosing.wizardDetails.totalRevenues' | translate }}</div>
+            <div class="kpi-value text-emerald">{{ (auditData()?.totalRevenuesToClose || 0) | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+            <div class="kpi-sub">{{ 'accounting.yearEndClosing.wizardDetails.zeroOutSub' | translate }}</div>
+          </div>
+        </div>
+
+        <div class="kpi-card card-exp">
+          <div class="kpi-icon"><i class="pi pi-arrow-down-left"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-label">{{ 'accounting.yearEndClosing.wizardDetails.totalExpenses' | translate }}</div>
+            <div class="kpi-value text-rose">{{ (auditData()?.totalExpensesToClose || 0) | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+            <div class="kpi-sub">{{ 'accounting.yearEndClosing.wizardDetails.zeroOutSub' | translate }}</div>
+          </div>
+        </div>
+
+        <div class="kpi-card card-income" [class.profit]="(auditData()?.projectedNetIncome || 0) >= 0" [class.loss]="(auditData()?.projectedNetIncome || 0) < 0">
+          <div class="kpi-icon">
+            <i class="pi" [class.pi-chart-line]="(auditData()?.projectedNetIncome || 0) >= 0" [class.pi-chart-bar]="(auditData()?.projectedNetIncome || 0) < 0"></i>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-label">
+              {{ (auditData()?.projectedNetIncome || 0) >= 0 ? ('accounting.yearEndClosing.wizardDetails.profitTitle' | translate) : ('accounting.yearEndClosing.wizardDetails.lossTitle' | translate) }}
+            </div>
+            <div class="kpi-value">
+              {{ (auditData()?.projectedNetIncome || 0) | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
+            </div>
+            <div class="kpi-sub text-truncate" [title]="auditData()?.projectedNetIncomeTafqeetAr">
+              {{ auditData()?.projectedNetIncomeTafqeetAr }}
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card card-entries">
+          <div class="kpi-icon"><i class="pi pi-list"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-label">{{ 'accounting.yearEndClosing.wizardDetails.entriesStatsTitle' | translate }}</div>
+            <div class="kpi-value">{{ auditData()?.totalPostedJournalEntriesCount }} <span class="sar">{{ 'accounting.yearEndClosing.wizardDetails.postedEntry' | translate }}</span></div>
+            <div class="kpi-sub">
+              {{ 'accounting.yearEndClosing.wizardDetails.draftLabel' | translate }} <strong [class.text-danger]="(auditData()?.draftJournalEntriesCount || 0) > 0">{{ auditData()?.draftJournalEntriesCount }}</strong> | {{ 'accounting.yearEndClosing.wizardDetails.openPeriodsLabel' | translate }} {{ auditData()?.openPeriodsCount }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <div></div>
+      <button 
+        class="btn btn-primary" 
+        [disabled]="!auditData()?.canClose && !selectedYear()?.isClosed"
+        (click)="nextStep()">
+        {{ 'accounting.yearEndClosing.wizardDetails.nextToSettings' | translate }}
+        <i class="pi pi-arrow-left ms-2"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Retained Earnings & Options -->
+  <div class="step-content-card" *ngIf="currentStep() === 2">
+    <div class="content-header">
+      <h3><i class="pi pi-sliders-h text-primary me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.step2Title' | translate }}</h3>
+      <span class="step-badge">{{ 'accounting.yearEndClosing.wizardDetails.step2Badge' | translate }}</span>
+    </div>
+
+    <div class="step-form-body">
+      <!-- Retained Earnings Account Selection -->
+      <div class="config-box">
+        <h4><i class="pi pi-book text-emerald me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.retainedBoxTitle' | translate }}</h4>
+        <p class="text-muted small">
+          {{ 'accounting.yearEndClosing.wizardDetails.retainedBoxDesc' | translate }}
+        </p>
+
+        <div class="form-group mb-3">
+          <label class="fw-semibold mb-1">{{ 'accounting.yearEndClosing.wizardDetails.retainedLabel' | translate }}</label>
+          <app-searchable-select
+            [items]="accountOptions()"
+            [value]="retainedEarningsAccountId()"
+            (valueChange)="retainedEarningsAccountId.set($event)"
+            [placeholder]="'accounting.yearEndClosing.wizardDetails.retainedPlaceholder' | translate"
+            [searchPlaceholder]="'accounting.yearEndClosing.wizardDetails.retainedSearchPlaceholder' | translate">
+          </app-searchable-select>
+        </div>
+
+        <div class="alert alert-info py-2 small mb-0">
+          <i class="pi pi-info-circle me-1"></i>
+          {{ 'accounting.yearEndClosing.wizardDetails.retainedTransferAlert' | translate }} <strong>{{ (auditData()?.projectedNetIncome || 0) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong> ({{ (auditData()?.projectedNetIncome || 0) >= 0 ? ('accounting.yearEndClosing.wizardDetails.creditSide' | translate) : ('accounting.yearEndClosing.wizardDetails.debitSide' | translate) }}) {{ 'accounting.yearEndClosing.wizardDetails.toThisAccount' | translate }}
+        </div>
+      </div>
+
+      <!-- Roll Forward Options -->
+      <div class="config-box mt-3">
+        <h4><i class="pi pi-sync text-primary me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.rollForwardTitle' | translate }}</h4>
+        
+        <div class="options-list">
+          <label class="option-check-card">
+            <input type="checkbox" [(ngModel)]="generateOpeningBalanceNextYear" />
+            <div class="check-text">
+              <strong>{{ 'accounting.yearEndClosing.wizardDetails.optAutoCreateYearBold' | translate }}</strong>
+              <p>{{ 'accounting.yearEndClosing.wizardDetails.optAutoCreateYearDesc1' | translate }}{{ (selectedYear()?.yearNumber || 2026) + 1 }}{{ 'accounting.yearEndClosing.wizardDetails.optAutoCreateYearDesc2' | translate }}</p>
+            </div>
+          </label>
+
+          <label class="option-check-card">
+            <input type="checkbox" [(ngModel)]="lockAllPastPeriods" />
+            <div class="check-text">
+              <strong>{{ 'accounting.yearEndClosing.wizardDetails.optLockPeriodsBold' | translate }}</strong>
+              <p>{{ 'accounting.yearEndClosing.wizardDetails.optLockPeriodsDesc' | translate }}</p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn btn-secondary" (click)="prevStep()">
+        <i class="pi pi-arrow-right me-2"></i>
+        {{ 'accounting.yearEndClosing.summary.previous' | translate }}</button>
+
+      <button 
+        class="btn btn-primary" 
+        [disabled]="!retainedEarningsAccountId()"
+        (click)="nextStep()">
+        {{ 'accounting.yearEndClosing.wizardDetails.nextToPreview' | translate }}
+        <i class="pi pi-arrow-left ms-2"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Preview Closing Entries -->
+  <div class="step-content-card" *ngIf="currentStep() === 3">
+    <div class="content-header">
+      <h3><i class="pi pi-file-edit text-primary me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.step3Title' | translate }}</h3>
+      <span class="step-badge">{{ 'accounting.yearEndClosing.wizardDetails.step3Badge' | translate }}</span>
+    </div>
+
+    <div class="preview-entries-body">
+      <!-- Section 1: Closing Entry Structure -->
+      <div class="entry-preview-card">
+        <div class="entry-card-header bg-emerald-subtle">
+          <div>
+            <strong>{{ 'accounting.yearEndClosing.wizardDetails.closingEntryTitle' | translate }} {{ selectedYear()?.yearNumber }} (Closing Journal Entry)</strong>
+            <span class="d-block small text-muted">{{ 'accounting.yearEndClosing.wizardDetails.entryDateLabel' | translate }} {{ selectedYear()?.endDate | date:'yyyy-MM-dd' }} | {{ 'accounting.yearEndClosing.wizardDetails.entryTypeLabel' | translate }} {{ 'accounting.yearEndClosing.wizardDetails.entryTypeClosing' | translate }}</span>
+          </div>
+          <span class="badge badge-success">{{ 'accounting.yearEndClosing.wizardDetails.balancedBadge' | translate }}</span>
+        </div>
+
+        <table class="erp-table preview-table">
+          <thead>
+            <tr>
+              <th>{{ 'accounting.yearEndClosing.wizardDetails.thSideNature' | translate }}</th>
+              <th>{{ 'accounting.yearEndClosing.wizardDetails.thAccountMemo' | translate }}</th>
+              <th class="text-end">{{ 'accounting.journal.table.debit' | translate }}</th>
+              <th class="text-end">{{ 'accounting.journal.table.credit' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-success">{{ 'accounting.yearEndClosing.wizardDetails.revZeroBadge' | translate }}</span></td>
+              <td>{{ 'accounting.yearEndClosing.wizardDetails.revZeroDesc' | translate }}</td>
+              <td class="text-end text-emerald fw-bold">{{ (auditData()?.totalRevenuesToClose || 0) | number:'1.2-2' }}</td>
+              <td class="text-end text-muted">-</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-danger">{{ 'accounting.yearEndClosing.wizardDetails.expZeroBadge' | translate }}</span></td>
+              <td>{{ 'accounting.yearEndClosing.wizardDetails.expZeroDesc' | translate }}</td>
+              <td class="text-end text-muted">-</td>
+              <td class="text-end text-rose fw-bold">{{ (auditData()?.totalExpensesToClose || 0) | number:'1.2-2' }}</td>
+            </tr>
+            <tr class="highlight-row">
+              <td><span class="badge badge-code">{{ 'accounting.yearEndClosing.wizardDetails.equityBadge' | translate }}</span></td>
+              <td>{{ 'accounting.yearEndClosing.wizardDetails.equityDesc' | translate }} {{ selectedYear()?.yearNumber }})</td>
+              <td class="text-end text-rose fw-bold">
+                {{ (auditData()?.projectedNetIncome || 0) < 0 ? (((auditData()?.projectedNetIncome || 0) * -1) | number:'1.2-2') : '-' }}
+              </td>
+              <td class="text-end text-emerald fw-bold">
+                {{ (auditData()?.projectedNetIncome || 0) >= 0 ? ((auditData()?.projectedNetIncome || 0) | number:'1.2-2') : '-' }}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="table-total-row">
+              <td colspan="2"><strong>{{ 'accounting.yearEndClosing.wizardDetails.totalSidesLabel' | translate }}</strong></td>
+              <td class="text-end fw-bold">
+                {{ ((auditData()?.totalRevenuesToClose || 0) + ((auditData()?.projectedNetIncome || 0) < 0 ? ((auditData()?.projectedNetIncome || 0) * -1) : 0)) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}
+              </td>
+              <td class="text-end fw-bold">
+                {{ ((auditData()?.totalExpensesToClose || 0) + ((auditData()?.projectedNetIncome || 0) >= 0 ? (auditData()?.projectedNetIncome || 0) : 0)) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Section 2: Opening Entry Structure for Next Year -->
+      <div class="entry-preview-card mt-3" *ngIf="generateOpeningBalanceNextYear">
+        <div class="entry-card-header bg-primary-subtle">
+          <div>
+            <strong>{{ 'accounting.yearEndClosing.wizardDetails.openingEntryTitle' | translate }} {{ (selectedYear()?.yearNumber || 2026) + 1 }} (Opening Balance Entry)</strong>
+            <span class="d-block small text-muted">{{ 'accounting.yearEndClosing.wizardDetails.entryDateLabel' | translate }} {{ (selectedYear()?.yearNumber || 2026) + 1 }}-01-01 | {{ 'accounting.yearEndClosing.wizardDetails.entryTypeLabel' | translate }} {{ 'accounting.yearEndClosing.wizardDetails.entryTypeOpening' | translate }}</span>
+          </div>
+          <span class="badge badge-code">{{ 'accounting.yearEndClosing.wizardDetails.rollForwardBalanceBadge' | translate }}</span>
+        </div>
+
+        <div class="p-3 bg-light text-muted small">
+          <i class="pi pi-info-circle me-1"></i>
+          {{ 'accounting.yearEndClosing.wizardDetails.rollForwardDesc' | translate }}
+        </div>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn btn-secondary" (click)="prevStep()">
+        <i class="pi pi-arrow-right me-2"></i>
+        {{ 'accounting.yearEndClosing.summary.previous' | translate }}</button>
+
+      <button 
+        class="btn btn-primary" 
+        (click)="nextStep()">
+        {{ 'accounting.yearEndClosing.wizardDetails.nextToCertify' | translate }}
+        <i class="pi pi-arrow-left ms-2"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Execution & Official Certificate -->
+  <div class="step-content-card" *ngIf="currentStep() === 4">
+    <div class="content-header">
+      <h3><i class="pi pi-check-circle text-emerald me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.step4Title' | translate }}</h3>
+      <span class="step-badge">{{ 'accounting.yearEndClosing.wizardDetails.step4Badge' | translate }}</span>
+    </div>
+
+    <!-- Case A: Year is not closed yet -->
+    <div *ngIf="!selectedYear()?.isClosed" class="execution-prompt-box">
+      <div class="alert alert-warning py-3 mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <i class="pi pi-exclamation-triangle fs-2 text-warning"></i>
+          <div>
+            <h4 class="mb-1">{{ 'accounting.yearEndClosing.wizardDetails.confirmTitle' | translate }} {{ selectedYear()?.nameAr }}</h4>
+            <p class="mb-0 text-muted">
+              {{ 'accounting.yearEndClosing.wizardDetails.confirmDesc' | translate }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center py-4">
+        <button 
+          class="btn btn-lg btn-success px-5 py-3 fs-6" 
+          [disabled]="isExecuting()" 
+          (click)="confirmExecuteClosing()">
+          <i class="pi pi-lock me-2" *ngIf="!isExecuting()"></i>
+          <i class="pi pi-spin pi-spinner me-2" *ngIf="isExecuting()"></i>
+          <span>{{ isExecuting() ? ('accounting.yearEndClosing.wizardDetails.executingText' | translate) : ('accounting.yearEndClosing.wizardDetails.executeBtn' | translate) }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Case B: Year is closed (Display Official Closing Document) -->
+    <div *ngIf="selectedYear()?.isClosed" class="closing-document-container">
+      <div class="doc-actions-bar no-print">
+        <button class="btn btn-outline" (click)="printClosingDocument()">
+          <i class="pi pi-print me-1"></i> {{ 'accounting.yearEndClosing.wizardDetails.printCertBtn' | translate }}
+        </button>
+
+        <button class="btn btn-warning" (click)="openReopenModal()">
+          <i class="pi pi-unlock me-1"></i> {{ 'accounting.yearEndClosing.wizardDetails.reopenYearBtn' | translate }}
+        </button>
+      </div>
+
+      <!-- Printable Official Closing Certificate -->
+      <div class="formal-closing-doc print-area">
+        <div class="doc-header text-center">
+          <h2>{{ companyContext.activeCompany().nameAr || ('ui.yearEndClosing.eae355' | translate) }}</h2>
+          <span class="sub-corp">{{ 'accounting.yearEndClosing.wizardDetails.deptName' | translate }}</span>
+          <div class="cert-title-box">
+            <h1>{{ 'accounting.yearEndClosing.wizardDetails.certTitle' | translate }}</h1>
+            <span class="doc-standard">{{ 'accounting.yearEndClosing.wizardDetails.certStandard' | translate }}</span>
+          </div>
+          <div class="doc-meta-strip">
+            <span>{{ 'accounting.financialSettings.years.yearNumber' | translate }}:<strong>{{ selectedYear()?.nameAr }} ({{ selectedYear()?.yearNumber }})</strong></span>
+            <span class="mx-2">|</span>
+            <span>{{ 'accounting.yearEndClosing.wizardDetails.startDateLabel' | translate }} <strong>{{ selectedYear()?.startDate | date:'yyyy-MM-dd' }}</strong></span>
+            <span class="mx-2">|</span>
+            <span>{{ 'accounting.yearEndClosing.wizardDetails.closingDateLabel' | translate }} <strong>{{ selectedYear()?.endDate | date:'yyyy-MM-dd' }}</strong></span>
+          </div>
+        </div>
+
+        <div class="doc-statement-body">
+          <p class="lead-statement">
+            {{ 'accounting.yearEndClosing.wizardDetails.certPreamble' | translate }}
+          </p>
+
+          <table class="statement-table">
+            <tbody>
+              <tr class="section-row">
+                <td colspan="2"><strong>{{ 'accounting.yearEndClosing.wizardDetails.tableSec1' | translate }}</strong></td>
+              </tr>
+              <tr>
+                <td>{{ 'accounting.yearEndClosing.wizardDetails.closedRevenuesLabel' | translate }}</td>
+                <td class="text-end fw-bold text-emerald">{{ (auditData()?.totalRevenuesToClose || 0) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+              </tr>
+              <tr>
+                <td>{{ 'accounting.yearEndClosing.wizardDetails.closedExpensesLabel' | translate }}</td>
+                <td class="text-end fw-bold text-rose">{{ (auditData()?.totalExpensesToClose || 0) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+              </tr>
+              <tr class="subtotal-row">
+                <td class="fw-bold">{{ 'accounting.yearEndClosing.wizardDetails.netIncomeLabel' | translate }}</td>
+                <td class="text-end fw-bold fs-6" [class.text-emerald]="(auditData()?.projectedNetIncome || 0) >= 0" [class.text-rose]="(auditData()?.projectedNetIncome || 0) < 0">
+                  {{ (auditData()?.projectedNetIncome || 0) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" class="small text-muted">
+                  <strong>{{ 'accounting.yearEndClosing.wizardDetails.tafqeetLabel' | translate }}</strong> {{ auditData()?.projectedNetIncomeTafqeetAr }}
+                </td>
+              </tr>
+
+              <tr class="section-row">
+                <td colspan="2"><strong>{{ 'accounting.yearEndClosing.wizardDetails.tableSec2' | translate }}</strong></td>
+              </tr>
+              <tr>
+                <td>{{ 'accounting.yearEndClosing.wizardDetails.closingEntryNoLabel' | translate }}</td>
+                <td class="text-end fw-bold">
+                  <span class="badge badge-code">{{ closingResult()?.closingJournalEntryNumber || 'CLOSE-' + selectedYear()?.yearNumber }}</span>
+                </td>
+              </tr>
+              <tr>
+                <td>{{ 'accounting.yearEndClosing.wizardDetails.retainedAccountTransferred' | translate }}</td>
+                <td class="text-end fw-bold">{{ auditData()?.defaultRetainedEarningsAccountCode }} - {{ auditData()?.defaultRetainedEarningsAccountNameAr }}</td>
+              </tr>
+              <tr>
+                <td>{{ 'accounting.yearEndClosing.wizardDetails.openingEntryNoLabel' | translate }}</td>
+                <td class="text-end fw-bold">
+                  <span class="badge badge-code">{{ closingResult()?.openingJournalEntryNumber || 'OPEN-' + ((selectedYear()?.yearNumber || 2026) + 1) }}</span>
+                </td>
+              </tr>
+              <tr>
+                <td>{{ 'accounting.yearEndClosing.wizardDetails.periodsStatusLabel' | translate }}</td>
+                <td class="text-end fw-bold text-danger">{{ 'accounting.yearEndClosing.wizardDetails.periodsClosedLocked' | translate }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Signatures Box -->
+          <div class="doc-signatures">
+            <div class="sig-col">
+              <span>{{ 'accounting.vouchers.table.partner' | translate }}:</span>
+              <div class="sig-line"></div>
+            </div>
+            <div class="sig-col">
+              <span>{{ 'accounting.yearEndClosing.wizardDetails.auditorReview' | translate }}</span>
+              <div class="sig-line"></div>
+            </div>
+            <div class="sig-col">
+              <span>{{ 'accounting.bankReconciliation.approve' | translate }}:</span>
+              <div class="sig-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-actions no-print">
+      <button class="btn btn-secondary" (click)="prevStep()">
+        <i class="pi pi-arrow-right me-2"></i>
+        {{ 'accounting.yearEndClosing.summary.previous' | translate }}</button>
+
+      <button class="btn btn-outline" routerLink="/accounting/financial-statements">
+        <i class="pi pi-chart-line me-1"></i>
+        {{ 'accounting.yearEndClosing.wizardDetails.viewFinancialStatements' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Reopen Fiscal Year Modal -->
+  <div class="modal-backdrop modal-center" *ngIf="showReopenModal()" (click)="closeReopenModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-warning-subtle">
+        <h3><i class="pi pi-unlock text-warning me-2"></i> {{ 'accounting.yearEndClosing.wizardDetails.reopenModalTitle' | translate }}</h3>
+        <button class="modal-close" (click)="closeReopenModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-warning py-2 small mb-3">
+          <i class="pi pi-info-circle me-1"></i>
+          <strong>{{ 'accounting.yearEndClosing.wizardDetails.reopenAuditAlertBold' | translate }}</strong> {{ 'accounting.yearEndClosing.wizardDetails.reopenAuditAlert' | translate }}
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="fw-semibold mb-1">{{ 'accounting.yearEndClosing.wizardDetails.reopenReasonAr' | translate }}</label>
+          <textarea 
+            class="form-control" 
+            rows="3" 
+            [ngModel]="reopenReasonAr()" 
+            (ngModelChange)="onReopenReasonArChange($event)"></textarea>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="small text-muted">{{ 'accounting.yearEndClosing.wizardDetails.reopenReasonEn' | translate }}</label>
+          <textarea 
+            class="form-control" 
+            rows="2" 
+            [ngModel]="reopenReasonEn()" 
+            (ngModelChange)="reopenReasonEn.set($event)"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeReopenModal()">{{ 'common.cancel' | translate }}</button>
+        <button 
+          class="btn btn-warning" 
+          [disabled]="isReopening() || !reopenReasonAr().trim()" 
+          (click)="executeReopen()">
+          <i class="pi pi-unlock me-1" *ngIf="!isReopening()"></i>
+          <i class="pi pi-spin pi-spinner me-1" *ngIf="isReopening()"></i>
+          {{ 'accounting.yearEndClosing.wizardDetails.reopenConfirmBtn' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

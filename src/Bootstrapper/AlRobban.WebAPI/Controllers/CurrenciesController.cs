@@ -1,3 +1,5 @@
+﻿using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using AlRobban.Modules.GeneralLedger.Application.Commands.Currencies;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +8,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class CurrenciesController : ControllerBase
 {
     private readonly IMediator _mediator;

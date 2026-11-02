@@ -1,0 +1,800 @@
+<div class="zatca-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Top Header Strip -->
+  <header class="header-strip">
+    <div class="header-titles">
+      <div class="breadcrumbs">
+        <span>{{ 'zatca.breadcrumbs.sales' | translate }}</span>
+        <i class="pi" [class.pi-angle-left]="langService.currentLang() === 'ar'" [class.pi-angle-right]="langService.currentLang() !== 'ar'"></i>
+        <span>{{ 'zatca.breadcrumbs.integration' | translate }}</span>
+        <i class="pi" [class.pi-angle-left]="langService.currentLang() === 'ar'" [class.pi-angle-right]="langService.currentLang() !== 'ar'"></i>
+        <span class="text-emerald fw-semibold">{{ 'zatca.breadcrumbs.portal' | translate }}</span>
+      </div>
+      <h1 class="main-title">
+        <span class="title-icon-badge">
+          <i class="pi pi-verified"></i>
+        </span>
+        {{ 'zatca.title' | translate }}
+      </h1>
+      <p class="subtitle">
+        {{ 'zatca.subtitle' | translate }}
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline" routerLink="/invoicing/tax-invoices">
+        <i class="pi pi-file-o"></i>
+        <span>{{ 'zatca.actions.taxInvoices' | translate }}</span>
+      </button>
+
+      <button class="btn btn-secondary" [disabled]="isLoading()" (click)="loadStatus()" [title]="'zatca.actions.refreshTitle' | translate">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        <span>{{ 'zatca.actions.refresh' | translate }}</span>
+      </button>
+
+      <button class="btn btn-outline-danger" [disabled]="isResetting()" (click)="confirmReset()" [title]="'zatca.actions.resetTitle' | translate">
+        <i class="pi pi-trash"></i>
+        <span>{{ 'zatca.actions.reset' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Alerts -->
+  <div *ngIf="errorMessage()" class="alert alert-danger">
+    <i class="pi pi-exclamation-circle"></i>
+    <span class="alert-text">{{ errorMessage() }}</span>
+    <button class="alert-close" (click)="errorMessage.set('')">&times;</button>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert alert-success">
+    <i class="pi pi-check-circle"></i>
+    <span class="alert-text">{{ successMessage() }}</span>
+    <button class="alert-close" (click)="successMessage.set('')">&times;</button>
+  </div>
+
+  <!-- Status Overview KPI Bar -->
+  <section class="status-kpi-grid" *ngIf="status()">
+    <!-- 1. Environment -->
+    <div class="kpi-card">
+      <div class="kpi-icon icon-env">
+        <i class="pi pi-globe"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'zatca.kpis.targetEnv' | translate }}</span>
+        <div class="kpi-value-row">
+          <span class="badge" [class.badge-primary]="status()?.environment === 'Simulation'" [class.badge-success]="status()?.environment === 'Production'">
+            {{ status()?.environment === 'Production' ? ('zatca.kpis.liveProduction' | translate) : ('zatca.kpis.simulation' | translate) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Integration Status -->
+    <div class="kpi-card">
+      <div class="kpi-icon icon-status">
+        <i class="pi" [class.pi-verified]="status()?.status === 'ProductionActive'" [class.pi-sync]="status()?.status !== 'ProductionActive'"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'zatca.kpis.onboardingStatus' | translate }}</span>
+        <div class="kpi-value-row">
+          <span class="badge" 
+            [class.badge-success]="status()?.status === 'ProductionActive'"
+            [class.badge-info]="status()?.status === 'CompliancePassed' || status()?.status === 'ComplianceCsidIssued'"
+            [class.badge-warning]="status()?.status === 'CsrGenerated'"
+            [class.badge-secondary]="status()?.status === 'NotConfigured'">
+            <i class="pi" 
+              [class.pi-check-circle]="status()?.status === 'ProductionActive'"
+              [class.pi-spin]="status()?.status !== 'ProductionActive' && status()?.status !== 'NotConfigured'"
+              [class.pi-circle]="status()?.status === 'NotConfigured'"></i>
+            <span>
+              {{ status()?.status === 'ProductionActive' 
+                ? ('zatca.kpis.statusActive' | translate) 
+                : (status()?.status === 'CompliancePassed' 
+                  ? ('zatca.kpis.statusCompliancePassed' | translate) 
+                  : (status()?.status === 'ComplianceCsidIssued' 
+                    ? ('zatca.kpis.statusCcsidIssued' | translate) 
+                    : (status()?.status === 'CsrGenerated' 
+                      ? ('zatca.kpis.statusCsrGenerated' | translate) 
+                      : ('zatca.kpis.statusNotConfigured' | translate)))) }}
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Device UUID -->
+    <div class="kpi-card">
+      <div class="kpi-icon icon-uuid">
+        <i class="pi pi-key"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'zatca.kpis.deviceUuid' | translate }}</span>
+        <div class="kpi-value-row">
+          <span class="font-monospace text-xs fw-bold text-truncate" style="max-width: 170px;" [title]="status()?.deviceUuid">
+            {{ status()?.deviceUuid || '-' }}
+          </span>
+          <button *ngIf="status()?.deviceUuid" class="btn btn-xs btn-outline" (click)="copyToClipboard(status()?.deviceUuid, 'uuid')" [title]="'zatca.kpis.copyUuid' | translate">
+            <i class="pi" [class.pi-copy]="copiedField() !== 'uuid'" [class.pi-check]="copiedField() === 'uuid'" [class.text-emerald]="copiedField() === 'uuid'"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Certificate Validity -->
+    <div class="kpi-card">
+      <div class="kpi-icon icon-validity">
+        <i class="pi pi-calendar-times"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'zatca.kpis.certExpiry' | translate }}</span>
+        <div class="kpi-value-row" *ngIf="status()?.productionExpiresAtUtc">
+          <span class="text-emerald fw-bold text-xs">
+            {{ status()?.productionExpiresAtUtc | date:'yyyy-MM-dd' }}
+          </span>
+          <span class="badge" [class.badge-success]="!isExpiringSoon()" [class.badge-warning]="isExpiringSoon()">
+            <i class="pi pi-clock"></i>
+            {{ daysRemaining() }} {{ 'zatca.kpis.daysRemaining' | translate }}
+          </span>
+        </div>
+        <div class="kpi-value-row" *ngIf="!status()?.productionExpiresAtUtc">
+          <span class="text-muted text-xs">{{ 'zatca.kpis.pendingActivation' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4-Step Stepper -->
+  <nav class="wizard-stepper">
+    <!-- Step 1 -->
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 1" 
+      [class.completed]="currentStep() > 1"
+      (click)="goToStep(1)">
+      <div class="step-num">
+        <i class="pi pi-check" *ngIf="currentStep() > 1"></i>
+        <span *ngIf="currentStep() <= 1">1</span>
+      </div>
+      <div class="step-label">
+        <strong>{{ 'zatca.stepper.step1Title' | translate }}</strong>
+        <span>{{ 'zatca.stepper.step1Sub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="step-divider" [class.active]="currentStep() >= 2"></div>
+
+    <!-- Step 2 -->
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 2" 
+      [class.completed]="currentStep() > 2"
+      (click)="goToStep(2)">
+      <div class="step-num">
+        <i class="pi pi-check" *ngIf="currentStep() > 2"></i>
+        <span *ngIf="currentStep() <= 2">2</span>
+      </div>
+      <div class="step-label">
+        <strong>{{ 'zatca.stepper.step2Title' | translate }}</strong>
+        <span>{{ 'zatca.stepper.step2Sub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="step-divider" [class.active]="currentStep() >= 3"></div>
+
+    <!-- Step 3 -->
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 3" 
+      [class.completed]="currentStep() > 3"
+      (click)="goToStep(3)">
+      <div class="step-num">
+        <i class="pi pi-check" *ngIf="currentStep() > 3"></i>
+        <span *ngIf="currentStep() <= 3">3</span>
+      </div>
+      <div class="step-label">
+        <strong>{{ 'zatca.stepper.step3Title' | translate }}</strong>
+        <span>{{ 'zatca.stepper.step3Sub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="step-divider" [class.active]="currentStep() >= 4"></div>
+
+    <!-- Step 4 -->
+    <div 
+      class="step-item" 
+      [class.active]="currentStep() === 4" 
+      [class.completed]="status()?.status === 'ProductionActive'"
+      (click)="goToStep(4)">
+      <div class="step-num">
+        <i class="pi pi-check" *ngIf="status()?.status === 'ProductionActive'"></i>
+        <span *ngIf="status()?.status !== 'ProductionActive'">4</span>
+      </div>
+      <div class="step-label">
+        <strong>{{ 'zatca.stepper.step4Title' | translate }}</strong>
+        <span>{{ 'zatca.stepper.step4Sub' | translate }}</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- =========================================================================
+       STEP 1: Solution Setup & CSR Generation
+       ========================================================================= -->
+  <div class="step-content-card" *ngIf="currentStep() === 1">
+    <div class="content-header">
+      <h3>
+        <i class="pi pi-key text-emerald"></i>
+        {{ 'zatca.step1.title' | translate }}
+      </h3>
+      <span class="step-badge">
+        <i class="pi pi-lock"></i>
+        {{ 'zatca.step1.securityBadge' | translate }}
+      </span>
+    </div>
+
+    <div class="info-callout">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        {{ 'zatca.step1.callout' | translate }}
+      </div>
+    </div>
+
+    <!-- Form Fields Grid -->
+    <div class="form-grid">
+      <!-- Device Name -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.deviceName' | translate }}<span class="required-star">*</span></span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-desktop input-icon"></i>
+          <input type="text" class="form-control" [ngModel]="deviceName()" (ngModelChange)="deviceName.set($event)" />
+        </div>
+      </div>
+
+      <!-- Target Environment -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.targetEnv' | translate }}<span class="required-star">*</span></span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-globe input-icon"></i>
+          <select class="form-control" [ngModel]="environment()" (ngModelChange)="environment.set($event)">
+            <option value="Simulation">{{ 'zatca.step1.envSimulation' | translate }}</option>
+            <option value="Production">{{ 'zatca.step1.envProduction' | translate }}</option>
+            <option value="Sandbox">{{ 'zatca.step1.envSandbox' | translate }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Organization Name -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.orgName' | translate }}<span class="required-star">*</span></span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-building input-icon"></i>
+          <input type="text" class="form-control" [ngModel]="orgName()" (ngModelChange)="orgName.set($event)" />
+        </div>
+      </div>
+
+      <!-- VAT Number -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.vatNumber' | translate }}<span class="required-star">*</span></span>
+          <span class="lang-hint">300XXXXXXXXXXX</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-id-card input-icon"></i>
+          <input type="text" class="form-control font-mono" maxlength="15" [ngModel]="vatNumber()" (ngModelChange)="vatNumber.set($event)" />
+        </div>
+      </div>
+
+      <!-- Common Name -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.commonName' | translate }}<span class="required-star">*</span></span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-tag input-icon"></i>
+          <input type="text" class="form-control font-mono" [ngModel]="commonName()" (ngModelChange)="commonName.set($event)" />
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.location' | translate }}<span class="required-star">*</span></span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-map-marker input-icon"></i>
+          <input type="text" class="form-control" [ngModel]="location()" (ngModelChange)="location.set($event)" />
+        </div>
+      </div>
+
+      <!-- Industry -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.industry' | translate }}</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-briefcase input-icon"></i>
+          <input type="text" class="form-control" [ngModel]="industry()" (ngModelChange)="industry.set($event)" />
+        </div>
+      </div>
+
+      <!-- Invoice Type -->
+      <div class="form-group">
+        <label>
+          <span>{{ 'zatca.step1.invoiceType' | translate }}</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="pi pi-receipt input-icon"></i>
+          <select class="form-control" [ngModel]="invoiceType()" (ngModelChange)="invoiceType.set($event)">
+            <option value="1100">{{ 'zatca.step1.typeBoth' | translate }}</option>
+            <option value="0100">{{ 'zatca.step1.typeSimplified' | translate }}</option>
+            <option value="1000">{{ 'zatca.step1.typeStandard' | translate }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div>
+      <button 
+        class="btn btn-primary btn-lg" 
+        [disabled]="isGeneratingCsr()" 
+        (click)="generateCsr()">
+        <i class="pi pi-key" *ngIf="!isGeneratingCsr()"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="isGeneratingCsr()"></i>
+        <span>
+          {{ isGeneratingCsr() ? ('zatca.step1.generatingBtn' | translate) : ('zatca.step1.generateBtn' | translate) }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Display CSR if generated -->
+    <div *ngIf="status()?.hasCsr" class="token-display-box mt-2">
+      <div class="token-header">
+        <div class="token-title text-emerald">
+          <i class="pi pi-file-code"></i>
+          <span>{{ 'zatca.step1.csrTitle' | translate }}</span>
+          <span class="badge badge-success">{{ csrSizeKb() }}</span>
+        </div>
+        <div class="token-actions">
+          <button class="btn btn-xs btn-outline" (click)="copyToClipboard(status()?.csrPem, 'csr')">
+            <i class="pi" [class.pi-copy]="copiedField() !== 'csr'" [class.pi-check]="copiedField() === 'csr'"></i>
+            <span>{{ copiedField() === 'csr' ? ('zatca.step1.copied' | translate) : ('zatca.step1.copyCsr' | translate) }}</span>
+          </button>
+          <button class="btn btn-xs btn-outline" (click)="downloadFile(status()?.csrPem, 'zatca-device.csr')">
+            <i class="pi pi-download"></i>
+            <span>{{ 'zatca.step1.downloadCsr' | translate }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="token-content">{{ status()?.csrPem }}</div>
+    </div>
+
+    <!-- Step Navigation Actions -->
+    <div class="step-actions">
+      <div></div>
+      <button 
+        class="btn btn-primary" 
+        [disabled]="!status()?.hasCsr" 
+        (click)="goToStep(2)">
+        <span>{{ 'zatca.step1.proceedStep2' | translate }}</span>
+        <i class="pi" [class.pi-arrow-left]="langService.currentLang() === 'ar'" [class.pi-arrow-right]="langService.currentLang() !== 'ar'"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       STEP 2: Fatoora Portal OTP & Compliance CSID
+       ========================================================================= -->
+  <div class="step-content-card" *ngIf="currentStep() === 2">
+    <div class="content-header">
+      <h3>
+        <i class="pi pi-shield text-emerald"></i>
+        {{ 'zatca.step2.title' | translate }}
+      </h3>
+      <span class="step-badge">
+        <i class="pi pi-external-link"></i>
+        {{ 'zatca.step2.portalBadge' | translate }}
+      </span>
+    </div>
+
+    <!-- Official Guidance Card -->
+    <div class="portal-guidance-card">
+      <div class="guidance-icon"><i class="pi pi-info-circle"></i></div>
+      <div class="guidance-content">
+        <h4>{{ 'zatca.step2.guidanceTitle' | translate }}</h4>
+        <ol>
+          <li>
+            {{ 'zatca.step2.guidanceStep1' | translate }}
+            <strong>{{ 'zatca.step2.guidanceStep1Link' | translate }}</strong>
+            {{ 'zatca.step2.guidanceStep1Url' | translate }}
+            <a href="https://fatoora.zatca.gov.sa" target="_blank">fatoora.zatca.gov.sa <i class="pi pi-external-link text-xs"></i></a>
+          </li>
+          <li>{{ 'zatca.step2.guidanceStep2' | translate }}</li>
+          <li>{{ 'zatca.step2.guidanceStep3' | translate }}</li>
+          <li>{{ 'zatca.step2.guidanceStep4' | translate }}</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- OTP Entry Container -->
+    <div class="otp-entry-container">
+      <label class="otp-label">
+        <i class="pi pi-lock me-1"></i>
+        {{ 'zatca.step2.otpLabel' | translate }}
+      </label>
+      <div class="otp-input-wrapper">
+        <input 
+          type="text" 
+          class="form-control otp-input font-monospace" 
+          placeholder="0 0 0 0 0 0" 
+          maxlength="6"
+          [ngModel]="otp()" 
+          (ngModelChange)="otp.set($event)" />
+        
+        <button 
+          class="btn btn-primary btn-lg" 
+          [disabled]="isSubmittingOtp() || !otp() || otp().length < 6" 
+          (click)="submitOtp()">
+          <i class="pi pi-check-circle" *ngIf="!isSubmittingOtp()"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isSubmittingOtp()"></i>
+          <span>
+            {{ isSubmittingOtp() ? ('zatca.step2.submittingOtp' | translate) : ('zatca.step2.submitOtp' | translate) }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Compliance CSID Details if issued -->
+    <div *ngIf="status()?.complianceCsid" class="token-display-box mt-3">
+      <div class="token-header">
+        <div class="token-title text-emerald">
+          <i class="pi pi-verified"></i>
+          <span>{{ 'zatca.step2.ccsidTitle' | translate }}</span>
+          <span class="badge badge-success">{{ 'zatca.step2.ccsidIssued' | translate }}</span>
+        </div>
+        <div class="token-actions">
+          <button class="btn btn-xs btn-outline" (click)="copyToClipboard(status()?.complianceCsid, 'ccsid')">
+            <i class="pi" [class.pi-copy]="copiedField() !== 'ccsid'" [class.pi-check]="copiedField() === 'ccsid'"></i>
+            <span>{{ copiedField() === 'ccsid' ? ('zatca.step1.copied' | translate) : ('zatca.step2.copyCcsid' | translate) }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="token-content">{{ status()?.complianceCsid }}</div>
+    </div>
+
+    <!-- Navigation Actions -->
+    <div class="step-actions">
+      <button class="btn btn-secondary" (click)="goToStep(1)">
+        <i class="pi" [class.pi-arrow-right]="langService.currentLang() === 'ar'" [class.pi-arrow-left]="langService.currentLang() !== 'ar'"></i>
+        <span>{{ 'zatca.step2.previous' | translate }}</span>
+      </button>
+
+      <button 
+        class="btn btn-primary" 
+        [disabled]="!status()?.complianceCsid" 
+        (click)="goToStep(3)">
+        <span>{{ 'zatca.step2.proceedStep3' | translate }}</span>
+        <i class="pi" [class.pi-arrow-left]="langService.currentLang() === 'ar'" [class.pi-arrow-right]="langService.currentLang() !== 'ar'"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       STEP 3: Compliance Simulation Checks
+       ========================================================================= -->
+  <div class="step-content-card" *ngIf="currentStep() === 3">
+    <div class="content-header">
+      <h3>
+        <i class="pi pi-list-check text-emerald"></i>
+        {{ 'zatca.step3.title' | translate }}
+      </h3>
+      <span class="step-badge">
+        <i class="pi pi-bolt"></i>
+        {{ 'zatca.step3.badge' | translate }}
+      </span>
+    </div>
+
+    <div class="info-callout">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        {{ 'zatca.step3.callout' | translate }}
+      </div>
+    </div>
+
+    <!-- 4 Checks Cards Grid -->
+    <div class="checks-grid">
+      <!-- 1. Standard Tax Invoice B2B -->
+      <div class="check-card" [class.passed]="status()?.compliancePassed || checksResult()?.standardInvoicePassed">
+        <div class="check-icon"><i class="pi pi-file"></i></div>
+        <div class="check-info">
+          <h5>{{ 'zatca.step3.check1Title' | translate }}</h5>
+          <p>{{ 'zatca.step3.check1Desc' | translate }}</p>
+        </div>
+        <div class="check-status">
+          <span class="badge" [class.badge-success]="status()?.compliancePassed || checksResult()?.standardInvoicePassed" [class.badge-secondary]="!status()?.compliancePassed && !checksResult()?.standardInvoicePassed">
+            <i class="pi" [class.pi-check]="status()?.compliancePassed || checksResult()?.standardInvoicePassed" [class.pi-clock]="!status()?.compliancePassed && !checksResult()?.standardInvoicePassed"></i>
+            {{ (status()?.compliancePassed || checksResult()?.standardInvoicePassed) ? ('zatca.step3.passed' | translate) : ('zatca.step3.pending' | translate) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 2. Simplified Tax Invoice B2C -->
+      <div class="check-card" [class.passed]="status()?.compliancePassed || checksResult()?.simplifiedInvoicePassed">
+        <div class="check-icon"><i class="pi pi-qrcode"></i></div>
+        <div class="check-info">
+          <h5>{{ 'zatca.step3.check2Title' | translate }}</h5>
+          <p>{{ 'zatca.step3.check2Desc' | translate }}</p>
+        </div>
+        <div class="check-status">
+          <span class="badge" [class.badge-success]="status()?.compliancePassed || checksResult()?.simplifiedInvoicePassed" [class.badge-secondary]="!status()?.compliancePassed && !checksResult()?.simplifiedInvoicePassed">
+            <i class="pi" [class.pi-check]="status()?.compliancePassed || checksResult()?.simplifiedInvoicePassed" [class.pi-clock]="!status()?.compliancePassed && !checksResult()?.simplifiedInvoicePassed"></i>
+            {{ (status()?.compliancePassed || checksResult()?.simplifiedInvoicePassed) ? ('zatca.step3.passed' | translate) : ('zatca.step3.pending' | translate) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 3. Standard Credit Note -->
+      <div class="check-card" [class.passed]="status()?.compliancePassed || checksResult()?.creditNotePassed">
+        <div class="check-icon"><i class="pi pi-minus-circle"></i></div>
+        <div class="check-info">
+          <h5>{{ 'zatca.step3.check3Title' | translate }}</h5>
+          <p>{{ 'zatca.step3.check3Desc' | translate }}</p>
+        </div>
+        <div class="check-status">
+          <span class="badge" [class.badge-success]="status()?.compliancePassed || checksResult()?.creditNotePassed" [class.badge-secondary]="!status()?.compliancePassed && !checksResult()?.creditNotePassed">
+            <i class="pi" [class.pi-check]="status()?.compliancePassed || checksResult()?.creditNotePassed" [class.pi-clock]="!status()?.compliancePassed && !checksResult()?.creditNotePassed"></i>
+            {{ (status()?.compliancePassed || checksResult()?.creditNotePassed) ? ('zatca.step3.passed' | translate) : ('zatca.step3.pending' | translate) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 4. Simplified Debit Note -->
+      <div class="check-card" [class.passed]="status()?.compliancePassed || checksResult()?.debitNotePassed">
+        <div class="check-icon"><i class="pi pi-plus-circle"></i></div>
+        <div class="check-info">
+          <h5>{{ 'zatca.step3.check4Title' | translate }}</h5>
+          <p>{{ 'zatca.step3.check4Desc' | translate }}</p>
+        </div>
+        <div class="check-status">
+          <span class="badge" [class.badge-success]="status()?.compliancePassed || checksResult()?.debitNotePassed" [class.badge-secondary]="!status()?.compliancePassed && !checksResult()?.debitNotePassed">
+            <i class="pi" [class.pi-check]="status()?.compliancePassed || checksResult()?.debitNotePassed" [class.pi-clock]="!status()?.compliancePassed && !checksResult()?.debitNotePassed"></i>
+            {{ (status()?.compliancePassed || checksResult()?.debitNotePassed) ? ('zatca.step3.passed' | translate) : ('zatca.step3.pending' | translate) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="text-center mt-2">
+      <button 
+        class="btn btn-primary btn-lg" 
+        [disabled]="isRunningChecks()" 
+        (click)="runComplianceChecks()">
+        <i class="pi pi-bolt" *ngIf="!isRunningChecks()"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="isRunningChecks()"></i>
+        <span>
+          {{ isRunningChecks() ? ('zatca.step3.runningChecks' | translate) : ('zatca.step3.runChecks' | translate) }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Check Logs Viewer -->
+    <div *ngIf="checksResult()?.checkLogs" class="logs-box mt-3">
+      <h5>
+        <i class="pi pi-terminal"></i>
+        <span>{{ 'zatca.step3.logsTitle' | translate }}</span>
+      </h5>
+      <div class="log-entries">
+        <div *ngFor="let line of checksResult()?.checkLogs" class="log-line">
+          {{ line }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Actions -->
+    <div class="step-actions">
+      <button class="btn btn-secondary" (click)="goToStep(2)">
+        <i class="pi" [class.pi-arrow-right]="langService.currentLang() === 'ar'" [class.pi-arrow-left]="langService.currentLang() !== 'ar'"></i>
+        <span>{{ 'zatca.step2.previous' | translate }}</span>
+      </button>
+
+      <button 
+        class="btn btn-primary" 
+        [disabled]="!status()?.compliancePassed && !checksResult()?.overallPassed" 
+        (click)="goToStep(4)">
+        <span>{{ 'zatca.step3.proceedStep4' | translate }}</span>
+        <i class="pi" [class.pi-arrow-left]="langService.currentLang() === 'ar'" [class.pi-arrow-right]="langService.currentLang() !== 'ar'"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       STEP 4: Production CSID Activation & Certified Identity View
+       ========================================================================= -->
+  <div class="step-content-card" *ngIf="currentStep() === 4">
+    <div class="content-header">
+      <h3>
+        <i class="pi pi-verified text-emerald"></i>
+        {{ 'zatca.step4.title' | translate }}
+      </h3>
+      <span class="step-badge">
+        <i class="pi pi-shield"></i>
+        {{ 'zatca.step4.badge' | translate }}
+      </span>
+    </div>
+
+    <!-- Case A: Pending Production Activation -->
+    <div *ngIf="status()?.status !== 'ProductionActive'" class="text-center py-5">
+      <div class="mb-3">
+        <i class="pi pi-shield text-emerald" style="font-size: 3.5rem;"></i>
+      </div>
+      <h4 class="fw-bold mb-2">
+        {{ 'zatca.step4.readyTitle' | translate }}
+      </h4>
+      <p class="text-muted max-w-600 mx-auto mb-4" style="line-height: 1.6;">
+        {{ 'zatca.step4.readyDesc' | translate }}
+      </p>
+
+      <button 
+        class="btn btn-success btn-lg px-5 py-3" 
+        [disabled]="isActivatingProduction()" 
+        (click)="activateProduction()">
+        <i class="pi pi-verified me-2" *ngIf="!isActivatingProduction()"></i>
+        <i class="pi pi-spin pi-spinner me-2" *ngIf="isActivatingProduction()"></i>
+        <span>
+          {{ isActivatingProduction() ? ('zatca.step4.activatingBtn' | translate) : ('zatca.step4.activateBtn' | translate) }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Case B: Fully Activated (Luxury Corporate Layout) -->
+    <div *ngIf="status()?.status === 'ProductionActive'" class="production-active-container">
+      
+      <!-- Hero Celebration Banner -->
+      <div class="active-banner">
+        <div class="banner-icon">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div class="banner-text">
+          <h3>{{ 'zatca.step4.bannerTitle' | translate }}</h3>
+          <p>{{ 'zatca.step4.bannerDesc' | translate }}</p>
+        </div>
+      </div>
+
+      <!-- Modern Meta Cards Grid (Replaces old sparse table) -->
+      <div class="cert-meta-card">
+        <div class="meta-grid-header">
+          <h4>
+            <i class="pi pi-id-card text-emerald"></i>
+            <span>{{ 'zatca.step4.certDetailsTitle' | translate }}</span>
+          </h4>
+          <span class="badge badge-success">
+            <i class="pi pi-check-circle"></i>
+            {{ 'zatca.step4.certStatusActive' | translate }}
+          </span>
+        </div>
+
+        <div class="meta-cards-grid">
+          <!-- 1. VAT Number -->
+          <div class="meta-field-card">
+            <div class="field-icon">
+              <i class="pi pi-building text-primary"></i>
+            </div>
+            <div class="field-info">
+              <span class="field-title">{{ 'zatca.step4.vatTitle' | translate }}</span>
+              <span class="field-val font-mono">{{ status()?.organizationVatNumber }}</span>
+            </div>
+            <button class="btn btn-xs btn-outline field-copy-btn" (click)="copyToClipboard(status()?.organizationVatNumber, 'vat')" [title]="'zatca.step4.copyVat' | translate">
+              <i class="pi" [class.pi-copy]="copiedField() !== 'vat'" [class.pi-check]="copiedField() === 'vat'"></i>
+            </button>
+          </div>
+
+          <!-- 2. Device Name -->
+          <div class="meta-field-card">
+            <div class="field-icon">
+              <i class="pi pi-desktop text-emerald"></i>
+            </div>
+            <div class="field-info">
+              <span class="field-title">{{ 'zatca.step4.deviceName' | translate }}</span>
+              <span class="field-val">{{ status()?.deviceName }}</span>
+            </div>
+          </div>
+
+          <!-- 3. Common Name (CN) -->
+          <div class="meta-field-card">
+            <div class="field-icon">
+              <i class="pi pi-tag text-purple"></i>
+            </div>
+            <div class="field-info">
+              <span class="field-title">{{ 'zatca.step4.commonName' | translate }}</span>
+              <span class="field-val font-mono">{{ status()?.commonName }}</span>
+            </div>
+          </div>
+
+          <!-- 4. Issue Date -->
+          <div class="meta-field-card">
+            <div class="field-icon">
+              <i class="pi pi-calendar-plus text-info"></i>
+            </div>
+            <div class="field-info">
+              <span class="field-title">{{ 'zatca.step4.issueDate' | translate }}</span>
+              <span class="field-val font-mono">{{ status()?.productionIssuedAtUtc | date:'yyyy-MM-dd HH:mm' }} UTC</span>
+            </div>
+          </div>
+
+          <!-- 5. Expiration Date -->
+          <div class="meta-field-card">
+            <div class="field-icon">
+              <i class="pi pi-calendar-times text-warning"></i>
+            </div>
+            <div class="field-info">
+              <span class="field-title">{{ 'zatca.step4.expiryDate' | translate }}</span>
+              <span class="field-val font-mono text-emerald">
+                {{ status()?.productionExpiresAtUtc | date:'yyyy-MM-dd HH:mm' }} UTC
+                <span class="badge badge-success ms-1" *ngIf="daysRemaining()">
+                  {{ daysRemaining() }} {{ 'zatca.kpis.daysShort' | translate }}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 6. Device UUID -->
+          <div class="meta-field-card">
+            <div class="field-icon">
+              <i class="pi pi-shield text-emerald"></i>
+            </div>
+            <div class="field-info">
+              <span class="field-title">{{ 'zatca.step4.uuidTitle' | translate }}</span>
+              <span class="field-val font-mono text-truncate" [title]="status()?.deviceUuid">{{ status()?.deviceUuid }}</span>
+            </div>
+            <button class="btn btn-xs btn-outline field-copy-btn" (click)="copyToClipboard(status()?.deviceUuid, 'uuid2')" [title]="'zatca.step4.copyUuid' | translate">
+              <i class="pi" [class.pi-copy]="copiedField() !== 'uuid2'" [class.pi-check]="copiedField() === 'uuid2'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Binary Security Token (CSID) Card -->
+        <div class="token-display-box mt-2">
+          <div class="token-header">
+            <div class="token-title">
+              <i class="pi pi-lock text-emerald"></i>
+              <span>{{ 'zatca.step4.tokenTitle' | translate }}</span>
+              <span class="badge badge-primary">{{ pcsidSizeKb() }}</span>
+            </div>
+            <div class="token-actions">
+              <button class="btn btn-xs btn-outline" (click)="copyToClipboard(status()?.productionCsid, 'pcsid')">
+                <i class="pi" [class.pi-copy]="copiedField() !== 'pcsid'" [class.pi-check]="copiedField() === 'pcsid'"></i>
+                <span>{{ copiedField() === 'pcsid' ? ('zatca.step1.copied' | translate) : ('zatca.step4.copyCert' | translate) }}</span>
+              </button>
+              <button class="btn btn-xs btn-outline" (click)="downloadFile(status()?.productionCsid, 'zatca-production.cer')">
+                <i class="pi pi-download"></i>
+                <span>{{ 'zatca.step4.downloadCert' | translate }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="token-content">{{ status()?.productionCsid }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Actions -->
+    <div class="step-actions">
+      <button class="btn btn-secondary" (click)="goToStep(3)">
+        <i class="pi" [class.pi-arrow-right]="langService.currentLang() === 'ar'" [class.pi-arrow-left]="langService.currentLang() !== 'ar'"></i>
+        <span>{{ 'zatca.step2.previous' | translate }}</span>
+      </button>
+
+      <button class="btn btn-primary btn-lg" routerLink="/invoicing/tax-invoices">
+        <i class="pi pi-file-o"></i>
+        <span>{{ 'zatca.step4.goToInvoices' | translate }}</span>
+        <i class="pi" [class.pi-arrow-left]="langService.currentLang() === 'ar'" [class.pi-arrow-right]="langService.currentLang() !== 'ar'"></i>
+      </button>
+    </div>
+  </div>
+
+</div>

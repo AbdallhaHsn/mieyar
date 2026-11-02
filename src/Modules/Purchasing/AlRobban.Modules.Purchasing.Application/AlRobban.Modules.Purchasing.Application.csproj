@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlRobban.Modules.Purchasing.Domain\AlRobban.Modules.Purchasing.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\AlRobban.Shared.Application\AlRobban.Shared.Application.csproj" />
+    <ProjectReference Include="..\..\GeneralLedger\AlRobban.Modules.GeneralLedger.Application\AlRobban.Modules.GeneralLedger.Application.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

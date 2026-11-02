@@ -1,3 +1,5 @@
+using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using AlRobban.Modules.GeneralLedger.Application.Commands.FixedAssets;
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Application.Queries.FixedAssets;
@@ -9,6 +11,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/fixed-assets")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class FixedAssetsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -30,6 +33,25 @@ public class FixedAssetsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetFixedAssetsQuery(companyId, status, searchTerm), cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// استرجاع التقرير المالي والإيضاحي الشامل للأصول الثابتة والإهلاك وفق معيار IAS 16
+    /// </summary>
+    [HttpGet("financial-report")]
+    [ProducesResponseType(typeof(FixedAssetFinancialReportDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetFinancialReport(
+        [FromQuery] Guid? companyId,
+        [FromQuery] DateTime? asOfDate,
+        [FromQuery] int? fiscalYear,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetFixedAssetFinancialReportQuery(companyId, asOfDate, fiscalYear), cancellationToken);
         if (result.IsFailure)
         {
             return BadRequest(new { result.Error.Code, result.Error.Description });

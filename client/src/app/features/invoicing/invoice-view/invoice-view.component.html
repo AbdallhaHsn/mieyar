@@ -1,0 +1,632 @@
+<div class="invoice-view-page" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state-wrapper no-print">
+    <div class="spinner-ring"></div>
+    <p>{{ 'invoices.view.loading' | translate }}</p>
+  </div>
+
+  <ng-container *ngIf="invoice() as inv">
+
+    <!-- ========================================================================= -->
+    <!-- TOP CONTROL ACTION BAR (Hidden when printing via .no-print)                -->
+    <!-- ========================================================================= -->
+    <header class="view-header-strip no-print">
+      <div class="header-start-group">
+        <button type="button" class="btn-back" (click)="goBack()" [title]="'common.back' | translate">
+          <i class="pi pi-arrow-right"></i>
+          <span>{{ isCreditNote(inv) ? ('invoices.view.backToReturns' | translate) : (isQuotation(inv) ? ('invoices.view.backToQuotations' | translate) : ('invoices.view.backToInvoices' | translate)) }}</span>
+        </button>
+
+        <div class="doc-meta-cluster">
+          <span class="inv-num-pill" [class.is-cn]="isCreditNote(inv)">{{ inv.invoiceNumber }}</span>
+          
+          <span *ngIf="inv.referenceInvoiceNumber" class="badge-ref-link" [title]="'invoices.create.refInvoiceNumber' | translate">
+            <i class="pi pi-link"></i>
+            {{ 'invoices.view.referenceReturn' | translate }} <strong>{{ inv.referenceInvoiceNumber }}</strong>
+          </span>
+
+          <span class="badge-status" [ngClass]="getStatusBadgeClass(inv.status)">
+            <span class="status-dot"></span>
+            {{ getStatusLabel(inv.status) }}
+          </span>
+
+          <button 
+            *ngIf="inv.associatedJournalEntryNumber" 
+            type="button"
+            class="btn-gl-pill"
+            (click)="navigateToJournalEntry(inv.associatedJournalEntryNumber)"
+            [title]="'invoices.view.journalEntry' | translate">
+            <i class="pi pi-external-link"></i>
+            <span>{{ 'invoices.view.journalEntry' | translate }} <strong>#{{ inv.associatedJournalEntryNumber }}</strong></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="header-actions-group">
+        <!-- Template Selector -->
+        <div class="format-switcher">
+          <button 
+            type="button" 
+            class="fmt-btn" 
+            [class.active]="printFormat() === 'a4'" 
+            (click)="setPrintFormat('a4')">
+            {{ 'invoices.view.formatA4' | translate }}
+          </button>
+          <button 
+            type="button" 
+            class="fmt-btn" 
+            [class.active]="printFormat() === 'thermal'" 
+            (click)="setPrintFormat('thermal')">
+            {{ 'invoices.view.formatThermal' | translate }}
+          </button>
+        </div>
+
+        <!-- Issue to ZATCA button if draft -->
+        <button 
+          *ngIf="inv.status === InvoiceStatus.Draft || inv.invoiceStatus === InvoiceStatus.Draft" 
+          type="button" 
+          class="btn-issue-zatca" 
+          (click)="issueToZatca()">
+          🚀 {{ 'invoices.create.zatcaSubmit' | translate }}
+        </button>
+
+        <!-- Download XML -->
+        <button 
+          *ngIf="inv.status !== InvoiceStatus.Draft && inv.invoiceStatus !== InvoiceStatus.Draft" 
+          type="button" 
+          class="btn-xml" 
+          (click)="downloadXml()"
+          [title]="'invoices.view.downloadXml' | translate">
+          📥 {{ 'invoices.view.downloadXml' | translate }}
+        </button>
+
+        <!-- Main Print Action -->
+        <button type="button" class="btn-print" (click)="printInvoice()">
+          🖨️ {{ 'invoices.view.print' | translate }}
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- DOCUMENT DISPLAY CANVAS (Full Page, Uncramped, Direct Print Area)          -->
+    <!-- ========================================================================= -->
+    <main class="view-sheet-canvas" [class.thermal-canvas]="printFormat() === 'thermal'">
+
+      <!-- ===================================================================== -->
+      <!-- 1. TEMPLATE A4: Official Standard Tax Invoice & Credit Note           -->
+      <!-- ===================================================================== -->
+      <article *ngIf="printFormat() === 'a4'" class="invoice-a4-sheet" [class.sheet-credit-note]="isCreditNote(inv)" [class.sheet-returned]="isFullyReturned(inv)" id="invoice-print-area">
+        
+        <!-- Top Accent Banner -->
+        <div class="a4-top-accent" [class.accent-cn]="isCreditNote(inv)" [class.accent-returned]="isFullyReturned(inv)"></div>
+
+        <!-- Official Return Stamp (ختم رسمي للمرتجع الكامل) -->
+        <div class="official-stamp-returned" *ngIf="isFullyReturned(inv)" [title]="'invoices.view.voidFullyReturnedTitle' | translate">
+          <div class="stamp-outer-ring">
+            <div class="stamp-inner-ring">
+              <span class="stamp-company">{{ companyContext.activeCompany().nameAr || ('hr.payroll.saudiArabia' | translate) }}</span>
+              <span class="stamp-main">{{ 'invoices.view.fullyReturnedStamp' | translate }}</span>
+              <span class="stamp-ref" *ngIf="relatedCreditNoteNumbers().length > 0">{{ 'invoices.view.notice' | translate }} {{ relatedCreditNoteNumbers()[0] }}</span>
+              <span class="stamp-ref" *ngIf="relatedCreditNoteNumbers().length === 0">{{ 'invoices.view.creditNoteApproved' | translate }}</span>
+              <span class="stamp-en">VOID - REFUNDED</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Background Watermark -->
+        <div class="invoice-returned-watermark" *ngIf="isFullyReturned(inv)">
+          <span>{{ 'invoices.view.fullyReturnedStamp' | translate }}</span>
+          <small>REFUNDED &amp; VOID</small>
+        </div>
+
+        <!-- Notification Banner at Top of Sheet for Full Return -->
+        <div class="invoice-returned-alert" *ngIf="isFullyReturned(inv)">
+          <div class="ira-badge"><i class="pi pi-replay"></i> {{ 'invoices.view.fullyReturnedBanner' | translate }}</div>
+          <div class="ira-text">
+            {{ 'invoices.view.fullyReturnedDesc1' | translate }}
+            <strong *ngIf="relatedCreditNoteNumbers().length > 0">{{ 'invoices.view.creditNoteNo' | translate }} {{ relatedCreditNoteNumbers().join(('ui.invoiceView.2e1a34' | translate)) }}</strong>
+            <strong *ngIf="relatedCreditNoteNumbers().length === 0">{{ 'invoices.view.creditNoteApprovedVal' | translate }} {{ (inv.returnedAmount || inv.totalAmount) | number:'1.2-2' }} SAR</strong>.
+            {{ 'invoices.view.fullyReturnedVoidNotice' | translate }}
+          </div>
+        </div>
+
+        <!-- Notification Banner at Top of Sheet for Partial Return -->
+        <div class="invoice-partial-returned-alert" *ngIf="isPartiallyReturned(inv)">
+          <div class="ipra-badge"><i class="pi pi-replay"></i> {{ 'invoices.view.partiallyReturnedBanner' | translate }}</div>
+          <div class="ipra-text">
+            {{ 'invoices.view.partiallyReturnedDesc' | translate }}
+            <strong *ngIf="relatedCreditNoteNumbers().length > 0">{{ 'invoices.view.creditNoteNo' | translate }} {{ relatedCreditNoteNumbers().join(('ui.invoiceView.2e1a34' | translate)) }}</strong>
+            <strong *ngIf="relatedCreditNoteNumbers().length === 0">{{ 'invoices.view.creditNoteApproved' | translate }}</strong>
+            {{ 'ui.invoiceView.7da433' | translate }} <strong class="text-amber">{{ getEffectiveReturnedAmount(inv) | number:'1.2-2' }} SAR</strong>.
+            {{ 'invoices.view.effectiveRemainingNet' | translate }} <strong class="text-success">{{ getNetRemainingAmount(inv) | number:'1.2-2' }} SAR</strong>.
+          </div>
+        </div>
+
+        <!-- Document Header: Right = Company Info, Left = Document Title & ZATCA QR -->
+        <!-- Document Header: 2 Symmetrical Balanced Halves (Right: Company & Logo | Left: Title & ZATCA QR) -->
+        <div class="a4-header-grid">
+          <!-- Right Side: Company Details & Logo -->
+          <div class="company-brand-box">
+            <div class="company-logo-container">
+              <img 
+                *ngIf="companyContext.companyLogo() || companyContext.activeCompany().logoUrl || inv.sellerLogoUrl" 
+                [src]="companyContext.companyLogo() || companyContext.activeCompany().logoUrl || inv.sellerLogoUrl" 
+                [alt]="'invoices.view.companyLogoAlt' | translate" 
+                class="company-brand-logo" />
+              <div *ngIf="!companyContext.companyLogo() && !companyContext.activeCompany().logoUrl && !inv.sellerLogoUrl" class="logo-fallback-box">
+                <span class="logo-symbol">⚓</span>
+              </div>
+            </div>
+
+            <div class="brand-info-col">
+              <div class="company-text">
+                <h1 class="company-name-ar">{{ companyContext.activeCompany().nameAr || inv.sellerName }}</h1>
+                <h2 class="company-name-en">{{ companyContext.activeCompany().nameEn || inv.sellerNameEn }}</h2>
+              </div>
+
+              <div class="company-credentials-list">
+                <div class="cred-row" *ngIf="companyContext.activeCompany().vatNumber || inv.sellerVatNumber">
+                  <span class="c-label">{{ 'invoices.view.vatId' | translate }}</span>
+                  <strong class="c-val mono text-success">{{ companyContext.activeCompany().vatNumber || inv.sellerVatNumber }}</strong>
+                </div>
+
+                <div class="cred-row cred-inline-wrap">
+                  <div class="cred-item" *ngIf="companyContext.activeCompany().commercialRegistration || inv.sellerCrNumber">
+                    <span class="c-label">{{ 'invoices.view.cr' | translate }}</span>
+                    <strong class="c-val mono">{{ companyContext.activeCompany().commercialRegistration || inv.sellerCrNumber }}</strong>
+                  </div>
+                  <span class="c-sep" *ngIf="companyContext.activeCompany().commercialRegistration || inv.sellerCrNumber">•</span>
+                  <div class="cred-item">
+                    <span class="c-label">{{ 'invoices.view.branch' | translate }}</span>
+                    <strong class="c-val">{{ formatBranchName() }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Left Side: ZATCA Phase 2 QR Code (يسار الترويسة) -->
+          <div class="header-qr-container">
+            <div class="zatca-qr-container">
+              <div class="qr-box-inner" *ngIf="qrCodeDataUrl()">
+                <img [src]="qrCodeDataUrl()" class="real-qr-img" alt="ZATCA Phase 2 QR Code" />
+                <span class="qr-tag">{{ 'invoices.view.zatcaQrTag' | translate }}</span>
+              </div>
+              <div class="qr-placeholder-box" *ngIf="!qrCodeDataUrl()">
+                <span class="qr-tag-warning">{{ 'invoices.view.qrOnApproval' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Full-Width Document Title Ribbon (شريط عنوان المستند الرسمي بكامل العرض) -->
+        <div class="document-title-ribbon" [class.is-cn-ribbon]="isCreditNote(inv)" [class.is-returned-ribbon]="isFullyReturned(inv)" [class.is-partial-returned-ribbon]="isPartiallyReturned(inv)">
+          <div class="dtr-title-group">
+            <h2 class="main-title">
+              {{ isCreditNote(inv) ? ('invoices.view.creditNoteTitle' | translate) : (isQuotation(inv) ? ('invoices.view.quotationTitle' | translate) : ('invoices.view.taxInvoiceTitle' | translate)) }}
+            </h2>
+            <span class="dtr-divider">/</span>
+            <h3 class="sub-title">
+              {{ isCreditNote(inv) ? 'TAX CREDIT NOTE' : (isQuotation(inv) ? 'PRICE QUOTATION' : 'TAX INVOICE') }}
+            </h3>
+          </div>
+
+          <div class="dtr-badges-group">
+            <span class="type-pill" 
+                  [class.type-pill-cn]="isCreditNote(inv)" 
+                  [class.type-pill-returned]="isFullyReturned(inv)"
+                  [class.type-pill-partial-returned]="isPartiallyReturned(inv)">
+              {{ isCreditNote(inv) ? ('invoices.view.creditNoteCertified' | translate) : (isFullyReturned(inv) ? ('invoices.view.fullyReturnedInvoiceType' | translate) : (isPartiallyReturned(inv) ? ('invoices.view.partiallyReturnedInvoiceType' | translate) : getTypeLabel(inv.invoiceType, inv))) }}
+            </span>
+            <div *ngIf="inv.referenceInvoiceNumber" class="ref-inv-banner-box">
+              <i class="pi pi-link"></i>
+              <span>{{ 'invoices.view.returnForInvoice' | translate }} <strong>{{ inv.referenceInvoiceNumber }}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Horizontal Invoice Details Strip (بيانات الفاتورة بشكل شريط أفقي) -->
+        <div class="horizontal-meta-strip inv-strip" [class.strip-cn]="isCreditNote(inv)">
+          <div class="strip-item">
+            <span class="s-title">{{ isCreditNote(inv) ? ('invoices.view.creditNoteNumber' | translate) : ('invoices.view.invoiceNumber' | translate) }}</span>
+            <strong class="s-data mono highlight-inv">{{ inv.invoiceNumber }}</strong>
+          </div>
+          <div class="strip-item" *ngIf="inv.referenceInvoiceNumber">
+            <span class="s-title">{{ 'invoices.view.referenceInvoice' | translate }}</span>
+            <strong class="s-data mono text-rose">{{ inv.referenceInvoiceNumber }}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="s-title">{{ 'invoices.view.issueDateTime' | translate }}</span>
+            <strong class="s-data mono">{{ getFormattedIssueDateTime(inv) }}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="s-title">{{ 'invoices.view.supplyDate' | translate }}</span>
+            <strong class="s-data mono">{{ (inv.supplyDate || inv.issueDate) | date:'yyyy-MM-dd' }}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="s-title">{{ 'invoices.view.paymentMethod' | translate }}</span>
+            <strong class="s-data">{{ inv.paymentMeansCode === '10' ? ('invoices.view.cash' | translate) : (inv.paymentMeansCode === '42' ? ('invoices.view.credit' | translate) : ('invoices.view.bankTransfer' | translate)) }}</strong>
+          </div>
+        </div>
+
+        <!-- 2. Horizontal Buyer Details Strip (بيانات العميل المعتمدة والمفصلة للهيئة) -->
+        <div class="horizontal-meta-strip buyer-strip" [class.is-cash-mode]="isCashCustomer(inv)">
+          <div class="strip-head-badge">
+            <div class="shb-title">
+              <i class="pi pi-building"></i>
+              <span>{{ 'invoices.view.buyerDetails' | translate }}</span>
+            </div>
+            <div class="shb-badge" *ngIf="!isCashCustomer(inv)">
+              <span class="zatca-pill zatca-b2b">
+                <i class="pi pi-verified"></i>
+                <span>{{ 'invoices.view.b2bRegistered' | translate }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="strip-items-grid">
+            <!-- 1. Customer Name -->
+            <div class="b-item name-item">
+              <span class="b-lbl">
+                <i class="pi pi-id-card"></i>
+                {{ 'invoices.view.buyerName' | translate }}
+              </span>
+              <strong class="b-val highlight-name">{{ getBuyerName(inv) }}</strong>
+            </div>
+
+            <!-- 2. VAT Number -->
+            <div class="b-item">
+              <span class="b-lbl">
+                <i class="pi pi-shield"></i>
+                {{ 'invoices.view.buyerVat' | translate }}
+              </span>
+              <strong class="b-val mono text-success" *ngIf="getBuyerVatNumber(inv)">
+                <i class="pi pi-check-circle vat-check-icon"></i>
+                {{ getBuyerVatNumber(inv) }}
+              </strong>
+              <span class="b-val mono text-muted" *ngIf="!getBuyerVatNumber(inv)">-</span>
+            </div>
+
+            <!-- 3. CR / Other ID -->
+            <div class="b-item">
+              <span class="b-lbl">
+                <i class="pi pi-bookmark"></i>
+                {{ getBuyerIdTypeLabel(inv) }}
+              </span>
+              <strong class="b-val mono" *ngIf="getBuyerIdValue(inv)">{{ getBuyerIdValue(inv) }}</strong>
+              <span class="b-val mono text-muted" *ngIf="!getBuyerIdValue(inv)">-</span>
+            </div>
+
+            <!-- 4. Contact Info -->
+            <div class="b-item contact-item" *ngIf="getPhone(inv) || getEmail(inv)">
+              <span class="b-lbl">
+                <i class="pi pi-phone"></i>
+                {{ 'invoices.view.contactInfo' | translate }}
+              </span>
+              <div class="contact-chips">
+                <strong class="b-val mono font-phone" *ngIf="getPhone(inv)">
+                  <i class="pi pi-phone"></i> {{ getPhone(inv) }}
+                </strong>
+                <span class="b-val font-email" *ngIf="getEmail(inv)">
+                  <i class="pi pi-envelope"></i> {{ getEmail(inv) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed ZATCA National Address (العنوان الوطني المعتمد للهيئة) -->
+          <div class="national-address-banner">
+            <div class="nab-header">
+              <div class="nab-title">
+                <i class="pi pi-map-marker"></i>
+                <span>{{ 'invoices.view.buyerNationalAddress' | translate }}</span>
+              </div>
+              <div class="nab-country-pill">
+                <span class="c-lbl">{{ 'invoices.view.country' | translate }}</span>
+                <strong class="c-val">{{ getCountry(inv) }}</strong>
+              </div>
+            </div>
+            
+            <div class="nab-details-grid">
+              <div class="nab-cell cell-city">
+                <span class="c-lbl">{{ 'invoices.view.city' | translate }}</span>
+                <strong class="c-val">{{ getCity(inv) }}</strong>
+              </div>
+              <div class="nab-cell cell-street">
+                <span class="c-lbl">{{ 'invoices.view.street' | translate }}</span>
+                <strong class="c-val">{{ getStreetName(inv) }}</strong>
+              </div>
+              <div class="nab-cell cell-district">
+                <span class="c-lbl">{{ 'invoices.view.district' | translate }}</span>
+                <strong class="c-val">{{ getDistrict(inv) }}</strong>
+              </div>
+              <div class="nab-cell cell-building">
+                <span class="c-lbl">{{ 'invoices.view.buildingNo' | translate }}</span>
+                <strong class="c-val mono">{{ getBuildingNumber(inv) }}</strong>
+              </div>
+              <div class="nab-cell cell-postal">
+                <span class="c-lbl">{{ 'invoices.view.postalCode' | translate }}</span>
+                <strong class="c-val mono">{{ getPostalZone(inv) }}</strong>
+              </div>
+              <div class="nab-cell cell-add">
+                <span class="c-lbl">{{ 'invoices.view.additionalNo' | translate }}</span>
+                <strong class="c-val mono">{{ getAdditionalNumber(inv) }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="a4-table-container">
+          <table class="a4-invoice-table">
+            <thead>
+              <tr>
+                <th class="w-seq">#</th>
+                <th class="w-desc">{{ 'invoices.view.tableDesc' | translate }}<br><span class="en-sub">Item Description</span></th>
+                <th class="w-qty">{{ isCreditNote(inv) ? ('invoices.view.tableReturnedQty' | translate) : ('invoices.view.tableQty' | translate) }}<br><span class="en-sub">{{ isCreditNote(inv) ? 'Returned Qty' : 'Qty' }}</span></th>
+                <th class="w-price">{{ 'invoices.view.tableUnitPrice' | translate }}<br><span class="en-sub">Unit Price</span></th>
+                <th class="w-disc">{{ 'invoices.view.tableDiscount' | translate }}<br><span class="en-sub">Discount</span></th>
+                <th class="w-taxable">{{ 'invoices.view.tableTaxable' | translate }}<br><span class="en-sub">Taxable Amt</span></th>
+                <th class="w-rate">{{ 'invoices.view.tableRate' | translate }}<br><span class="en-sub">Rate</span></th>
+                <th class="w-vat">{{ 'invoices.view.tableVat' | translate }}<br><span class="en-sub">VAT (15%)</span></th>
+                <th class="w-total">{{ 'invoices.view.tableTotalWithVat' | translate }}<br><span class="en-sub">Total with VAT</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of inv.lines; let idx = index">
+                <td class="text-center font-bold">{{ idx + 1 }}</td>
+                <td>
+                  <span class="item-name-text">
+                    {{ langService.currentLang() === 'ar' ? (line.itemNameAr || line.itemName) : (line.itemNameEn || line.itemNameAr || line.itemName) }}
+                  </span>
+                </td>
+                <td class="text-center font-mono">
+                  <div class="line-qty-val font-bold">{{ line.quantity }}</div>
+                  <div class="line-returned-qty-pill" *ngIf="getItemReturnedQty(line) > 0">
+                    <span class="ret-qty-badge">{{ 'invoices.view.returnedBadge' | translate }} {{ getItemReturnedQty(line) }}</span>
+                    <span class="rem-qty-badge">({{ 'invoices.view.remainingBadge' | translate }} {{ line.quantity - getItemReturnedQty(line) }})</span>
+                  </div>
+                </td>
+                <td class="text-end font-mono">{{ line.unitPrice | number:'1.2-2' }}</td>
+                <td class="text-end font-mono">{{ (line.discount || line.discountAmount || 0) | number:'1.2-2' }}</td>
+                <td class="text-end font-mono">{{ (line.taxableAmount || line.netAmount || (line.quantity * line.unitPrice)) | number:'1.2-2' }}</td>
+                <td class="text-center font-mono">{{ line.vatRate || line.vatPercent || 15 }}%</td>
+                <td class="text-end font-mono text-purple">{{ line.vatAmount | number:'1.2-2' }}</td>
+                <td class="text-end font-mono font-bold">{{ (line.totalAmount || line.totalWithVat) | number:'1.2-2' }} SAR</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals & Summary Block -->
+        <div class="a4-summary-grid">
+          <!-- Right: Tafqeet Box -->
+          <div class="summary-left-pane">
+            <div class="tafqeet-box" [class.tafqeet-partial-box]="isPartiallyReturned(inv)">
+              <span class="tafqeet-label">{{ isPartiallyReturned(inv) ? ('invoices.view.netRemainingInWords' | translate) : ('invoices.view.amountInWords' | translate) }}</span>
+              <p class="tafqeet-text">{{ tafqeetTotal() }}</p>
+              <div class="tafqeet-original-sub" *ngIf="isPartiallyReturned(inv)">
+                <small class="text-muted">{{ 'invoices.view.originalTotalBeforeReturn' | translate }} {{ (inv.totalAmount || inv.grandTotal) | number:'1.2-2' }} SAR</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Left: Financial Totals Table (Clean, no colons to flip) -->
+          <div class="totals-table-box">
+            <div class="t-line">
+              <span class="lbl-ar">{{ isCreditNote(inv) ? ('invoices.view.subtotalCreditNote' | translate) : ('invoices.view.subtotal' | translate) }} <small class="lbl-en">Subtotal</small></span>
+              <span class="val font-mono">{{ (inv.subTotal || inv.subtotal) | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line" *ngIf="(inv.totalDiscount || 0) > 0">
+              <span class="lbl-ar">{{ 'invoices.view.totalDiscount' | translate }} <small class="lbl-en">Total Discount</small></span>
+              <span class="val font-mono text-danger">-{{ inv.totalDiscount | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line">
+              <span class="lbl-ar">{{ 'invoices.view.taxableBase' | translate }} <small class="lbl-en">Taxable Base</small></span>
+              <span class="val font-mono">{{ (inv.totalTaxableAmount || inv.subTotal) | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line vat-row">
+              <span class="lbl-ar">{{ 'invoices.view.vatOutput' | translate }} <small class="lbl-en">VAT Output</small></span>
+              <span class="val font-mono">{{ (inv.totalVat || inv.totalVatAmount) | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line net-total-row" [class.total-row-cn]="isCreditNote(inv)" [class.total-row-returned]="isFullyReturned(inv)" [class.total-row-partial]="isPartiallyReturned(inv)">
+              <span class="lbl-ar">{{ isCreditNote(inv) ? ('invoices.view.netCreditNoteWithVat' | translate) : (isFullyReturned(inv) || isPartiallyReturned(inv) ? ('invoices.view.originalTotalWithVat' | translate) : ('invoices.view.totalWithVat' | translate)) }} <small class="lbl-en">Total with VAT</small></span>
+              <span class="val font-mono font-bold">{{ (inv.totalAmount || inv.grandTotal) | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line returned-row" *ngIf="isFullyReturned(inv)">
+              <span class="lbl-ar text-rose font-bold">{{ 'invoices.view.totalRefunded' | translate }} <small class="lbl-en">Total Refunded</small></span>
+              <span class="val font-mono text-rose font-bold">-{{ (inv.returnedAmount || inv.totalAmount) | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line net-settled-row" *ngIf="isFullyReturned(inv)">
+              <span class="lbl-ar font-bold text-dark">{{ 'invoices.view.balanceAfterReturn' | translate }} <small class="lbl-en">Balance After Return</small></span>
+              <span class="val font-mono font-bold text-muted">0.00 SAR</span>
+            </div>
+
+            <!-- Partial Return Financial Breakdown Lines -->
+            <div class="t-line returned-row partial-refund" *ngIf="isPartiallyReturned(inv)">
+              <span class="lbl-ar text-amber font-bold">
+                {{ 'invoices.view.partialReturnAmt' | translate }}
+                <small class="lbl-en">Partial Return</small>
+              </span>
+              <span class="val font-mono text-amber font-bold">-{{ getEffectiveReturnedAmount(inv) | number:'1.2-2' }} SAR</span>
+            </div>
+            <div class="t-line net-remaining-row" *ngIf="isPartiallyReturned(inv)">
+              <span class="lbl-ar font-bold text-success">{{ 'invoices.view.netBalanceRemaining' | translate }} <small class="lbl-en">Net Balance Remaining</small></span>
+              <span class="val font-mono font-bold text-success">{{ getNetRemainingAmount(inv) | number:'1.2-2' }} SAR</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Seller Details at Bottom of Invoice (بيانات البائع اسفل الفاتورة - بدون تكرار طريقة السداد) -->
+        <div class="seller-footer-strip">
+          <div class="seller-info-cell" *ngIf="inv.salespersonName || inv.createdBy">
+            <i class="pi pi-user-check"></i>
+            <span class="lbl">{{ 'invoices.view.sellerSalesperson' | translate }}</span>
+            <strong class="val">{{ inv.salespersonName || inv.createdBy }}</strong>
+          </div>
+          <div class="seller-info-cell" *ngIf="inv.warehouseCode">
+            <i class="pi pi-box"></i>
+            <span class="lbl">{{ 'invoices.view.warehouse' | translate }}</span>
+            <strong class="val font-mono">{{ inv.warehouseCode }}</strong>
+          </div>
+          <div class="seller-info-cell" *ngIf="inv.associatedJournalEntryNumber">
+            <i class="pi pi-book"></i>
+            <span class="lbl">{{ 'invoices.view.journalEntryLabel' | translate }}</span>
+            <strong class="val font-mono">#{{ inv.associatedJournalEntryNumber }}</strong>
+          </div>
+        </div>
+
+        <!-- Signatures & Official Stamp Footer -->
+        <div class="a4-footer-signatures">
+          <div class="sig-block">
+            <span class="sig-title">{{ 'invoices.view.certifiedAccountant' | translate }}</span>
+            <div class="sig-line"></div>
+            <span class="sig-sub">Certified Accountant</span>
+          </div>
+          <div class="sig-block">
+            <span class="sig-title">{{ 'invoices.view.receiverSignature' | translate }}</span>
+            <div class="sig-line"></div>
+            <span class="sig-sub">Receiver Signature</span>
+          </div>
+          <div class="sig-block official-seal-block">
+            <span class="sig-title">{{ 'invoices.view.officialCompanySeal' | translate }}</span>
+            <div class="seal-placeholder">
+              <div class="seal-inner">
+                <span>{{ 'invoices.view.electronicSealCertified' | translate }}</span>
+                <small>ZATCA PHASE 2</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </article>
+
+      <!-- ===================================================================== -->
+      <!-- 2. TEMPLATE THERMAL: 80mm POS Simplified Tax Invoice                  -->
+      <!-- ===================================================================== -->
+      <article *ngIf="printFormat() === 'thermal'" class="thermal-receipt-sheet" id="invoice-print-area">
+        <div class="thermal-header">
+          <div class="thermal-logo" [class.has-custom-logo]="companyContext.companyLogo() || companyContext.activeCompany().logoUrl || inv.sellerLogoUrl">
+            <img 
+              *ngIf="companyContext.companyLogo() || companyContext.activeCompany().logoUrl || inv.sellerLogoUrl" 
+              [src]="companyContext.companyLogo() || companyContext.activeCompany().logoUrl || inv.sellerLogoUrl" 
+              [alt]="'ui.invoiceView.db52a7' | translate" 
+              class="thermal-real-logo" />
+            <span *ngIf="!companyContext.companyLogo() && !companyContext.activeCompany().logoUrl && !inv.sellerLogoUrl">⚓</span>
+          </div>
+          <h3 class="thermal-company">{{ companyContext.activeCompany().nameAr || inv.sellerName }}</h3>
+          <p class="thermal-company-en" *ngIf="companyContext.activeCompany().nameEn || inv.sellerNameEn">
+            {{ companyContext.activeCompany().nameEn || inv.sellerNameEn }}
+          </p>
+          <p class="thermal-vat" *ngIf="companyContext.activeCompany().vatNumber || inv.sellerVatNumber">
+            {{ 'invoices.view.vatId' | translate }} <strong>{{ companyContext.activeCompany().vatNumber || inv.sellerVatNumber }}</strong>
+          </p>
+          <p class="thermal-cr" *ngIf="companyContext.activeCompany().commercialRegistration || inv.sellerCrNumber">
+            {{ 'accounting.journal.ui.cr' | translate }} {{ companyContext.activeCompany().commercialRegistration || inv.sellerCrNumber }} - {{ companyContext.activeBranch().nameAr || ('branches.branchesWarehouses.branchCard.mainBadge' | translate) }}
+          </p>
+          <div class="thermal-divider-double"></div>
+          <h4 class="thermal-title">{{ isCreditNote(inv) ? ('invoices.view.creditNoteTitle' | translate) : ('invoices.view.simplifiedTaxInvoice' | translate) }}</h4>
+          <div *ngIf="isFullyReturned(inv)" class="thermal-returned-box">
+            {{ 'invoices.view.thermalVoidRefunded' | translate }}
+            <div *ngIf="relatedCreditNoteNumbers().length > 0">{{ 'ui.invoiceView.00bee6' | translate }} {{ relatedCreditNoteNumbers()[0] }}</div>
+          </div>
+          <div *ngIf="isPartiallyReturned(inv)" class="thermal-partial-box">
+            {{ 'invoices.view.thermalPartialRefunded' | translate }}
+            <div *ngIf="relatedCreditNoteNumbers().length > 0">{{ 'ui.invoiceView.00bee6' | translate }} {{ relatedCreditNoteNumbers()[0] }}</div>
+          </div>
+          <div *ngIf="inv.referenceInvoiceNumber" class="thermal-ref">
+            {{ 'invoices.view.returnForInvoice' | translate }} <strong>{{ inv.referenceInvoiceNumber }}</strong>
+          </div>
+          <p class="thermal-doc-num">{{ inv.invoiceNumber }}</p>
+          <p class="thermal-date">{{ getFormattedIssueDateTime(inv) }}</p>
+        </div>
+
+        <div class="thermal-buyer">
+          <p>{{ 'invoices.view.thermalCustomer' | translate }} <strong>{{ getBuyerName(inv) }}</strong></p>
+          <p *ngIf="getBuyerVatNumber(inv)">{{ 'invoices.view.buyerVat' | translate }}: <strong>{{ getBuyerVatNumber(inv) }}</strong></p>
+          <p *ngIf="!getBuyerVatNumber(inv) && isCashCustomer(inv)">{{ 'invoices.view.b2cConsumer' | translate }}</p>
+          <p *ngIf="getBuyerIdValue(inv)">{{ getBuyerIdTypeLabel(inv) }}: <strong>{{ getBuyerIdValue(inv) }}</strong></p>
+          <p>{{ 'invoices.view.thermalAddress' | translate }} <strong>{{ getCity(inv) }} - {{ getCountry(inv) }}</strong></p>
+          <p *ngIf="getPhone(inv)">{{ 'invoices.view.thermalPhone' | translate }} <strong>{{ getPhone(inv) }}</strong></p>
+        </div>
+
+        <div class="thermal-divider"></div>
+
+        <table class="thermal-table">
+          <thead>
+            <tr>
+              <th class="th-item">{{ 'invoices.view.thermalItem' | translate }}</th>
+              <th class="th-qty">{{ 'invoices.view.thermalQty' | translate }}</th>
+              <th class="th-price">{{ 'invoices.view.thermalPrice' | translate }}</th>
+              <th class="th-tot">{{ 'invoices.view.thermalTotal' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of inv.lines">
+              <td class="td-item">{{ item.itemNameAr || item.itemName }}</td>
+              <td class="td-qty font-mono">
+                <div>{{ item.quantity }}</div>
+                <div class="thermal-ret-tag" *ngIf="getItemReturnedQty(item) > 0">
+                  <small>(-{{ getItemReturnedQty(item) }})</small>
+                </div>
+              </td>
+              <td class="td-price font-mono">{{ item.unitPrice | number:'1.2-2' }}</td>
+              <td class="td-tot font-mono font-bold">{{ (item.totalAmount || item.totalWithVat) | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="thermal-divider"></div>
+
+        <div class="thermal-totals">
+          <div class="thermal-tot-row">
+            <span>{{ 'invoices.view.thermalSubtotal' | translate }}</span>
+            <span>{{ (inv.subTotal || inv.subtotal) | number:'1.2-2' }} SAR</span>
+          </div>
+          <div class="thermal-tot-row" *ngIf="(inv.totalDiscount || 0) > 0">
+            <span>{{ 'invoices.view.thermalDiscount' | translate }}</span>
+            <span>-{{ inv.totalDiscount | number:'1.2-2' }} SAR</span>
+          </div>
+          <div class="thermal-tot-row">
+            <span>{{ 'invoices.view.thermalVat' | translate }}</span>
+            <span>{{ (inv.totalVat || inv.totalVatAmount) | number:'1.2-2' }} SAR</span>
+          </div>
+          <div class="thermal-tot-row thermal-grand">
+            <span>{{ isCreditNote(inv) ? ('invoices.view.thermalNetRefund' | translate) : (isPartiallyReturned(inv) ? ('invoices.view.thermalOriginalGrand' | translate) : ('invoices.view.thermalGrandTotal' | translate)) }}</span>
+            <span>{{ (inv.totalAmount || inv.grandTotal) | number:'1.2-2' }} SAR</span>
+          </div>
+          <div class="thermal-tot-row thermal-ret-row font-bold" *ngIf="isPartiallyReturned(inv)">
+            <span>{{ 'invoices.view.thermalReturnedAmt' | translate }}</span>
+            <span>-{{ getEffectiveReturnedAmount(inv) | number:'1.2-2' }} SAR</span>
+          </div>
+          <div class="thermal-tot-row thermal-net-rem font-bold" *ngIf="isPartiallyReturned(inv)">
+            <span>{{ 'invoices.view.thermalRemainingNet' | translate }}</span>
+            <span>{{ getNetRemainingAmount(inv) | number:'1.2-2' }} SAR</span>
+          </div>
+        </div>
+
+        <div class="thermal-tafqeet">
+          {{ tafqeetTotal() }}
+        </div>
+
+        <div class="thermal-qr" *ngIf="qrCodeDataUrl()">
+          <img [src]="qrCodeDataUrl()" class="thermal-qr-img" alt="QR Code" />
+          <p class="thermal-qr-caption">{{ 'invoices.view.thermalQrCaption' | translate }}</p>
+        </div>
+
+        <!-- Cashier in thermal footer -->
+        <div class="thermal-cashier-footer" *ngIf="inv.salespersonName || inv.createdBy">
+          <p>{{ 'invoices.view.thermalSeller' | translate }} {{ inv.salespersonName || inv.createdBy }} {{ 'ui.invoiceView.a598e3' | translate }} {{ inv.warehouseCode || 'WH-MAIN' }}</p>
+        </div>
+
+        <div class="thermal-footer">
+          <p>{{ 'invoices.view.thermalThankYou' | translate }}</p>
+          <p class="thermal-powered">{{ 'invoices.view.thermalPowered' | translate }}</p>
+        </div>
+      </article>
+
+    </main>
+  </ng-container>
+
+</div>

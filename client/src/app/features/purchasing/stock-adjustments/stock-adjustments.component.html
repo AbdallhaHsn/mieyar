@@ -1,0 +1,549 @@
+<div class="stock-adj-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="breadcrumbs">
+        <span>{{ 'purchasing.adjustments.breadcrumbMain' | translate }}</span>
+        <i class="pi pi-angle-left"></i>
+        <strong>{{ 'purchasing.adjustments.breadcrumbCurrent' | translate }}</strong>
+      </div>
+      <h1>{{ 'purchasing.adjustments.title' | translate }}</h1>
+      <p class="subtitle">
+        {{ 'purchasing.adjustments.subtitle' | translate }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadData()">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        {{ 'purchasing.adjustments.refresh' | translate }}</button>
+      <button class="btn btn-emerald" (click)="setTab('worksheet')">
+        <i class="pi pi-table"></i>
+        {{ 'purchasing.adjustments.worksheetBtn' | translate }}
+      </button>
+      <button class="btn btn-primary" (click)="setTab('single')">
+        <i class="pi pi-sliders-h"></i>
+        {{ 'purchasing.adjustments.singleBtn' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Grid -->
+  <section class="kpi-grid">
+    <div class="kpi-card" (click)="setTab('single')">
+      <div class="kpi-icon-box bg-blue">
+        <i class="pi pi-box"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">{{ 'purchasing.adjustments.kpis.stockableItems' | translate }}</span>
+        <strong class="kpi-value">{{ stockableItemsCount() }}</strong>
+        <span class="kpi-subtext">{{ 'purchasing.adjustments.kpis.stockableItemsSub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon-box bg-emerald">
+        <i class="pi pi-database"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">{{ 'purchasing.adjustments.kpis.valuation' | translate }}</span>
+        <strong class="kpi-value text-emerald">{{ totalStockValuation() | number:'1.2-2' }} <small>{{ 'purchasing.adjustments.sar' | translate }}</small></strong>
+        <span class="kpi-subtext">{{ 'purchasing.adjustments.kpis.valuationSub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('worksheet')">
+      <div class="kpi-icon-box bg-purple">
+        <i class="pi pi-table"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">{{ 'purchasing.adjustments.kpis.currentSession' | translate }}</span>
+        <strong class="kpi-value text-purple">{{ worksheetRows().length }}</strong>
+        <span class="kpi-subtext">{{ 'ui.stockAdjustments.b42c7b' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('history')">
+      <div class="kpi-icon-box bg-amber">
+        <i class="pi pi-history"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">{{ 'ui.stockAdjustments.558662' | translate }}</span>
+        <strong class="kpi-value text-amber">{{ adjustmentsHistory().length }}</strong>
+        <span class="kpi-subtext">{{ 'ui.stockAdjustments.105e2b' | translate }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation Tab Bar -->
+  <nav class="stock-adj-tabs">
+    <button class="tab-btn" [class.active]="activeTab() === 'single'" (click)="setTab('single')">
+      <i class="pi pi-sliders-h"></i>
+      <span>{{ 'purchasing.adjustments.singleBtn' | translate }} {{ 'ui.stockAdjustments.7ea7c0' | translate }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab() === 'worksheet'" (click)="setTab('worksheet')">
+      <i class="pi pi-table"></i>
+      <span>{{ 'purchasing.adjustments.worksheetBtn' | translate }} {{ 'ui.stockAdjustments.91c3bc' | translate }}</span>
+      <span class="tab-badge" *ngIf="items().length">{{ items().length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab() === 'history'" (click)="setTab('history')">
+      <i class="pi pi-history"></i>
+      <span>{{ 'ui.stockAdjustments.7bc82e' | translate }}</span>
+      <span class="tab-badge bg-amber" *ngIf="adjustmentsHistory().length">{{ adjustmentsHistory().length }}</span>
+    </button>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!-- TAB 1: SINGLE ITEM ADJUSTMENT -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'single'">
+    <div class="single-adjust-layout">
+      <!-- Item Selector Card -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="pi pi-box text-blue"></i>
+            <strong>{{ 'ui.stockAdjustments.e20dc1' | translate }}</strong>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group mb-3">
+            <label class="field-label required">
+              <i class="pi pi-box text-blue" style="margin-inline-end: 4px;"></i>
+              {{ 'ui.stockAdjustments.69a5ef' | translate }}
+            </label>
+            <app-searchable-select
+              [items]="itemSelectOptions()"
+              [value]="selectedItemId"
+              (valueChange)="onItemSelect($event)"
+              [placeholder]="'ui.stockAdjustments.f23718' | translate"
+              [searchPlaceholder]="'ui.stockAdjustments.7b27e2' | translate">
+            </app-searchable-select>
+          </div>
+
+          <!-- Live Item Snapshot Card -->
+          <div class="item-snapshot" *ngIf="selectedItem()">
+            <div class="snapshot-header">
+              <div class="item-main-meta">
+                <span class="code-pill font-mono">{{ selectedItem()?.itemCode }}</span>
+                <strong class="item-title">{{ langService.currentLang() === 'ar' ? selectedItem()?.nameAr : (selectedItem()?.nameEn || selectedItem()?.nameAr) }}</strong>
+              </div>
+              <span class="unit-badge">{{ selectedItem()?.unitOfMeasure }}</span>
+            </div>
+
+            <div class="snapshot-grid">
+              <div class="snap-box">
+                <span class="snap-lbl">{{ 'ui.stockAdjustments.3f7f70' | translate }}</span>
+                <strong class="snap-val font-mono">{{ selectedItem()?.currentStockQuantity }} {{ selectedItem()?.unitOfMeasure }}</strong>
+              </div>
+              <div class="snap-box">
+                <span class="snap-lbl">{{ 'ui.stockAdjustments.6b151a' | translate }}</span>
+                <strong class="snap-val text-emerald font-mono">{{ (selectedItem()?.costPrice || selectedItem()?.purchasePrice) | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+              </div>
+              <div class="snap-box">
+                <span class="snap-lbl">{{ 'ui.stockAdjustments.7c5032' | translate }}</span>
+                <strong class="snap-val font-mono">{{ ((selectedItem()?.currentStockQuantity || 0) * (selectedItem()?.costPrice || selectedItem()?.purchasePrice || 0)) | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+              </div>
+              <div class="snap-box">
+                <span class="snap-lbl">{{ 'ui.stockAdjustments.d2be77' | translate }}</span>
+                <strong class="snap-val text-muted">WH-MAIN</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Adjustment Action Form Card -->
+      <div class="panel-card" *ngIf="selectedItem()">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="pi pi-sliders-h text-emerald"></i>
+            <strong>{{ 'ui.stockAdjustments.b45c96' | translate }}</strong>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label required">
+                <i class="pi pi-hashtag text-blue" style="margin-inline-end: 4px;"></i>
+                {{ 'ui.stockAdjustments.510be3' | translate }}
+              </label>
+              <div class="input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-input text-center font-mono font-bold text-lg"
+                  [(ngModel)]="singleAdjustForm.actualQuantity"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">
+                <i class="pi pi-building text-blue" style="margin-inline-end: 4px;"></i>
+                {{ 'ui.stockAdjustments.da0e4c' | translate }}
+              </label>
+              <app-searchable-select
+                [items]="warehouseSelectOptions()"
+                [(ngModel)]="singleAdjustForm.warehouseCode"
+                [placeholder]="'ui.stockAdjustments.b63996' | translate"
+                [searchPlaceholder]="'ui.stockAdjustments.2fb121' | translate">
+              </app-searchable-select>
+            </div>
+          </div>
+
+          <!-- Live Difference & Financial Valuation Card -->
+          <div class="variance-card" [class.surplus]="singleDifference() > 0" [class.deficit]="singleDifference() < 0" [class.zero]="singleDifference() === 0">
+            <div class="variance-side">
+              <span class="var-title">{{ 'ui.stockAdjustments.1f163f' | translate }}</span>
+              <strong class="var-qty font-mono">
+                <span *ngIf="singleDifference() > 0">+</span>{{ singleDifference() | number:'1.2-2' }} {{ selectedItem()?.unitOfMeasure }}
+              </strong>
+              <span class="var-badge" *ngIf="singleDifference() > 0"><i class="pi pi-arrow-up"></i> {{ 'ui.stockAdjustments.6bd95e' | translate }}</span>
+              <span class="var-badge deficit" *ngIf="singleDifference() < 0"><i class="pi pi-arrow-down"></i> {{ 'ui.stockAdjustments.6790ce' | translate }}</span>
+              <span class="var-badge matched" *ngIf="singleDifference() === 0"><i class="pi pi-check"></i> {{ 'ui.stockAdjustments.8cec33' | translate }}</span>
+            </div>
+
+            <div class="variance-side text-end">
+              <span class="var-title">{{ 'ui.stockAdjustments.6526f9' | translate }}</span>
+              <strong class="var-val font-mono">{{ singleTotalDiffValue() | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+              <span class="var-subtext">{{ 'ui.stockAdjustments.dd056b' | translate }}</span>
+            </div>
+          </div>
+
+          <!-- Reason & Auto-Translation (Rule 1) -->
+          <div class="form-grid-2 mt-3">
+            <div class="form-group">
+              <label class="field-label required">
+                <i class="pi pi-comment text-emerald"></i>
+                {{ 'ui.stockAdjustments.26ebf8' | translate }}
+              </label>
+              <div class="input-wrap">
+                <input
+                  type="text"
+                  class="form-input"
+                  [(ngModel)]="singleAdjustForm.reasonAr"
+                  (ngModelChange)="onReasonArChange($event)"
+                  [placeholder]="'ui.stockAdjustments.2993f7' | translate"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">
+                <i class="pi pi-globe text-blue"></i>
+                {{ 'ui.stockAdjustments.a9923f' | translate }}
+                <button type="button" class="btn-micro-trans" (click)="retranslateSingleReason()" [title]="'projects.hub.workspace.wbs.retranslate' | translate">
+                  <i class="pi pi-sync"></i>
+                </button>
+              </label>
+              <div class="input-wrap">
+                <input
+                  type="text"
+                  class="form-input ltr-text"
+                  [(ngModel)]="singleAdjustForm.reasonEn"
+                  placeholder="Reason for stock adjustment..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Automatic GL Journal Preview Hint -->
+          <div class="gl-preview-hint" *ngIf="singleDifference() !== 0">
+            <i class="pi pi-book text-emerald"></i>
+            <div>
+              <strong>{{ 'ui.stockAdjustments.8fa762' | translate }}</strong>
+              <span *ngIf="singleDifference() > 0">
+                {{ 'ui.stockAdjustments.a6e767' | translate }} {{ singleTotalDiffValue() | number:'1.2-2' }} {{ 'ui.stockAdjustments.687084' | translate }}
+              </span>
+              <span *ngIf="singleDifference() < 0">
+                {{ 'ui.stockAdjustments.04494a' | translate }} {{ singleTotalDiffValue() | number:'1.2-2' }} {{ 'ui.stockAdjustments.c8ff63' | translate }}
+              </span>
+            </div>
+          </div>
+
+          <div class="action-footer mt-3">
+            <button
+              class="btn btn-emerald btn-block"
+              [disabled]="isSubmitting() || singleDifference() === 0"
+              (click)="submitSingleAdjustment()"
+            >
+              <i class="pi pi-check" [class.pi-spin]="isSubmitting()"></i>
+              {{ 'ui.stockAdjustments.ae92a7' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 2: BULK WORKSHEET -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'worksheet'">
+    <!-- Bulk Audit Controls & Consolidated Journal Banner -->
+    <div class="bulk-audit-banner">
+      <div class="audit-controls-grid">
+        <div class="form-group">
+          <label class="field-label required">
+            <i class="pi pi-building text-blue"></i>
+            {{ 'ui.stockAdjustments.e7d213' | translate }}
+          </label>
+          <app-searchable-select
+            [items]="warehouseSelectOptions()"
+            [ngModel]="auditWarehouseCode()"
+            (ngModelChange)="auditWarehouseCode.set($event)"
+            [placeholder]="'ui.stockAdjustments.b63996' | translate"
+            [searchPlaceholder]="'ui.stockAdjustments.2fb121' | translate">
+          </app-searchable-select>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label required">
+            <i class="pi pi-calendar text-emerald"></i>
+            {{ 'ui.stockAdjustments.799ad9' | translate }}
+          </label>
+          <input
+            type="date"
+            class="form-input"
+            [ngModel]="auditDate()"
+            (ngModelChange)="auditDate.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">
+            <i class="pi pi-hashtag text-blue"></i>
+            {{ 'ui.stockAdjustments.87c81d' | translate }}
+          </label>
+          <input
+            type="text"
+            class="form-input font-mono"
+            [ngModel]="auditReference()"
+            (ngModelChange)="auditReference.set($event)"
+            [placeholder]="'ui.stockAdjustments.4b32f6' | translate"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">
+            <i class="pi pi-file-edit text-slate"></i>
+            {{ 'ui.stockAdjustments.15e572' | translate }}
+          </label>
+          <input
+            type="text"
+            class="form-input"
+            [ngModel]="auditNotes()"
+            (ngModelChange)="auditNotes.set($event)"
+            [placeholder]="'ui.stockAdjustments.13709d' | translate"
+          />
+        </div>
+      </div>
+
+      <!-- Live Statistics & One-Click Bulk Post Action -->
+      <div class="audit-stats-row">
+        <div class="stats-pills">
+          <span class="stat-pill">
+            <i class="pi pi-list-check"></i>
+            {{ 'ui.stockAdjustments.b705f5' | translate }} <strong>{{ worksheetModifiedRows().length }}</strong>
+          </span>
+          <span class="stat-pill surplus" *ngIf="worksheetSurplusRows().length > 0">
+            <i class="pi pi-arrow-up"></i>
+            {{ 'ui.stockAdjustments.854206' | translate }} <strong>{{ worksheetSurplusRows().length }}</strong> (<strong>+{{ worksheetTotalSurplusValue() | number:'1.2-2' }}</strong> {{ 'ui.stockAdjustments.658afa' | translate }}
+          </span>
+          <span class="stat-pill deficit" *ngIf="worksheetDeficitRows().length > 0">
+            <i class="pi pi-arrow-down"></i>
+            {{ 'ui.stockAdjustments.6f39bb' | translate }} <strong>{{ worksheetDeficitRows().length }}</strong> (<strong>-{{ worksheetTotalDeficitValue() | number:'1.2-2' }}</strong> {{ 'ui.stockAdjustments.658afa' | translate }}
+          </span>
+          <span class="stat-pill net" *ngIf="worksheetModifiedRows().length > 0">
+            <i class="pi pi-calculator"></i>
+            {{ 'ui.stockAdjustments.bda3e8' | translate }} 
+            <strong>{{ worksheetNetAdjustmentValue() > 0 ? '+' : '' }}{{ worksheetNetAdjustmentValue() | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-emerald audit-action-btn"
+          [disabled]="worksheetModifiedRows().length === 0 || isSubmitting()"
+          (click)="submitBulkInventoryAudit()"
+        >
+          <i class="pi pi-send" [class.pi-spin]="isSubmitting()"></i>
+          {{ 'ui.stockAdjustments.0b01a0' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="worksheetSearch"
+          (ngModelChange)="worksheetPage.set(1)"
+          [placeholder]="'ui.stockAdjustments.c2751b' | translate"
+        />
+      </div>
+
+      <div class="toolbar-actions">
+        <div class="filter-pill-group">
+          <button class="pill-btn" [class.active]="worksheetFilter === 'all'" (click)="worksheetFilter = 'all'; worksheetPage.set(1)">
+            {{ 'ui.stockAdjustments.9f324a' | translate }}{{ worksheetRows().length }})
+          </button>
+          <button class="pill-btn" [class.active]="worksheetFilter === 'variance'" (click)="worksheetFilter = 'variance'; worksheetPage.set(1)">
+            {{ 'ui.stockAdjustments.e3fba9' | translate }}
+          </button>
+          <button class="pill-btn" [class.active]="worksheetFilter === 'matched'" (click)="worksheetFilter = 'matched'; worksheetPage.set(1)">
+            {{ 'ui.stockAdjustments.d1b67b' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-table">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 5%">#</th>
+            <th style="width: 12%">{{ 'purchasing.items.table.code' | translate }}</th>
+            <th style="width: 25%">{{ 'purchasing.adjustments.itemDescription' | translate }}</th>
+            <th style="width: 8%">{{ 'purchasing.adjustments.unit' | translate }} </th>
+            <th style="width: 10%">{{ 'purchasing.adjustments.bookBalance' | translate }} </th>
+            <th style="width: 12%">{{ 'ui.stockAdjustments.dabaac' | translate }}</th>
+            <th style="width: 10%">{{ 'ui.stockAdjustments.ed5734' | translate }}</th>
+            <th style="width: 10%">{{ 'ui.stockAdjustments.f7d7ee' | translate }}</th>
+            <th style="width: 8%">{{ 'ui.stockAdjustments.a36ed9' | translate }}</th>
+            <th style="width: 10%">{{ 'ui.stockAdjustments.1cba3a' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of paginatedWorksheetRows(); let i = index" [class.row-modified]="r.isModified">
+            <td>{{ (worksheetPage() - 1) * worksheetPageSize() + i + 1 }}</td>
+            <td><strong class="code-pill font-mono">{{ r.item.itemCode }}</strong></td>
+            <td><strong>{{ langService.currentLang() === 'ar' ? r.item.nameAr : (r.item.nameEn || r.item.nameAr) }}</strong></td>
+            <td><span class="badge badge-gray">{{ r.item.unitOfMeasure }}</span></td>
+            <td><strong class="font-mono">{{ r.item.currentStockQuantity }}</strong></td>
+            <td>
+              <input
+                type="number"
+                step="0.01"
+                class="table-input text-center font-mono font-bold"
+                [(ngModel)]="r.actualQuantity"
+                (ngModelChange)="onWorksheetActualChange(r)"
+              />
+            </td>
+            <td>
+              <span class="diff-badge" [class.surplus]="r.difference > 0" [class.deficit]="r.difference < 0" *ngIf="r.difference !== 0">
+                <span *ngIf="r.difference > 0">+</span>{{ r.difference | number:'1.2-2' }}
+              </span>
+              <span class="text-muted" *ngIf="r.difference === 0">—</span>
+            </td>
+            <td><span class="font-mono">{{ (r.item.costPrice || r.item.purchasePrice) | number:'1.2-2' }}</span></td>
+            <td>
+              <strong class="font-mono" [class.text-emerald]="r.difference > 0" [class.text-rose]="r.difference < 0">
+                {{ r.diffValue | number:'1.2-2' }}
+              </strong>
+            </td>
+            <td>
+              <button
+                class="btn btn-xs btn-emerald"
+                [disabled]="!r.isModified"
+                (click)="saveWorksheetRow(r)"
+                [title]="'ui.stockAdjustments.bd3973' | translate"
+              >
+                <i class="pi pi-check"></i> {{ 'purchasing.adjustments.post' | translate }}
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredWorksheetRows().length === 0">
+            <td colspan="10" class="text-center py-4 text-muted">
+              <i class="pi pi-inbox text-lg"></i>
+              <p class="mt-1">{{ 'ui.stockAdjustments.22a26e' | translate }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <app-pagination
+        [totalItems]="filteredWorksheetRows().length"
+        [(currentPage)]="worksheetPage"
+        [(pageSize)]="worksheetPageSize"
+        [pageSizeOptions]="[5, 10, 20, 50]"
+        [itemLabelAr]="'ui.stockAdjustments.dec170' | translate"
+        itemLabelEn="Worksheet rows"
+      ></app-pagination>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 3: AUDIT HISTORY LOG -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'history'">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="historySearch"
+          (ngModelChange)="historyPage.set(1)"
+          [placeholder]="'ui.stockAdjustments.fa93ee' | translate"
+        />
+      </div>
+    </div>
+
+    <div class="card-table">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 5%">#</th>
+            <th style="width: 14%">{{ 'ui.stockAdjustments.222ec8' | translate }}</th>
+            <th style="width: 12%">{{ 'ui.stockAdjustments.18e4bb' | translate }}</th>
+            <th style="width: 12%">{{ 'purchasing.items.table.code' | translate }}</th>
+            <th style="width: 20%">{{ 'purchasing.adjustments.itemDescription' | translate }}</th>
+            <th style="width: 10%">{{ 'ui.stockAdjustments.2579ea' | translate }}</th>
+            <th style="width: 8%">{{ 'purchasing.adjustments.quantity' | translate }} </th>
+            <th style="width: 9%">{{ 'inventory.stocks.table.totalCost' | translate }}</th>
+            <th style="width: 10%">{{ 'ui.stockAdjustments.0b16ca' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tx of paginatedHistory(); let i = index">
+            <td>{{ (historyPage() - 1) * historyPageSize() + i + 1 }}</td>
+            <td><strong class="code-pill font-mono text-blue">{{ tx.referenceNumber || 'ADJ-' + tx.id.substring(0, 8) }}</strong></td>
+            <td><span class="font-mono text-muted">{{ tx.transactionDate | date:'yyyy/MM/dd HH:mm' }}</span></td>
+            <td><span class="font-mono">{{ tx.itemCode }}</span></td>
+            <td><strong>{{ tx.itemNameAr }}</strong></td>
+            <td>
+              <span class="badge" [class.badge-emerald]="tx.quantityIn > 0" [class.badge-rose]="tx.quantityOut > 0">
+                {{ tx.quantityIn > 0 ? ('ui.stockAdjustments.f9e803' | translate) : ('ui.stockAdjustments.edb211' | translate) }}
+              </span>
+            </td>
+            <td>
+              <strong class="font-mono" [class.text-emerald]="tx.quantityIn > 0" [class.text-rose]="tx.quantityOut > 0">
+                {{ tx.quantityIn > 0 ? ('+' + (tx.quantityIn | number:'1.2-2')) : ('-' + (tx.quantityOut | number:'1.2-2')) }}
+              </strong>
+            </td>
+            <td><strong class="font-mono">{{ tx.totalCost | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong></td>
+            <td><strong class="badge badge-gray font-mono">{{ tx.balanceAfterQuantity | number:'1.2-2' }}</strong></td>
+          </tr>
+          <tr *ngIf="adjustmentsHistory().length === 0">
+            <td colspan="9" class="text-center py-4 text-muted">
+              <i class="pi pi-history text-lg"></i>
+              <p class="mt-1">{{ 'ui.stockAdjustments.55eeb7' | translate }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <app-pagination
+        [totalItems]="adjustmentsHistory().length"
+        [(currentPage)]="historyPage"
+        [(pageSize)]="historyPageSize"
+        [pageSizeOptions]="[5, 10, 20, 50]"
+        [itemLabelAr]="'ui.stockAdjustments.37cdee' | translate"
+        itemLabelEn="Adjustments"
+      ></app-pagination>
+    </div>
+  </div>
+</div>

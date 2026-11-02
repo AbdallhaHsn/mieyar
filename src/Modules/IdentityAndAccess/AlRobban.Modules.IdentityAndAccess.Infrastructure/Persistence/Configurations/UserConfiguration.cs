@@ -43,5 +43,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.Role)
             .IsRequired()
             .HasConversion<int>();
+
+        builder.Property(x => x.CompanyRoleId)
+            .IsRequired(false);
+
+        builder.Property(x => x.BranchId)
+            .IsRequired(false);
     }
 }

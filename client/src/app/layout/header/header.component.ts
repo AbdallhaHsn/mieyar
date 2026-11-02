@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -7,14 +8,14 @@ import { CompanyContextService } from '../../core/services/company-context.servi
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
     <header class="app-header glass-panel">
       <!-- 1. Company Brand & White-labeling Section -->
       <div class="brand-section">
         <div class="logo-container">
-          <ng-container *ngIf="companyContext.activeCompany().logoUrl; else defaultLogo">
-            <img [src]="companyContext.activeCompany().logoUrl" alt="Company Logo" class="custom-logo" />
+          <ng-container *ngIf="companyContext.companyLogo() || companyContext.activeCompany().logoUrl; else defaultLogo">
+            <img [src]="companyContext.companyLogo() || companyContext.activeCompany().logoUrl" alt="Company Logo" class="custom-logo" />
           </ng-container>
           <ng-template #defaultLogo>
             <div class="ship-emblem">
@@ -50,11 +51,11 @@ import { CompanyContextService } from '../../core/services/company-context.servi
           routerLink="/dashboard" 
           routerLinkActive="active" 
           class="dashboard-nav-btn"
-          [title]="langService.currentLang() === 'ar' ? 'الذهاب إلى لوحة القيادة' : 'Go to Executive Dashboard'">
+          [title]="('layout.header.goToExecutiveDashboard' | translate)">
           <div class="nav-icon-circle">
             <i class="pi pi-th-large"></i>
           </div>
-          <span class="nav-text">{{ langService.currentLang() === 'ar' ? 'لوحة القيادة' : 'Dashboard' }}</span>
+          <span class="nav-text">{{ 'layout.header.dashboard' | translate }}</span>
         </a>
       </nav>
 
@@ -70,7 +71,7 @@ import { CompanyContextService } from '../../core/services/company-context.servi
         <!-- Language Switcher Button -->
         <button class="lang-toggle-btn" (click)="langService.toggleLanguage()" [title]="langService.t('action.switchLanguage')">
           <i class="pi pi-globe"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'English' : 'العربية' }}</span>
+          <span>{{ 'layout.header.label' | translate }}</span>
         </button>
       </div>
     </header>

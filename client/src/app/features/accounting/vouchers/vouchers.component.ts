@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 import {
   VouchersService,
   VoucherDto,
@@ -14,9 +15,12 @@ import {
 import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { TafqeetService } from '../../../core/services/tafqeet.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { AccountDto } from '../../../core/models/account.model';
 import { AccountPickerComponent } from '../../../shared/components/account-picker/account-picker.component';
 import { DocumentAttachmentsModalComponent } from '../../../shared/components/document-attachments-modal.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 interface FormLine {
   accountId: string;
@@ -27,7 +31,7 @@ interface FormLine {
 @Component({
   selector: 'app-vouchers',
   standalone: true,
-  imports: [CommonModule, FormsModule, AccountPickerComponent, DocumentAttachmentsModalComponent],
+  imports: [CommonModule, FormsModule, AccountPickerComponent, DocumentAttachmentsModalComponent, PaginationComponent, TranslatePipe],
   templateUrl: './vouchers.component.html',
   styleUrls: ['./vouchers.component.css']
 })
@@ -37,6 +41,7 @@ export class VouchersComponent implements OnInit {
   private coaService = inject(ChartOfAccountsService);
   public companyContext = inject(CompanyContextService);
   private tafqeetService = inject(TafqeetService);
+  public langService = inject(LanguageService);
 
   // State
   isLoading = signal<boolean>(false);
@@ -62,6 +67,16 @@ export class VouchersComponent implements OnInit {
   searchTerm = signal<string>('');
   fromDate = signal<string>('');
   toDate = signal<string>('');
+
+  // Pagination
+  currentPage = signal<number>(1);
+  pageSize = signal<number>(10);
+
+  paginatedVouchers = computed(() => {
+    const list = this.vouchers();
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  });
 
   // Accounts list for select dropdowns
   flattenedAccounts = signal<AccountDto[]>([]);
@@ -172,7 +187,7 @@ export class VouchersComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: (err) => {
-        this.errorMessage.set('فشل تحميل السندات: ' + (err.error?.description || err.message));
+        this.errorMessage.set(this.langService.t('accounting.vouchers.alerts.loadFailed') + (err.error?.description || err.message));
         this.isLoading.set(false);
       }
     });
@@ -180,6 +195,7 @@ export class VouchersComponent implements OnInit {
 
   setTab(tab: 'all' | 'receipt' | 'payment'): void {
     this.activeTab.set(tab);
+    this.currentPage.set(1);
     this.loadVouchers();
   }
 
@@ -189,7 +205,7 @@ export class VouchersComponent implements OnInit {
     this.formPaymentMethod.set(PaymentMethod.Cash);
     this.formBeneficiary.set('');
     this.formReference.set('');
-    this.formDescription.set(type === VoucherType.Receipt ? 'استلام دفعة نقدية' : 'سداد مصروفات / مستحقات');
+    this.formDescription.set(type === VoucherType.Receipt ? this.langService.t('accounting.vouchers.form.defaultReceiptDesc') : this.langService.t('accounting.vouchers.form.defaultPaymentDesc'));
     this.formAutoPost.set(true);
 
     const cashAccs = this.cashAndBankAccounts();
@@ -219,40 +235,128 @@ export class VouchersComponent implements OnInit {
     this.formLines.update(lines => lines.filter((_, i) => i !== index));
   }
 
+  onLineAmountChange(index: number, val: any): void {
+    const num = parseFloat(val) || 0;
+    this.formLines.update(lines => {
+      const copy = [...lines];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], amount: num };
+      }
+      return copy;
+    });
+  }
+
+  onLineAccountChange(index: number, accountId: string): void {
+    this.formLines.update(lines => {
+      const copy = [...lines];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], accountId };
+      }
+      return copy;
+    });
+  }
+
+  onLineDescriptionChange(index: number, description: string): void {
+    this.formLines.update(lines => {
+      const copy = [...lines];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], description: description || '' };
+      }
+      return copy;
+    });
+  }
+
   saveVoucher(): void {
     const total = this.formTotalAmount();
     if (total <= 0) {
-      alert('يجب أن يكون إجمالي مبلغ السند أكبر من صفر');
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('accounting.vouchers.alerts.totalAmountPositive'),
+        confirmButtonText: this.langService.t('common.ok'),
+        confirmButtonColor: '#0284c7'
+      });
       return;
     }
 
     if (!this.formCashAccountId()) {
-      alert('يرجى اختيار حساب الخزينة أو البنك');
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('accounting.vouchers.alerts.selectTreasuryOrBank'),
+        confirmButtonText: this.langService.t('common.ok'),
+        confirmButtonColor: '#0284c7'
+      });
       return;
     }
 
     if (!this.formBeneficiary().trim()) {
-      alert(this.createType() === VoucherType.Receipt ? 'يرجى إدخال اسم المستلم منه' : 'يرجى إدخال اسم المصروف له');
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.createType() === VoucherType.Receipt ? this.langService.t('accounting.vouchers.alerts.enterReceivedFrom') : this.langService.t('accounting.vouchers.alerts.enterPaidTo'),
+        confirmButtonText: this.langService.t('common.ok'),
+        confirmButtonColor: '#0284c7'
+      });
       return;
     }
 
-    // Validate lines
+    // Filter out completely untouched/empty lines (e.g. if a user added a row by mistake or didn't need it)
+    const allLines = this.formLines();
+    const activeLines = allLines.filter(l => l.accountId || (Number(l.amount) > 0) || (l.description && l.description.trim().length > 0));
+
+    if (activeLines.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('accounting.vouchers.alerts.specifyLineAccountAmount'),
+        confirmButtonText: this.langService.t('common.ok'),
+        confirmButtonColor: '#0284c7'
+      });
+      return;
+    }
+
+    // Validate only active/relevant lines
     const lines: CreateVoucherLineRequest[] = [];
-    for (let i = 0; i < this.formLines().length; i++) {
-      const line = this.formLines()[i];
+    for (let i = 0; i < activeLines.length; i++) {
+      const line = activeLines[i];
       if (!line.accountId) {
-        alert(`يرجى اختيار الحساب في البند رقم ${i + 1}`);
+        Swal.fire({
+          icon: 'warning',
+          title: this.langService.t('common.warning'),
+          text: this.langService.t('accounting.vouchers.alerts.selectLineAccount', { line: i + 1 }),
+          confirmButtonText: this.langService.t('common.ok'),
+          confirmButtonColor: '#0284c7'
+        });
         return;
       }
-      if (line.amount <= 0) {
-        alert(`يرجى إدخال مبلغ صحيح في البند رقم ${i + 1}`);
+      if (!line.amount || Number(line.amount) <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: this.langService.t('common.warning'),
+          text: this.langService.t('accounting.vouchers.alerts.enterValidLineAmount', { line: i + 1 }),
+          confirmButtonText: this.langService.t('common.ok'),
+          confirmButtonColor: '#0284c7'
+        });
         return;
       }
       lines.push({
         accountId: line.accountId,
         amount: Number(line.amount),
-        description: line.description.trim() || undefined
+        description: line.description?.trim() || undefined
       });
+    }
+
+    const calculatedTotal = lines.reduce((sum, l) => sum + l.amount, 0);
+    if (calculatedTotal <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('accounting.vouchers.alerts.totalAmountPositive'),
+        confirmButtonText: this.langService.t('common.ok'),
+        confirmButtonColor: '#0284c7'
+      });
+      return;
     }
 
     const payload: CreateVoucherRequest = {
@@ -272,13 +376,24 @@ export class VouchersComponent implements OnInit {
       next: (created) => {
         this.isLoading.set(false);
         this.closeCreateModal();
-        this.successMessage.set(`تم حفظ السند بنجاح برقم ${created.voucherNumber}`);
-        setTimeout(() => this.successMessage.set(null), 4000);
+        Swal.fire({
+          icon: 'success',
+          title: this.langService.t('common.savedSuccessfully'),
+          text: this.langService.t('accounting.vouchers.alerts.voucherSavedSuccess', { number: created.voucherNumber }),
+          timer: 3000,
+          showConfirmButton: false
+        });
         this.loadVouchers();
       },
       error: (err) => {
         this.isLoading.set(false);
-        alert('حدث خطأ أثناء حفظ السند: ' + (err.error?.description || err.message));
+        Swal.fire({
+          icon: 'error',
+          title: this.langService.t('common.error'),
+          text: this.langService.t('accounting.vouchers.alerts.voucherSaveError') + (err.error?.description || err.message),
+          confirmButtonText: this.langService.t('common.ok'),
+          confirmButtonColor: '#dc2626'
+        });
       }
     });
   }
@@ -289,30 +404,57 @@ export class VouchersComponent implements OnInit {
   }
 
   closeViewModal(): void {
+    document.body.classList.remove('voucher-printing-mode');
     this.isViewModalOpen.set(false);
     this.selectedVoucher.set(null);
   }
 
   printVoucher(): void {
+    document.body.classList.add('voucher-printing-mode');
+    const cleanup = () => {
+      document.body.classList.remove('voucher-printing-mode');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
     window.print();
   }
 
   postVoucher(voucher: VoucherDto): void {
-    if (!confirm(`هل أنت متأكد من ترحيل السند ${voucher.voucherNumber} وإنشاء قيد اليومية في الأستاذ العام؟`)) {
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.vouchersService.postVoucher(voucher.id).subscribe({
-      next: (res) => {
-        this.isLoading.set(false);
-        this.successMessage.set(`تم ترحيل السند ${res.voucherNumber} بنجاح وإنشاء قيد اليومية`);
-        setTimeout(() => this.successMessage.set(null), 4000);
-        this.loadVouchers();
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        alert('فشل ترحيل السند: ' + (err.error?.description || err.message));
+    Swal.fire({
+      title: this.langService.t('accounting.vouchers.alerts.postVoucherTitle'),
+      text: this.langService.t('accounting.vouchers.alerts.postVoucherConfirm', { number: voucher.voucherNumber }),
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: this.langService.t('accounting.vouchers.alerts.yesPost'),
+      cancelButtonText: this.langService.t('common.cancel'),
+      confirmButtonColor: '#059669',
+      cancelButtonColor: '#64748b'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.isLoading.set(true);
+        this.vouchersService.postVoucher(voucher.id).subscribe({
+          next: (res) => {
+            this.isLoading.set(false);
+            Swal.fire({
+              icon: 'success',
+              title: this.langService.t('common.postedSuccessfully'),
+              text: this.langService.t('accounting.vouchers.alerts.postVoucherSuccess', { number: res.voucherNumber }),
+              timer: 3000,
+              showConfirmButton: false
+            });
+            this.loadVouchers();
+          },
+          error: (err) => {
+            this.isLoading.set(false);
+            Swal.fire({
+              icon: 'error',
+              title: this.langService.t('accounting.vouchers.alerts.postVoucherFailed'),
+              text: err.error?.description || err.message,
+              confirmButtonText: this.langService.t('common.ok'),
+              confirmButtonColor: '#dc2626'
+            });
+          }
+        });
       }
     });
   }
@@ -333,7 +475,13 @@ export class VouchersComponent implements OnInit {
     if (!v) return;
 
     if (!this.cancelReason().trim()) {
-      alert('يرجى كتابة سبب الإلغاء');
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('accounting.vouchers.alerts.enterCancelReason'),
+        confirmButtonText: this.langService.t('common.ok'),
+        confirmButtonColor: '#0284c7'
+      });
       return;
     }
 
@@ -342,13 +490,24 @@ export class VouchersComponent implements OnInit {
       next: (res) => {
         this.isLoading.set(false);
         this.closeCancelModal();
-        this.successMessage.set(`تم إلغاء السند ${res.voucherNumber} وعكس القيد بنجاح`);
-        setTimeout(() => this.successMessage.set(null), 4000);
+        Swal.fire({
+          icon: 'success',
+          title: this.langService.t('common.cancelledSuccessfully'),
+          text: this.langService.t('accounting.vouchers.alerts.voucherCancelledSuccess', { number: res.voucherNumber }),
+          timer: 3000,
+          showConfirmButton: false
+        });
         this.loadVouchers();
       },
       error: (err) => {
         this.isLoading.set(false);
-        alert('فشل إلغاء السند: ' + (err.error?.description || err.message));
+        Swal.fire({
+          icon: 'error',
+          title: this.langService.t('accounting.vouchers.alerts.cancelFailed'),
+          text: err.error?.description || err.message,
+          confirmButtonText: this.langService.t('common.ok'),
+          confirmButtonColor: '#dc2626'
+        });
       }
     });
   }
@@ -360,8 +519,8 @@ export class VouchersComponent implements OnInit {
 
   openAttachments(voucher: VoucherDto) {
     this.selectedAttachmentEntityId = voucher.id;
-    const typeLabel = voucher.voucherType === VoucherType.Receipt ? 'سند قبض' : 'سند صرف';
-    this.selectedAttachmentTitle = `${typeLabel} رقم: ${voucher.voucherNumber} (${voucher.beneficiaryOrPayerName || ''})`;
+    const typeLabel = voucher.voucherType === VoucherType.Receipt ? this.langService.t('accounting.vouchers.form.receiptVoucher') : this.langService.t('accounting.vouchers.form.paymentVoucher');
+    this.selectedAttachmentTitle = `${typeLabel} #${voucher.voucherNumber} (${voucher.beneficiaryOrPayerName || ''})`;
     this.showAttachmentsModal = true;
   }
 }

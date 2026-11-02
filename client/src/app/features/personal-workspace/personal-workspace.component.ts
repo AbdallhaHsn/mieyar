@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,7 +20,7 @@ interface FullCalendarDay {
 @Component({
   selector: 'app-personal-workspace',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="workspace-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -28,27 +29,25 @@ interface FullCalendarDay {
         <div class="header-breadcrumb">
           <a routerLink="/dashboard" class="bc-link">
             <i class="pi pi-home"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'الرئيسية' : 'Home' }}</span>
+            <span>{{ 'workspace.home' | translate }}</span>
           </a>
           <span class="bc-sep">/</span>
-          <span class="bc-current">{{ langService.currentLang() === 'ar' ? 'مكتب العمل والأجندة الشخصية' : 'Personal Workspace & Agenda' }}</span>
+          <span class="bc-current">{{ 'workspace.personalWorkspaceAgenda' | translate }}</span>
         </div>
 
         <div class="header-main-row">
           <div class="header-titles">
             <div class="title-with-badge">
               <h1 class="page-title">
-                {{ langService.currentLang() === 'ar' ? 'مكتب العمل الشخصي: التقويم والملاحظات' : 'My Personal Desk: Calendar & Notes' }}
+                {{ 'workspace.myPersonalDeskCalendarNotes' | translate }}
               </h1>
-              <span class="private-shield-badge" title="هذه البيانات مشفرة وخاصة بحسابك فقط">
+              <span class="private-shield-badge" [title]="'ui.personalWorkspace.dbd793' | translate">
                 <i class="pi pi-shield"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'خاص وسري بحسابك فقط' : 'Private to your account' }}</span>
+                <span>{{ 'workspace.privateToYourAccount' | translate }}</span>
               </span>
             </div>
             <p class="page-subtitle">
-              {{ langService.currentLang() === 'ar' 
-                ? 'تنظيم وجدولة مهامك ومواعيدك المحاسبية، وتدوين الملاحظات اللاصقة الملونة مع إمكانية تثبيتها بالدبوس' 
-                : 'Manage your daily accounting tasks, schedule occasions, and pin colorful sticky notes' }}
+              {{ 'workspace.manageYourDailyAccountingTasks' | translate }}
             </p>
           </div>
 
@@ -60,7 +59,7 @@ interface FullCalendarDay {
               [class.active]="activeTab() === 'calendar'" 
               (click)="switchTab('calendar')">
               <i class="pi pi-calendar"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'التقويم وأجندة العمل' : 'Calendar & Agenda' }}</span>
+              <span>{{ 'workspace.calendarAgenda' | translate }}</span>
               <span class="tab-badge badge-emerald" *ngIf="calendarService.pendingTodayCount() > 0">
                 {{ calendarService.pendingTodayCount() }}
               </span>
@@ -72,7 +71,7 @@ interface FullCalendarDay {
               [class.active]="activeTab() === 'notes'" 
               (click)="switchTab('notes')">
               <i class="pi pi-bookmark"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'الملاحظات اللاصقة' : 'Sticky Notes' }}</span>
+              <span>{{ 'workspace.stickyNotes' | translate }}</span>
               <span class="tab-badge badge-amber" *ngIf="notesService.totalCount() > 0">
                 {{ notesService.totalCount() }}
               </span>
@@ -96,15 +95,15 @@ interface FullCalendarDay {
             <div class="nav-buttons-cluster">
               <button type="button" class="btn-cal-jump-today" (click)="jumpToToday()">
                 <i class="pi pi-compass"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'اليوم' : 'Today' }}</span>
+                <span>{{ 'workspace.today' | translate }}</span>
               </button>
 
               <div class="arrows-pair">
-                <button type="button" class="btn-cal-nav" (click)="prevMonth()" title="الشهر السابق">
-                  <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-chevron-right' : 'pi-chevron-left'"></i>
+                <button type="button" class="btn-cal-nav" (click)="prevMonth()" [title]="'ui.personalWorkspace.1c63af' | translate">
+                  <i class="pi" [ngClass]="('workspace.pichevronleft' | translate)"></i>
                 </button>
-                <button type="button" class="btn-cal-nav" (click)="nextMonth()" title="الشهر التالي">
-                  <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-chevron-left' : 'pi-chevron-right'"></i>
+                <button type="button" class="btn-cal-nav" (click)="nextMonth()" [title]="'ui.personalWorkspace.0c6938' | translate">
+                  <i class="pi" [ngClass]="('workspace.pichevronright' | translate)"></i>
                 </button>
               </div>
             </div>
@@ -115,25 +114,25 @@ interface FullCalendarDay {
             <div class="cal-kpi-pill">
               <span class="kpi-bullet bullet-emerald"></span>
               <span class="kpi-num">{{ calendarService.pendingTodayCount() }}</span>
-              <span class="kpi-text">{{ langService.currentLang() === 'ar' ? 'مهام اليوم المتبقية' : "Today's Pending" }}</span>
+              <span class="kpi-text">{{ 'workspace.todaysPending' | translate }}</span>
             </div>
 
             <div class="cal-kpi-pill">
               <span class="kpi-bullet bullet-rose"></span>
               <span class="kpi-num">{{ calendarService.urgentCount() }}</span>
-              <span class="kpi-text">{{ langService.currentLang() === 'ar' ? 'مهام عاجلة' : 'Urgent' }}</span>
+              <span class="kpi-text">{{ 'workspace.urgent' | translate }}</span>
             </div>
 
             <div class="cal-kpi-pill">
               <span class="kpi-bullet bullet-cyan"></span>
               <span class="kpi-num">{{ calendarService.completionRate() }}%</span>
-              <span class="kpi-text">{{ langService.currentLang() === 'ar' ? 'نسبة الإنجاز' : 'Completion' }}</span>
+              <span class="kpi-text">{{ 'workspace.completion' | translate }}</span>
             </div>
 
             <!-- Primary Add Button -->
             <button type="button" class="btn-primary-add" (click)="openDirectAddModal(calendarService.todayStr)">
               <i class="pi pi-plus"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إضافة مهمة / مناسبة' : 'Add Task / Event' }}</span>
+              <span>{{ 'workspace.addTaskEvent' | translate }}</span>
             </button>
           </div>
         </div>
@@ -142,9 +141,7 @@ interface FullCalendarDay {
         <div class="calendar-hint-banner">
           <i class="pi pi-info-circle text-emerald"></i>
           <span>
-            {{ langService.currentLang() === 'ar' 
-              ? 'تلميح: انقر على أي تاريخ لاستعراض مهامه ومناسباته، أو انقر على تاريخ فارغ لإضافة موعد جديد مباشرة.' 
-              : 'Tip: Click any date to view scheduled tasks/occasions, or click an empty date to schedule a new one directly.' }}
+            {{ 'workspace.tipClickAnyDateTo' | translate }}
           </span>
         </div>
 
@@ -169,7 +166,7 @@ interface FullCalendarDay {
               <div class="day-cell-top">
                 <span class="day-num-badge" [class.today-badge]="day.isToday">{{ day.dayNum }}</span>
                 
-                <span class="quick-plus-btn" title="إضافة مهمة لهذا اليوم">
+                <span class="quick-plus-btn" [title]="'ui.personalWorkspace.6b663d' | translate">
                   <i class="pi pi-plus"></i>
                 </span>
               </div>
@@ -190,7 +187,7 @@ interface FullCalendarDay {
 
                 <!-- More items indicator -->
                 <div class="more-items-chip" *ngIf="day.tasks.length > 3">
-                  +{{ day.tasks.length - 3 }} {{ langService.currentLang() === 'ar' ? 'أخرى' : 'more' }}
+                  +{{ day.tasks.length - 3 }} {{ 'workspace.more' | translate }}
                 </div>
               </div>
 
@@ -212,7 +209,7 @@ interface FullCalendarDay {
             <input 
               type="text" 
               [(ngModel)]="notesSearchTerm" 
-              [placeholder]="langService.currentLang() === 'ar' ? 'بحث في نصوص وعناوين الملاحظات...' : 'Search sticky notes...'" 
+              [placeholder]="('workspace.searchStickyNotes' | translate)" 
             />
             <button *ngIf="notesSearchTerm" type="button" class="clear-search-btn" (click)="notesSearchTerm = ''">
               <i class="pi pi-times"></i>
@@ -225,7 +222,7 @@ interface FullCalendarDay {
               class="filter-pill-btn" 
               [class.active]="selectedColorFilter === 'all'" 
               (click)="selectedColorFilter = 'all'">
-              {{ langService.currentLang() === 'ar' ? 'الكل' : 'All' }} ({{ notesService.totalCount() }})
+              {{ 'workspace.all' | translate }} ({{ notesService.totalCount() }})
             </button>
 
             <button 
@@ -234,7 +231,7 @@ interface FullCalendarDay {
               [class.active]="selectedColorFilter === 'pinned'" 
               (click)="selectedColorFilter = 'pinned'">
               <i class="pi pi-thumbtack text-rose"></i>
-              {{ langService.currentLang() === 'ar' ? 'المثبتة' : 'Pinned' }} ({{ notesService.pinnedCount() }})
+              {{ 'workspace.pinned' | translate }} ({{ notesService.pinnedCount() }})
             </button>
 
             <div class="color-swatches-row">
@@ -252,14 +249,14 @@ interface FullCalendarDay {
           <!-- Add Note Button -->
           <button type="button" class="btn-primary-add" (click)="toggleNoteCreateBox()">
             <i class="pi" [ngClass]="showNoteCreateBox ? 'pi-times' : 'pi-plus'"></i>
-            <span>{{ showNoteCreateBox ? (langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel') : (langService.currentLang() === 'ar' ? 'ملاحظة لاصقة جديدة' : 'New Sticky Note') }}</span>
+            <span>{{ showNoteCreateBox ? ('workspace.cancel' | translate) : ('workspace.newStickyNote' | translate) }}</span>
           </button>
         </div>
 
         <!-- Inline Note Creator Form (Expanded) -->
         <div class="note-creator-banner" *ngIf="showNoteCreateBox">
           <div class="creator-header">
-            <strong>{{ langService.currentLang() === 'ar' ? 'قصاصة ملاحظة جديدة' : 'New Note Card' }}</strong>
+            <strong>{{ 'workspace.newNoteCard' | translate }}</strong>
             <div class="color-picker-row">
               <button 
                 type="button" 
@@ -276,14 +273,14 @@ interface FullCalendarDay {
               type="text" 
               class="creator-title-input" 
               [(ngModel)]="newNoteTitle" 
-              [placeholder]="langService.currentLang() === 'ar' ? 'عنوان الملاحظة (مثال: أرقام هواتف الموردين، حسابات وسيطة)...' : 'Note Title...'" 
+              [placeholder]="('workspace.noteTitle' | translate)" 
             />
 
             <textarea 
               rows="3" 
               class="creator-text-input" 
               [(ngModel)]="newNoteContent" 
-              [placeholder]="langService.currentLang() === 'ar' ? 'اكتب ملاحظتك، أفكارك، أو بنود المراجعة هنا...' : 'Write note content here...'">
+              [placeholder]="('workspace.writeNoteContentHere' | translate)">
             </textarea>
           </div>
 
@@ -291,12 +288,12 @@ interface FullCalendarDay {
             <label class="pin-checkbox-label">
               <input type="checkbox" [(ngModel)]="newNoteIsPinned" />
               <i class="pi pi-thumbtack text-rose"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'تثبيت الملاحظة بالدبوس في أعلى اللوحة (Pin)' : 'Pin Note to Top' }}</span>
+              <span>{{ 'workspace.pinNoteToTop' | translate }}</span>
             </label>
 
             <button type="button" class="btn-save-note-action" (click)="saveStickyNote()" [disabled]="!newNoteTitle.trim() && !newNoteContent.trim()">
               <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'حفظ الملاحظة' : 'Save Note' }}</span>
+              <span>{{ 'workspace.saveNote' | translate }}</span>
             </button>
           </div>
         </div>
@@ -307,8 +304,8 @@ interface FullCalendarDay {
             <div class="empty-icon-wrapper">
               <i class="pi pi-file-edit"></i>
             </div>
-            <h3>{{ langService.currentLang() === 'ar' ? 'لا توجد ملاحظات لاصقة تطابق اختيارك' : 'No sticky notes found' }}</h3>
-            <p>{{ langService.currentLang() === 'ar' ? 'انقر على "ملاحظة لاصقة جديدة" لتدوين أفكارك وتثبيتها بالألوان' : 'Click "New Sticky Note" to add your thoughts' }}</p>
+            <h3>{{ 'workspace.noStickyNotesFound' | translate }}</h3>
+            <p>{{ 'workspace.clickNewStickyNoteTo' | translate }}</p>
           </div>
 
           <!-- Card -->
@@ -324,7 +321,7 @@ interface FullCalendarDay {
                 class="thumbtack-btn" 
                 [class.pinned]="note.isPinned"
                 (click)="notesService.togglePin(note.id)" 
-                [title]="note.isPinned ? 'إلغاء التثبيت' : 'تثبيت في الأعلى بالدبوس'"
+                [title]="note.isPinned ? ('layout.stickyNotes.unpin' | translate) : ('ui.personalWorkspace.800dbc' | translate)"
               >
                 <i class="pi pi-thumbtack"></i>
               </button>
@@ -333,7 +330,7 @@ interface FullCalendarDay {
             <!-- Card Header -->
             <div class="card-top">
               <h4 class="note-card-title" *ngIf="editingNoteId !== note.id">
-                {{ note.title || (langService.currentLang() === 'ar' ? 'ملاحظة' : 'Note') }}
+                {{ note.title || ('workspace.note' | translate) }}
               </h4>
               <input 
                 type="text" 
@@ -367,7 +364,7 @@ interface FullCalendarDay {
                   class="card-tool-btn" 
                   [class.active-float]="notesService.floatingNoteId() === note.id"
                   (click)="notesService.toggleFloat(note.id)" 
-                  [title]="notesService.floatingNoteId() === note.id ? 'إلغاء التعليق على الشاشة' : 'تعليق ومتابعة على الشاشة'"
+                  [title]="notesService.floatingNoteId() === note.id ? ('layout.stickyNotes.unfloat' | translate) : ('layout.stickyNotes.floatOnScreen' | translate)"
                 >
                   <i class="pi pi-external-link"></i>
                 </button>
@@ -385,12 +382,12 @@ interface FullCalendarDay {
                 </div>
 
                 <!-- Edit -->
-                <button type="button" class="card-tool-btn" (click)="startEditNote(note)" title="تعديل">
+                <button type="button" class="card-tool-btn" (click)="startEditNote(note)" [title]="'common.edit' | translate">
                   <i class="pi pi-pencil"></i>
                 </button>
 
                 <!-- Delete -->
-                <button type="button" class="card-tool-btn delete-btn" (click)="notesService.deleteNote(note.id)" title="حذف">
+                <button type="button" class="card-tool-btn delete-btn" (click)="notesService.deleteNote(note.id)" [title]="'common.delete' | translate">
                   <i class="pi pi-trash"></i>
                 </button>
               </div>
@@ -424,11 +421,11 @@ interface FullCalendarDay {
               </div>
               <div>
                 <h3 class="dialog-title">
-                  {{ langService.currentLang() === 'ar' ? 'مهام ومناسبات يوم:' : 'Tasks & Occasions on:' }}
+                  {{ 'workspace.tasksOccasionsOn' | translate }}
                   <span class="highlight-date font-mono">{{ activeModalDate }}</span>
                 </h3>
                 <span class="dialog-subtitle">
-                  {{ activeModalTasks.length }} {{ langService.currentLang() === 'ar' ? 'مواعيد ومهام مجدولة' : 'scheduled items' }}
+                  {{ activeModalTasks.length }} {{ 'workspace.scheduledItems' | translate }}
                 </span>
               </div>
             </div>
@@ -452,7 +449,7 @@ interface FullCalendarDay {
                   class="item-checkbox" 
                   [class.checked]="item.completed" 
                   (click)="calendarService.toggleTask(item.id); refreshActiveModalTasks()"
-                  title="تحديد كمكتمل"
+                  [title]="'ui.personalWorkspace.bc76a8' | translate"
                 >
                   <i class="pi" [ngClass]="item.completed ? 'pi-check' : ''"></i>
                 </button>
@@ -464,7 +461,7 @@ interface FullCalendarDay {
                     
                     <span class="type-pill" [class.type-occasion]="item.itemType === 'occasion'">
                       <i class="pi" [ngClass]="item.itemType === 'occasion' ? 'pi-flag' : 'pi-check-square'"></i>
-                      <span>{{ item.itemType === 'occasion' ? (langService.currentLang() === 'ar' ? 'مناسبة / موعد' : 'Occasion') : (langService.currentLang() === 'ar' ? 'مهمة محاسبية' : 'Task') }}</span>
+                      <span>{{ item.itemType === 'occasion' ? ('workspace.occasion' | translate) : ('workspace.task' | translate) }}</span>
                     </span>
                   </div>
 
@@ -495,7 +492,7 @@ interface FullCalendarDay {
                   type="button" 
                   class="btn-delete-item" 
                   (click)="calendarService.deleteTask(item.id); refreshActiveModalTasks()" 
-                  title="حذف">
+                  [title]="'common.delete' | translate">
                   <i class="pi pi-trash"></i>
                 </button>
               </div>
@@ -506,11 +503,11 @@ interface FullCalendarDay {
           <div class="dialog-footer">
             <button type="button" class="btn-add-more-to-day" (click)="transitionToAddModal()">
               <i class="pi pi-plus"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إضافة مهمة أو مناسبة جديدة لهذا اليوم' : 'Add New Task or Occasion for this Day' }}</span>
+              <span>{{ 'workspace.addNewTaskOrOccasion' | translate }}</span>
             </button>
 
             <button type="button" class="btn-dialog-secondary" (click)="closeDayDetailsModal()">
-              {{ langService.currentLang() === 'ar' ? 'إغلاق' : 'Close' }}
+              {{ 'workspace.close' | translate }}
             </button>
           </div>
 
@@ -530,10 +527,10 @@ interface FullCalendarDay {
               </div>
               <div>
                 <h3 class="dialog-title">
-                  {{ langService.currentLang() === 'ar' ? 'إضافة مهمة أو مناسبة جديدة' : 'Add New Task or Occasion' }}
+                  {{ 'workspace.addNewTaskOrOccasion1' | translate }}
                 </h3>
                 <span class="dialog-subtitle">
-                  {{ langService.currentLang() === 'ar' ? 'تاريخ الموعد:' : 'Date:' }}
+                  {{ 'workspace.date' | translate }}
                   <strong class="highlight-date font-mono">{{ addFormDate }}</strong>
                 </span>
               </div>
@@ -548,7 +545,7 @@ interface FullCalendarDay {
           <div class="dialog-body-form">
             <!-- Item Type Selector (مهمة أم مناسبة) -->
             <div class="form-field-group">
-              <label class="field-label">{{ langService.currentLang() === 'ar' ? 'نوع الإدخال:' : 'Type:' }}</label>
+              <label class="field-label">{{ 'workspace.type' | translate }}</label>
               <div class="item-type-toggle">
                 <button 
                   type="button" 
@@ -556,7 +553,7 @@ interface FullCalendarDay {
                   [class.active]="addFormType === 'task'" 
                   (click)="addFormType = 'task'">
                   <i class="pi pi-check-square"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'مهمة عمل محاسبية' : 'Accounting Task' }}</span>
+                  <span>{{ 'workspace.accountingTask' | translate }}</span>
                 </button>
 
                 <button 
@@ -565,21 +562,21 @@ interface FullCalendarDay {
                   [class.active]="addFormType === 'occasion'" 
                   (click)="addFormType = 'occasion'">
                   <i class="pi pi-flag"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'مناسبة أو موعد / إقفال' : 'Occasion / Event / Deadline' }}</span>
+                  <span>{{ 'workspace.occasionEventDeadline' | translate }}</span>
                 </button>
               </div>
             </div>
 
             <!-- Title -->
             <div class="form-field-group">
-              <label class="field-label required">{{ langService.currentLang() === 'ar' ? 'العنوان:' : 'Title:' }}</label>
+              <label class="field-label required">{{ 'workspace.title' | translate }}</label>
               <input 
                 type="text" 
                 class="modal-text-input" 
                 [(ngModel)]="addFormTitle" 
                 [placeholder]="addFormType === 'task' 
-                  ? (langService.currentLang() === 'ar' ? 'مثال: مراجعة قيود التسوية، مطابقة البنك، إقفال الصندوق...' : 'e.g. Bank reconciliation, closing entries...') 
-                  : (langService.currentLang() === 'ar' ? 'مثال: موعد رفع الإقرار الضريبي، اجتماع مجلس الإدارة...' : 'e.g. VAT filing deadline, Board meeting...') "
+                  ? ('workspace.egBankReconciliationClosingEnt' | translate) 
+                  : ('workspace.egVatFilingDeadlineBoard' | translate) "
                 autofocus
               />
             </div>
@@ -587,12 +584,12 @@ interface FullCalendarDay {
             <!-- Date & Time Row -->
             <div class="form-grid-two">
               <div class="form-field-group">
-                <label class="field-label">{{ langService.currentLang() === 'ar' ? 'التاريخ:' : 'Date:' }}</label>
+                <label class="field-label">{{ 'workspace.date' | translate }}</label>
                 <input type="date" class="modal-text-input font-mono" [(ngModel)]="addFormDate" />
               </div>
 
               <div class="form-field-group">
-                <label class="field-label">{{ langService.currentLang() === 'ar' ? 'الوقت (اختياري):' : 'Time (Optional):' }}</label>
+                <label class="field-label">{{ 'workspace.timeOptional' | translate }}</label>
                 <input type="time" class="modal-text-input font-mono" [(ngModel)]="addFormTime" />
               </div>
             </div>
@@ -600,34 +597,34 @@ interface FullCalendarDay {
             <!-- Priority & Category Row -->
             <div class="form-grid-two">
               <div class="form-field-group">
-                <label class="field-label">{{ langService.currentLang() === 'ar' ? 'درجة الأهمية:' : 'Priority:' }}</label>
+                <label class="field-label">{{ 'workspace.priority' | translate }}</label>
                 <select class="modal-select-input" [(ngModel)]="addFormPriority">
-                  <option value="urgent">🔴 {{ langService.currentLang() === 'ar' ? 'عاجل جداً' : 'Urgent' }}</option>
-                  <option value="medium">🟡 {{ langService.currentLang() === 'ar' ? 'متوسط الأهمية' : 'Medium' }}</option>
-                  <option value="normal">🔵 {{ langService.currentLang() === 'ar' ? 'عادي / روتيني' : 'Normal' }}</option>
+                  <option value="urgent">🔴 {{ 'workspace.urgent' | translate }}</option>
+                  <option value="medium">🟡 {{ 'workspace.medium' | translate }}</option>
+                  <option value="normal">🔵 {{ 'workspace.normal' | translate }}</option>
                 </select>
               </div>
 
               <div class="form-field-group">
-                <label class="field-label">{{ langService.currentLang() === 'ar' ? 'التصنيف المحاسبي:' : 'Category:' }}</label>
+                <label class="field-label">{{ 'workspace.category' | translate }}</label>
                 <select class="modal-select-input" [(ngModel)]="addFormCategory">
-                  <option value="accounting">💼 {{ langService.currentLang() === 'ar' ? 'قيود وحسابات عامة' : 'Accounting & Entries' }}</option>
-                  <option value="audit">🔍 {{ langService.currentLang() === 'ar' ? 'تدقيق ومطابقة' : 'Audit & Reconciliations' }}</option>
-                  <option value="tax">📊 {{ langService.currentLang() === 'ar' ? 'زكاة وضريبة (ZATCA)' : 'Zakat & Tax' }}</option>
-                  <option value="meeting">👥 {{ langService.currentLang() === 'ar' ? 'اجتماع عمل' : 'Meeting' }}</option>
-                  <option value="general">📌 {{ langService.currentLang() === 'ar' ? 'عام / أخرى' : 'General' }}</option>
+                  <option value="accounting">💼 {{ 'workspace.accountingEntries' | translate }}</option>
+                  <option value="audit">🔍 {{ 'workspace.auditReconciliations' | translate }}</option>
+                  <option value="tax">📊 {{ 'workspace.zakatTax' | translate }}</option>
+                  <option value="meeting">👥 {{ 'workspace.meeting' | translate }}</option>
+                  <option value="general">📌 {{ 'workspace.general' | translate }}</option>
                 </select>
               </div>
             </div>
 
             <!-- Description -->
             <div class="form-field-group">
-              <label class="field-label">{{ langService.currentLang() === 'ar' ? 'ملاحظات وتفاصيل إضافية:' : 'Description:' }}</label>
+              <label class="field-label">{{ 'workspace.description' | translate }}</label>
               <textarea 
                 rows="3" 
                 class="modal-textarea-input" 
                 [(ngModel)]="addFormDescription" 
-                [placeholder]="langService.currentLang() === 'ar' ? 'اكتب أي تفاصيل مساعدة أو أرقام قيود ومراجع...' : 'Additional notes...'">
+                [placeholder]="('workspace.additionalNotes' | translate)">
               </textarea>
             </div>
           </div>
@@ -640,11 +637,11 @@ interface FullCalendarDay {
               (click)="saveNewTaskFromModal()" 
               [disabled]="!addFormTitle.trim()">
               <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'حفظ وإضافة للأجندة' : 'Save to Agenda' }}</span>
+              <span>{{ 'workspace.saveToAgenda' | translate }}</span>
             </button>
 
             <button type="button" class="btn-dialog-secondary" (click)="closeAddModal()">
-              {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+              {{ 'workspace.cancel' | translate }}
             </button>
           </div>
 

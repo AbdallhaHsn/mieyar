@@ -4,7 +4,10 @@ using MediatR;
 
 namespace AlRobban.Modules.GeneralLedger.Application.Commands.FiscalClosing;
 
-public record ReopenFiscalYearCommand(Guid FiscalYearId, string Reason) : IRequest<Result<bool>>;
+public record ReopenFiscalYearCommand(Guid FiscalYearId, string Reason) : IRequest<Result<bool>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class ReopenFiscalYearCommandHandler : IRequestHandler<ReopenFiscalYearCommand, Result<bool>>
 {

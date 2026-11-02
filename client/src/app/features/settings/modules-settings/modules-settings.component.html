@@ -1,0 +1,827 @@
+<div class="settings-hub-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Top Hero Header -->
+  <header class="hub-header shadow-card">
+    <div class="header-main">
+      <div class="header-icon-box">
+        <i class="pi pi-sliders-h"></i>
+      </div>
+      <div class="header-titles">
+        <div class="header-badge-row">
+          <span class="badge-tag"><i class="pi pi-verified"></i> {{ 'settings.modules.controlCenter' | translate }}</span>
+          <span class="dot">&bull;</span>
+          <span class="badge-tag version font-mono">{{ 'settings.modules.enterpriseStandard' | translate }}</span>
+        </div>
+        <h1 class="header-title">{{ 'settings.modules.title' | translate }}</h1>
+        <p class="header-subtitle">
+          {{ 'settings.modules.subtitle' | translate }}
+        </p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn btn-outline-danger" (click)="confirmReset()">
+        <i class="pi pi-refresh"></i>
+        <span>{{ 'settings.modules.restoreDefault' | translate }}</span>
+      </button>
+
+      <button type="button" class="btn btn-primary-save" (click)="saveCurrentTabSettings()" [disabled]="saving">
+        <i class="pi pi-check-circle" *ngIf="!saving"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="saving"></i>
+        <span>{{ saving ? ('common.loading' | translate) : ('settings.modules.saveChanges' | translate) }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Layout: Sidebar Nav + Module Settings View -->
+  <div class="hub-body">
+
+    <!-- Modules Navigation Rail -->
+    <aside class="modules-nav-rail shadow-card">
+      <div class="rail-title">
+        <i class="pi pi-th-large"></i>
+        <span>{{ 'settings.modules.systemModules' | translate }}</span>
+      </div>
+
+      <nav class="rail-list">
+        <button
+          type="button"
+          class="rail-item"
+          *ngFor="let m of moduleTabs"
+          [class.active]="activeTab === m.id"
+          (click)="setTab(m.id)">
+          <div class="rail-item-icon">
+            <i [class]="m.icon"></i>
+          </div>
+          <div class="rail-item-info">
+            <span class="m-title">{{ langService.currentLang() === 'ar' ? m.titleAr : m.titleEn }}</span>
+            <span class="m-badge">{{ m.badge }}</span>
+          </div>
+          <i class="pi pi-angle-left active-chevron" *ngIf="langService.currentLang() === 'ar'"></i>
+          <i class="pi pi-angle-right active-chevron" *ngIf="langService.currentLang() !== 'ar'"></i>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Active Module Settings Panel -->
+    <main class="module-content-panel shadow-card">
+
+      <!-- ============================================================== -->
+      <!-- TAB 1: GENERAL & ENTERPRISE IDENTITY                           -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'general'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap emerald">
+            <i class="pi pi-building"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.2fbfea' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.574917' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <!-- Company Name Ar & En (Bilingual with auto-translation) -->
+          <div class="form-card full-width">
+            <div class="card-header-bar">
+              <i class="pi pi-globe text-emerald"></i>
+              <strong>{{ 'ui.modulesSettings.a76687' | translate }}</strong>
+            </div>
+
+            <div class="input-group" style="padding: 0.5rem 0;">
+              <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">
+                  <span>{{ 'ui.modulesSettings.15ff07' | translate }}</span>
+                  <span class="required" style="color: #ef4444;">*</span>
+                  <small class="text-muted" style="margin-right: 0.5rem; margin-left: 0.5rem;">
+                    {{ 'common.autoTranslateHint' | translate }}
+                  </small>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span *ngIf="backgroundTranslation" style="font-size: 0.75rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                    {{ backgroundTranslation }}
+                  </span>
+                  <button type="button" class="btn-translate-badge" (click)="forceTranslateCompanyName()" [title]="'projects.hub.workspace.wbs.retranslate' | translate">
+                    <i class="pi pi-sync"></i>
+                    <span>{{ 'roles.instantTranslate' | translate }}</span>
+                  </button>
+                </div>
+              </div>
+              <input
+                type="text"
+                [ngModel]="unifiedCompanyName || formSettings.general.companyNameAr || formSettings.general.companyNameEn"
+                (ngModelChange)="onUnifiedCompanyNameChange($event)"
+                [placeholder]="'ui.modulesSettings.2652cc' | translate"
+              />
+            </div>
+          </div>
+
+          <!-- Company Logo & Visual Identity Card -->
+          <div class="form-card full-width">
+            <div class="card-header-bar">
+              <i class="pi pi-image text-emerald"></i>
+              <strong>{{ 'ui.modulesSettings.dd8c27' | translate }}</strong>
+            </div>
+
+            <div class="logo-selector-wrapper" style="padding: 0.75rem 0;">
+              <div class="logo-actions-top" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span class="text-sm text-muted" style="font-size: 0.85rem; color: #64748b;">
+                  {{ 'ui.modulesSettings.b362c2' | translate }}
+                </span>
+                <button 
+                  type="button" 
+                  class="btn-toggle-input-mode" 
+                  (click)="toggleSettingsLogoMode()"
+                  style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; padding: 5px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #0284c7; cursor: pointer; font-weight: 600;">
+                  <i [class]="settingsLogoMode === 'file' ? 'pi pi-link' : 'pi pi-upload'"></i>
+                  <span>{{ settingsLogoMode === 'file' ? ('ui.modulesSettings.19bbb1' | translate) : ('ui.modulesSettings.5745bf' | translate) }}</span>
+                </button>
+              </div>
+
+              <!-- Device File Upload Mode -->
+              <div *ngIf="settingsLogoMode === 'file'" class="settings-logo-file-area">
+                <input 
+                  type="file" 
+                  #settingsLogoInput 
+                  (change)="onSettingsLogoSelected($event)" 
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml" 
+                  style="display: none;" 
+                />
+
+                <div 
+                  *ngIf="!formSettings.general.logoUrl" 
+                  class="settings-upload-dropzone" 
+                  (click)="settingsLogoInput.click()"
+                  style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 1.25rem; background: #f8fafc; display: flex; align-items: center; justify-content: center; gap: 1rem; cursor: pointer; transition: all 0.2s;">
+                  <div style="width: 48px; height: 48px; border-radius: 10px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    <i class="pi pi-cloud-upload"></i>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">{{ 'ui.modulesSettings.051083' | translate }}</div>
+                    <div style="font-size: 0.78rem; color: #64748b;">{{ 'ui.modulesSettings.a63cc1' | translate }}</div>
+                  </div>
+                </div>
+
+                <div 
+                  *ngIf="formSettings.general.logoUrl" 
+                  class="settings-logo-preview" 
+                  style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; background: #f0fdf4; border: 1px solid #a7f3d0; border-radius: 12px;">
+                  <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 58px; height: 58px; border-radius: 10px; background: #fff; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                      <img [src]="formSettings.general.logoUrl" alt="Company Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                    </div>
+                    <div>
+                      <div style="font-weight: 700; color: #065f46; font-size: 0.92rem;">{{ 'ui.modulesSettings.3885b0' | translate }}</div>
+                      <div style="font-size: 0.8rem; color: #047857;">{{ 'ui.modulesSettings.914672' | translate }}</div>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button type="button" (click)="settingsLogoInput.click()" style="display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #a7f3d0; color: #047857; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+                      <i class="pi pi-refresh"></i>
+                      <span>{{ 'ui.modulesSettings.d1647f' | translate }}</span>
+                    </button>
+                    <button type="button" (click)="removeSettingsLogo(settingsLogoInput)" style="background: #fff; border: 1px solid #fecaca; color: #dc2626; width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- URL Mode -->
+              <div *ngIf="settingsLogoMode === 'url'" class="settings-logo-url-area">
+                <input 
+                  type="text" 
+                  [(ngModel)]="formSettings.general.logoUrl" 
+                  placeholder="https://.../logo.png" 
+                  style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px;"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Tax, CR & Currency -->
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-id-card text-emerald"></i>
+              <strong>{{ 'ui.modulesSettings.a56574' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.7a812c' | translate }}</label>
+              <input type="text" class="font-mono" maxlength="15" [(ngModel)]="formSettings.general.vatNumber" placeholder="310123456700003" />
+              <small class="hint">{{ 'ui.modulesSettings.b446f9' | translate }}</small>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.68f474' | translate }}</label>
+              <input type="text" class="font-mono" maxlength="10" [(ngModel)]="formSettings.general.commercialRegistration" placeholder="1010789456" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.fd0162' | translate }}</label>
+              <select [(ngModel)]="formSettings.general.baseCurrency">
+                <option value="SAR">{{ 'ui.modulesSettings.1d09a9' | translate }}</option>
+                <option value="USD">{{ 'ui.modulesSettings.98ca59' | translate }}</option>
+                <option value="AED">{{ 'ui.modulesSettings.1288be' | translate }}</option>
+                <option value="KWD">{{ 'ui.modulesSettings.f071fa' | translate }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Contact & National Address -->
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-map-marker text-emerald"></i>
+              <strong>{{ 'ui.modulesSettings.dc15e1' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.a4457c' | translate }}</label>
+              <input type="text" [(ngModel)]="formSettings.general.nationalAddress" [placeholder]="'ui.modulesSettings.66c018' | translate" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.7eb4e0' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.general.phone" placeholder="+966 11 234 5678" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.d21346' | translate }}</label>
+              <input type="email" class="font-mono" [(ngModel)]="formSettings.general.email" placeholder="info@meyar-erp.sa" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: ACCOUNTING & GENERAL LEDGER                             -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'accounting'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap blue">
+            <i class="pi pi-book"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.8b0876' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.808616' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <!-- Policy Toggles -->
+          <div class="form-card full-width">
+            <div class="card-header-bar">
+              <i class="pi pi-sliders-v text-blue"></i>
+              <strong>{{ 'ui.modulesSettings.5436c6' | translate }}</strong>
+            </div>
+
+            <div class="toggles-grid">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <strong>{{ 'ui.modulesSettings.dbbaca' | translate }}</strong>
+                  <span>{{ 'ui.modulesSettings.514c3f' | translate }}</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" [(ngModel)]="formSettings.accounting.requireApprovalForEntries" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <strong>{{ 'ui.modulesSettings.3ba491' | translate }}</strong>
+                  <span>{{ 'ui.modulesSettings.e9f611' | translate }}</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" [(ngModel)]="formSettings.accounting.allowBackdatedEntries" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <strong>{{ 'ui.modulesSettings.f27ae5' | translate }}</strong>
+                  <span>{{ 'ui.modulesSettings.f8b4a1' | translate }}</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" [(ngModel)]="formSettings.accounting.include13thClosingPeriod" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cost Center & Calendar Policy -->
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-sitemap text-blue"></i>
+              <strong>{{ 'ui.modulesSettings.d45e2a' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.1c8a36' | translate }}</label>
+              <select [(ngModel)]="formSettings.accounting.costCenterPolicy">
+                <option value="MandatoryForIncomeAndExpense">{{ 'ui.modulesSettings.a1eb28' | translate }}</option>
+                <option value="MandatoryAll">{{ 'ui.modulesSettings.44b731' | translate }}</option>
+                <option value="Optional">{{ 'ui.modulesSettings.e45962' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.d7072a' | translate }}</label>
+              <select [(ngModel)]="formSettings.accounting.calendarType">
+                <option value="Gregorian">{{ 'accounting.financialSettings.ui.gregorian' | translate }}</option>
+                <option value="Hijri">{{ 'ui.modulesSettings.368e70' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="input-group" *ngIf="formSettings.accounting.allowBackdatedEntries">
+              <label>{{ 'ui.modulesSettings.972e65' | translate }}</label>
+              <input type="number" min="1" max="60" [(ngModel)]="formSettings.accounting.maxBackdatedDays" />
+            </div>
+          </div>
+
+          <!-- Default Accounts Linkage -->
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-link text-blue"></i>
+              <strong>{{ 'ui.modulesSettings.1b39a2' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.26ea3c' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.accounting.retainedEarningsAccount" placeholder="32102" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.5d8294' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.accounting.currentPnlAccount" placeholder="32103" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.68e534' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.accounting.inventoryDiscrepancyAccount" placeholder="51102" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 3: INVOICING & ZATCA PHASE 2                               -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'invoicing'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap amber">
+            <i class="pi pi-file-edit"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.4d9a1e' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.659b97' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-server text-amber"></i>
+              <strong>{{ 'ui.modulesSettings.49bcfc' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.1fe903' | translate }}</label>
+              <select [(ngModel)]="formSettings.invoicing.zatcaEnvironment">
+                <option value="Simulation">{{ 'ui.modulesSettings.07eb78' | translate }}</option>
+                <option value="Production">{{ 'ui.modulesSettings.e4ded8' | translate }}</option>
+                <option value="Developer-Portal">{{ 'ui.modulesSettings.4976e3' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.d225a4' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.invoicing.deviceSerialNumber" placeholder="MEYAR-ZATCA-EGS-2026" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.3dde00' | translate }}</label>
+              <input type="number" [(ngModel)]="formSettings.invoicing.defaultVatRate" placeholder="15" />
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-print text-amber"></i>
+              <strong>{{ 'ui.modulesSettings.645d30' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.3c2c3f' | translate }}</label>
+              <select [(ngModel)]="formSettings.invoicing.invoicePrintTemplate">
+                <option value="ModernBilingual">{{ 'ui.modulesSettings.f37005' | translate }}</option>
+                <option value="Thermal80mm">{{ 'ui.modulesSettings.097012' | translate }}</option>
+                <option value="StandardA4">{{ 'ui.modulesSettings.e4b2d7' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.4901f5' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.invoicing.taxInvoicePrefix" placeholder="INV-2026-" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.ca6603' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.invoicing.simplifiedInvoicePrefix" placeholder="POS-2026-" />
+            </div>
+
+            <div class="toggle-row mt-2">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.732552' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.c8b3a8' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.invoicing.autoGenerateQrCode" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 4: SALES & POS CASHIER                                     -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'pos'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap purple">
+            <i class="pi pi-shopping-cart"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.5bff34' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.fcb20a' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-box text-purple"></i>
+              <strong>{{ 'ui.modulesSettings.d7a151' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.46f1bd' | translate }}</label>
+              <input type="text" [(ngModel)]="formSettings.pos.defaultPosWarehouse" [placeholder]="'ui.modulesSettings.42893d' | translate" />
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.008697' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.f5e839' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.pos.allowNegativeStock" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.2575d4' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.c5d159' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.pos.autoPrintReceipt" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-lock text-purple"></i>
+              <strong>{{ 'ui.modulesSettings.14b4de' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.48682b' | translate }}</label>
+              <input type="number" min="0" max="100" [(ngModel)]="formSettings.pos.maxCashierDiscountPercent" />
+              <small class="hint">{{ 'ui.modulesSettings.f5c43c' | translate }}</small>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.b0f6e5' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.81ed79' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.pos.enforceCashDrawerCount" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 5: PURCHASING & WMS INVENTORY                              -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'purchasing'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap teal">
+            <i class="pi pi-box"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.38f8f6' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.8b02f9' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-calculator text-teal"></i>
+              <strong>{{ 'ui.modulesSettings.12b615' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.c4cd6e' | translate }}</label>
+              <select [(ngModel)]="formSettings.purchasing.inventoryValuationMethod">
+                <option value="WeightedAverage">{{ 'ui.modulesSettings.48f234' | translate }}</option>
+                <option value="FIFO">{{ 'ui.modulesSettings.202b43' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.6ea404' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.7acfc7' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.purchasing.enableReorderAlerts" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.18e5cf' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.e5df1a' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.purchasing.autoPostStockAdjustments" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-file-check text-teal"></i>
+              <strong>{{ 'ui.modulesSettings.6bb4fe' | translate }}</strong>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.3b01c6' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.55e9bd' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.purchasing.enforceThreeWayMatching" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="input-group mt-3">
+              <label>{{ 'ui.modulesSettings.15b2f7' | translate }}</label>
+              <input type="number" [(ngModel)]="formSettings.purchasing.defaultPurchaseTaxRate" placeholder="15" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 6: HR & PAYROLL - GOSI / WPS MUDAD                         -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'hr'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap emerald">
+            <i class="pi pi-users"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.ba612a' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.d3d9a7' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <!-- GOSI Rates -->
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-shield text-emerald"></i>
+              <strong>{{ 'ui.modulesSettings.e1da98' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.045772' | translate }}</label>
+              <input type="number" step="0.25" [(ngModel)]="formSettings.hr.saudiEmployeeGosiRate" placeholder="9.75" />
+              <small class="hint">{{ 'ui.modulesSettings.2bb188' | translate }}</small>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.91b950' | translate }}</label>
+              <input type="number" step="0.25" [(ngModel)]="formSettings.hr.saudiEmployerGosiRate" placeholder="11.75" />
+              <small class="hint">{{ 'ui.modulesSettings.cf04ba' | translate }}</small>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.9362ac' | translate }}</label>
+              <input type="number" step="0.5" [(ngModel)]="formSettings.hr.nonSaudiHazardRate" placeholder="2.0" />
+            </div>
+          </div>
+
+          <!-- Mudad & WPS Info -->
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-credit-card text-emerald"></i>
+              <strong>{{ 'ui.modulesSettings.8c749b' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.314998' | translate }}</label>
+              <input type="text" class="font-mono" [(ngModel)]="formSettings.hr.mudadEstablishmentId" placeholder="7001234567" />
+              <small class="hint">{{ 'ui.modulesSettings.d96192' | translate }}</small>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.f478c1' | translate }}</label>
+              <input type="text" class="font-mono uppercase" [(ngModel)]="formSettings.hr.employerBankCode" placeholder="RJHI" />
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.d29703' | translate }}</label>
+              <input type="text" class="font-mono uppercase" [(ngModel)]="formSettings.hr.employerIban" placeholder="SA0380000000608010167519" />
+            </div>
+
+            <div class="grid-2-cols">
+              <div class="input-group">
+                <label>{{ 'ui.modulesSettings.42649c' | translate }}</label>
+                <select [(ngModel)]="formSettings.hr.payrollCalculationBasis">
+                  <option value="30Days">{{ 'ui.modulesSettings.7285a7' | translate }}</option>
+                  <option value="ActualDays">{{ 'ui.modulesSettings.5d220b' | translate }}</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label>{{ 'ui.modulesSettings.bc8aa9' | translate }}</label>
+                <input type="number" step="0.25" [(ngModel)]="formSettings.hr.overtimeMultiplier" placeholder="1.5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 7: PROJECTS & CONTRACTING                                  -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'projects'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap indigo">
+            <i class="pi pi-briefcase"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.9695b6' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.f6f47c' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-percentage text-indigo"></i>
+              <strong>{{ 'ui.modulesSettings.cf8e8a' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.847bad' | translate }}</label>
+              <input type="number" [(ngModel)]="formSettings.projects.defaultRetentionPercent" placeholder="10" />
+              <small class="hint">{{ 'ui.modulesSettings.98427e' | translate }}</small>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.47e4b7' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.3c91f0' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.projects.requireProjectManagerApproval" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-shield text-indigo"></i>
+              <strong>{{ 'ui.modulesSettings.750a4a' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.cc8b99' | translate }}</label>
+              <input type="number" [(ngModel)]="formSettings.projects.guaranteeExpiryAlertDays" placeholder="30" />
+              <small class="hint">{{ 'ui.modulesSettings.365707' | translate }}</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 8: SECURITY & SYSTEM                                       -->
+      <!-- ============================================================== -->
+      <section class="tab-pane animate-fade-in" *ngIf="activeTab === 'system'">
+        <div class="pane-header">
+          <div class="pane-icon-wrap slate">
+            <i class="pi pi-shield"></i>
+          </div>
+          <div>
+            <h2>{{ 'ui.modulesSettings.336776' | translate }}</h2>
+            <p>{{ 'ui.modulesSettings.5495b6' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="settings-form-grid">
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-lock text-slate"></i>
+              <strong>{{ 'ui.modulesSettings.e4cb7f' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.0abb48' | translate }}</label>
+              <input type="number" [(ngModel)]="formSettings.system.sessionTimeoutMinutes" placeholder="30" />
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.d0849c' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.457264' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.system.enableAuditLogging" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <strong>{{ 'ui.modulesSettings.f45dfb' | translate }}</strong>
+                <span>{{ 'ui.modulesSettings.fa53c9' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [(ngModel)]="formSettings.system.enforceTwoFactorAuth" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="card-header-bar">
+              <i class="pi pi-palette text-slate"></i>
+              <strong>{{ 'ui.modulesSettings.25a89e' | translate }}</strong>
+            </div>
+
+            <div class="input-group">
+              <label>{{ 'ui.modulesSettings.5394af' | translate }}</label>
+              <select [(ngModel)]="formSettings.system.themeMode">
+                <option value="Light">{{ 'ui.modulesSettings.8b3e12' | translate }}</option>
+                <option value="Dark">{{ 'ui.modulesSettings.03f74e' | translate }}</option>
+                <option value="System">{{ 'ui.modulesSettings.8c4ec2' | translate }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Save Bar -->
+      <footer class="pane-footer-bar">
+        <div class="footer-hint">
+          <i class="pi pi-info-circle text-emerald"></i>
+          <span>{{ 'ui.modulesSettings.94f404' | translate }}</span>
+        </div>
+
+        <div class="footer-actions">
+          <button type="button" class="btn btn-secondary" (click)="reloadFromService()">
+            <span>{{ 'ui.modulesSettings.5d0b04' | translate }}</span>
+          </button>
+
+          <button type="button" class="btn btn-primary-save" (click)="saveCurrentTabSettings()" [disabled]="saving">
+            <i class="pi pi-check-circle" *ngIf="!saving"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="saving"></i>
+            <span>{{ saving ? ('ui.modulesSettings.ea4d53' | translate) : ('ui.modulesSettings.f8df28' | translate) }}</span>
+          </button>
+        </div>
+      </footer>
+
+    </main>
+
+  </div>
+
+</div>

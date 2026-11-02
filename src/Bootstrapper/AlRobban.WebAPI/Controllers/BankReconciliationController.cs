@@ -1,6 +1,10 @@
+using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using AlRobban.Modules.GeneralLedger.Application.Commands.BankReconciliationCommands;
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Application.Queries.BankReconciliation;
+using AlRobban.Modules.GeneralLedger.Application.Commands.JournalEntries;
+using AlRobban.Modules.GeneralLedger.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +12,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/bank-reconciliation")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class BankReconciliationController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -110,6 +115,53 @@ public class BankReconciliationController : ControllerBase
         {
             return BadRequest(new { result.Error.Code, result.Error.Description });
         }
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// إنشاء وترحيل قيد تسوية بنكي فوري (مثل العمولات البنكية أو الفوائد أو الإيداعات المباشرة)
+    /// </summary>
+    [HttpPost("adjustment-entry")]
+    [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CreateAdjustment(
+        [FromBody] CreateBankAdjustmentEntryRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Amount <= 0)
+        {
+            return BadRequest(new { Code = "Adjustment.InvalidAmount", Description = "مبلغ التسوية يجب أن يكون أكبر من الصفر" });
+        }
+
+        var lines = new List<CreateJournalEntryLineRequest>();
+        if (request.IsExpenseOrWithdrawal)
+        {
+            // Debit: Counter Account (e.g. Bank Charges), Credit: Bank Account
+            lines.Add(new CreateJournalEntryLineRequest(request.CounterAccountId, request.Amount, 0, request.Description, null));
+            lines.Add(new CreateJournalEntryLineRequest(request.BankAccountId, 0, request.Amount, request.Description, null));
+        }
+        else
+        {
+            // Debit: Bank Account, Credit: Counter Account (e.g. Interest/Other Income)
+            lines.Add(new CreateJournalEntryLineRequest(request.BankAccountId, request.Amount, 0, request.Description, null));
+            lines.Add(new CreateJournalEntryLineRequest(request.CounterAccountId, 0, request.Amount, request.Description, null));
+        }
+
+        var command = new CreateJournalEntryCommand(
+            request.CompanyId,
+            request.EntryDate,
+            JournalEntryType.Adjustment,
+            request.Description,
+            request.Description,
+            request.ReferenceNumber ?? $"ADJ-{DateTime.UtcNow:yyyyMMddHHmm}",
+            true, // Post immediately
+            lines);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
         return Ok(result.Value);
     }
 }

@@ -1,0 +1,942 @@
+// Warehouse Analytics Page - Executive High-Density Design
+.warehouse-analytics-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 4rem);
+  color: #1e293b;
+  font-family: inherit;
+}
+
+// 1. Page Header & Actions
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+
+  .header-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      i {
+        font-size: 0.85rem;
+        color: #0284c7;
+      }
+
+      &:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: #0f172a;
+        transform: translateX(2px);
+      }
+    }
+
+    .breadcrumb-separator {
+      color: #94a3b8;
+      font-weight: 300;
+    }
+
+    .breadcrumb-active {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+
+      i {
+        font-size: 0.9rem;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .btn-refresh {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+
+      &:hover:not(:disabled) {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+    }
+
+    .btn-print {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+
+      &:hover:not(:disabled) {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+    }
+
+    .btn-excel {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
+// 2. Warehouse Banner
+.warehouse-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 1.1rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  .banner-main {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+
+    .wh-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      background: #ecfdf5;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border: 1px solid #a7f3d0;
+      flex-shrink: 0;
+    }
+
+    .wh-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      .wh-title-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+
+        .wh-name {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0;
+        }
+
+        .wh-code-badge {
+          background: #0f172a;
+          color: #ffffff;
+          padding: 0.2rem 0.55rem;
+          border-radius: 6px;
+          font-size: 0.76rem;
+          font-family: 'Consolas', monospace;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+
+        .wh-default-star {
+          background: #fef3c7;
+          color: #b45309;
+          border: 1px solid #fde68a;
+          padding: 0.2rem 0.55rem;
+          border-radius: 6px;
+          font-size: 0.72rem;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+        }
+
+        .wh-status-badge {
+          padding: 0.2rem 0.55rem;
+          border-radius: 6px;
+          font-size: 0.72rem;
+          font-weight: 600;
+
+          &.active {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+          }
+
+          &.inactive {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+          }
+        }
+      }
+
+      .wh-sub-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        font-size: 0.78rem;
+        color: #64748b;
+
+        .wh-en {
+          color: #94a3b8;
+          font-weight: 500;
+        }
+
+        span {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+
+          i {
+            color: #0284c7;
+            font-size: 0.75rem;
+          }
+        }
+      }
+    }
+  }
+
+  .banner-company-stamp {
+    text-align: left;
+    border-right: 2px solid #e2e8f0;
+    padding-right: 1.25rem;
+
+    .company-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+
+      .comp-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .comp-tax {
+        font-size: 0.72rem;
+        color: #64748b;
+      }
+    }
+  }
+}
+
+// 3. KPI Metrics Grid
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+
+  .kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+    &:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      transform: translateY(-2px);
+    }
+
+    .kpi-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .kpi-data {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      min-width: 0;
+
+      .kpi-label {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: #64748b;
+      }
+
+      .kpi-value-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+
+        .kpi-value {
+          font-size: 1.35rem;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.2;
+        }
+
+        .kpi-unit {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #94a3b8;
+        }
+      }
+
+      .kpi-sub {
+        font-size: 0.68rem;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    &.kpi-blue {
+      .kpi-icon { background: #e0f2fe; color: #0284c7; }
+    }
+
+    &.kpi-emerald {
+      .kpi-icon { background: #d1fae5; color: #059669; }
+      .kpi-value { color: #059669; }
+    }
+
+    &.kpi-amber {
+      cursor: pointer;
+      .kpi-icon { background: #fef3c7; color: #d97706; }
+      &.highlight { border-color: #f59e0b; background: #fffbeb; }
+    }
+
+    &.kpi-red {
+      cursor: pointer;
+      .kpi-icon { background: #fee2e2; color: #dc2626; }
+      &.highlight { border-color: #ef4444; background: #fef2f2; }
+    }
+
+    &.kpi-purple {
+      .kpi-icon { background: #ede9fe; color: #7c3aed; }
+      .kpi-value { color: #6d28d9; }
+    }
+  }
+}
+
+// 4. Controls Card (Search + Chips)
+.controls-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.45rem 0.85rem;
+    width: 380px;
+    max-width: 100%;
+
+    i {
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    input {
+      border: none;
+      outline: none;
+      background: transparent;
+      width: 100%;
+      font-size: 0.8rem;
+      color: #0f172a;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+    }
+
+    .btn-clear {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        color: #0f172a;
+      }
+    }
+  }
+
+  .filter-chips {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+
+      &.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+      }
+
+      &.chip-warning.active {
+        background: #d97706;
+        border-color: #d97706;
+        color: #ffffff;
+      }
+
+      &.chip-danger.active {
+        background: #dc2626;
+        border-color: #dc2626;
+        color: #ffffff;
+      }
+
+      &.chip-success.active {
+        background: #059669;
+        border-color: #059669;
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+// 5. Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  gap: 1rem;
+
+  i {
+    font-size: 2.2rem;
+    color: #059669;
+  }
+
+  p {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+// 6. Data Table Card
+.table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+
+    thead {
+      background: #0f172a;
+      color: #ffffff;
+
+      th {
+        padding: 0.65rem 0.85rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        border-bottom: 2px solid #1e293b;
+        white-space: nowrap;
+
+        &.th-code { text-align: center; width: 100px; }
+        &.th-name { text-align: right; min-width: 200px; }
+        &.th-qty { text-align: center; width: 90px; }
+        &.th-status { text-align: center; width: 140px; }
+        &.th-price { text-align: center; width: 105px; color: #34d399; }
+        &.th-margin { text-align: center; width: 85px; }
+        &.th-val { text-align: center; width: 120px; }
+        &.th-bin { text-align: center; width: 90px; }
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid #e2e8f0;
+        transition: background-color 0.15s ease;
+
+        &:nth-child(even) {
+          background-color: #fafbfc;
+        }
+
+        &:hover {
+          background-color: #f1f5f9;
+        }
+
+        &.row-depleted {
+          background-color: #fffdf5;
+        }
+
+        &.row-out {
+          background-color: #fef8f8;
+        }
+
+        td {
+          padding: 0.55rem 0.85rem;
+          font-size: 0.76rem;
+          color: #334155;
+          vertical-align: middle;
+
+          &.td-code {
+            text-align: center;
+
+            .code-tag {
+              display: inline-block;
+              font-family: 'Consolas', monospace;
+              font-size: 0.72rem;
+              font-weight: 700;
+              background: #f1f5f9;
+              color: #0f172a;
+              padding: 0.15rem 0.45rem;
+              border-radius: 4px;
+              border: 1px solid #cbd5e1;
+            }
+          }
+
+          &.td-name {
+            .item-name-box {
+              display: flex;
+              flex-direction: column;
+              gap: 0.15rem;
+
+              .item-ar {
+                font-weight: 700;
+                color: #0f172a;
+                font-size: 0.8rem;
+              }
+
+              .item-en {
+                font-size: 0.68rem;
+                color: #94a3b8;
+                font-family: sans-serif;
+              }
+
+              .item-cat {
+                display: inline-block;
+                align-self: flex-start;
+                font-size: 0.65rem;
+                color: #475569;
+                background: #f1f5f9;
+                padding: 0.05rem 0.35rem;
+                border-radius: 3px;
+              }
+            }
+          }
+
+          &.td-qty {
+            text-align: center;
+
+            .qty-box {
+              display: flex;
+              align-items: baseline;
+              justify-content: center;
+              gap: 0.25rem;
+
+              .qty-num {
+                font-size: 0.95rem;
+                font-weight: 800;
+                color: #0f172a;
+                font-family: 'Consolas', monospace;
+              }
+
+              .qty-unit {
+                font-size: 0.68rem;
+                color: #64748b;
+              }
+            }
+          }
+
+          &.td-status {
+            text-align: center;
+
+            .health-box {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 0.25rem;
+
+              .health-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.3rem;
+                font-size: 0.68rem;
+                font-weight: 700;
+                padding: 0.2rem 0.5rem;
+                border-radius: 12px;
+
+                &.badge-healthy {
+                  background: #ecfdf5;
+                  color: #059669;
+                  border: 1px solid #a7f3d0;
+                }
+
+                &.badge-warning {
+                  background: #fffbeb;
+                  color: #b45309;
+                  border: 1px solid #fde68a;
+                }
+
+                &.badge-danger {
+                  background: #fef2f2;
+                  color: #dc2626;
+                  border: 1px solid #fecaca;
+                }
+
+                &.badge-empty {
+                  background: #f1f5f9;
+                  color: #64748b;
+                  border: 1px solid #cbd5e1;
+                }
+
+                .min-threshold {
+                  font-size: 0.62rem;
+                  color: #94a3b8;
+                  font-weight: normal;
+                }
+              }
+
+              .health-progress {
+                width: 90px;
+                height: 4px;
+                background: #e2e8f0;
+                border-radius: 2px;
+                overflow: hidden;
+
+                .progress-fill {
+                  height: 100%;
+                  transition: width 0.3s ease;
+
+                  &.fill-healthy { background: #10b981; }
+                  &.fill-warning { background: #f59e0b; }
+                  &.fill-danger { background: #ef4444; }
+                }
+              }
+            }
+          }
+
+          &.td-price {
+            text-align: center;
+
+            .num-val {
+              font-family: 'Consolas', monospace;
+              font-size: 0.82rem;
+              font-weight: 700;
+              color: #1e293b;
+
+              &.high-price {
+                color: #059669;
+              }
+
+              &.low-price {
+                color: #0284c7;
+              }
+            }
+
+            .curr-tag {
+              font-size: 0.65rem;
+              color: #94a3b8;
+              margin-right: 0.2rem;
+            }
+          }
+
+          &.td-margin {
+            text-align: center;
+
+            .margin-badge {
+              display: inline-block;
+              font-size: 0.72rem;
+              font-weight: 700;
+              padding: 0.15rem 0.45rem;
+              border-radius: 4px;
+              background: #f1f5f9;
+              color: #475569;
+
+              &.margin-good {
+                background: #ecfdf5;
+                color: #059669;
+                border: 1px solid #a7f3d0;
+              }
+
+              &.margin-fair {
+                background: #e0f2fe;
+                color: #0284c7;
+                border: 1px solid #bae6fd;
+              }
+            }
+          }
+
+          &.td-val {
+            text-align: center;
+
+            .val-num {
+              font-family: 'Consolas', monospace;
+              font-size: 0.85rem;
+              font-weight: 800;
+              color: #0f172a;
+            }
+
+            .curr-tag {
+              font-size: 0.65rem;
+              color: #94a3b8;
+              margin-right: 0.2rem;
+            }
+          }
+
+          &.td-bin {
+            text-align: center;
+
+            .bin-tag {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.25rem;
+              font-size: 0.7rem;
+              color: #475569;
+              background: #f1f5f9;
+              padding: 0.15rem 0.45rem;
+              border-radius: 4px;
+
+              i {
+                font-size: 0.65rem;
+                color: #0284c7;
+              }
+            }
+
+            .bin-empty {
+              color: #cbd5e1;
+            }
+          }
+        }
+      }
+
+      .td-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+
+        .empty-box {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          color: #94a3b8;
+
+          i {
+            font-size: 1.8rem;
+          }
+
+          p {
+            font-size: 0.82rem;
+            margin: 0;
+          }
+        }
+      }
+    }
+  }
+
+  // 7. Table Footer
+  .table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.78rem;
+    color: #64748b;
+
+    .footer-info {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+
+      strong {
+        color: #0f172a;
+      }
+
+      .separator {
+        color: #cbd5e1;
+      }
+    }
+
+    .footer-pagination {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .btn-page {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover:not(:disabled) {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        i {
+          font-size: 0.75rem;
+        }
+      }
+
+      .page-indicator {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #475569;
+      }
+    }
+  }
+}
+
+// 8. Print Styles
+@media print {
+  .page-header,
+  .controls-card,
+  .table-footer .footer-pagination,
+  .btn-action,
+  .btn-back {
+    display: none !important;
+  }
+
+  .warehouse-analytics-container {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .warehouse-banner {
+    border: none;
+    box-shadow: none;
+    padding: 0 0 1rem 0;
+    border-bottom: 2px solid #0f172a;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(5, 1fr);
+    margin-bottom: 1rem;
+
+    .kpi-card {
+      border: 1px solid #cbd5e1;
+      padding: 0.5rem;
+    }
+  }
+
+  .analytics-table {
+    border: 1px solid #000000;
+
+    thead th {
+      background: #000000 !important;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    tbody td {
+      border: 1px solid #cccccc;
+    }
+  }
+}

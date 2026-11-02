@@ -18,22 +18,31 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
     public string Currency { get; private set; } = "SAR";
 
     // Customer / Buyer Details
+    public Guid? CustomerId { get; private set; }
     public string CustomerName { get; private set; } = string.Empty;
     public string? CustomerVatNumber { get; private set; }
     public string? CustomerCrNumber { get; private set; }
     public string? CustomerAddress { get; private set; }
+
+    // Salesperson & Dedicated Warehouse Attribution
+    public Guid? SalespersonId { get; private set; }
+    public string? SalespersonName { get; private set; }
+    public string? WarehouseCode { get; private set; }
 
     // References (for Credit / Debit Notes)
     public Guid? ReferenceInvoiceId { get; private set; }
     public string? ReferenceInvoiceNumber { get; private set; }
     public string? ModificationReason { get; private set; }
 
-    // Financial Totals
+    // Financial Totals & Payments
     public decimal SubTotal { get; private set; } = 0m;
     public decimal TotalDiscount { get; private set; } = 0m;
     public decimal TotalTaxableAmount { get; private set; } = 0m;
     public decimal TotalVat { get; private set; } = 0m;
     public decimal TotalAmount { get; private set; } = 0m;
+    public decimal PaidAmount { get; private set; } = 0m;
+    public InvoicePaymentStatus PaymentStatus { get; private set; } = InvoicePaymentStatus.Unpaid;
+    public decimal RemainingAmount => Math.Max(0, TotalAmount - PaidAmount);
 
     // ZATCA Phase 2 Cryptography & Chaining
     public string PreviousInvoiceHash { get; private set; } = "NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjhhZDRmMTBkNFZ1";
@@ -44,6 +53,13 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
     // Associated GL Journal Entry
     public Guid? AssociatedJournalEntryId { get; private set; }
     public string? AssociatedJournalEntryNumber { get; private set; }
+
+    // POS & Retail Metadata
+    public Guid? PosShiftId { get; private set; }
+    public string? PosTerminalCode { get; private set; }
+    public PosPaymentMethod? PaymentMethod { get; private set; }
+    public decimal CashReceived { get; private set; }
+    public decimal ChangeGiven { get; private set; }
 
     public List<InvoiceLine> Lines { get; private set; } = new();
 
@@ -66,9 +82,13 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
         string? customerCrNumber,
         string? customerAddress,
         string previousInvoiceHash,
+        Guid? customerId = null,
         Guid? referenceInvoiceId = null,
         string? referenceInvoiceNumber = null,
         string? modificationReason = null,
+        Guid? salespersonId = null,
+        string? salespersonName = null,
+        string? warehouseCode = null,
         string? createdBy = null)
     {
         return new Invoice
@@ -83,11 +103,17 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
             InvoiceType = invoiceType,
             TransactionType = transactionType,
             Status = InvoiceStatus.Draft,
+            PaymentStatus = transactionType == TransactionType.CreditNote ? InvoicePaymentStatus.Paid : InvoicePaymentStatus.Unpaid,
+            PaidAmount = 0m,
             Currency = "SAR",
+            CustomerId = customerId,
             CustomerName = customerName.Trim(),
             CustomerVatNumber = string.IsNullOrWhiteSpace(customerVatNumber) ? null : customerVatNumber.Trim(),
             CustomerCrNumber = string.IsNullOrWhiteSpace(customerCrNumber) ? null : customerCrNumber.Trim(),
             CustomerAddress = customerAddress?.Trim(),
+            SalespersonId = salespersonId,
+            SalespersonName = salespersonName?.Trim(),
+            WarehouseCode = string.IsNullOrWhiteSpace(warehouseCode) ? "WH-01" : warehouseCode.Trim().ToUpperInvariant(),
             PreviousInvoiceHash = string.IsNullOrWhiteSpace(previousInvoiceHash)
                 ? "NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjhhZDRmMTBkNFZ1"
                 : previousInvoiceHash.Trim(),
@@ -105,7 +131,9 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
         decimal quantity,
         decimal unitPrice,
         decimal discount = 0m,
-        decimal vatRate = 15m)
+        decimal vatRate = 15m,
+        Guid? itemId = null,
+        string? warehouseCode = null)
     {
         if (Status != InvoiceStatus.Draft)
             throw new InvalidOperationException("لا يمكن تعديل أسطر فاتورة مصدرة أو معتمدة");
@@ -119,7 +147,9 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
             quantity,
             unitPrice,
             discount,
-            vatRate);
+            vatRate,
+            itemId,
+            warehouseCode);
 
         Lines.Add(line);
         RecalculateTotals();
@@ -160,6 +190,30 @@ public class Invoice : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntity
         Status = status;
         LastModifiedAtUtc = DateTime.UtcNow;
     }
+
+    public void RecordPayment(decimal amount)
+    {
+        PaidAmount = Math.Round(PaidAmount + amount, 4);
+        if (PaidAmount >= TotalAmount)
+        {
+            PaymentStatus = InvoicePaymentStatus.Paid;
+        }
+        else if (PaidAmount > 0)
+        {
+            PaymentStatus = InvoicePaymentStatus.PartiallyPaid;
+        }
+        LastModifiedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetPosDetails(Guid posShiftId, string terminalCode, PosPaymentMethod paymentMethod, decimal cashReceived, decimal changeGiven)
+    {
+        PosShiftId = posShiftId;
+        PosTerminalCode = terminalCode.Trim().ToUpperInvariant();
+        PaymentMethod = paymentMethod;
+        CashReceived = Math.Max(0, cashReceived);
+        ChangeGiven = Math.Max(0, changeGiven);
+        LastModifiedAtUtc = DateTime.UtcNow;
+    }
 }
 
 public class InvoiceLine : IMustHaveTenant
@@ -170,6 +224,8 @@ public class InvoiceLine : IMustHaveTenant
     public Invoice? Invoice { get; set; }
 
     public int LineNumber { get; set; }
+    public Guid? ItemId { get; set; }
+    public string? WarehouseCode { get; set; }
     public string ItemNameAr { get; set; } = string.Empty;
     public string? ItemNameEn { get; set; }
 
@@ -191,7 +247,9 @@ public class InvoiceLine : IMustHaveTenant
         decimal quantity,
         decimal unitPrice,
         decimal discount,
-        decimal vatRate)
+        decimal vatRate,
+        Guid? itemId = null,
+        string? warehouseCode = null)
     {
         var sub = Math.Round(quantity * unitPrice, 2);
         var taxable = Math.Max(0, sub - discount);
@@ -204,6 +262,8 @@ public class InvoiceLine : IMustHaveTenant
             TenantId = tenantId,
             InvoiceId = invoiceId,
             LineNumber = lineNumber,
+            ItemId = itemId,
+            WarehouseCode = warehouseCode,
             ItemNameAr = itemNameAr.Trim(),
             ItemNameEn = string.IsNullOrWhiteSpace(itemNameEn) ? itemNameAr.Trim() : itemNameEn.Trim(),
             Quantity = quantity,

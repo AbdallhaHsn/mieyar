@@ -51,8 +51,8 @@ public class SaveCurrencyRateCommandHandler : IRequestHandler<SaveCurrencyRateCo
 
     public async Task<Result<CurrencyRateDto>> Handle(SaveCurrencyRateCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var effDate = request.EffectiveDate ?? DateTime.UtcNow;
 
         var existing = await _rateRepository.GetByCodeAsync(companyId, request.CurrencyCode, cancellationToken);
@@ -94,7 +94,7 @@ public class GetCurrencyRatesQueryHandler : IRequestHandler<GetCurrencyRatesQuer
 
     public async Task<Result<IReadOnlyList<CurrencyRateDto>>> Handle(GetCurrencyRatesQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var rates = await _rateRepository.GetLatestRatesAsync(companyId, cancellationToken);
         var dtos = rates.Select(CurrencyRateDto.FromEntity).ToList();
         return Result.Success<IReadOnlyList<CurrencyRateDto>>(dtos);
@@ -128,7 +128,7 @@ public class RevalueCurrenciesCommandHandler : IRequestHandler<RevalueCurrencies
 
     public async Task<Result<FxRevaluationResultDto>> Handle(RevalueCurrenciesCommand request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var rates = await _rateRepository.GetLatestRatesAsync(companyId, cancellationToken);
 
         // Standard IAS 21 FX Revaluation calculation

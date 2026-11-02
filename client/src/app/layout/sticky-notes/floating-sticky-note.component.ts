@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserStickyNotesService } from '../../core/services/user-sticky-notes.service';
 import { LanguageService } from '../../core/services/language.service';
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 
 @Component({
   selector: 'app-floating-sticky-note',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     <div 
       *ngIf="notesService.floatingNote() as note" 
@@ -22,10 +23,10 @@ import { LanguageService } from '../../core/services/language.service';
         </div>
 
         <div class="floating-actions">
-          <button type="button" class="btn-float-tool" (click)="toggleMinimize()" [title]="isMinimized ? 'تكبير' : 'تصغير'">
+          <button type="button" class="btn-float-tool" (click)="toggleMinimize()" [title]="isMinimized ? ('ui.floatingStickyNote.c5b7cb' | translate) : ('ui.floatingStickyNote.646bf9' | translate)">
             <i class="pi" [ngClass]="isMinimized ? 'pi-window-maximize' : 'pi-minus'"></i>
           </button>
-          <button type="button" class="btn-float-tool" (click)="notesService.closeFloat()" title="إغلاق التعليق">
+          <button type="button" class="btn-float-tool" (click)="notesService.closeFloat()" [title]="'ui.floatingStickyNote.bd93f1' | translate">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -38,7 +39,7 @@ import { LanguageService } from '../../core/services/language.service';
 
       <!-- Footer -->
       <div class="note-foot" *ngIf="!isMinimized">
-        <span class="foot-tag">ملاحظة معلقة على الشاشة</span>
+        <span class="foot-tag">{{ 'ui.floatingStickyNote.c136e5' | translate }}</span>
       </div>
     </div>
   `,

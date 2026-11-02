@@ -17,6 +17,7 @@ public class CompanyRepository : ICompanyRepository
     public async Task<Company?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Companies
+            .IgnoreQueryFilters()
             .Include(c => c.Branches)
             .Include(c => c.FiscalYears)
                 .ThenInclude(y => y.Periods)
@@ -55,9 +56,31 @@ public class CompanyRepository : ICompanyRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Companies
+            .Include(c => c.Branches)
+            .Include(c => c.FiscalYears)
+                .ThenInclude(y => y.Periods)
+            .OrderByDescending(c => c.CreatedAtUtc)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Company company, CancellationToken cancellationToken = default)
     {
         await _dbContext.Companies.AddAsync(company, cancellationToken);
+    }
+
+    public async Task AddBranchAsync(Branch branch, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.Branches.AddAsync(branch, cancellationToken);
+    }
+
+    public Task RemoveBranchAsync(Branch branch, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Branches.Remove(branch);
+        return Task.CompletedTask;
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

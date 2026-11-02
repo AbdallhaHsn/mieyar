@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import Swal from 'sweetalert2';
 
 export enum PdcType {
@@ -41,7 +43,7 @@ export interface PostDatedCheckDto {
 @Component({
   selector: 'app-checks',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe, PaginationComponent, TranslatePipe],
   template: `
     <div class="checks-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -53,24 +55,22 @@ export interface PostDatedCheckDto {
           </div>
           <div>
             <h1 class="page-title">
-              {{ langService.currentLang() === 'ar' ? 'دورة متابعة الشيكات وأوراق القبض والدفع (PDC Lifecycle)' : 'Post-Dated Checks (PDC) Management' }}
+              {{ 'accounting.checks.title' | translate }}
             </h1>
             <p class="page-subtitle">
-              {{ langService.currentLang() === 'ar' 
-                ? 'إدارة محفظة الشيكات الآجلة، وحافظات التحصيل البنكي، والارتداد، والتسوية وفق الأصول المحاسبية' 
-                : 'Full lifecycle tracking of Receivable & Payable notes: Issuance, Deposit, Clearing & Bounce management' }}
+              {{ 'accounting.checks.subtitle' | translate }}
             </p>
           </div>
         </div>
 
         <div class="header-actions">
-          <button class="btn-refresh" (click)="loadChecks()" [title]="langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh'">
+          <button class="btn-refresh" (click)="loadChecks()" [title]="'accounting.checks.refresh' | translate">
             <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+            <span>{{ 'accounting.checks.refresh' | translate }}</span>
           </button>
           <button class="btn-primary" (click)="openCreateModal()">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'تسجيل شيك جديد' : 'New Check' }}</span>
+            <span>{{ 'accounting.checks.newCheck' | translate }}</span>
           </button>
         </div>
       </header>
@@ -82,9 +82,9 @@ export interface PostDatedCheckDto {
             <i class="pi pi-inbox"></i>
           </div>
           <div class="kpi-details">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'إجمالي المحفظة المستلمة' : 'Total In Portfolio' }}</span>
+            <span class="kpi-label">{{ 'accounting.checks.kpi.totalInPortfolio' | translate }}</span>
             <strong class="kpi-value">{{ totalReceivedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
-            <span class="kpi-count">{{ receivedCount() }} {{ langService.currentLang() === 'ar' ? 'شيكات تحت الحفظ' : 'checks' }}</span>
+            <span class="kpi-count">{{ receivedCount() }} {{ 'accounting.checks.kpi.checksInPortfolio' | translate }}</span>
           </div>
         </div>
 
@@ -93,9 +93,9 @@ export interface PostDatedCheckDto {
             <i class="pi pi-clock"></i>
           </div>
           <div class="kpi-details">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'شيكات برسم التحصيل (مودعة)' : 'Deposited / Under Collection' }}</span>
+            <span class="kpi-label">{{ 'accounting.checks.kpi.depositedAmount' | translate }}</span>
             <strong class="kpi-value">{{ totalDepositedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
-            <span class="kpi-count">{{ depositedCount() }} {{ langService.currentLang() === 'ar' ? 'شيكات بالبنك' : 'checks in bank' }}</span>
+            <span class="kpi-count">{{ depositedCount() }} {{ 'accounting.checks.kpi.checksInBank' | translate }}</span>
           </div>
         </div>
 
@@ -104,9 +104,9 @@ export interface PostDatedCheckDto {
             <i class="pi pi-check-circle"></i>
           </div>
           <div class="kpi-details">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'تم تحصيلها بنجاح' : 'Cleared Checks' }}</span>
+            <span class="kpi-label">{{ 'accounting.checks.kpi.clearedAmount' | translate }}</span>
             <strong class="kpi-value text-emerald">{{ totalClearedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
-            <span class="kpi-count">{{ clearedCount() }} {{ langService.currentLang() === 'ar' ? 'شيك محصل' : 'cleared' }}</span>
+            <span class="kpi-count">{{ clearedCount() }} {{ 'accounting.checks.kpi.clearedCount' | translate }}</span>
           </div>
         </div>
 
@@ -115,9 +115,9 @@ export interface PostDatedCheckDto {
             <i class="pi pi-exclamation-triangle"></i>
           </div>
           <div class="kpi-details">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'شيكات مرتدة' : 'Bounced Checks' }}</span>
+            <span class="kpi-label">{{ 'accounting.checks.kpi.bouncedAmount' | translate }}</span>
             <strong class="kpi-value text-rose">{{ totalBouncedAmount() | number:'1.2-2' }} <small>SAR</small></strong>
-            <span class="kpi-count">{{ bouncedCount() }} {{ langService.currentLang() === 'ar' ? 'شيكات مرفوضة' : 'bounced' }}</span>
+            <span class="kpi-count">{{ bouncedCount() }} {{ 'accounting.checks.kpi.bouncedCount' | translate }}</span>
           </div>
         </div>
       </section>
@@ -125,34 +125,34 @@ export interface PostDatedCheckDto {
       <!-- Filter Controls Strip -->
       <section class="filters-bar">
         <div class="type-pills">
-          <button [class.active]="selectedType() === null" (click)="selectedType.set(null)">
-            {{ langService.currentLang() === 'ar' ? 'الكل' : 'All' }}
+          <button [class.active]="selectedType() === null" (click)="selectedType.set(null); currentPage.set(1)">
+            {{ 'accounting.checks.filter.all' | translate }}
           </button>
-          <button [class.active]="selectedType() === PdcType.Receivable" (click)="selectedType.set(PdcType.Receivable)">
+          <button [class.active]="selectedType() === PdcType.Receivable" (click)="selectedType.set(PdcType.Receivable); currentPage.set(1)">
             <i class="pi pi-arrow-down-left"></i>
-            {{ langService.currentLang() === 'ar' ? 'أوراق قبض (مستلمة)' : 'Receivable Notes' }}
+            {{ 'accounting.checks.filter.receivable' | translate }}
           </button>
-          <button [class.active]="selectedType() === PdcType.Payable" (click)="selectedType.set(PdcType.Payable)">
+          <button [class.active]="selectedType() === PdcType.Payable" (click)="selectedType.set(PdcType.Payable); currentPage.set(1)">
             <i class="pi pi-arrow-up-right"></i>
-            {{ langService.currentLang() === 'ar' ? 'أوراق دفع (صادرة)' : 'Payable Notes' }}
+            {{ 'accounting.checks.filter.payable' | translate }}
           </button>
         </div>
 
         <div class="status-select-wrap">
-          <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)" class="status-select">
-            <option [ngValue]="null">{{ langService.currentLang() === 'ar' ? 'جميع الحالات' : 'All Statuses' }}</option>
-            <option [ngValue]="PdcStatus.Received">{{ langService.currentLang() === 'ar' ? 'مستلم / بالصندوق' : 'In Portfolio' }}</option>
-            <option [ngValue]="PdcStatus.Deposited">{{ langService.currentLang() === 'ar' ? 'مودع برسم التحصيل' : 'Deposited' }}</option>
-            <option [ngValue]="PdcStatus.Cleared">{{ langService.currentLang() === 'ar' ? 'محصل فعلياً' : 'Cleared' }}</option>
-            <option [ngValue]="PdcStatus.Bounced">{{ langService.currentLang() === 'ar' ? 'مرتد / مرفوض' : 'Bounced' }}</option>
+          <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event); currentPage.set(1)" class="status-select">
+            <option [ngValue]="null">{{ 'accounting.checks.filter.allStatuses' | translate }}</option>
+            <option [ngValue]="PdcStatus.Received">{{ 'accounting.checks.filter.inPortfolio' | translate }}</option>
+            <option [ngValue]="PdcStatus.Deposited">{{ 'accounting.checks.filter.deposited' | translate }}</option>
+            <option [ngValue]="PdcStatus.Cleared">{{ 'accounting.checks.filter.cleared' | translate }}</option>
+            <option [ngValue]="PdcStatus.Bounced">{{ 'accounting.checks.filter.bounced' | translate }}</option>
           </select>
 
           <input 
             type="text" 
-            [placeholder]="langService.currentLang() === 'ar' ? 'بحث برقم الشيك أو الساحب أو البنك...' : 'Search by check number, bank, party...'" 
+            [placeholder]="'accounting.checks.filter.searchPlaceholder' | translate" 
             class="search-input"
             [ngModel]="searchTerm()"
-            (ngModelChange)="searchTerm.set($event)" />
+            (ngModelChange)="searchTerm.set($event); currentPage.set(1)" />
         </div>
       </section>
 
@@ -161,24 +161,24 @@ export interface PostDatedCheckDto {
         <table class="checks-table">
           <thead>
             <tr>
-              <th>{{ langService.currentLang() === 'ar' ? 'النوع' : 'Type' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'رقم الشيك' : 'Check #' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'البنك المسحوب عليه' : 'Drawn Bank' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'الساحب / المستفيد' : 'Party / Drawer' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'تاريخ الاستحقاق' : 'Due Date' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR)' : 'Amount' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
-              <th class="text-center">{{ langService.currentLang() === 'ar' ? 'الإجراءات المحاسبية' : 'Lifecycle Actions' }}</th>
+              <th>{{ 'accounting.checks.table.type' | translate }}</th>
+              <th>{{ 'accounting.checks.table.checkNo' | translate }}</th>
+              <th>{{ 'accounting.checks.table.bank' | translate }}</th>
+              <th>{{ 'accounting.checks.table.party' | translate }}</th>
+              <th>{{ 'accounting.checks.table.dueDate' | translate }}</th>
+              <th>{{ 'accounting.checks.table.amount' | translate }}</th>
+              <th>{{ 'accounting.checks.table.status' | translate }}</th>
+              <th class="text-center">{{ 'accounting.checks.table.actions' | translate }}</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="filteredChecks().length === 0">
               <td colspan="8" class="empty-state">
                 <i class="pi pi-inbox"></i>
-                <p>{{ langService.currentLang() === 'ar' ? 'لا توجد شيكات مطابقة لمعايير البحث' : 'No checks found matching filters' }}</p>
+                <p>{{ 'accounting.checks.table.noChecksFound' | translate }}</p>
               </td>
             </tr>
-            <tr *ngFor="let check of filteredChecks()">
+            <tr *ngFor="let check of paginatedChecks()">
               <td>
                 <span class="type-badge" [class.rec]="check.type === PdcType.Receivable" [class.pay]="check.type === PdcType.Payable">
                   <i class="pi" [ngClass]="check.type === PdcType.Receivable ? 'pi-arrow-down-left' : 'pi-arrow-up-right'"></i>
@@ -205,9 +205,9 @@ export interface PostDatedCheckDto {
                   *ngIf="check.status === PdcStatus.Received" 
                   class="btn-action deposit" 
                   (click)="depositCheck(check)"
-                  title="إيداع بحافظة البنك برسم التحصيل">
+                  [title]="'accounting.checks.table.depositTitle' | translate">
                   <i class="pi pi-send"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'إيداع بنكي' : 'Deposit' }}</span>
+                  <span>{{ 'accounting.checks.table.deposit' | translate }}</span>
                 </button>
 
                 <!-- If Deposited: can Clear or Bounce -->
@@ -215,31 +215,39 @@ export interface PostDatedCheckDto {
                   *ngIf="check.status === PdcStatus.Deposited" 
                   class="btn-action clear" 
                   (click)="clearCheck(check)"
-                  title="تأكيد التحصيل الفعلي في الحساب">
+                  [title]="'accounting.checks.table.clearTitle' | translate">
                   <i class="pi pi-check"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'تحصيل' : 'Clear' }}</span>
+                  <span>{{ 'accounting.checks.table.clear' | translate }}</span>
                 </button>
 
                 <button 
                   *ngIf="check.status === PdcStatus.Deposited" 
                   class="btn-action bounce" 
                   (click)="bounceCheck(check)"
-                  title="إثبات ارتداد الشيك من البنك">
+                  [title]="'accounting.checks.table.bounceTitle' | translate">
                   <i class="pi pi-times-circle"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'ارتداد' : 'Bounce' }}</span>
+                  <span>{{ 'accounting.checks.table.bounce' | translate }}</span>
                 </button>
 
                 <!-- Cleared or Bounced tag -->
                 <span *ngIf="check.status === PdcStatus.Cleared" class="action-done success">
-                  <i class="pi pi-check-circle"></i> {{ langService.currentLang() === 'ar' ? 'محصل' : 'Cleared' }}
+                  <i class="pi pi-check-circle"></i> {{ 'accounting.checks.table.cleared' | translate }}
                 </span>
                 <span *ngIf="check.status === PdcStatus.Bounced" class="action-done danger" [title]="check.bounceReason || ''">
-                  <i class="pi pi-ban"></i> {{ langService.currentLang() === 'ar' ? 'مرتد' : 'Bounced' }}
+                  <i class="pi pi-ban"></i> {{ 'accounting.checks.table.bounced' | translate }}
                 </span>
               </td>
             </tr>
           </tbody>
         </table>
+        <app-pagination
+          [totalItems]="filteredChecks().length"
+          [(currentPage)]="currentPage"
+          [(pageSize)]="pageSize"
+          [pageSizeOptions]="[5, 10, 20, 50]"
+          [itemLabelAr]="'ui.checks.80ed05' | translate"
+          itemLabelEn="Checks"
+        ></app-pagination>
       </div>
 
       <!-- Create Check Modal -->
@@ -248,7 +256,7 @@ export interface PostDatedCheckDto {
           <div class="modal-header">
             <h3>
               <i class="pi pi-plus-circle"></i>
-              {{ langService.currentLang() === 'ar' ? 'تسجيل ورقة قبض / دفع جديدة' : 'Register New Check / Note' }}
+              {{ 'accounting.checks.modal.title' | translate }}
             </h3>
             <button class="close-btn" (click)="showCreateModal.set(false)">&times;</button>
           </div>
@@ -256,55 +264,55 @@ export interface PostDatedCheckDto {
           <form (ngSubmit)="submitCreateCheck()" class="modal-form">
             <div class="form-row">
               <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'نوع الورقة التجارية *' : 'Note Type *' }}</label>
+                <label>{{ 'accounting.checks.modal.noteType' | translate }}</label>
                 <select [(ngModel)]="newCheckForm.type" name="type" class="form-control" required>
-                  <option [ngValue]="PdcType.Receivable">{{ langService.currentLang() === 'ar' ? 'ورقة قبض (استلام من عميل)' : 'Receivable (From Customer)' }}</option>
-                  <option [ngValue]="PdcType.Payable">{{ langService.currentLang() === 'ar' ? 'ورقة دفع (شيك صادر لمورد)' : 'Payable (To Supplier)' }}</option>
+                  <option [ngValue]="PdcType.Receivable">{{ 'accounting.checks.modal.receivableOption' | translate }}</option>
+                  <option [ngValue]="PdcType.Payable">{{ 'accounting.checks.modal.payableOption' | translate }}</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'رقم الشيك *' : 'Check Number *' }}</label>
-                <input type="text" [(ngModel)]="newCheckForm.checkNumber" name="checkNumber" class="form-control" placeholder="مثال: CHK-10024" required />
+                <label>{{ 'accounting.checks.modal.checkNo' | translate }}</label>
+                <input type="text" [(ngModel)]="newCheckForm.checkNumber" name="checkNumber" class="form-control" [placeholder]="'accounting.checks.modal.checkNoPlaceholder' | translate" required />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'البنك المسحوب عليه *' : 'Bank Name *' }}</label>
-                <input type="text" [(ngModel)]="newCheckForm.bankName" name="bankName" class="form-control" placeholder="مثال: مصرف الراجحي" required />
+                <label>{{ 'accounting.checks.modal.bankName' | translate }}</label>
+                <input type="text" [(ngModel)]="newCheckForm.bankName" name="bankName" class="form-control" [placeholder]="'accounting.checks.modal.bankNamePlaceholder' | translate" required />
               </div>
 
               <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR) *' : 'Amount (SAR) *' }}</label>
+                <label>{{ 'accounting.checks.modal.amount' | translate }}</label>
                 <input type="number" step="0.01" [(ngModel)]="newCheckForm.amount" name="amount" class="form-control" placeholder="0.00" required />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'الساحب / المستفيد *' : 'Party / Drawer *' }}</label>
-                <input type="text" [(ngModel)]="newCheckForm.drawerOrPayee" name="drawerOrPayee" class="form-control" placeholder="اسم الشركة أو العميل" required />
+                <label>{{ 'accounting.checks.modal.party' | translate }}</label>
+                <input type="text" [(ngModel)]="newCheckForm.drawerOrPayee" name="drawerOrPayee" class="form-control" [placeholder]="'accounting.checks.modal.partyPlaceholder' | translate" required />
               </div>
 
               <div class="form-group">
-                <label>{{ langService.currentLang() === 'ar' ? 'تاريخ الاستحقاق *' : 'Due Date *' }}</label>
+                <label>{{ 'accounting.checks.modal.dueDate' | translate }}</label>
                 <input type="date" [(ngModel)]="newCheckForm.dueDate" name="dueDate" class="form-control" required />
               </div>
             </div>
 
             <div class="form-group">
-              <label>{{ langService.currentLang() === 'ar' ? 'ملاحظات وتفاصيل' : 'Notes / Memo' }}</label>
-              <textarea [(ngModel)]="newCheckForm.notes" name="notes" class="form-control" rows="2" placeholder="أي تفاصيل إضافية..."></textarea>
+              <label>{{ 'accounting.checks.modal.notes' | translate }}</label>
+              <textarea [(ngModel)]="newCheckForm.notes" name="notes" class="form-control" rows="2" [placeholder]="'accounting.checks.modal.notesPlaceholder' | translate"></textarea>
             </div>
 
             <div class="modal-footer">
               <button type="button" class="btn-cancel" (click)="showCreateModal.set(false)">
-                {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+                {{ 'common.cancel' | translate }}
               </button>
               <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
                 <i class="pi pi-check"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'حفظ وتثبيت الشيك' : 'Save Check' }}</span>
+                <span>{{ 'accounting.checks.modal.saveCheck' | translate }}</span>
               </button>
             </div>
           </form>
@@ -669,11 +677,15 @@ export interface PostDatedCheckDto {
       border-radius: 14px;
       width: 100%;
       max-width: 580px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
       box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
       overflow: hidden;
     }
 
     .modal-header {
+      flex-shrink: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -706,6 +718,9 @@ export interface PostDatedCheckDto {
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .form-row {
@@ -740,10 +755,15 @@ export interface PostDatedCheckDto {
     }
 
     .modal-footer {
+      flex-shrink: 0;
       display: flex;
       justify-content: flex-end;
       gap: 0.75rem;
       margin-top: 0.5rem;
+      position: sticky;
+      bottom: 0;
+      background: #FFFFFF;
+      padding-top: 0.5rem;
     }
 
     .btn-submit {
@@ -826,6 +846,16 @@ export class ChecksComponent implements OnInit {
     });
   });
 
+  // Pagination
+  currentPage = signal<number>(1);
+  pageSize = signal<number>(10);
+
+  paginatedChecks = computed(() => {
+    const list = this.filteredChecks();
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  });
+
   ngOnInit() {
     this.loadChecks();
   }
@@ -858,7 +888,7 @@ export class ChecksComponent implements OnInit {
 
   submitCreateCheck() {
     if (!this.newCheckForm.checkNumber || !this.newCheckForm.bankName || this.newCheckForm.amount <= 0) {
-      Swal.fire({ icon: 'warning', title: 'بيانات غير مكتملة', text: 'يرجى إدخال رقم الشيك والبنك ومبلغ صالح.' });
+      Swal.fire({ icon: 'warning', title: this.langService.t('accounting.checks.alerts.incompleteData'), text: this.langService.t('accounting.checks.alerts.enterRequiredCheckFields') });
       return;
     }
 
@@ -867,32 +897,32 @@ export class ChecksComponent implements OnInit {
       next: () => {
         this.isSubmitting.set(false);
         this.showCreateModal.set(false);
-        Swal.fire({ icon: 'success', title: 'تم الحفظ', text: 'تم تسجيل الشيك في حافظة المحفظة بنجاح.' });
+        Swal.fire({ icon: 'success', title: this.langService.t('common.saved'), text: this.langService.t('accounting.checks.alerts.savedSuccess') });
         this.loadChecks();
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل تسجيل الشيك' });
+        Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: err?.error?.description || this.langService.t('accounting.checks.alerts.saveFailed') });
       }
     });
   }
 
   depositCheck(check: PostDatedCheckDto) {
     Swal.fire({
-      title: 'إيداع الشيك برسم التحصيل؟',
-      text: `رقم الشيك: ${check.checkNumber} بمبلغ ${check.amount} ريال`,
+      title: this.langService.t('accounting.checks.alerts.depositTitle'),
+      text: this.langService.t('accounting.checks.alerts.depositConfirmText', { number: check.checkNumber, amount: check.amount }),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'تأكيد الإيداع',
-      cancelButtonText: 'إلغاء'
+      confirmButtonText: this.langService.t('accounting.checks.alerts.confirmDeposit'),
+      cancelButtonText: this.langService.t('common.cancel')
     }).then(result => {
       if (result.isConfirmed) {
         this.http.post(`/api/checks/${check.id}/deposit`, {}).subscribe({
           next: () => {
-            Swal.fire({ icon: 'success', title: 'تم الإيداع', text: 'أصبح الشيك الآن بحافظة التحصيل البنكي.' });
+            Swal.fire({ icon: 'success', title: this.langService.t('accounting.checks.alerts.depositedSuccessTitle'), text: this.langService.t('accounting.checks.alerts.depositedSuccessText') });
             this.loadChecks();
           },
-          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل الإيداع' })
+          error: (err) => Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: err?.error?.description || this.langService.t('accounting.checks.alerts.depositFailed') })
         });
       }
     });
@@ -900,20 +930,20 @@ export class ChecksComponent implements OnInit {
 
   clearCheck(check: PostDatedCheckDto) {
     Swal.fire({
-      title: 'تأكيد تحصيل الشيك فعلياً؟',
-      text: `سيتم إثبات استلام المبلغ (${check.amount} ريال) في حساب البنك.`,
+      title: this.langService.t('accounting.checks.alerts.clearTitle'),
+      text: this.langService.t('accounting.checks.alerts.clearConfirmText', { amount: check.amount }),
       icon: 'success',
       showCancelButton: true,
-      confirmButtonText: 'تأكيد التحصيل',
-      cancelButtonText: 'إلغاء'
+      confirmButtonText: this.langService.t('accounting.checks.alerts.confirmClear'),
+      cancelButtonText: this.langService.t('common.cancel')
     }).then(result => {
       if (result.isConfirmed) {
         this.http.post(`/api/checks/${check.id}/clear`, {}).subscribe({
           next: () => {
-            Swal.fire({ icon: 'success', title: 'تم التحصيل', text: 'تم تحصيل الشيك بنجاح وتحديث رصيد البنك.' });
+            Swal.fire({ icon: 'success', title: this.langService.t('accounting.checks.alerts.clearedSuccessTitle'), text: this.langService.t('accounting.checks.alerts.clearedSuccessText') });
             this.loadChecks();
           },
-          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل التحصيل' })
+          error: (err) => Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: err?.error?.description || this.langService.t('accounting.checks.alerts.clearFailed') })
         });
       }
     });
@@ -921,20 +951,20 @@ export class ChecksComponent implements OnInit {
 
   bounceCheck(check: PostDatedCheckDto) {
     Swal.fire({
-      title: 'إثبات ارتداد الشيك من البنك',
+      title: this.langService.t('accounting.checks.alerts.bounceTitle'),
       html: `
-        <input id="swal-bounce-reason" class="swal2-input" placeholder="سبب الارتداد (مثال: عدم كفاية الرصيد)">
-        <input id="swal-bounce-fee" type="number" class="swal2-input" placeholder="رسوم الارتداد البنكية إن وجدت">
+        <input id="swal-bounce-reason" class="swal2-input" placeholder="${this.langService.t('accounting.checks.alerts.bounceReasonPlaceholder')}">
+        <input id="swal-bounce-fee" type="number" class="swal2-input" placeholder="${this.langService.t('accounting.checks.alerts.bounceFeePlaceholder')}">
       `,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'تأكيد الارتداد',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: this.langService.t('accounting.checks.alerts.confirmBounce'),
+      cancelButtonText: this.langService.t('common.cancel'),
       preConfirm: () => {
         const reason = (document.getElementById('swal-bounce-reason') as HTMLInputElement).value;
         const fee = (document.getElementById('swal-bounce-fee') as HTMLInputElement).value;
         if (!reason) {
-          Swal.showValidationMessage('يرجى كتابة سبب الارتداد');
+          Swal.showValidationMessage(this.langService.t('accounting.checks.alerts.bounceReasonRequired'));
         }
         return { reason, fee: Number(fee) || 0 };
       }
@@ -943,10 +973,10 @@ export class ChecksComponent implements OnInit {
         const body = { reason: result.value.reason, bounceFee: result.value.fee };
         this.http.post(`/api/checks/${check.id}/bounce`, body).subscribe({
           next: () => {
-            Swal.fire({ icon: 'warning', title: 'تم تسجيل الارتداد', text: 'تم تغيير حالة الشيك إلى مرتد وإثبات الرسوم.' });
+            Swal.fire({ icon: 'warning', title: this.langService.t('accounting.checks.alerts.bouncedSuccessTitle'), text: this.langService.t('accounting.checks.alerts.bouncedSuccessText') });
             this.loadChecks();
           },
-          error: (err) => Swal.fire({ icon: 'error', title: 'خطأ', text: err?.error?.description || 'فشل تسجيل الارتداد' })
+          error: (err) => Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: err?.error?.description || this.langService.t('accounting.checks.alerts.bounceFailed') })
         });
       }
     });

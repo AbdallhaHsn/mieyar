@@ -17,6 +17,7 @@ public class FinancialSettingsRepository : IFinancialSettingsRepository
     public async Task<CompanyFinancialSettings> GetOrCreateSettingsAsync(Guid tenantId, Guid companyId, CancellationToken cancellationToken = default)
     {
         var settings = await _dbContext.FinancialSettings
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.CompanyId == companyId, cancellationToken);
 
         if (settings == null)
@@ -32,6 +33,7 @@ public class FinancialSettingsRepository : IFinancialSettingsRepository
     public async Task<FiscalYear?> GetActiveFiscalYearAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.FiscalYears
+            .IgnoreQueryFilters()
             .Include(x => x.Periods.OrderBy(p => p.PeriodNumber))
             .Where(x => x.CompanyId == companyId && x.IsActive)
             .OrderByDescending(x => x.YearNumber)
@@ -41,6 +43,7 @@ public class FinancialSettingsRepository : IFinancialSettingsRepository
     public async Task<List<FiscalYear>> GetAllFiscalYearsAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.FiscalYears
+            .IgnoreQueryFilters()
             .Include(x => x.Periods.OrderBy(p => p.PeriodNumber))
             .Where(x => x.CompanyId == companyId)
             .OrderByDescending(x => x.YearNumber)
@@ -64,6 +67,7 @@ public class FinancialSettingsRepository : IFinancialSettingsRepository
     public async Task<List<CostCenter>> GetCostCentersAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.CostCenters
+            .IgnoreQueryFilters()
             .Include(x => x.SubCostCenters)
             .Where(x => x.CompanyId == companyId && x.ParentCostCenterId == null)
             .OrderBy(x => x.Code)
@@ -97,6 +101,7 @@ public class FinancialSettingsRepository : IFinancialSettingsRepository
     public async Task<FinancialStatementSettings> GetOrCreateStatementSettingsAsync(Guid tenantId, Guid companyId, CancellationToken cancellationToken = default)
     {
         var settings = await _dbContext.StatementSettings
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.CompanyId == companyId, cancellationToken);
 
         if (settings == null)

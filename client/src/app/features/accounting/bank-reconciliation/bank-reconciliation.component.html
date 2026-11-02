@@ -2,34 +2,47 @@
   <!-- Header / Action Strip -->
   <div class="header-strip">
     <div class="header-titles">
-      <div class="breadcrumbs">المحاسبة المالية &gt; التسويات البنكية</div>
+      <div class="breadcrumbs">{{ 'accounting.bankReconciliation.breadcrumbs' | translate }}</div>
       <h1 class="main-title">
         <i class="pi pi-building"></i>
-        التسويات البنكية ومطابقة كشوفات الحساب
+        {{ 'accounting.bankReconciliation.title' | translate }}
       </h1>
-      <p class="subtitle">مطابقة كشوفات الحسابات البنكية مع القيود الدفترية وتسوية الفروقات آلياً وفق المعايير المحاسبية</p>
+      <p class="subtitle">{{ 'accounting.bankReconciliation.subtitle' | translate }}</p>
     </div>
 
     <div class="header-actions">
-      <button class="btn btn-outline-info" (click)="openImportModal()" title="لصق بيانات كشف حساب إكسل للمطابقة الفورية">
+      <button class="btn btn-outline" (click)="openImportModal()" [title]="'accounting.bankReconciliation.importStatement' | translate">
         <i class="pi pi-file-excel"></i>
-        استيراد كشف بنكي ومطابقة آلية
+        {{ 'accounting.bankReconciliation.importStatement' | translate }}
       </button>
+
+      <button class="btn btn-outline" (click)="openAdjustmentModal()" [title]="'accounting.bankReconciliation.quickAdjustment' | translate">
+        <i class="pi pi-plus-circle"></i>
+        {{ 'accounting.bankReconciliation.quickAdjustment' | translate }}
+      </button>
+
+      <button class="btn btn-secondary" (click)="openStatementModal()" [title]="'accounting.bankReconciliation.statementReport' | translate">
+        <i class="pi pi-file-o"></i>
+        {{ 'accounting.bankReconciliation.statementReport' | translate }}
+      </button>
+
       <button class="btn btn-secondary" (click)="toggleHistory()">
         <i class="pi pi-history"></i>
-        سجل التسويات السابقة
+        {{ 'accounting.bankReconciliation.history' | translate }}
       </button>
+
       <button class="btn btn-secondary" [disabled]="isSaving() || isLoading()" (click)="saveReconciliation(false)">
         <i class="pi pi-save"></i>
-        حفظ مسودة
+        {{ 'accounting.bankReconciliation.saveDraft' | translate }}
       </button>
+
       <button 
         class="btn btn-primary" 
         [disabled]="isSaving() || isLoading() || !isBalanced() || transactions().length === 0"
         (click)="saveReconciliation(true)"
-        [title]="!isBalanced() ? 'يجب أن يكون الفرق متطابقاً تماماً (0.00) للاعتماد' : ''">
+        [title]="!isBalanced() ? ('accounting.bankReconciliation.kpi.unbalancedBadge' | translate) : ''">
         <i class="pi pi-check-circle"></i>
-        اعتماد التسوية البنكية
+        {{ 'accounting.bankReconciliation.approve' | translate }}
       </button>
     </div>
   </div>
@@ -50,21 +63,19 @@
   <!-- Setup Control Bar -->
   <div class="setup-card">
     <div class="setup-grid">
-      <div class="form-group">
-        <label for="bankAccountSelect">الحساب البنكي</label>
-        <select 
-          id="bankAccountSelect"
-          class="form-control" 
-          [ngModel]="selectedAccountId()" 
-          (ngModelChange)="onAccountChanged($event)">
-          <option *ngFor="let acc of bankAccounts()" [value]="acc.accountId">
-            {{ acc.accountCode }} - {{ acc.accountNameAr }} (الرصيد: {{ acc.currentLedgerBalance | number:'1.2-2' }} ريال)
-          </option>
-        </select>
+      <div class="form-group flex-grow-1">
+        <label>{{ 'accounting.bankReconciliation.summary.bankAccount' | translate }}</label>
+        <app-searchable-select
+          [items]="accountOptions()"
+          [value]="selectedAccountId()"
+          (valueChange)="onAccountChanged($event)"
+          [placeholder]="'accounting.bankReconciliation.summary.bankAccount' | translate"
+          [searchPlaceholder]="'common.search' | translate">
+        </app-searchable-select>
       </div>
 
       <div class="form-group">
-        <label for="statementDateInput">تاريخ كشف الحساب</label>
+        <label for="statementDateInput">{{ 'accounting.bankReconciliation.summary.statementDate' | translate }}</label>
         <input 
           id="statementDateInput"
           type="date" 
@@ -74,7 +85,12 @@
       </div>
 
       <div class="form-group">
-        <label for="statementBalanceInput">رصيد كشف الحساب البنكي الفعلي</label>
+        <div class="balance-label-row">
+          <label for="statementBalanceInput">{{ 'accounting.bankReconciliation.summary.statementBalance' | translate }}</label>
+          <button type="button" class="btn-micro-link" (click)="setBalanceToCleared()" [title]="'accounting.bankReconciliation.actions.matchToSelected' | translate">
+            <i class="pi pi-sliders-h"></i> {{ 'accounting.bankReconciliation.actions.matchToSelected' | translate }}
+          </button>
+        </div>
         <div class="input-with-currency">
           <input 
             id="statementBalanceInput"
@@ -83,15 +99,15 @@
             class="form-control text-start ltr-input" 
             [ngModel]="statementEndingBalance()" 
             (ngModelChange)="statementEndingBalance.set($event)" />
-          <span class="currency-tag">ر.س</span>
+          <span class="currency-tag">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
         </div>
       </div>
 
       <div class="form-group actions-col">
         <label>&nbsp;</label>
-        <button class="btn btn-refresh" [disabled]="isLoading()" (click)="loadWorkspace()" title="إعادة تحميل الحركات">
+        <button class="btn btn-refresh" [disabled]="isLoading()" (click)="loadWorkspace()" [title]="'common.refresh' | translate">
           <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
-          تحديث
+          {{ 'common.refresh' | translate }}
         </button>
       </div>
     </div>
@@ -102,29 +118,29 @@
     <div class="kpi-card card-book">
       <div class="kpi-icon"><i class="pi pi-book"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">الرصيد الدفتري للنظام</div>
-        <div class="kpi-value">{{ bookBalance() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
-        <div class="kpi-sub">إجمالي قيود اليومية حتى تاريخه</div>
+        <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.bookBalance' | translate }}</div>
+        <div class="kpi-value">{{ bookBalance() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-sub">{{ 'accounting.bankReconciliation.summary.bookBalance' | translate }} {{ statementDate() }}</div>
       </div>
     </div>
 
     <div class="kpi-card card-bank">
       <div class="kpi-icon"><i class="pi pi-file"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">رصيد كشف الحساب الفعلي</div>
-        <div class="kpi-value">{{ statementEndingBalance() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
-        <div class="kpi-sub">المُدخل من كشف البنك</div>
+        <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.statementBalance' | translate }}</div>
+        <div class="kpi-value">{{ statementEndingBalance() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-sub">{{ 'accounting.bankReconciliation.kpi.confirmedStatement' | translate }}</div>
       </div>
     </div>
 
     <div class="kpi-card card-cleared">
       <div class="kpi-icon"><i class="pi pi-check"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">الحركات المطابقة ({{ matchedCount() }})</div>
+        <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.cleared' | translate }} ({{ matchedCount() }})</div>
         <div class="kpi-value text-teal">
           +{{ clearedDeposits() | number:'1.2-2' }} / -{{ clearedWithdrawals() | number:'1.2-2' }}
         </div>
-        <div class="kpi-sub">معلقة: {{ unmatchedCount() }} حركة</div>
+        <div class="kpi-sub">{{ 'accounting.bankReconciliation.tabs.unmatched' | translate }}: {{ unmatchedCount() }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}</div>
       </div>
     </div>
 
@@ -133,17 +149,55 @@
         <i class="pi" [class.pi-check-circle]="isBalanced()" [class.pi-exclamation-triangle]="!isBalanced()"></i>
       </div>
       <div class="kpi-body">
-        <div class="kpi-label">الفرق غير المسوى (Difference)</div>
+        <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.difference' | translate }}</div>
         <div class="kpi-value" [class.text-green]="isBalanced()" [class.text-red]="!isBalanced()">
-          {{ difference() | number:'1.2-2' }} <span class="sar">ر.س</span>
+          {{ difference() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
         </div>
         <div class="kpi-sub" *ngIf="isBalanced()">
-          <span class="badge badge-success"><i class="pi pi-check"></i> متطابق تماماً جاهز للاعتماد</span>
+          <span class="badge badge-success"><i class="pi pi-check me-1"></i> {{ 'accounting.bankReconciliation.kpi.balancedBadge' | translate }}</span>
         </div>
         <div class="kpi-sub" *ngIf="!isBalanced()">
-          <span class="badge badge-warning"><i class="pi pi-times"></i> يتطلب مطابقة الحركات للوصول إلى 0.00</span>
+          <span class="badge badge-warning"><i class="pi pi-times me-1"></i> {{ 'accounting.bankReconciliation.kpi.unbalancedBadge' | translate }}</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Outstanding Transactions Summary Strip (إدارة الحركات المعلقة) -->
+  <div class="outstanding-strip">
+    <div class="outstanding-title">
+      <i class="pi pi-clock text-amber"></i>
+      <span>{{ 'accounting.bankReconciliation.outstanding.title' | translate }}</span>
+    </div>
+
+    <div class="outstanding-cards">
+      <!-- Deposits in Transit -->
+      <div 
+        class="outstanding-pill cursor-pointer" 
+        [class.active-pill]="activeFilter() === 'transit'"
+        (click)="setFilter('transit')"
+        [title]="'accounting.bankReconciliation.outstanding.depositsInTransit' | translate">
+        <span class="pill-label"><i class="pi pi-arrow-down-left text-emerald me-1"></i> {{ 'accounting.bankReconciliation.outstanding.depositsInTransit' | translate }}</span>
+        <strong class="text-emerald">{{ depositsInTransitAmount() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+        <span class="badge badge-count">{{ depositsInTransitCount() }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}</span>
+      </div>
+
+      <!-- Outstanding Checks -->
+      <div 
+        class="outstanding-pill cursor-pointer" 
+        [class.active-pill]="activeFilter() === 'outstanding'"
+        (click)="setFilter('outstanding')"
+        [title]="'accounting.bankReconciliation.outstanding.outstandingChecks' | translate">
+        <span class="pill-label"><i class="pi pi-arrow-up-right text-rose me-1"></i> {{ 'accounting.bankReconciliation.outstanding.outstandingChecks' | translate }}</span>
+        <strong class="text-rose">{{ outstandingChecksAmount() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+        <span class="badge badge-count">{{ outstandingChecksCount() }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}</span>
+      </div>
+
+      <!-- Quick Action if not balanced -->
+      <button *ngIf="!isBalanced()" class="btn btn-xs btn-amber" (click)="openAdjustmentModal()">
+        <i class="pi pi-bolt me-1"></i>
+        {{ 'accounting.bankReconciliation.outstanding.postAdjustment' | translate }} ({{ difference() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }})
+      </button>
     </div>
   </div>
 
@@ -155,39 +209,51 @@
         <button 
           class="tab-btn" 
           [class.active]="activeFilter() === 'all'" 
-          (click)="activeFilter.set('all')">
-          جميع الحركات ({{ transactions().length }})
+          (click)="setFilter('all')">
+          {{ 'accounting.bankReconciliation.tabs.all' | translate }} ({{ transactions().length }})
         </button>
         <button 
           class="tab-btn" 
           [class.active]="activeFilter() === 'matched'" 
-          (click)="activeFilter.set('matched')">
-          المطابقة ({{ matchedCount() }})
+          (click)="setFilter('matched')">
+          {{ 'accounting.bankReconciliation.tabs.matched' | translate }} ({{ matchedCount() }})
         </button>
         <button 
           class="tab-btn" 
           [class.active]="activeFilter() === 'unmatched'" 
-          (click)="activeFilter.set('unmatched')">
-          غير المطابقة ({{ unmatchedCount() }})
+          (click)="setFilter('unmatched')">
+          {{ 'accounting.bankReconciliation.tabs.unmatched' | translate }} ({{ unmatchedCount() }})
+        </button>
+        <button 
+          class="tab-btn tab-transit" 
+          [class.active]="activeFilter() === 'transit'" 
+          (click)="setFilter('transit')">
+          {{ 'accounting.bankReconciliation.tabs.transit' | translate }} ({{ depositsInTransitCount() }})
+        </button>
+        <button 
+          class="tab-btn tab-outstanding" 
+          [class.active]="activeFilter() === 'outstanding'" 
+          (click)="setFilter('outstanding')">
+          {{ 'accounting.bankReconciliation.tabs.outstanding' | translate }} ({{ outstandingChecksCount() }})
         </button>
       </div>
 
       <!-- Bulk Actions & Search -->
       <div class="toolbar-actions">
-        <button class="btn btn-xs btn-outline" (click)="matchAll()" title="مطابقة جميع الحركات">
-          <i class="pi pi-check-square"></i> تحديد الكل
+        <button class="btn btn-xs btn-outline" (click)="matchAll()" [title]="'accounting.bankReconciliation.actions.selectAll' | translate">
+          <i class="pi pi-check-square"></i> {{ 'accounting.bankReconciliation.actions.selectAll' | translate }}
         </button>
-        <button class="btn btn-xs btn-outline" (click)="unmatchAll()" title="إلغاء مطابقة جميع الحركات">
-          <i class="pi pi-stop"></i> إلغاء التحديد
+        <button class="btn btn-xs btn-outline" (click)="unmatchAll()" [title]="'accounting.bankReconciliation.actions.deselectAll' | translate">
+          <i class="pi pi-stop"></i> {{ 'accounting.bankReconciliation.actions.deselectAll' | translate }}
         </button>
 
         <div class="search-box">
           <i class="pi pi-search search-icon"></i>
           <input 
             type="text" 
-            placeholder="بحث برقم القيد أو البيان أو المرجع..." 
+            [placeholder]="'common.search' | translate" 
             [ngModel]="searchQuery()" 
-            (ngModelChange)="searchQuery.set($event)" />
+            (ngModelChange)="onSearchChange($event)" />
         </div>
       </div>
     </div>
@@ -197,32 +263,33 @@
       <table class="erp-table">
         <thead>
           <tr>
-            <th class="col-check text-center">مطابقة</th>
-            <th class="col-date">التاريخ</th>
-            <th class="col-code">رقم القيد</th>
-            <th class="col-ref">المرجع / الشيك</th>
-            <th class="col-desc">البيان والتفاصيل</th>
-            <th class="col-num text-end">إيداعات (مدين)</th>
-            <th class="col-num text-end">سحوبات (دائن)</th>
-            <th class="col-status text-center">الحالة</th>
+            <th class="col-check text-center">{{ 'accounting.bankReconciliation.table.status' | translate }}</th>
+            <th class="col-date">{{ 'accounting.bankReconciliation.table.date' | translate }}</th>
+            <th class="col-code">{{ 'accounting.journal.table.entryNo' | translate }}</th>
+            <th class="col-ref">{{ 'accounting.bankReconciliation.table.ref' | translate }}</th>
+            <th class="col-desc">{{ 'accounting.bankReconciliation.table.desc' | translate }}</th>
+            <th class="col-num text-end">{{ 'accounting.journal.table.debit' | translate }}</th>
+            <th class="col-num text-end">{{ 'accounting.journal.table.credit' | translate }}</th>
+            <th class="col-type text-center">{{ 'accounting.journal.table.type' | translate }}</th>
+            <th class="col-status text-center">{{ 'accounting.bankReconciliation.table.status' | translate }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="isLoading()">
-            <td colspan="8" class="text-center py-4 text-muted">
-              <i class="fas fa-spinner fa-spin me-2"></i> جاري تحميل حركات الحساب البنكي...
+            <td colspan="9" class="text-center py-4 text-muted">
+              <i class="pi pi-spin pi-spinner me-2"></i> {{ 'common.loading' | translate }}
             </td>
           </tr>
 
           <tr *ngIf="!isLoading() && filteredTransactions().length === 0">
-            <td colspan="8" class="text-center py-4 text-muted">
-              <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-              لا توجد حركات مطابقة لمعايير البحث الحالية
+            <td colspan="9" class="text-center py-4 text-muted">
+              <i class="pi pi-inbox fs-2 mb-2 d-block"></i>
+              {{ 'accounting.gl.table.empty' | translate }}
             </td>
           </tr>
 
           <tr 
-            *ngFor="let tx of filteredTransactions()" 
+            *ngFor="let tx of paginatedTransactions()" 
             [class.row-matched]="tx.isMatched"
             (click)="toggleItemMatch(tx)"
             class="clickable-row">
@@ -246,11 +313,22 @@
               {{ tx.credit > 0 ? (tx.credit | number:'1.2-2') : '-' }}
             </td>
             <td class="text-center">
+              <span *ngIf="!tx.isMatched && tx.debit > 0" class="badge badge-transit">
+                <i class="pi pi-arrow-down-left me-1"></i> {{ 'accounting.bankReconciliation.tabs.transit' | translate }}
+              </span>
+              <span *ngIf="!tx.isMatched && tx.credit > 0" class="badge badge-outstanding">
+                <i class="pi pi-arrow-up-right me-1"></i> {{ 'accounting.bankReconciliation.tabs.outstanding' | translate }}
+              </span>
+              <span *ngIf="tx.isMatched" class="badge badge-cleared">
+                <i class="pi pi-check me-1"></i> {{ 'accounting.bankReconciliation.table.matched' | translate }}
+              </span>
+            </td>
+            <td class="text-center">
               <span *ngIf="tx.isMatched" class="badge badge-success">
-                <i class="fas fa-check"></i> مطابقة
+                <i class="pi pi-check"></i> {{ 'accounting.bankReconciliation.table.matched' | translate }}
               </span>
               <span *ngIf="!tx.isMatched" class="badge badge-secondary">
-                <i class="far fa-clock"></i> معلقة
+                <i class="pi pi-clock"></i> {{ 'accounting.bankReconciliation.table.pending' | translate }}
               </span>
             </td>
           </tr>
@@ -258,14 +336,24 @@
       </table>
     </div>
 
+    <!-- Pagination -->
+    <app-pagination 
+      [totalItems]="filteredTransactions().length" 
+      [(currentPage)]="currentPage" 
+      [(pageSize)]="pageSize" 
+      [pageSizeOptions]="[5, 10, 20, 50]" 
+      [itemLabelAr]="'ui.bankReconciliation.a950e7' | translate" 
+      itemLabelEn="Transactions">
+    </app-pagination>
+
     <!-- Notes & Footer Summary -->
     <div class="table-footer-strip">
       <div class="notes-input">
-        <label for="recNotes">ملاحظات التسوية البنكية:</label>
+        <label for="recNotes">{{ 'accounting.journal.form.notes' | translate }}:</label>
         <input 
           id="recNotes"
           type="text" 
-          placeholder="أدخل أي ملاحظات تدقيقية أو تسويات فروقات إن وجدت..." 
+          [placeholder]="'accounting.journal.form.narration' | translate" 
           class="form-control form-control-sm"
           [ngModel]="notes()" 
           (ngModelChange)="notes.set($event)" />
@@ -273,32 +361,355 @@
 
       <div class="footer-totals">
         <div class="total-item">
-          <span>إجمالي المقبوضات المطابقة:</span>
-          <strong class="text-emerald">{{ clearedDeposits() | number:'1.2-2' }} ر.س</strong>
+          <span>{{ 'accounting.bankReconciliation.tabs.matched' | translate }}:</span>
+          <strong class="text-emerald">{{ clearedDeposits() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
         </div>
         <div class="total-item">
-          <span>إجمالي المدفوعات المطابقة:</span>
-          <strong class="text-rose">{{ clearedWithdrawals() | number:'1.2-2' }} ر.س</strong>
+          <span>{{ 'accounting.bankReconciliation.tabs.unmatched' | translate }}:</span>
+          <strong class="text-rose">{{ clearedWithdrawals() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+        </div>
+          <span>{{ 'accounting.journal.totals.totalDebit' | translate }}:</span>
+          <strong>{{ (clearedDeposits() - clearedWithdrawals()) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- History Drawer / Modal -->
+  <!-- Modal 1: Import Bank Statement & Smart Auto-Match -->
+  <div class="modal-backdrop modal-center" *ngIf="showImportModal()" (click)="closeImportModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-info-subtle">
+        <h3><i class="pi pi-file-excel text-info me-2"></i> {{ 'accounting.bankReconciliation.importStatement' | translate }}</h3>
+        <button class="modal-close" (click)="closeImportModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="pi pi-info-circle me-1"></i>
+          <strong>{{ 'accounting.bankReconciliation.importStatement' | translate }}: </strong>
+          <span>{{ 'accounting.bankReconciliation.subtitle' | translate }}</span>
+        </div>
+
+        <!-- Quick Sample Templates Bar -->
+        <div class="sample-templates-bar mb-3">
+          <span class="sample-label"><i class="pi pi-bookmark me-1"></i> {{ 'accounting.bankReconciliation.actions.matchToSelected' | translate }}:</span>
+          <button type="button" class="btn btn-xs btn-outline" (click)="loadBankSample('rajhi')">
+            <i class="pi pi-building me-1"></i> {{ 'ui.bankReconciliation.21a785' | translate }}
+          </button>
+          <button type="button" class="btn btn-xs btn-outline" (click)="loadBankSample('snb')">
+            <i class="pi pi-building me-1"></i> {{ 'ui.bankReconciliation.3a3bdc' | translate }}
+          </button>
+          <button type="button" class="btn btn-xs btn-outline" (click)="loadBankSample('riyad')">
+            <i class="pi pi-building me-1"></i> {{ 'ui.bankReconciliation.6b52eb' | translate }}
+          </button>
+          <div class="file-upload-wrapper ms-auto">
+            <label class="btn btn-xs btn-secondary cursor-pointer mb-0">
+              <i class="pi pi-upload me-1"></i> {{ 'accounting.bankReconciliation.importStatement' | translate }} (.csv/.txt)
+              <input type="file" accept=".csv,.txt,.tsv" (change)="onStatementFileSelected($event)" style="display: none;" />
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="fw-semibold mb-1">{{ 'accounting.bankReconciliation.table.desc' | translate }}:</label>
+          <textarea 
+            class="form-control font-monospace" 
+            rows="6" 
+            [placeholder]="'ui.bankReconciliation.45d760' | translate" 
+            [ngModel]="rawStatementText()" 
+            (ngModelChange)="rawStatementText.set($event)"></textarea>
+        </div>
+
+        <!-- Live Statement Preview Table -->
+        <div *ngIf="statementPreviewRows().length > 0" class="preview-section mb-3">
+          <div class="preview-header">
+            <span class="fw-bold"><i class="pi pi-eye me-1"></i> {{ 'accounting.bankReconciliation.table.desc' | translate }} ({{ statementPreviewRows().length }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}):</span>
+            <div class="preview-stats">
+              <span>{{ 'accounting.journal.table.debit' | translate }}: <strong class="text-emerald">{{ previewTotalDebits() | number:'1.2-2' }}</strong></span>
+              <span>{{ 'accounting.journal.table.credit' | translate }}: <strong class="text-rose">{{ previewTotalCredits() | number:'1.2-2' }}</strong></span>
+              <span>{{ 'accounting.journal.totals.totalDebit' | translate }}: <strong>{{ (previewTotalDebits() - previewTotalCredits()) | number:'1.2-2' }}</strong></span>
+              <button type="button" class="btn btn-xs btn-outline-info" (click)="applyEndingBalanceFromPreview()">
+                {{ 'accounting.bankReconciliation.summary.statementBalance' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive preview-table-container">
+            <table class="erp-table preview-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{{ 'accounting.bankReconciliation.table.date' | translate }}</th>
+                  <th>{{ 'accounting.bankReconciliation.table.ref' | translate }}</th>
+                  <th>{{ 'accounting.bankReconciliation.table.desc' | translate }}</th>
+                  <th class="text-end">{{ 'accounting.journal.table.debit' | translate }}</th>
+                  <th class="text-end">{{ 'accounting.journal.table.credit' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of statementPreviewRows().slice(0, 10); let i = index">
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ row.date }}</td>
+                  <td>{{ row.referenceNumber || '—' }}</td>
+                  <td class="text-truncate" style="max-width: 250px;">{{ row.description }}</td>
+                  <td class="text-end text-emerald">{{ row.debit > 0 ? (row.debit | number:'1.2-2') : '—' }}</td>
+                  <td class="text-end text-rose">{{ row.credit > 0 ? (row.credit | number:'1.2-2') : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="small text-muted">{{ 'accounting.bankReconciliation.summary.statementDate' | translate }}</label>
+              <input type="date" class="form-control" [ngModel]="statementDate()" (ngModelChange)="statementDate.set($event)" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="small text-muted">{{ 'accounting.bankReconciliation.summary.statementBalance' | translate }}</label>
+              <input type="number" class="form-control" [ngModel]="statementEndingBalance()" (ngModelChange)="statementEndingBalance.set($event)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeImportModal()">{{ 'common.cancel' | translate }}</button>
+        <button 
+          class="btn btn-primary" 
+          [disabled]="isAutoMatching() || !rawStatementText().trim()" 
+          (click)="executeAutoMatch()">
+          <i class="pi pi-bolt me-1" *ngIf="!isAutoMatching()"></i>
+          <i class="pi pi-spin pi-spinner me-1" *ngIf="isAutoMatching()"></i>
+          {{ 'accounting.bankReconciliation.importStatement' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Quick Adjustment Entry -->
+  <div class="modal-backdrop modal-center" *ngIf="showAdjustmentModal()" (click)="closeAdjustmentModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-warning-subtle">
+        <h3><i class="pi pi-sliders-h text-warning me-2"></i> {{ 'accounting.bankReconciliation.quickAdjustment' | translate }}</h3>
+        <button class="modal-close" (click)="closeAdjustmentModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-warning py-2 small mb-3">
+          <i class="pi pi-info-circle me-1"></i>
+          {{ 'accounting.bankReconciliation.outstanding.postAdjustment' | translate }}
+        </div>
+
+        <!-- Adjustment Type Selector -->
+        <div class="form-group mb-3">
+          <label class="fw-semibold mb-1">{{ 'accounting.journal.table.type' | translate }}:</label>
+          <div class="adj-type-toggle">
+            <button 
+              type="button" 
+              class="adj-type-btn" 
+              [class.active]="adjType() === 'charge'" 
+              (click)="adjType.set('charge')">
+              <i class="pi pi-arrow-up-right text-danger me-1"></i>
+              {{ 'accounting.bankReconciliation.table.credit' | translate }}
+            </button>
+            <button 
+              type="button" 
+              class="adj-type-btn" 
+              [class.active]="adjType() === 'income'" 
+              (click)="adjType.set('income')">
+              <i class="pi pi-arrow-down-left text-success me-1"></i>
+              {{ 'accounting.bankReconciliation.table.debit' | translate }}
+            </button>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>{{ 'accounting.journal.form.date' | translate }}:</label>
+              <input type="date" class="form-control" [ngModel]="adjDate()" (ngModelChange)="adjDate.set($event)" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>{{ 'accounting.vouchers.modal.amount' | translate }} <span class="text-danger">*</span>:</label>
+              <input type="number" step="0.01" class="form-control" [ngModel]="adjAmount()" (ngModelChange)="adjAmount.set($event)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Counter Account -->
+        <div class="form-group mb-2">
+          <label>{{ 'accounting.journal.table.account' | translate }}:</label>
+          <app-searchable-select
+            [items]="counterAccountOptions()"
+            [value]="adjCounterAccountId()"
+            (valueChange)="adjCounterAccountId.set($event)"
+            [placeholder]="'accounting.journal.table.account' | translate"
+            [searchPlaceholder]="'common.search' | translate">
+          </app-searchable-select>
+        </div>
+
+        <!-- Rule 1: Single-Entry Bilingual Description -->
+        <div class="form-group mb-2">
+          <label>{{ 'accounting.journal.form.narration' | translate }} (Ar) *:</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [ngModel]="adjDescriptionAr()" 
+            (ngModelChange)="onAdjDescriptionArChange($event)" />
+        </div>
+
+        <div class="form-group mb-2">
+          <label>{{ 'accounting.journal.form.narration' | translate }} (En):</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [ngModel]="adjDescriptionEn()" 
+            (ngModelChange)="adjDescriptionEn.set($event)" />
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'accounting.bankReconciliation.table.ref' | translate }}:</label>
+          <input type="text" class="form-control" placeholder="ADJ-BANK-..." [ngModel]="adjReference()" (ngModelChange)="adjReference.set($event)" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAdjustmentModal()">{{ 'common.cancel' | translate }}</button>
+        <button 
+          class="btn btn-primary" 
+          [disabled]="isSavingAdjustment() || adjAmount() <= 0 || !adjCounterAccountId()" 
+          (click)="executeAdjustment()">
+          <i class="pi pi-check" *ngIf="!isSavingAdjustment()"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isSavingAdjustment()"></i>
+          {{ 'accounting.bankReconciliation.outstanding.postAdjustment' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Official Bank Reconciliation Statement (IAS 7) -->
+  <div class="modal-backdrop modal-center" *ngIf="showStatementModal()" (click)="closeStatementModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="pi pi-file-o text-primary me-2"></i> {{ 'accounting.bankReconciliation.statementReport' | translate }}</h3>
+        <button class="modal-close" (click)="closeStatementModal()">&times;</button>
+      </div>
+
+      <div class="modal-body print-area">
+        <!-- Formal Printable Document Header -->
+        <div class="formal-doc-header">
+          <div class="doc-brand">
+            <h2>{{ companyContext.activeCompany().nameAr || ('ui.bankReconciliation.eae355' | translate) }}</h2>
+            <span>{{ 'accounting.bankReconciliation.breadcrumbs' | translate }}</span>
+          </div>
+          <div class="doc-title-box">
+            <h1>{{ 'accounting.bankReconciliation.statementReport' | translate }}</h1>
+            <div class="doc-meta">
+              <span>{{ 'accounting.bankReconciliation.summary.bankAccount' | translate }} <strong>{{ selectedAccount()?.accountCode }} - {{ selectedAccount()?.accountNameAr }}</strong></span>
+              <span class="mx-2">|</span>
+              <span>{{ 'accounting.bankReconciliation.summary.statementDate' | translate }} <strong>{{ statementDate() }}</strong></span>
+              <span class="mx-2">|</span>
+              <span>{{ 'accounting.financialSettings.tabs.currencies' | translate }}: <strong>{{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Official Reconciliation Statement Table -->
+        <table class="statement-table">
+          <tbody>
+            <tr class="section-row">
+              <td colspan="2"><strong>{{ 'accounting.bankReconciliation.summary.statementBalance' | translate }}</strong></td>
+            </tr>
+            <tr>
+              <td>{{ 'accounting.bankReconciliation.kpi.confirmedStatement' }} ({{ statementDate() }}):</td>
+              <td class="text-end fw-bold">{{ statementEndingBalance() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+            <tr>
+              <td class="ps-4">
+                <strong>+</strong> {{ 'accounting.bankReconciliation.outstanding.depositsInTransit' | translate }} [{{ depositsInTransitCount() }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}]
+              </td>
+              <td class="text-end text-emerald fw-semibold">+{{ unclearedDeposits() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+            <tr>
+              <td class="ps-4">
+                <strong>-</strong> {{ 'accounting.bankReconciliation.outstanding.outstandingChecks' | translate }} [{{ outstandingChecksCount() }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}]
+              </td>
+              <td class="text-end text-rose fw-semibold">-{{ unclearedWithdrawals() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+            <tr class="subtotal-row">
+              <td class="fw-bold">{{ 'accounting.bankReconciliation.summary.adjustedBalance' | translate }}</td>
+              <td class="text-end fw-bold text-primary">{{ adjustedBankBalance() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+
+            <tr class="section-row">
+              <td colspan="2"><strong>{{ 'accounting.bankReconciliation.summary.bookBalance' | translate }}</strong></td>
+            </tr>
+            <tr>
+              <td>{{ 'accounting.bankReconciliation.kpi.bookBalance' | translate }} ({{ statementDate() }}):</td>
+              <td class="text-end fw-bold">{{ bookBalance() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+            <tr class="subtotal-row">
+              <td class="fw-bold">{{ 'accounting.bankReconciliation.summary.adjustedBalance' | translate }}</td>
+              <td class="text-end fw-bold text-primary">{{ bookBalance() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+
+            <tr class="grand-diff-row" [class.diff-balanced]="isBalanced()" [class.diff-unbalanced]="!isBalanced()">
+              <td class="fw-bold">{{ 'accounting.bankReconciliation.summary.difference' | translate }}</td>
+              <td class="text-end fw-bold fs-5">{{ difference() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Signatures Box -->
+        <div class="doc-signatures">
+          <div class="sig-col">
+            <span>{{ 'accounting.vouchers.table.partner' | translate }}:</span>
+            <div class="sig-line"></div>
+          </div>
+          <div class="sig-col">
+            <span>{{ 'accounting.journal.filters.audited' | translate }}:</span>
+            <div class="sig-line"></div>
+          </div>
+          <div class="sig-col">
+            <span>{{ 'accounting.bankReconciliation.approve' | translate }}:</span>
+            <div class="sig-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeStatementModal()">{{ 'common.close' | translate }}</button>
+        <button class="btn btn-outline" (click)="exportStatementCsv()">
+          <i class="pi pi-file-excel me-1"></i> Excel
+        </button>
+        <button class="btn btn-primary" (click)="printStatement()">
+          <i class="pi pi-print me-1"></i> {{ 'accounting.vouchers.table.print' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Drawer -->
   <div class="modal-backdrop" *ngIf="showHistory()" (click)="showHistory.set(false)">
     <div class="modal-drawer" (click)="$event.stopPropagation()">
       <div class="drawer-header">
-        <h3><i class="fas fa-history me-2"></i> سجل التسويات البنكية المعتمدة والمسودات</h3>
+        <h3><i class="pi pi-history me-2"></i> {{ 'accounting.bankReconciliation.history' | translate }}</h3>
         <button class="drawer-close" (click)="showHistory.set(false)">&times;</button>
       </div>
 
       <div class="drawer-body">
         <div *ngIf="isLoadingHistory()" class="text-center py-4 text-muted">
-          <i class="fas fa-spinner fa-spin me-2"></i> جاري تحميل السجل...
+          <i class="pi pi-spin pi-spinner me-2"></i> {{ 'common.loading' | translate }}
         </div>
 
         <div *ngIf="!isLoadingHistory() && historyList().length === 0" class="text-center py-4 text-muted">
-          لا توجد تسويات بنكية مسجلة مسبقاً لهذا الحساب.
+          {{ 'accounting.gl.table.empty' | translate }}
         </div>
 
         <div *ngFor="let h of historyList()" class="history-item-card">
@@ -309,67 +720,12 @@
             </span>
           </div>
           <div class="history-details">
-            <div><strong>الحساب:</strong> {{ h.bankAccountCode }} - {{ h.bankAccountNameAr }}</div>
-            <div><strong>تاريخ الكشف:</strong> {{ h.statementDate | date:'yyyy-MM-dd' }}</div>
-            <div><strong>رصيد كشف البنك:</strong> {{ h.statementEndingBalance | number:'1.2-2' }} ر.س</div>
-            <div><strong>الرصيد الدفتري:</strong> {{ h.bookBalance | number:'1.2-2' }} ر.س</div>
-            <div *ngIf="h.reconciledBy"><strong>المعتمد:</strong> {{ h.reconciledBy }} ({{ h.reconciledAtUtc | date:'yyyy-MM-dd HH:mm' }})</div>
+            <div><strong>{{ 'accounting.bankReconciliation.summary.bankAccount' | translate }} </strong> {{ h.bankAccountCode }} - {{ h.bankAccountNameAr }}</div>
+            <div><strong>{{ 'accounting.bankReconciliation.summary.statementDate' | translate }}:</strong> {{ h.statementDate | date:'yyyy-MM-dd' }}</div>
+            <div><strong>{{ 'accounting.bankReconciliation.summary.statementBalance' | translate }}:</strong> {{ h.statementEndingBalance | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</div>
+            <div><strong>{{ 'accounting.bankReconciliation.summary.bookBalance' | translate }}:</strong> {{ h.bookBalance | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</div>
+            <div *ngIf="h.reconciledBy"><strong>{{ 'accounting.bankReconciliation.approve' | translate }}:</strong> {{ h.reconciledBy }} ({{ h.reconciledAtUtc | date:'yyyy-MM-dd HH:mm' }})</div>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Import Bank Statement & Auto-Match -->
-  <div class="modal-backdrop" *ngIf="showImportModal()" (click)="closeImportModal()">
-    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
-      <div class="modal-header bg-info-subtle">
-        <h3><i class="pi pi-file-excel text-info me-2"></i> استيراد كشف حساب بنكي ومطابقة آلية ذكية</h3>
-        <button class="modal-close" (click)="closeImportModal()">&times;</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="alert alert-info py-2 small mb-3">
-          <i class="pi pi-info-circle me-1"></i>
-          <strong>طريقة الاستخدام:</strong> يمكنك نسخ ولصق صفوف كشف الحساب مباشرة من ملف Excel أو CSV (يدعم الأعمدة: التاريخ، المرجع، البيان، مدين، دائن). ستقوم خوارزمية المطابقة بفحص المرجع والمبالغ والتقارب الزمني ومطابقتها آلياً.
-        </div>
-
-        <div class="form-group mb-3">
-          <label class="fw-semibold mb-1">بيانات كشف الحساب (انسخ والصق من إكسل أو ملف CSV):</label>
-          <textarea 
-            class="form-control font-monospace" 
-            rows="8" 
-            placeholder="مثال:&#10;2026-10-15	REF-1002	إيداع نقاط بيع مدى	15400.00	0.00&#10;2026-10-18	CHK-9812	صرف شيك مورد	0.00	8250.00" 
-            [ngModel]="rawStatementText()" 
-            (ngModelChange)="rawStatementText.set($event)"></textarea>
-        </div>
-
-        <div class="row g-2">
-          <div class="col-md-6">
-            <div class="form-group">
-              <label class="small text-muted">تاريخ نهاية كشف الحساب:</label>
-              <input type="date" class="form-control" [ngModel]="statementDate()" (ngModelChange)="statementDate.set($event)" />
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="form-group">
-              <label class="small text-muted">الرصيد الختامي لكشف البنك (ر.س):</label>
-              <input type="number" class="form-control" [ngModel]="statementEndingBalance()" (ngModelChange)="statementEndingBalance.set($event)" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeImportModal()">إلغاء</button>
-        <button 
-          class="btn btn-primary" 
-          [disabled]="isAutoMatching() || !rawStatementText().trim()" 
-          (click)="executeAutoMatch()">
-          <i class="pi pi-bolt me-1" *ngIf="!isAutoMatching()"></i>
-          <i class="pi pi-spin pi-spinner me-1" *ngIf="isAutoMatching()"></i>
-          تنفيذ خوارزمية المطابقة الآلية
-        </button>
       </div>
     </div>
   </div>

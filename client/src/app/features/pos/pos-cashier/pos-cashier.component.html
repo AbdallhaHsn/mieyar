@@ -1,0 +1,631 @@
+<div class="pos-screen-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- POS Top Bar -->
+  <header class="pos-topbar">
+    <div class="topbar-left">
+      <div class="terminal-badge">
+        <i class="pi pi-desktop"></i>
+        <span>{{ terminalCode }}</span>
+      </div>
+
+      <div class="shift-badge" *ngIf="currentShift">
+        <span class="pulse-indicator"></span>
+        <span>{{ 'pos.activeShift' | translate }} <strong>{{ currentShift.shiftNumber }}</strong></span>
+      </div>
+
+      <div class="shift-badge closed" *ngIf="!currentShift">
+        <i class="pi pi-lock"></i>
+        <span>{{ 'pos.shiftClosed' | translate }}</span>
+      </div>
+
+      <div class="cashier-info" *ngIf="currentShift">
+        <i class="pi pi-user"></i>
+        <span>{{ currentShift.cashierName }}</span>
+      </div>
+    </div>
+
+    <!-- Shift Financial Summary Bar -->
+    <div class="topbar-center" *ngIf="currentShift">
+      <div class="stat-pill" [title]="'pos.cashSales' | translate">
+        <i class="pi pi-money-bill text-green"></i>
+        <span>{{ 'pos.cash' | translate }} <strong>{{ currentShift.totalCashSales | number:'1.2-2' }}</strong> {{ 'pos.currencySar' | translate }}</span>
+      </div>
+      <div class="stat-pill" [title]="'pos.madaSales' | translate">
+        <i class="pi pi-credit-card text-blue"></i>
+        <span>{{ 'pos.mada' | translate }} <strong>{{ currentShift.totalMadaSales | number:'1.2-2' }}</strong> {{ 'pos.currencySar' | translate }}</span>
+      </div>
+      <div class="stat-pill highlight" [title]="'pos.expectedDrawer' | translate">
+        <i class="pi pi-inbox text-orange"></i>
+        <span>{{ 'pos.drawer' | translate }} <strong>{{ currentShift.expectedCashDrawer | number:'1.2-2' }}</strong> {{ 'pos.currencySar' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="topbar-right">
+      <button class="btn btn-secondary btn-sm" *ngIf="currentShift" (click)="openCashMovementDialog()" [title]="'pos.movementTitle' | translate">
+        <i class="pi pi-arrows-v"></i>
+        <span>{{ 'pos.cashInOut' | translate }}</span>
+      </button>
+
+      <button class="btn btn-danger btn-sm" *ngIf="currentShift" (click)="openCloseShiftDialog()" [title]="'pos.closeShiftTitle' | translate">
+        <i class="pi pi-lock"></i>
+        <span>{{ 'pos.closeShift' | translate }}</span>
+      </button>
+
+      <button class="btn btn-primary btn-sm" *ngIf="!currentShift" (click)="showOpenShiftModal = true">
+        <i class="pi pi-unlock"></i>
+        <span>{{ 'pos.openShift' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Alerts -->
+  <div *ngIf="successMessage" class="alert alert-success mx-3 mt-2 mb-0">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage }}</span>
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger mx-3 mt-2 mb-0">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Main POS Workspace (Split Layout) -->
+  <div class="pos-workspace">
+    <!-- LEFT / CENTER: Products & Catalog -->
+    <div class="catalog-section">
+      <!-- Search & Barcode Bar -->
+      <div class="catalog-search-bar">
+        <div class="barcode-input-box">
+          <i class="pi pi-barcode"></i>
+          <input
+            type="text"
+            [(ngModel)]="barcodeInput"
+            (keydown.enter)="onBarcodeSubmit()"
+            [placeholder]="'pos.scanPlaceholder' | translate"
+            autofocus
+          />
+        </div>
+
+        <div class="search-input-box">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="applyItemFilter()"
+            [placeholder]="'pos.searchPlaceholder' | translate"
+          />
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="categories-bar">
+        <button
+          *ngFor="let cat of categories"
+          type="button"
+          class="cat-tab-btn"
+          [class.active]="selectedCategory === cat"
+          (click)="selectCategory(cat)">
+          {{ cat === 'ALL' ? ('pos.allCategories' | translate) : cat }}
+        </button>
+      </div>
+
+      <!-- Items Grid -->
+      <div class="items-grid-container">
+        <div
+          *ngFor="let item of filteredItems"
+          class="item-card"
+          (click)="addToCart(item)"
+          [title]="'pos.clickToAdd' | translate">
+          <div class="item-card-header">
+            <span class="item-cat-badge">{{ item.categoryName || ('pos.generalCategory' | translate) }}</span>
+            <span class="item-stock" [class.low-stock]="item.currentStockQuantity < 10">
+              {{ item.currentStockQuantity }} {{ item.unitOfMeasure }}
+            </span>
+          </div>
+
+          <div class="item-icon-frame">
+            <i class="pi pi-shopping-bag"></i>
+          </div>
+
+          <div class="item-card-body">
+            <h4 class="item-name-ar">{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</h4>
+            <span class="item-name-en" *ngIf="langService.currentLang() === 'ar'">{{ item.nameEn }}</span>
+            <div class="item-price-tag">
+              <strong class="price-val">{{ item.salePrice | number:'1.2-2' }}</strong>
+              <span class="price-currency">{{ 'pos.currencySar' | translate }}</span>
+              <small class="vat-included">{{ 'pos.vatIncluded' | translate }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Cart Drawer & Checkout -->
+    <div class="cart-section">
+      <div class="cart-header">
+        <div class="cart-title">
+          <i class="pi pi-shopping-cart text-primary"></i>
+          <h3>{{ 'pos.cartTitle' | translate }}</h3>
+          <span class="cart-count-badge">{{ cart.length }} {{ 'pos.itemsCount' | translate }}</span>
+        </div>
+        <button class="btn-clear-cart" (click)="clearCart()" *ngIf="cart.length > 0" [title]="'pos.clearCart' | translate">
+          <i class="pi pi-trash"></i>
+        </button>
+      </div>
+
+      <!-- Customer Line -->
+      <div class="customer-picker-row">
+        <i class="pi pi-user"></i>
+        <input 
+          type="text" 
+          [(ngModel)]="customerName" 
+          [placeholder]="'pos.customerCashPlaceholder' | translate" 
+          class="customer-input" 
+        />
+      </div>
+
+      <!-- Cart Items List -->
+      <div class="cart-items-list">
+        <div *ngIf="cart.length === 0" class="empty-cart-state">
+          <i class="pi pi-shopping-bag empty-cart-icon"></i>
+          <p>{{ 'pos.cartEmpty' | translate }}</p>
+          <small>{{ 'pos.cartEmptyHint' | translate }}</small>
+        </div>
+
+        <div *ngFor="let line of cart" class="cart-item-row">
+          <div class="row-info">
+            <strong class="row-name">{{ langService.currentLang() === 'ar' ? line.nameAr : (line.nameEn || line.nameAr) }}</strong>
+            <span class="row-sub">{{ line.unitPrice | number:'1.2-2' }} {{ 'pos.pricePerUnit' | translate }}</span>
+          </div>
+
+          <div class="qty-stepper">
+            <button class="step-btn" (click)="decrementQty(line)">-</button>
+            <span class="qty-val">{{ line.quantity }}</span>
+            <button class="step-btn" (click)="incrementQty(line)">+</button>
+          </div>
+
+          <div class="row-total">
+            <strong>{{ line.totalAmount | number:'1.2-2' }}</strong>
+            <small>{{ 'pos.currencySar' | translate }}</small>
+          </div>
+
+          <button class="btn-delete-row" (click)="removeLine(line)" [title]="'pos.delete' | translate">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cart Financial Totals -->
+      <div class="cart-totals-box">
+        <div class="total-line">
+          <span>{{ 'pos.taxableSubtotal' | translate }}</span>
+          <strong>{{ cartTaxable | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+        </div>
+        <div class="total-line">
+          <span>{{ 'pos.vatZatca' | translate }}</span>
+          <strong>{{ cartVat | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+        </div>
+        <div class="total-line grand-total-line">
+          <span>{{ 'pos.grandTotalDue' | translate }}</span>
+          <div class="grand-total-val">
+            <strong>{{ cartGrandTotal | number:'1.2-2' }}</strong>
+            <span>{{ 'pos.currencySar' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Pay Action Bar -->
+      <div class="cart-actions-bar">
+        <button
+          class="btn-pay btn-cash"
+          (click)="openPaymentModal(1)"
+          [disabled]="cart.length === 0">
+          <i class="pi pi-money-bill"></i>
+          <span>{{ 'pos.payCash' | translate }}</span>
+        </button>
+
+        <button
+          class="btn-pay btn-mada"
+          (click)="openPaymentModal(2)"
+          [disabled]="cart.length === 0">
+          <i class="pi pi-credit-card"></i>
+          <span>{{ 'pos.payMada' | translate }}</span>
+        </button>
+
+        <button
+          class="btn-pay btn-split"
+          (click)="openPaymentModal(4)"
+          [disabled]="cart.length === 0"
+          [title]="'pos.paySplitTitle' | translate">
+          <i class="pi pi-percentage"></i>
+          <span>{{ 'pos.paySplit' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT & TENDER MODAL -->
+  <div *ngIf="showPaymentModal" class="modal-backdrop" (click)="closePaymentModal()">
+    <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-wallet text-primary"></i>
+          <h3>{{ 'pos.paymentModal.title' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="closePaymentModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="due-banner">
+          <span class="due-label">{{ 'pos.paymentModal.amountDue' | translate }}</span>
+          <strong class="due-amount">{{ cartGrandTotal | number:'1.2-2' }} <span class="currency">{{ 'pos.currencySar' | translate }}</span></strong>
+        </div>
+
+        <!-- Payment Method Tabs -->
+        <div class="payment-method-selector">
+          <button
+            type="button"
+            class="pay-method-btn"
+            [class.active]="selectedPaymentMethod === 1"
+            (click)="selectedPaymentMethod = 1; setExactCash()">
+            <i class="pi pi-money-bill"></i>
+            <span>{{ 'pos.paymentModal.methodCash' | translate }}</span>
+          </button>
+          <button
+            type="button"
+            class="pay-method-btn"
+            [class.active]="selectedPaymentMethod === 2"
+            (click)="selectedPaymentMethod = 2">
+            <i class="pi pi-credit-card"></i>
+            <span>{{ 'pos.paymentModal.methodMada' | translate }}</span>
+          </button>
+          <button
+            type="button"
+            class="pay-method-btn"
+            [class.active]="selectedPaymentMethod === 3"
+            (click)="selectedPaymentMethod = 3">
+            <i class="pi pi-shield"></i>
+            <span>{{ 'pos.paymentModal.methodCard' | translate }}</span>
+          </button>
+          <button
+            type="button"
+            class="pay-method-btn"
+            [class.active]="selectedPaymentMethod === 4"
+            (click)="selectedPaymentMethod = 4">
+            <i class="pi pi-percentage"></i>
+            <span>{{ 'pos.paymentModal.methodSplit' | translate }}</span>
+          </button>
+        </div>
+
+        <!-- Cash Details & Quick Presets -->
+        <div *ngIf="selectedPaymentMethod === 1" class="cash-tender-box">
+          <div class="form-group">
+            <label>{{ 'pos.paymentModal.tenderedLabel' | translate }}</label>
+            <input
+              type="number"
+              [(ngModel)]="cashReceived"
+              class="tender-input"
+              step="5"
+              min="0"
+              autofocus
+            />
+          </div>
+
+          <!-- Quick Cash Bills -->
+          <div class="quick-cash-grid">
+            <button type="button" class="cash-chip" (click)="setExactCash()">{{ 'pos.paymentModal.exactCash' | translate }}</button>
+            <button type="button" class="cash-chip" (click)="addCashPreset(10)">+10 {{ 'pos.currencySar' | translate }}</button>
+            <button type="button" class="cash-chip" (click)="addCashPreset(20)">+20 {{ 'pos.currencySar' | translate }}</button>
+            <button type="button" class="cash-chip" (click)="addCashPreset(50)">+50 {{ 'pos.currencySar' | translate }}</button>
+            <button type="button" class="cash-chip" (click)="addCashPreset(100)">+100 {{ 'pos.currencySar' | translate }}</button>
+            <button type="button" class="cash-chip" (click)="cashReceived = 500">500 {{ 'pos.currencySar' | translate }}</button>
+          </div>
+
+          <!-- Change Due Display -->
+          <div class="change-due-box" [class.has-change]="changeDue > 0">
+            <span>{{ 'pos.paymentModal.changeDue' | translate }}</span>
+            <strong class="change-amount">{{ changeDue | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+          </div>
+        </div>
+
+        <!-- Split Payment Details -->
+        <div *ngIf="selectedPaymentMethod === 4" class="split-tender-box">
+          <div class="form-row d-flex gap-2">
+            <div class="form-group flex-1">
+              <label>{{ 'pos.paymentModal.cashPart' | translate }}</label>
+              <input type="number" [(ngModel)]="cashPart" min="0" step="5" class="form-control" />
+            </div>
+            <div class="form-group flex-1">
+              <label>{{ 'pos.paymentModal.madaPart' | translate }}</label>
+              <input type="number" [(ngModel)]="madaPart" min="0" step="5" class="form-control" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closePaymentModal()">{{ 'pos.paymentModal.cancel' | translate }}</button>
+        <button
+          type="button"
+          class="btn btn-success btn-lg"
+          (click)="processCheckout()"
+          [disabled]="processingSale">
+          <i class="pi pi-check" [class.pi-spin]="processingSale"></i>
+          <span>{{ 'pos.paymentModal.confirmCheckout' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- THERMAL RECEIPT MODAL (80mm STANDARD ZATCA RECEIPT) -->
+  <div *ngIf="showReceiptModal && activeReceipt" class="modal-backdrop" (click)="closeReceiptModal()">
+    <div class="modal-dialog modal-receipt" (click)="$event.stopPropagation()">
+      <div class="modal-header no-print">
+        <div class="modal-title">
+          <i class="pi pi-receipt text-success"></i>
+          <h3>{{ 'pos.receipt.title' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="closeReceiptModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Thermal Receipt Paper (80mm) -->
+        <div class="thermal-receipt-paper" id="thermalReceipt">
+          <div class="receipt-header">
+            <h2 class="company-name">{{ activeReceipt.companyName }}</h2>
+            <span class="doc-title">{{ 'pos.receipt.docTitle' | translate }}</span>
+            <span class="doc-subtitle">{{ 'pos.receipt.docSubtitle' | translate }}</span>
+            <div class="vat-info">{{ 'pos.receipt.vatLabel' | translate }} {{ activeReceipt.companyVatNumber }}</div>
+          </div>
+
+          <div class="receipt-divider">================================</div>
+
+          <div class="receipt-meta">
+            <div class="meta-line">
+              <span>{{ 'pos.receipt.invoiceNum' | translate }}</span>
+              <strong>{{ activeReceipt.invoiceNumber }}</strong>
+            </div>
+            <div class="meta-line">
+              <span>{{ 'pos.receipt.dateTime' | translate }}</span>
+              <span>{{ activeReceipt.issueDate | date:'yyyy-MM-dd' }} {{ activeReceipt.issueTime }}</span>
+            </div>
+            <div class="meta-line">
+              <span>{{ 'pos.receipt.cashier' | translate }}</span>
+              <span>{{ activeReceipt.cashierName }}</span>
+            </div>
+            <div class="meta-line">
+              <span>{{ 'pos.receipt.payment' | translate }}</span>
+              <strong>{{ activeReceipt.paymentMethodNameAr }}</strong>
+            </div>
+          </div>
+
+          <div class="receipt-divider">--------------------------------</div>
+
+          <!-- Items Table -->
+          <table class="receipt-items-table">
+            <thead>
+              <tr>
+                <th class="col-name">{{ 'pos.receipt.colItem' | translate }}</th>
+                <th class="col-qty">{{ 'pos.receipt.colQty' | translate }}</th>
+                <th class="col-price">{{ 'pos.receipt.colPrice' | translate }}</th>
+                <th class="col-total">{{ 'pos.receipt.colTotal' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of activeReceipt.lines">
+                <td class="col-name">{{ item.itemNameAr }}</td>
+                <td class="col-qty">{{ item.quantity }}</td>
+                <td class="col-price">{{ item.unitPrice | number:'1.2-2' }}</td>
+                <td class="col-total">{{ item.totalAmount | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="receipt-divider">--------------------------------</div>
+
+          <!-- Summary -->
+          <div class="receipt-totals">
+            <div class="tot-line">
+              <span>{{ 'pos.receipt.taxable' | translate }}</span>
+              <span>{{ activeReceipt.totalTaxableAmount | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</span>
+            </div>
+            <div class="tot-line">
+              <span>{{ 'pos.receipt.vat' | translate }}</span>
+              <span>{{ activeReceipt.totalVat | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</span>
+            </div>
+            <div class="tot-line grand-total">
+              <span>{{ 'pos.receipt.grandTotal' | translate }}</span>
+              <strong>{{ activeReceipt.grandTotal | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+            </div>
+            <div class="tot-line" *ngIf="activeReceipt.cashReceived > 0">
+              <span>{{ 'pos.receipt.tendered' | translate }}</span>
+              <span>{{ activeReceipt.cashReceived | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</span>
+            </div>
+            <div class="tot-line" *ngIf="activeReceipt.changeGiven > 0">
+              <span>{{ 'pos.receipt.change' | translate }}</span>
+              <strong>{{ activeReceipt.changeGiven | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+            </div>
+          </div>
+
+          <div class="receipt-divider">================================</div>
+
+          <!-- ZATCA Phase 2 QR Code -->
+          <div class="receipt-qr-box">
+            <div class="qr-code-placeholder">
+              <i class="pi pi-qrcode qr-icon"></i>
+            </div>
+            <span class="qr-caption">{{ 'pos.receipt.qrCaption' | translate }}</span>
+          </div>
+
+          <div class="receipt-footer">
+            <p>{{ 'pos.receipt.thankYou' | translate }}</p>
+            <small>Al-Roban ERP & E-Invoicing Cloud</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer no-print">
+        <button type="button" class="btn btn-secondary" (click)="closeReceiptModal()">{{ 'pos.receipt.close' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="printReceipt()">
+          <i class="pi pi-print"></i>
+          <span>{{ 'pos.receipt.print' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPEN SHIFT MODAL -->
+  <div *ngIf="showOpenShiftModal" class="modal-backdrop" (click)="showOpenShiftModal = false">
+    <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-unlock text-primary"></i>
+          <h3>{{ 'pos.openShiftModal.title' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="showOpenShiftModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>{{ 'pos.openShiftModal.terminalCode' | translate }}</label>
+          <input type="text" [(ngModel)]="terminalCode" />
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'pos.openShiftModal.openingFloat' | translate }}</label>
+          <input type="number" [(ngModel)]="openingFloat" min="0" step="50" autofocus />
+          <small class="text-muted">{{ 'pos.openShiftModal.openingFloatHint' | translate }}</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showOpenShiftModal = false">{{ 'pos.openShiftModal.cancel' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="openShift()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'pos.openShiftModal.submit' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOSE SHIFT MODAL -->
+  <div *ngIf="showCloseShiftModal && currentShift" class="modal-backdrop" (click)="showCloseShiftModal = false">
+    <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-lock text-danger"></i>
+          <h3>{{ 'pos.closeShiftModal.title' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="showCloseShiftModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="shift-reconciliation-grid">
+          <div class="recon-row d-flex justify-content-between">
+            <span>{{ 'pos.closeShiftModal.openingFloat' | translate }}</span>
+            <strong>{{ currentShift.openingFloatCash | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+          </div>
+          <div class="recon-row d-flex justify-content-between">
+            <span>{{ 'pos.closeShiftModal.cashSales' | translate }}</span>
+            <strong class="text-green">+{{ currentShift.totalCashSales | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+          </div>
+          <div class="recon-row d-flex justify-content-between">
+            <span>{{ 'pos.closeShiftModal.cashIn' | translate }}</span>
+            <strong>+{{ currentShift.totalCashIn | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+          </div>
+          <div class="recon-row d-flex justify-content-between">
+            <span>{{ 'pos.closeShiftModal.cashOut' | translate }}</span>
+            <strong class="text-danger">-{{ currentShift.totalCashOut | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+          </div>
+          <hr />
+          <div class="recon-row highlight d-flex justify-content-between">
+            <span>{{ 'pos.closeShiftModal.expectedDrawer' | translate }}</span>
+            <strong class="expected-val text-orange fs-5">{{ currentShift.expectedCashDrawer | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}</strong>
+          </div>
+        </div>
+
+        <div class="form-group mt-3">
+          <label>{{ 'pos.closeShiftModal.actualCounted' | translate }}</label>
+          <input type="number" [(ngModel)]="actualCashCounted" class="form-control fs-5 fw-bold text-center" step="1" />
+        </div>
+
+        <div class="alert alert-info py-2 mt-2 d-flex justify-content-between align-items-center">
+          <span>{{ 'pos.closeShiftModal.variance' | translate }}</span>
+          <strong class="fs-6" [class.text-danger]="actualCashCounted < currentShift.expectedCashDrawer" [class.text-green]="actualCashCounted >= currentShift.expectedCashDrawer">
+            {{ (actualCashCounted - currentShift.expectedCashDrawer) | number:'1.2-2' }} {{ 'pos.currencySar' | translate }}
+            <span *ngIf="actualCashCounted === currentShift.expectedCashDrawer">({{ 'pos.closeShiftModal.balanced' | translate }})</span>
+            <span *ngIf="actualCashCounted < currentShift.expectedCashDrawer">({{ 'pos.closeShiftModal.shortage' | translate }})</span>
+            <span *ngIf="actualCashCounted > currentShift.expectedCashDrawer">({{ 'pos.closeShiftModal.overage' | translate }})</span>
+          </strong>
+        </div>
+
+        <div class="form-group mt-2">
+          <label>{{ 'pos.closeShiftModal.notes' | translate }}</label>
+          <textarea [(ngModel)]="closingNotes" rows="2" [placeholder]="'pos.closeShiftModal.notesPlaceholder' | translate"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showCloseShiftModal = false">{{ 'pos.closeShiftModal.cancel' | translate }}</button>
+        <button type="button" class="btn btn-danger" (click)="closeShift()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'pos.closeShiftModal.submit' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASH MOVEMENT MODAL -->
+  <div *ngIf="showCashMovementModal" class="modal-backdrop" (click)="showCashMovementModal = false">
+    <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-arrows-v text-primary"></i>
+          <h3>{{ 'pos.movementModal.title' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="showCashMovementModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>{{ 'pos.movementModal.typeLabel' | translate }}</label>
+          <div class="d-flex gap-2">
+            <button
+              type="button"
+              class="btn flex-1"
+              [class.btn-primary]="movementType == 1"
+              [class.btn-secondary]="movementType != 1"
+              (click)="movementType = 1">
+              <i class="pi pi-plus-circle"></i> {{ 'pos.movementModal.cashIn' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn flex-1"
+              [class.btn-danger]="movementType == 2"
+              [class.btn-secondary]="movementType != 2"
+              (click)="movementType = 2">
+              <i class="pi pi-minus-circle"></i> {{ 'pos.movementModal.cashOut' | translate }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'pos.movementModal.amountLabel' | translate }}</label>
+          <input type="number" [(ngModel)]="movementAmount" min="1" step="10" />
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'pos.movementModal.reasonLabel' | translate }}</label>
+          <input type="text" [(ngModel)]="movementReason" [placeholder]="'pos.movementModal.reasonPlaceholder' | translate" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showCashMovementModal = false">{{ 'pos.movementModal.cancel' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="submitCashMovement()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'pos.movementModal.submit' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

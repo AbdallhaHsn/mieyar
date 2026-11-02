@@ -51,6 +51,9 @@ public static class GeneralLedgerServiceCollectionExtensions
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<ICurrencyRateRepository, CurrencyRateRepository>();
 
+        // Atomic multi-step commands (ITransactionalCommand) run inside one GL database transaction
+        services.AddScoped<AlRobban.Shared.Application.Abstractions.IModuleTransactionProvider, GeneralLedgerTransactionProvider>();
+
         // MediatR registration for GeneralLedger Application assembly
         services.AddMediatR(cfg =>
         {

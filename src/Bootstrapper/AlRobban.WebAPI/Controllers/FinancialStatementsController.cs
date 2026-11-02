@@ -1,3 +1,6 @@
+﻿using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
+using AlRobban.Modules.GeneralLedger.Application.Commands.FiscalClosing;
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Application.Queries.FinancialStatements;
 using MediatR;
@@ -7,6 +10,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/financial-statements")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class FinancialStatementsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -169,6 +173,32 @@ public class FinancialStatementsController : ControllerBase
     }
 
     /// <summary>
+    /// اعتماد وإقفال الفترة الضريبية وتوليد قيد التسوية المحاسبي آلياً في دفتر الأستاذ العام
+    /// </summary>
+    [HttpPost("vat-return/close-period")]
+    [ProducesResponseType(typeof(VatPeriodClosingResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CloseVatPeriod(
+        [FromBody] CloseVatPeriodRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new CloseVatPeriodCommand(
+            request.CompanyId,
+            request.FromDate,
+            request.ToDate,
+            request.PeriodNameAr,
+            request.PeriodNameEn,
+            User.Identity?.Name ?? "مدير الحسابات");
+
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
     /// حفظ وتحديث محددات وإعدادات عرض القوائم المالية للشركة
     /// </summary>
     [HttpPut("settings")]
@@ -184,3 +214,12 @@ public class FinancialStatementsController : ControllerBase
         return Ok(result.Value);
     }
 }
+
+public record CloseVatPeriodRequest(
+    Guid? CompanyId,
+    DateTime FromDate,
+    DateTime ToDate,
+    string? PeriodNameAr = null,
+    string? PeriodNameEn = null
+);
+

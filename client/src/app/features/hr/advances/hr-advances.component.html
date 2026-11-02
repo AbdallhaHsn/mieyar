@@ -1,0 +1,447 @@
+<div class="hr-page-container" [attr.dir]="isArabic ? 'rtl' : 'ltr'">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1>{{ 'hr.advances.title' | translate }}</h1>
+        <span class="badge-tag">{{ 'hr.advances.hrBadge' | translate }}</span>
+        <span class="badge-tag wps-tag">{{ 'hr.advances.autoDeductionBadge' | translate }}</span>
+      </div>
+      <p class="subtitle">
+        {{ 'hr.advances.subtitle' | translate }}
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="loadData()" [disabled]="loading">
+        <i class="pi pi-refresh" [class.pi-spin]="loading"></i>
+        <span>{{ 'hr.advances.refresh' | translate }}</span>
+      </button>
+      <button class="btn btn-primary" (click)="openNewModal()">
+        <i class="pi pi-plus"></i>
+        <span>{{ 'hr.advances.newAdvance' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon total">
+        <i class="pi pi-file-edit"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.advances.kpis.totalAdvances' | translate }}</span>
+        <span class="metric-value">{{ totalAdvancesCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon pending">
+        <i class="pi pi-clock"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.advances.kpis.pendingApprovals' | translate }}</span>
+        <span class="metric-value pending-val">{{ pendingApprovalsCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon disbursed">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.advances.kpis.totalDisbursed' | translate }}</span>
+        <span class="metric-value">{{ totalDisbursedAmount | number:'1.2-2' }} <small>{{ 'common.currency' | translate }}</small></span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon remaining">
+        <i class="pi pi-hourglass"></i>
+      </div>
+      <div class="metric-content">
+        <span class="metric-label">{{ 'hr.advances.remainingBalance' | translate }}</span>
+        <span class="metric-value remaining-val">{{ totalRemainingBalance | number:'1.2-2' }} <small>{{ 'common.currency' | translate }}</small></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Tabs Bar -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applyFilter()"
+        [placeholder]="('hr.advances.searchByNumberEmployeeId' | translate)"
+      />
+      <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''; applyFilter()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="status-tabs">
+      <button [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'; applyFilter()">
+        {{ 'hr.advances.all' | translate }}
+      </button>
+      <button [class.active]="statusFilter === '1'" (click)="statusFilter = '1'; applyFilter()">
+        {{ 'hr.advances.pending' | translate }}
+        <span class="count-pill" *ngIf="pendingApprovalsCount > 0">{{ pendingApprovalsCount }}</span>
+      </button>
+      <button [class.active]="statusFilter === '2'" (click)="statusFilter = '2'; applyFilter()">
+        {{ 'hr.advances.approved' | translate }}
+      </button>
+      <button [class.active]="statusFilter === '4'" (click)="statusFilter = '4'; applyFilter()">
+        {{ 'hr.advances.disbursed' | translate }}
+      </button>
+      <button [class.active]="statusFilter === '5'" (click)="statusFilter = '5'; applyFilter()">
+        {{ 'hr.advances.settled' | translate }}
+      </button>
+      <button [class.active]="statusFilter === '3'" (click)="statusFilter = '3'; applyFilter()">
+        {{ 'hr.advances.statusRejected' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-container">
+    <div *ngIf="loading" class="table-loading">
+      <i class="pi pi-spin pi-spinner text-primary text-3xl"></i>
+      <p>{{ 'hr.advances.loading' | translate }}</p>
+    </div>
+
+    <table *ngIf="!loading && paginatedAdvances.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'hr.advances.colNumber' | translate }}</th>
+          <th>{{ 'hr.advances.employee' | translate }}</th>
+          <th>{{ 'hr.advances.amount' | translate }}</th>
+          <th>{{ 'hr.advances.colInstallments' | translate }}</th>
+          <th>{{ 'hr.advances.monthly' | translate }}</th>
+          <th>{{ 'hr.advances.colRemaining' | translate }}</th>
+          <th>{{ 'hr.advances.requestDate' | translate }}</th>
+          <th>{{ 'hr.advances.colStatus' | translate }}</th>
+          <th class="actions-header">{{ 'hr.advances.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let adv of paginatedAdvances">
+          <td>
+            <div class="advance-code-badge">
+              <i class="pi pi-hashtag"></i>
+              <span>{{ adv.advanceNumber }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="employee-cell">
+              <span class="emp-name">{{ isArabic ? adv.employeeNameAr : adv.employeeNameEn }}</span>
+              <span class="emp-sub">#{{ adv.employeeNumber }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="amount-cell">
+              <strong>{{ adv.amount | number:'1.2-2' }}</strong>
+              <small>{{ 'common.currency' | translate }}</small>
+            </div>
+          </td>
+          <td>
+            <span class="installments-badge">{{ adv.installmentsCount }} {{ 'hr.advances.m' | translate }}</span>
+          </td>
+          <td>
+            <span class="monthly-text">{{ adv.monthlyDeductionAmount | number:'1.2-2' }}</span>
+          </td>
+          <td>
+            <span class="remaining-text" [class.zero]="adv.remainingAmount === 0">
+              {{ adv.remainingAmount | number:'1.2-2' }}
+            </span>
+          </td>
+          <td>
+            <span class="date-text">{{ adv.requestDate | date:'yyyy/MM/dd' }}</span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusBadgeClass(adv.status)">
+              {{ getStatusLabel(adv.status) }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <!-- Pending: Approve & Reject buttons -->
+            <ng-container *ngIf="adv.status === 1">
+              <button class="btn-action approve-btn" (click)="openApproval(adv)" [title]="('hr.advances.approve' | translate)">
+                <i class="pi pi-check"></i>
+                <span>{{ 'hr.advances.approve' | translate }}</span>
+              </button>
+              <button class="btn-action reject-btn" (click)="promptReject(adv)" [title]="('hr.advances.reject' | translate)">
+                <i class="pi pi-times"></i>
+                <span>{{ 'hr.advances.reject' | translate }}</span>
+              </button>
+            </ng-container>
+
+            <!-- Approved: Disburse button -->
+            <ng-container *ngIf="adv.status === 2">
+              <button class="btn-action disburse-btn" (click)="openDisburse(adv)" [title]="'hr.advances.btnDisburse' | translate">
+                <i class="pi pi-send"></i>
+                <span>{{ 'hr.advances.disburse' | translate }}</span>
+              </button>
+            </ng-container>
+
+            <!-- Disbursed / Settled: View details -->
+            <ng-container *ngIf="adv.status === 4 || adv.status === 5">
+              <span class="text-xs text-muted" *ngIf="adv.disbursementMethod">
+                <i class="pi pi-check-circle text-emerald-600"></i>
+                {{ adv.disbursementMethod === 'BankTransfer' ? ('hr.advances.bankTransfer' | translate) : adv.disbursementMethod }}
+              </span>
+            </ng-container>
+
+            <!-- Rejected: View reason -->
+            <ng-container *ngIf="adv.status === 3 && adv.rejectionReason">
+              <span class="text-xs text-rose-600" [title]="adv.rejectionReason">
+                <i class="pi pi-info-circle"></i>
+                {{ adv.rejectionReason | slice:0:20 }}...
+              </span>
+            </ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!loading && paginatedAdvances.length === 0" class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <h3>{{ 'hr.advances.noAdvancesFound' | translate }}</h3>
+      <p>{{ 'hr.advances.youCanCreateANew' | translate }}</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-footer" *ngIf="filteredAdvances.length > pageSize">
+      <app-pagination
+        [totalItems]="filteredAdvances.length"
+        [pageSize]="pageSize"
+        [currentPage]="currentPage"
+        (pageChange)="currentPage = $event"
+      ></app-pagination>
+    </div>
+  </div>
+</div>
+
+<!-- ================= NEW ADVANCE MODAL ================= -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="pi pi-credit-card"></i>
+        <h3>{{ 'hr.advances.newEmployeeAdvanceRequest' | translate }}</h3>
+      </div>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form (ngSubmit)="saveAdvance()">
+        <div class="form-grid">
+          <!-- Employee Selection -->
+          <div class="form-group full-width">
+            <label>{{ 'hr.advances.employee' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="form.employeeId" name="employeeId" required class="form-control">
+              <option value="" disabled>{{ 'hr.advances.selectEmpPrompt' | translate }}</option>
+              <option *ngFor="let emp of employees" [value]="emp.id">
+                {{ isArabic ? emp.fullNameAr : emp.fullNameEn }} ({{ emp.employeeNumber }}) - {{ isArabic ? emp.jobTitleAr : emp.jobTitleEn }} {{ 'ui.hrAdvances.cae441' | translate }} {{ emp.basicSalary | number }} {{ 'common.sar' | translate }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Amount -->
+          <div class="form-group">
+            <label>{{ 'hr.advances.amountSar' | translate }} <span class="required">*</span></label>
+            <input type="number" min="100" [(ngModel)]="form.amount" name="amount" required class="form-control" />
+          </div>
+
+          <!-- Installments -->
+          <div class="form-group">
+            <label>{{ 'hr.advances.installmentsMonths' | translate }} <span class="required">*</span></label>
+            <input type="number" min="1" max="36" [(ngModel)]="form.installmentsCount" name="installmentsCount" required class="form-control" />
+          </div>
+
+          <!-- Calculated Monthly deduction -->
+          <div class="form-group">
+            <label>{{ 'hr.advances.estimatedMonthlyDeduction' | translate }}</label>
+            <div class="calculated-box">
+              <strong>{{ monthlyInstallmentEstimate | number:'1.2-2' }}</strong>
+              <small>{{ 'hr.advances.sarMo' | translate }}</small>
+            </div>
+          </div>
+
+          <!-- Deduction Start (Year & Month) -->
+          <div class="form-group">
+            <label>{{ 'hr.advances.startDeductionFrom' | translate }}</label>
+            <div class="period-inputs">
+              <input type="number" [(ngModel)]="form.startDeductionYear" name="startDeductionYear" class="form-control" [placeholder]="'ui.hrAdvances.cdbf99' | translate" />
+              <input type="number" min="1" max="12" [(ngModel)]="form.startDeductionMonth" name="startDeductionMonth" class="form-control" [placeholder]="'ui.hrAdvances.b1472f' | translate" />
+            </div>
+          </div>
+
+          <!-- Reason Arabic (Single-Entry Auto-Translation) -->
+          <div class="form-group full-width">
+            <label>
+              {{ 'hr.advances.reasonArabic' | translate }}
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="form.reasonAr"
+              name="reasonAr"
+              (ngModelChange)="onReasonArChange()"
+              required
+              class="form-control"
+              [placeholder]="'ui.hrAdvances.108650' | translate"
+            />
+          </div>
+
+          <!-- Reason English (Auto-Translated) -->
+          <div class="form-group full-width">
+            <div class="label-with-action">
+              <label>{{ 'hr.advances.reasonEnglishAutotranslated' | translate }}</label>
+              <button type="button" class="btn-translate-badge" (click)="triggerReTranslate()" [title]="'roles.instantTranslate' | translate">
+                <i class="pi pi-globe"></i>
+                <span>{{ 'hr.advances.retranslate' | translate }}</span>
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="form.reasonEn"
+              name="reasonEn"
+              class="form-control"
+              placeholder="Auto-translated reason..."
+            />
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group full-width">
+            <label>{{ 'hr.advances.additionalNotes' | translate }}</label>
+            <textarea [(ngModel)]="form.notes" name="notes" rows="2" class="form-control"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            <i class="pi pi-check" *ngIf="!loading"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
+            <span>{{ 'hr.advances.submitRequest' | translate }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APPROVAL MODAL ================= -->
+<div class="modal-backdrop" *ngIf="showApprovalModal" (click)="showApprovalModal = false">
+  <div class="modal-dialog sm-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="pi pi-check-circle text-emerald-600"></i>
+        <h3>{{ 'hr.advances.approveAdvanceRequest' | translate }}</h3>
+      </div>
+      <button class="close-btn" (click)="showApprovalModal = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedAdvance">
+      <div class="advance-summary-box">
+        <div class="row">
+          <span>{{ 'hr.advances.employee1' | translate }}</span>
+          <strong>{{ isArabic ? selectedAdvance.employeeNameAr : selectedAdvance.employeeNameEn }}</strong>
+        </div>
+        <div class="row">
+          <span>{{ 'hr.advances.requestedAmount' | translate }}</span>
+          <strong>{{ selectedAdvance.amount | number:'1.2-2' }} {{ 'common.currency' | translate }}</strong>
+        </div>
+        <div class="row">
+          <span>{{ 'hr.advances.installments' | translate }}</span>
+          <strong>{{ selectedAdvance.installmentsCount }} {{ 'hr.advances.months' | translate }}</strong>
+        </div>
+      </div>
+
+      <div class="form-group mt-4">
+        <label>{{ 'hr.advances.approvedAmountSar' | translate }}</label>
+        <input type="number" [(ngModel)]="approvalForm.approvedAmount" class="form-control" />
+      </div>
+
+      <div class="form-group mt-3">
+        <label>{{ 'hr.advances.approvalNotes' | translate }}</label>
+        <textarea [(ngModel)]="approvalForm.notes" rows="2" class="form-control" [placeholder]="'ui.hrAdvances.aebb4c' | translate"></textarea>
+      </div>
+
+      <div class="modal-footer mt-4">
+        <button type="button" class="btn btn-secondary" (click)="showApprovalModal = false">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="button" class="btn btn-success" (click)="submitApproval()" [disabled]="loading">
+          <i class="pi pi-check"></i>
+          <span>{{ 'hr.advances.confirmApproval' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DISBURSE MODAL ================= -->
+<div class="modal-backdrop" *ngIf="showDisburseModal" (click)="showDisburseModal = false">
+  <div class="modal-dialog sm-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="pi pi-send text-blue-600"></i>
+        <h3>{{ 'hr.advances.disburseApprovedAdvance' | translate }}</h3>
+      </div>
+      <button class="close-btn" (click)="showDisburseModal = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedAdvance">
+      <div class="advance-summary-box">
+        <div class="row">
+          <span>{{ 'hr.advances.employee1' | translate }}</span>
+          <strong>{{ isArabic ? selectedAdvance.employeeNameAr : selectedAdvance.employeeNameEn }}</strong>
+        </div>
+        <div class="row">
+          <span>{{ 'hr.advances.disbursableAmount' | translate }}</span>
+          <strong class="text-emerald-600">{{ (selectedAdvance.approvedAmount || selectedAdvance.amount) | number:'1.2-2' }} {{ 'common.currency' | translate }}</strong>
+        </div>
+      </div>
+
+      <div class="form-group mt-4">
+        <label>{{ 'hr.advances.disbursementMethod' | translate }}</label>
+        <select [(ngModel)]="disburseForm.disbursementMethod" class="form-control">
+          <option value="BankTransfer">{{ 'hr.advances.bankTransfer' | translate }}</option>
+          <option value="CashFloat">{{ 'hr.advances.cashFloat' | translate }}</option>
+          <option value="Cheque">{{ 'hr.advances.cheque' | translate }}</option>
+        </select>
+      </div>
+
+      <div class="form-group mt-3" *ngIf="disburseForm.disbursementMethod === 'BankTransfer'">
+        <label>{{ 'hr.advances.disbursementBankAccount' | translate }}</label>
+        <select [(ngModel)]="disburseForm.bankAccountId" class="form-control">
+          <option *ngFor="let b of bankAccounts" [value]="b.id">
+            {{ isArabic ? b.nameAr : b.nameEn }} ({{ b.accountCode }}{{ 'ui.hrAdvances.f1ff8a' | translate }} {{ b.currentBalance | number }} {{ 'common.sar' | translate }}
+          </option>
+        </select>
+      </div>
+
+      <div class="modal-footer mt-4">
+        <button type="button" class="btn btn-secondary" (click)="showDisburseModal = false">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="button" class="btn btn-primary" (click)="submitDisburse()" [disabled]="loading">
+          <i class="pi pi-send"></i>
+          <span>{{ 'hr.advances.confirmDisbursement' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

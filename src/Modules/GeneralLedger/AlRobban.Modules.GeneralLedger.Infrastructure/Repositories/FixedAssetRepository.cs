@@ -35,6 +35,7 @@ public class FixedAssetRepository : IFixedAssetRepository
             .Include(a => a.AccumulatedDepreciationAccount)
             .Include(a => a.DepreciationExpenseAccount)
             .Include(a => a.CostCenter)
+            .Include(a => a.DepreciationHistories)
             .Where(a => a.CompanyId == companyId);
 
         if (status.HasValue)

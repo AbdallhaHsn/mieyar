@@ -1,0 +1,630 @@
+<div class="bw-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Notifications -->
+  <div class="alert-banner alert-success" *ngIf="successMessage()">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage() }}</span>
+  </div>
+  <div class="alert-banner alert-error" *ngIf="errorMessage()">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ errorMessage() }}</span>
+  </div>
+
+  <!-- Header Section -->
+  <header class="page-header">
+    <div class="header-info">
+      <div class="header-badge">
+        <i class="pi pi-sitemap"></i>
+        <span>{{ 'branches.branchesWarehouses.badge' | translate }}</span>
+      </div>
+      <h1 class="page-title">{{ 'branches.branchesWarehouses.title' | translate }}</h1>
+      <p class="page-subtitle">
+        {{ 'branches.branchesWarehouses.subtitle' | translate }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-outline" (click)="openAddBranchModal()">
+        <i class="pi pi-plus-circle"></i>
+        <span>{{ 'branchesWarehouses.newBranch' | translate }}</span>
+      </button>
+      <button type="button" class="btn btn-primary" (click)="openAddWarehouseModal()">
+        <i class="pi pi-box"></i>
+        <span>{{ 'branchesWarehouses.newWarehouse' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon branches-total">
+        <i class="pi pi-building"></i>
+      </div>
+      <div class="metric-data">
+        <span class="metric-label">{{ 'branches.branchesWarehouses.kpiTotalBranches' | translate }}</span>
+        <strong class="metric-value">{{ totalBranchesCount() }}</strong>
+      </div>
+      <div class="metric-indicator positive">
+        <span>{{ 'branchesWarehouses.activeCount' | translate }} {{ activeBranchesCount() }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon branches-active">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="metric-data">
+        <span class="metric-label">{{ 'branches.branchesWarehouses.kpiActiveBranches' | translate }}</span>
+        <strong class="metric-value">{{ activeBranchesCount() }}</strong>
+      </div>
+      <div class="metric-indicator">
+        <span>{{ 'branchesWarehouses.outOf' | translate }} {{ totalBranchesCount() }} {{ 'branchesWarehouses.branchesUnit' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon warehouses-total">
+        <i class="pi pi-box"></i>
+      </div>
+      <div class="metric-data">
+        <span class="metric-label">{{ 'branchesWarehouses.totalWarehouses' | translate }}</span>
+        <strong class="metric-value">{{ totalWarehousesCount() }}</strong>
+      </div>
+      <div class="metric-indicator positive">
+        <span>{{ 'branchesWarehouses.activeCount' | translate }} {{ activeWarehousesCount() }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon warehouses-active">
+        <i class="pi pi-verified"></i>
+      </div>
+      <div class="metric-data">
+        <span class="metric-label">{{ 'branchesWarehouses.activeWarehouses' | translate }}</span>
+        <strong class="metric-value">{{ activeWarehousesCount() }}</strong>
+      </div>
+      <div class="metric-indicator">
+        <span>{{ 'branchesWarehouses.readyForInventory' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation & Filter Controls -->
+  <div class="content-card">
+    <div class="tabs-and-toolbar">
+      <div class="nav-tabs">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'branches'"
+          (click)="activeTab.set('branches')">
+          <i class="pi pi-building"></i>
+          <span>{{ 'branchesWarehouses.branchesListTab' | translate }}</span>
+          <span class="tab-badge">{{ totalBranchesCount() }}</span>
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'warehouses'"
+          (click)="activeTab.set('warehouses')">
+          <i class="pi pi-box"></i>
+          <span>{{ 'branchesWarehouses.warehousesListTab' | translate }}</span>
+          <span class="tab-badge">{{ totalWarehousesCount() }}</span>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="search-box" *ngIf="activeTab() === 'branches'">
+        <i class="pi pi-search search-icon"></i>
+        <input 
+          type="text" 
+          class="search-input" 
+          [placeholder]="'branchesWarehouses.searchBranchPlaceholder' | translate" 
+          [ngModel]="branchSearch()" 
+          (ngModelChange)="branchSearch.set($event)" />
+        <button class="clear-btn" *ngIf="branchSearch()" (click)="branchSearch.set('')">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="search-box" *ngIf="activeTab() === 'warehouses'">
+        <i class="pi pi-search search-icon"></i>
+        <input 
+          type="text" 
+          class="search-input" 
+          [placeholder]="'branchesWarehouses.searchWarehousePlaceholder' | translate" 
+          [ngModel]="warehouseSearch()" 
+          (ngModelChange)="warehouseSearch.set($event)" />
+        <button class="clear-btn" *ngIf="warehouseSearch()" (click)="warehouseSearch.set('')">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: Branches Table -->
+    <div class="tab-content" *ngIf="activeTab() === 'branches'">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 100px;">{{ 'branchesWarehouses.branchCode' | translate }}</th>
+              <th>{{ 'branchesWarehouses.branchNameCol' | translate }}</th>
+              <th style="width: 130px;">{{ 'branchesWarehouses.branchTypeCol' | translate }}</th>
+              <th>{{ 'branchesWarehouses.cityAddressCol' | translate }}</th>
+              <th>{{ 'branchesWarehouses.vatCrCol' | translate }}</th>
+              <th style="width: 110px;">{{ 'branchesWarehouses.status' | translate }}</th>
+              <th style="width: 140px; text-align: center;">{{ 'branchesWarehouses.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of filteredBranches()" [class.row-inactive]="!b.isActive">
+              <td>
+                <span class="code-tag">{{ b.code }}</span>
+              </td>
+              <td>
+                <div class="entity-name-box">
+                  <strong class="name-ar">{{ b.nameAr }}</strong>
+                  <span class="name-en">{{ b.nameEn }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="b.isMainBranch ? 'badge-primary' : 'badge-neutral'">
+                  <i class="pi" [ngClass]="b.isMainBranch ? 'pi-star-fill' : 'pi-sitemap'"></i>
+                  {{ b.isMainBranch ? ('branchesWarehouses.mainBranch' | translate) : ('branchesWarehouses.regionalBranch' | translate) }}
+                </span>
+              </td>
+              <td>
+                <div class="location-box">
+                  <span class="city-name" *ngIf="getBranchCity(b)">
+                    <i class="pi pi-map-marker"></i> {{ getBranchCity(b) }}
+                  </span>
+                  <span class="address-text" *ngIf="formatBranchAddress(b)">{{ formatBranchAddress(b) }}</span>
+                  <span class="text-muted" *ngIf="!getBranchCity(b) && !formatBranchAddress(b)">-</span>
+                </div>
+              </td>
+              <td>
+                <div class="tax-box">
+                  <small *ngIf="b.taxRegistrationNumber" class="text-code">{{ 'branchesWarehouses.vatPrefix' | translate }} {{ b.taxRegistrationNumber }}</small>
+                  <small *ngIf="b.crNumber" class="text-code">{{ 'branchesWarehouses.crPrefix' | translate }} {{ b.crNumber }}</small>
+                  <span class="text-muted" *ngIf="!b.taxRegistrationNumber && !b.crNumber">-</span>
+                </div>
+              </td>
+              <td>
+                <span class="status-pill" [class.active]="b.isActive">
+                  <span class="dot"></span>
+                  {{ b.isActive ? ('branchesWarehouses.active' | translate) : ('branchesWarehouses.inactive' | translate) }}
+                </span>
+              </td>
+              <td style="text-align: center;">
+                <button 
+                  type="button" 
+                  class="action-btn" 
+                  [ngClass]="b.isActive ? 'btn-warn' : 'btn-success'"
+                  (click)="toggleBranchStatus(b)"
+                  [title]="b.isActive ? ('branchesWarehouses.deactivateBranch' | translate) : ('branchesWarehouses.activateBranch' | translate)">
+                  <i class="pi" [ngClass]="b.isActive ? 'pi-pause' : 'pi-play'"></i>
+                  <span>{{ b.isActive ? ('branchesWarehouses.deactivate' | translate) : ('branchesWarehouses.activate' | translate) }}</span>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="filteredBranches().length === 0">
+              <td colspan="7" class="empty-cell">
+                <div class="empty-state">
+                  <i class="pi pi-search empty-icon"></i>
+                  <h4>{{ 'branchesWarehouses.noMatchingResultsFound' | translate }}</h4>
+                  <p>{{ 'branchesWarehouses.noMatchingBranchesDesc' | translate }}</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: Warehouses Table -->
+    <div class="tab-content" *ngIf="activeTab() === 'warehouses'">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 120px;">{{ 'branchesWarehouses.warehouseCode' | translate }}</th>
+              <th>{{ 'branchesWarehouses.warehouseNameCol' | translate }}</th>
+              <th>{{ 'branchesWarehouses.linkedBranchCol' | translate }}</th>
+              <th>{{ 'branchesWarehouses.geoLocCol' | translate }}</th>
+              <th>{{ 'branchesWarehouses.managerContactCol' | translate }}</th>
+              <th style="width: 120px;">{{ 'branchesWarehouses.type' | translate }}</th>
+              <th style="width: 110px;">{{ 'branchesWarehouses.status' | translate }}</th>
+              <th style="width: 140px; text-align: center;">{{ 'branchesWarehouses.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let w of filteredWarehouses()" [class.row-inactive]="!w.isActive">
+              <td>
+                <span class="code-tag">{{ w.code }}</span>
+              </td>
+              <td>
+                <div class="entity-name-box">
+                  <strong class="name-ar">{{ w.nameAr }}</strong>
+                  <span class="name-en">{{ w.nameEn }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="branch-pill">
+                  <i class="pi pi-building"></i>
+                  {{ w.branchName || ('branchesWarehouses.notLinked' | translate) }}
+                </span>
+              </td>
+              <td>
+                <span class="location-text">
+                  <i class="pi pi-map-marker" *ngIf="w.location"></i>
+                  {{ w.location || '-' }}
+                </span>
+              </td>
+              <td>
+                <div class="manager-box">
+                  <span class="manager-name" *ngIf="w.managerName">
+                    <i class="pi pi-user"></i> {{ w.managerName }}
+                  </span>
+                  <small class="manager-phone" *ngIf="w.managerPhone">
+                    <i class="pi pi-phone"></i> {{ w.managerPhone }}
+                  </small>
+                  <span class="text-muted" *ngIf="!w.managerName && !w.managerPhone">-</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="w.isDefault ? 'badge-primary' : 'badge-neutral'">
+                  <i class="pi" [ngClass]="w.isDefault ? 'pi-check-circle' : 'pi-box'"></i>
+                  {{ w.isDefault ? ('branchesWarehouses.default' | translate) : ('branchesWarehouses.additional' | translate) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-pill" [class.active]="w.isActive">
+                  <span class="dot"></span>
+                  {{ w.isActive ? ('branchesWarehouses.active' | translate) : ('branchesWarehouses.inactive' | translate) }}
+                </span>
+              </td>
+              <td style="text-align: center;">
+                <button 
+                  type="button" 
+                  class="action-btn" 
+                  [ngClass]="w.isActive ? 'btn-warn' : 'btn-success'"
+                  (click)="toggleWarehouseStatus(w)"
+                  [title]="w.isActive ? ('branchesWarehouses.deactivateWarehouse' | translate) : ('branchesWarehouses.activateWarehouse' | translate)">
+                  <i class="pi" [ngClass]="w.isActive ? 'pi-pause' : 'pi-play'"></i>
+                  <span>{{ w.isActive ? ('branchesWarehouses.deactivate' | translate) : ('branchesWarehouses.activate' | translate) }}</span>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="filteredWarehouses().length === 0">
+              <td colspan="8" class="empty-cell">
+                <div class="empty-state">
+                  <i class="pi pi-search empty-icon"></i>
+                  <h4>{{ 'branchesWarehouses.noMatchingResultsFound' | translate }}</h4>
+                  <p>{{ 'branchesWarehouses.noWarehousesMatchingFilter' | translate }}</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: Add Branch Modal -->
+  <div class="modal-backdrop" *ngIf="showBranchModal()" (click)="closeBranchModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <i class="pi pi-building modal-icon"></i>
+          <div>
+            <h3 class="modal-title">{{ 'branchesWarehouses.newBranch' | translate }} </h3>
+            <span class="modal-subtitle">{{ 'branchesWarehouses.newBranchSubtitle' | translate }}</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeBranchModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form (ngSubmit)="saveBranch()" class="modal-form">
+        <div class="form-grid">
+          <!-- Branch Code -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>{{ 'branchesWarehouses.branchCode' | translate }} </span>
+              <span class="req">*</span>
+            </label>
+            <div class="input-wrap">
+              <i class="pi pi-hashtag input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egBranchCode' | translate" 
+                [(ngModel)]="branchForm.code" 
+                name="branchCode" 
+                required />
+            </div>
+          </div>
+
+          <!-- City -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.city' | translate }} </label>
+            <div class="input-wrap">
+              <i class="pi pi-map-marker input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egCity' | translate" 
+                [(ngModel)]="branchForm.city" 
+                name="branchCity" />
+            </div>
+          </div>
+
+          <!-- Single Unified Branch Name -->
+          <div class="form-group full-width">
+            <div class="label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label class="form-label" style="margin-bottom: 0;">
+                <span>{{ 'branchesWarehouses.branchName' | translate }}</span>
+                <span class="req">*</span>
+                <span style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-right: 0.5rem; margin-left: 0.5rem;">
+                  {{ 'branchesWarehouses.arabicOrEnglishAutotranslated' | translate }}
+                </span>
+              </label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span *ngIf="backgroundBranchTranslation" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                  {{ backgroundBranchTranslation }}
+                </span>
+                <button 
+                  type="button" 
+                  class="instant-trans-badge" 
+                  (click)="forceTranslateBranchName()"
+                  [title]="('branchesWarehouses.instantTranslate' | translate)">
+                  <i class="pi pi-globe"></i>
+                  <span>{{ 'branchesWarehouses.translate' | translate }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="input-wrap">
+              <i class="pi pi-building input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="('branchesWarehouses.egAlolayaBranch' | translate)" 
+                [ngModel]="unifiedBranchName" 
+                (ngModelChange)="onUnifiedBranchNameChange($event)"
+                name="branchUnifiedName" 
+                required />
+            </div>
+          </div>
+          <!-- Full Address -->
+          <div class="form-group full-width">
+            <label class="form-label">{{ 'branchesWarehouses.nationalAddressLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-compass input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egAddress' | translate" 
+                [(ngModel)]="branchForm.address" 
+                name="branchAddress" />
+            </div>
+          </div>
+
+          <!-- Tax Number -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.branchVatLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-percentage input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control ltr-input" 
+                [placeholder]="'branchesWarehouses.vat15Placeholder' | translate" 
+                maxlength="15"
+                [(ngModel)]="branchForm.taxRegistrationNumber" 
+                name="branchVat" />
+            </div>
+          </div>
+
+          <!-- CR Number -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.branchCrLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-id-card input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control ltr-input" 
+                [placeholder]="'branchesWarehouses.cr10Placeholder' | translate" 
+                maxlength="10"
+                [(ngModel)]="branchForm.crNumber" 
+                name="branchCr" />
+            </div>
+          </div>
+
+          <!-- Is Main Branch -->
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="branchForm.isMainBranch" 
+                name="isMainBranch" />
+              <span>{{ 'branchesWarehouses.setAsMainBranch' | translate }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeBranchModal()">
+            {{ 'branchesWarehouses.cancel' | translate }}</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting()">
+            <i class="pi pi-check" *ngIf="!isSubmitting()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+            <span>{{ isSubmitting() ? ('branchesWarehouses.saving' | translate) : ('branchesWarehouses.saveBranch' | translate) }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Add Warehouse Modal -->
+  <div class="modal-backdrop" *ngIf="showWarehouseModal()" (click)="closeWarehouseModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <i class="pi pi-box modal-icon"></i>
+          <div>
+            <h3 class="modal-title">{{ 'branchesWarehouses.newWarehouse' | translate }}</h3>
+            <span class="modal-subtitle">{{ 'branchesWarehouses.newWarehouseSubtitle' | translate }}</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeWarehouseModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form (ngSubmit)="saveWarehouse()" class="modal-form">
+        <div class="form-grid">
+          <!-- Linked Branch -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>{{ 'branchesWarehouses.parentBranch' | translate }}</span>
+              <span class="req">*</span>
+            </label>
+            <div class="input-wrap">
+              <i class="pi pi-building input-icon"></i>
+              <select 
+                class="form-control select-control" 
+                [(ngModel)]="warehouseForm.branchId" 
+                name="whBranch" 
+                required>
+                <option value="" disabled>{{ 'branchesWarehouses.selectParentBranch' | translate }}</option>
+                <option *ngFor="let b of branches()" [value]="b.id">
+                  {{ b.nameAr }} ({{ b.code }})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Warehouse Code -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>{{ 'branchesWarehouses.warehouseCode' | translate }}</span>
+              <span class="req">*</span>
+            </label>
+            <div class="input-wrap">
+              <i class="pi pi-hashtag input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egWarehouseCode' | translate" 
+                [(ngModel)]="warehouseForm.code" 
+                name="whCode" 
+                required />
+            </div>
+          </div>
+
+          <!-- Single Unified Warehouse Name -->
+          <div class="form-group full-width">
+            <div class="label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label class="form-label" style="margin-bottom: 0;">
+                <span>{{ 'branchesWarehouses.warehouseName' | translate }}</span>
+                <span class="req">*</span>
+                <span style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-right: 0.5rem; margin-left: 0.5rem;">
+                  {{ 'branchesWarehouses.arabicOrEnglishAutotranslated' | translate }}
+                </span>
+              </label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span *ngIf="backgroundWarehouseTranslation" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                  {{ backgroundWarehouseTranslation }}
+                </span>
+                <button 
+                  type="button" 
+                  class="instant-trans-badge" 
+                  (click)="forceTranslateWarehouseName()"
+                  [title]="('branchesWarehouses.instantTranslate' | translate)">
+                  <i class="pi pi-globe"></i>
+                  <span>{{ 'branchesWarehouses.translate' | translate }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="input-wrap">
+              <i class="pi pi-box input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="('branchesWarehouses.egCentralMainWarehouse' | translate)" 
+                [ngModel]="unifiedWarehouseName" 
+                (ngModelChange)="onUnifiedWarehouseNameChange($event)"
+                name="warehouseUnifiedName" 
+                required />
+            </div>
+          </div>
+          <!-- Location -->
+          <div class="form-group full-width">
+            <label class="form-label">{{ 'branchesWarehouses.locationLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-map-marker input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egLocation' | translate" 
+                [(ngModel)]="warehouseForm.location" 
+                name="whLocation" />
+            </div>
+          </div>
+
+          <!-- Manager Name -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.managerLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-user input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.managerNamePlaceholder' | translate" 
+                [(ngModel)]="warehouseForm.managerName" 
+                name="whManager" />
+            </div>
+          </div>
+
+          <!-- Manager Phone -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.managerPhoneLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-phone input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control ltr-input" 
+                placeholder="05XXXXXXXX" 
+                [(ngModel)]="warehouseForm.managerPhone" 
+                name="whPhone" />
+            </div>
+          </div>
+
+          <!-- Is Default Warehouse -->
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="warehouseForm.isDefault" 
+                name="isDefaultWh" />
+              <span>{{ 'branchesWarehouses.setDefaultWarehouse' | translate }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeWarehouseModal()">
+            {{ 'branchesWarehouses.cancel' | translate }}</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting()">
+            <i class="pi pi-check" *ngIf="!isSubmitting()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+            <span>{{ isSubmitting() ? ('branchesWarehouses.saving' | translate) : ('branchesWarehouses.saveWarehouse' | translate) }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

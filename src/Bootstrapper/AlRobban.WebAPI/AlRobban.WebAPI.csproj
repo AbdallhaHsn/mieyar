@@ -31,6 +31,10 @@
     <ProjectReference Include="..\..\Modules\InvoicingAndZatca\AlRobban.Modules.InvoicingAndZatca.Endpoints\AlRobban.Modules.InvoicingAndZatca.Endpoints.csproj" />
     <ProjectReference Include="..\..\Modules\DocumentManagement\AlRobban.Modules.DocumentManagement.Infrastructure\AlRobban.Modules.DocumentManagement.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\IdentityAndAccess\AlRobban.Modules.IdentityAndAccess.Infrastructure\AlRobban.Modules.IdentityAndAccess.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Purchasing\AlRobban.Modules.Purchasing.Infrastructure\AlRobban.Modules.Purchasing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\HumanResources\AlRobban.Modules.HumanResources.Infrastructure\AlRobban.Modules.HumanResources.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Projects\AlRobban.Modules.Projects.Infrastructure\AlRobban.Modules.Projects.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Manufacturing\AlRobban.Modules.Manufacturing.Infrastructure\AlRobban.Modules.Manufacturing.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

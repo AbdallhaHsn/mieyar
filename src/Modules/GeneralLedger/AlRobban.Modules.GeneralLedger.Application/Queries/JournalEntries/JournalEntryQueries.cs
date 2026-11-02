@@ -31,7 +31,7 @@ public class GetJournalEntriesQueryHandler : IRequestHandler<GetJournalEntriesQu
 
     public async Task<Result<JournalEntriesListResultDto>> Handle(GetJournalEntriesQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
 
         var entries = await _journalRepo.GetListAsync(
             companyId,

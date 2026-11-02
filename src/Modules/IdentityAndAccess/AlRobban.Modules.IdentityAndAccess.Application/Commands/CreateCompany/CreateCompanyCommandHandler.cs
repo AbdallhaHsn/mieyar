@@ -3,17 +3,23 @@ using AlRobban.Modules.IdentityAndAccess.Domain.Entities;
 using AlRobban.Modules.IdentityAndAccess.Domain.Repositories;
 using AlRobban.Modules.IdentityAndAccess.Domain.ValueObjects;
 using AlRobban.Shared.Application.CQRS;
+using AlRobban.Shared.Application.Events;
 using AlRobban.Shared.Kernel.Primitives;
+using MediatR;
 
 namespace AlRobban.Modules.IdentityAndAccess.Application.Commands.CreateCompany;
 
 public class CreateCompanyCommandHandler : ICommandHandler<CreateCompanyCommand, CompanyDto>
 {
     private readonly ICompanyRepository _companyRepository;
+    private readonly IMediator _mediator;
 
-    public CreateCompanyCommandHandler(ICompanyRepository companyRepository)
+    public CreateCompanyCommandHandler(
+        ICompanyRepository companyRepository,
+        IMediator mediator)
     {
         _companyRepository = companyRepository;
+        _mediator = mediator;
     }
 
     public async Task<Result<CompanyDto>> Handle(
@@ -84,7 +90,16 @@ public class CreateCompanyCommandHandler : ICommandHandler<CreateCompanyCommand,
         await _companyRepository.AddAsync(company, cancellationToken);
         await _companyRepository.SaveChangesAsync(cancellationToken);
 
-        // 8. Map to DTO
+        // 8. Publish CompanyCreatedEvent to trigger automatic financial onboarding
+        await _mediator.Publish(new CompanyCreatedEvent(
+            company.Id,
+            company.Id,
+            company.Code,
+            company.NameAr,
+            company.NameEn,
+            company.CurrencyCode), cancellationToken);
+
+        // 9. Map to DTO
         var dto = MapToDto(company);
         return Result.Success(dto);
     }

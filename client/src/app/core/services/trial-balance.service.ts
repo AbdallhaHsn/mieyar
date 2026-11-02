@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface TrialBalanceAccount {
   accountId: string;
@@ -41,7 +42,7 @@ export interface TrialBalanceReport {
 })
 export class TrialBalanceService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:5000/api/trial-balance';
+  private baseUrl = `${environment.apiUrl}/api/trial-balance`;
 
   getTrialBalance(params: {
     companyId?: string;

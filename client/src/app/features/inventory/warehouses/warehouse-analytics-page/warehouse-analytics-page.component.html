@@ -1,0 +1,310 @@
+<div class="warehouse-analytics-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Top Navigation & Action Bar -->
+  <header class="page-header">
+    <div class="header-breadcrumb">
+      <button class="btn-back" (click)="goBack()" [title]="'ui.warehouseAnalyticsPage.217769' | translate">
+        <i class="pi pi-arrow-right"></i>
+        <span>{{ 'inventory.analytics.backToWarehouses' | translate }}</span>
+      </button>
+      <div class="breadcrumb-separator">/</div>
+      <span class="breadcrumb-active">{{ 'inventory.analytics.breadcrumbActive' | translate }}</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Refresh -->
+      <button class="btn-action btn-refresh" (click)="loadWarehouseAndAnalytics(warehouseId())" [disabled]="isLoading()" [title]="'zatca.actions.refreshTitle' | translate">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        <span>{{ 'common.refresh' | translate }}</span>
+      </button>
+
+      <!-- Print -->
+      <button class="btn-action btn-print" (click)="printReport()" [disabled]="isLoading()" [title]="'inventory.analytics.printReport' | translate">
+        <i class="pi pi-print"></i>
+        <span>{{ 'inventory.analytics.printReport' | translate }}</span>
+      </button>
+
+      <!-- Excel Export Button -->
+      <button class="btn-action btn-excel" (click)="exportToExcel()" [disabled]="isLoading() || isExporting()" [title]="'ui.warehouseAnalyticsPage.ff3c8b' | translate">
+        <i class="pi pi-file-excel"></i>
+        <span>{{ 'inventory.analytics.exportExcel' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Warehouse Master Info Banner -->
+  <section class="warehouse-banner" *ngIf="warehouse() as wh">
+    <div class="banner-main">
+      <div class="wh-avatar">
+        <i class="pi pi-building"></i>
+      </div>
+      <div class="wh-meta">
+        <div class="wh-title-row">
+          <h1 class="wh-name">{{ wh.nameAr }}</h1>
+          <span class="wh-code-badge">{{ wh.code }}</span>
+          <span class="wh-default-star" *ngIf="wh.isDefault" [title]="'ui.warehouseAnalyticsPage.6d5d5b' | translate">
+            <i class="pi pi-star-fill"></i> {{ 'inventory.warehouses.kpis.default' | translate }}
+          </span>
+          <span class="wh-status-badge" [class.active]="wh.isActive" [class.inactive]="!wh.isActive">
+            {{ wh.isActive ? ('inventory.warehouses.cards.active' | translate) : ('common.inactive' | translate) }}
+          </span>
+        </div>
+        <div class="wh-sub-row">
+          <span class="wh-en" *ngIf="wh.nameEn">{{ wh.nameEn }}</span>
+          <span class="wh-branch"><i class="pi pi-sitemap"></i> {{ wh.branchName || ('branches.branchesWarehouses.branchCard.mainBadge' | translate) }}</span>
+          <span class="wh-location" *ngIf="wh.location"><i class="pi pi-map-marker"></i> {{ wh.location }}</span>
+          <span class="wh-manager" *ngIf="wh.managerName"><i class="pi pi-user"></i> {{ 'ui.warehouseAnalyticsPage.7916a2' | translate }} {{ wh.managerName }}</span>
+          <span class="wh-phone" *ngIf="wh.managerPhone"><i class="pi pi-phone"></i> {{ wh.managerPhone }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Corporate Branding Strip in Page -->
+    <div class="banner-company-stamp">
+      <div class="company-text">
+        <span class="comp-title">{{ companyContext.activeCompany().nameAr || ('ui.warehouseAnalyticsPage.c77814' | translate) }}</span>
+        <span class="comp-tax">{{ 'pos.receipt.vatLabel' | translate }} {{ companyContext.activeCompany().vatNumber || '310123456700003' }} {{ 'ui.warehouseAnalyticsPage.0ea064' | translate }} {{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Analytical KPI Metrics Ribbon -->
+  <section class="kpi-grid">
+    <!-- Total Items -->
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon"><i class="pi pi-box"></i></div>
+      <div class="kpi-data">
+        <span class="kpi-label">{{ 'ui.warehouseAnalyticsPage.358c18' | translate }}</span>
+        <div class="kpi-value-row">
+          <strong class="kpi-value">{{ totalItems() }}</strong>
+          <span class="kpi-unit">{{ 'ui.warehouseAnalyticsPage.70448f' | translate }}</span>
+        </div>
+        <span class="kpi-sub">{{ totalUnits() | number }} {{ 'ui.warehouseAnalyticsPage.e22d94' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Total Valuation -->
+    <div class="kpi-card kpi-emerald">
+      <div class="kpi-icon"><i class="pi pi-wallet"></i></div>
+      <div class="kpi-data">
+        <span class="kpi-label">{{ 'ui.warehouseAnalyticsPage.ee2bb9' | translate }}</span>
+        <div class="kpi-value-row">
+          <strong class="kpi-value">{{ totalValuation() | number:'1.2-2' }}</strong>
+          <span class="kpi-unit">{{ 'common.sar' | translate }}</span>
+        </div>
+        <span class="kpi-sub">{{ 'ui.warehouseAnalyticsPage.3dddff' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="kpi-card kpi-amber" [class.highlight]="lowStockCount() > 0" (click)="setFilter('LOW')">
+      <div class="kpi-icon"><i class="pi pi-exclamation-triangle"></i></div>
+      <div class="kpi-data">
+        <span class="kpi-label">{{ 'ui.warehouseAnalyticsPage.6d5fed' | translate }}</span>
+        <div class="kpi-value-row">
+          <strong class="kpi-value">{{ lowStockCount() }}</strong>
+          <span class="kpi-unit">{{ 'ui.warehouseAnalyticsPage.70448f' | translate }}</span>
+        </div>
+        <span class="kpi-sub">{{ 'ui.warehouseAnalyticsPage.0824c0' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Out of Stock Alert -->
+    <div class="kpi-card kpi-red" [class.highlight]="outOfStockCount() > 0" (click)="setFilter('OUT')">
+      <div class="kpi-icon"><i class="pi pi-times-circle"></i></div>
+      <div class="kpi-data">
+        <span class="kpi-label">{{ 'ui.warehouseAnalyticsPage.bf81f8' | translate }}</span>
+        <div class="kpi-value-row">
+          <strong class="kpi-value">{{ outOfStockCount() }}</strong>
+          <span class="kpi-unit">{{ 'ui.warehouseAnalyticsPage.70448f' | translate }}</span>
+        </div>
+        <span class="kpi-sub">{{ 'ui.warehouseAnalyticsPage.72aa77' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Average Margin -->
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon"><i class="pi pi-percentage"></i></div>
+      <div class="kpi-data">
+        <span class="kpi-label">{{ 'ui.warehouseAnalyticsPage.6b3f83' | translate }}</span>
+        <div class="kpi-value-row">
+          <strong class="kpi-value">{{ avgMargin() }}%</strong>
+        </div>
+        <span class="kpi-sub">{{ 'ui.warehouseAnalyticsPage.93430e' | translate }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Search Strip -->
+  <section class="controls-card">
+    <div class="search-box">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        [(ngModel)]="analyticsSearch"
+        [placeholder]="'ui.warehouseAnalyticsPage.8aea4d' | translate"
+      />
+      <button *ngIf="analyticsSearch()" class="btn-clear" (click)="analyticsSearch.set('')">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="filter-chips">
+      <button class="chip" [class.active]="analyticsFilter() === 'ALL'" (click)="setFilter('ALL')">
+        {{ 'ui.warehouseAnalyticsPage.9f324a' | translate }}{{ totalItems() }})
+      </button>
+      <button class="chip chip-warning" [class.active]="analyticsFilter() === 'LOW'" (click)="setFilter('LOW')">
+        <i class="pi pi-exclamation-triangle"></i> {{ 'ui.warehouseAnalyticsPage.6ceee7' | translate }}{{ lowStockCount() }})
+      </button>
+      <button class="chip chip-danger" [class.active]="analyticsFilter() === 'OUT'" (click)="setFilter('OUT')">
+        <i class="pi pi-times-circle"></i> {{ 'ui.warehouseAnalyticsPage.95d9dd' | translate }}{{ outOfStockCount() }})
+      </button>
+      <button class="chip chip-success" [class.active]="analyticsFilter() === 'HEALTHY'" (click)="setFilter('HEALTHY')">
+        <i class="pi pi-check-circle"></i> {{ 'ui.warehouseAnalyticsPage.9a0c94' | translate }}{{ totalItems() - lowStockCount() - outOfStockCount() }})
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading Indicator -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <i class="pi pi-spin pi-spinner"></i>
+    <p>{{ 'ui.warehouseAnalyticsPage.901e23' | translate }}</p>
+  </div>
+
+  <!-- Table Container -->
+  <section class="table-card" *ngIf="!isLoading()">
+    <div class="table-responsive">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th class="th-code">{{ 'purchasing.items.table.code' | translate }}</th>
+            <th class="th-name">{{ 'ui.warehouseAnalyticsPage.58ca0d' | translate }}</th>
+            <th class="th-qty">{{ 'accounting.partners.table.balance' | translate }}</th>
+            <th class="th-status">{{ 'ui.warehouseAnalyticsPage.7f8f9d' | translate }}</th>
+            <th class="th-price">{{ 'ui.warehouseAnalyticsPage.7165b3' | translate }}</th>
+            <th class="th-price">{{ 'ui.warehouseAnalyticsPage.097f64' | translate }}</th>
+            <th class="th-price">{{ 'ui.warehouseAnalyticsPage.1d2f7a' | translate }}</th>
+            <th class="th-margin">{{ 'projects.hub.kpis.margin' | translate }}</th>
+            <th class="th-val">{{ 'inventory.warehouseStocks.totalValue' | translate }}</th>
+            <th class="th-bin">{{ 'inventory.warehouseStocks.binLocation' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedItems()" [class.row-depleted]="item.isNearDepletion" [class.row-out]="item.isOutOfStock">
+            <!-- Code -->
+            <td class="td-code">
+              <span class="code-tag">{{ item.itemCode }}</span>
+            </td>
+
+            <!-- Name & Category -->
+            <td class="td-name">
+              <div class="item-name-box">
+                <span class="item-ar">{{ item.nameAr }}</span>
+                <span class="item-en" *ngIf="item.nameEn">{{ item.nameEn }}</span>
+                <span class="item-cat" *ngIf="item.categoryName">{{ item.categoryName }}</span>
+              </div>
+            </td>
+
+            <!-- Qty -->
+            <td class="td-qty">
+              <div class="qty-box">
+                <strong class="qty-num">{{ item.currentQuantity | number }}</strong>
+                <span class="qty-unit">{{ item.unit }}</span>
+              </div>
+            </td>
+
+            <!-- Health Status & Progress Bar -->
+            <td class="td-status">
+              <div class="health-box">
+                <div class="health-badge" [ngClass]="'badge-' + item.stockHealth">
+                  <i *ngIf="item.stockHealth === 'empty'" class="pi pi-times-circle"></i>
+                  <i *ngIf="item.stockHealth === 'danger'" class="pi pi-exclamation-triangle"></i>
+                  <i *ngIf="item.stockHealth === 'warning'" class="pi pi-info-circle"></i>
+                  <i *ngIf="item.stockHealth === 'healthy'" class="pi pi-check-circle"></i>
+                  <span>{{ item.healthLabel }}</span>
+                  <small class="min-threshold" *ngIf="item.minStockLevel > 0">{{ 'ui.warehouseAnalyticsPage.226af1' | translate }} {{ item.minStockLevel }}</small>
+                </div>
+                <div class="health-progress" *ngIf="!item.isOutOfStock">
+                  <div
+                    class="progress-fill"
+                    [ngClass]="'fill-' + item.stockHealth"
+                    [style.width.%]="Math.min(100, Math.round((item.currentQuantity / (item.minStockLevel * 2 || 20)) * 100))"
+                  ></div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Average Cost -->
+            <td class="td-price">
+              <span class="num-val">{{ item.averageCostPrice | number:'1.2-2' }}</span>
+              <span class="curr-tag">{{ 'common.sar' | translate }}</span>
+            </td>
+
+            <!-- Highest Sale Price -->
+            <td class="td-price">
+              <span class="num-val high-price">{{ item.highestSalePrice | number:'1.2-2' }}</span>
+              <span class="curr-tag">{{ 'common.sar' | translate }}</span>
+            </td>
+
+            <!-- Lowest Sale Price -->
+            <td class="td-price">
+              <span class="num-val low-price">{{ item.lowestSalePrice | number:'1.2-2' }}</span>
+              <span class="curr-tag">{{ 'common.sar' | translate }}</span>
+            </td>
+
+            <!-- Expected Profit Margin -->
+            <td class="td-margin">
+              <span class="margin-badge" [class.margin-good]="item.expectedProfitMargin >= 20" [class.margin-fair]="item.expectedProfitMargin > 0 && item.expectedProfitMargin < 20">
+                {{ item.expectedProfitMargin }}%
+              </span>
+            </td>
+
+            <!-- Total Valuation -->
+            <td class="td-val">
+              <strong class="val-num">{{ item.totalValuation | number:'1.2-2' }}</strong>
+              <span class="curr-tag">{{ 'common.sar' | translate }}</span>
+            </td>
+
+            <!-- Bin Location -->
+            <td class="td-bin">
+              <span class="bin-tag" *ngIf="item.binLocation && item.binLocation !== '-'">
+                <i class="pi pi-compass"></i> {{ item.binLocation }}
+              </span>
+              <span class="bin-empty" *ngIf="!item.binLocation || item.binLocation === '-'">-</span>
+            </td>
+          </tr>
+
+          <!-- Empty Search State -->
+          <tr *ngIf="filteredAnalyticsItems().length === 0">
+            <td colspan="10" class="td-empty">
+              <div class="empty-box">
+                <i class="pi pi-search"></i>
+                <p>{{ 'ui.warehouseAnalyticsPage.03b8a2' | translate }}</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Footer with Summary & Pagination -->
+    <footer class="table-footer">
+      <div class="footer-info">
+        <span>{{ 'accounting.journal.table.view' | translate }} <strong>{{ paginatedItems().length }}</strong> {{ 'branchesWarehouses.outOf' | translate }} <strong>{{ filteredAnalyticsItems().length }}</strong> {{ 'ui.warehouseAnalyticsPage.70448f' | translate }}</span>
+        <span class="separator">•</span>
+        <span>{{ 'ui.warehouseAnalyticsPage.d4f21a' | translate }} <strong>{{ totalValuation() | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong></span>
+      </div>
+
+      <div class="footer-pagination" *ngIf="totalPages() > 1">
+        <button class="btn-page" [disabled]="currentPage() === 1" (click)="currentPage.set(currentPage() - 1)">
+          <i class="pi pi-chevron-right"></i>
+        </button>
+        <span class="page-indicator">{{ 'accounting.journal.ui.page' | translate }} {{ currentPage() }} {{ 'common.of' | translate }} {{ totalPages() }}</span>
+        <button class="btn-page" [disabled]="currentPage() === totalPages()" (click)="currentPage.set(currentPage() + 1)">
+          <i class="pi pi-chevron-left"></i>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+</div>

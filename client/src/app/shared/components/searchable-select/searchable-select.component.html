@@ -1,0 +1,162 @@
+<div 
+  class="searchable-select-root" 
+  [class.is-open]="isOpen()" 
+  [class.is-disabled]="disabled" 
+  [class.is-compact]="compact"
+  [ngClass]="customClass">
+  
+  <!-- Select Trigger Bar (Matches form-select visual identity) -->
+  <div 
+    class="select-trigger" 
+    [class.active]="isOpen()" 
+    [class.has-selection]="!!selectedOption()"
+    [class.font-bold]="bold"
+    (click)="toggleDropdown()" 
+    (keydown)="onKeyDown($event)"
+    tabindex="0"
+    role="combobox"
+    [attr.aria-expanded]="isOpen()">
+
+    <!-- Left side / Content Preview -->
+    <div class="trigger-content">
+      <ng-container *ngIf="selectedOption() as opt; else placeholderTpl">
+        <i *ngIf="opt.icon" [class]="opt.icon" class="opt-lead-icon"></i>
+        <span *ngIf="opt.code" class="opt-code-badge">{{ opt.code }}</span>
+        <span class="opt-primary-text">{{ opt.label }}</span>
+        <span *ngIf="opt.badge" class="opt-badge-pill" [ngClass]="opt.badgeClass || 'badge-default'">{{ opt.badge }}</span>
+      </ng-container>
+      <ng-template #placeholderTpl>
+        <span class="placeholder-text">{{ effectivePlaceholder }}</span>
+      </ng-template>
+    </div>
+
+    <!-- Right side / Clear & Arrow Icons -->
+    <div class="trigger-actions">
+      <button 
+        type="button" 
+        class="btn-clear" 
+        *ngIf="clearable && selectedOption() && !disabled" 
+        (click)="clearSelection($event)"
+        [title]="'ui.searchableSelect.ee6697' | translate">
+        <i class="pi pi-times"></i>
+      </button>
+      <span class="chevron-icon" [class.rotated]="isOpen()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- Dropdown Floating Panel -->
+  <div class="select-dropdown-panel" *ngIf="isOpen()" (click)="$event.stopPropagation()">
+    
+    <!-- Search Bar in Header -->
+    <div class="dropdown-search-wrap">
+      <i class="pi pi-search search-icon"></i>
+      <input 
+        #searchInput
+        type="text" 
+        class="dropdown-search-input" 
+        [placeholder]="effectiveSearchPlaceholder" 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="onSearchChange($event)"
+        (keydown)="onKeyDown($event)" />
+      
+      <span class="search-counter" *ngIf="filteredItems().length > 0">
+        {{ filteredItems().length }}
+      </span>
+
+      <button 
+        type="button" 
+        class="btn-clear-search" 
+        *ngIf="searchQuery()" 
+        (click)="onSearchChange('')">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Options List (Paginated) -->
+    <div class="options-list" role="listbox">
+      <div 
+        *ngFor="let item of paginatedItems(); let idx = index" 
+        class="option-item"
+        [class.selected]="item.value === selectedValue()"
+        [class.highlighted]="idx === highlightedIndex()"
+        [class.disabled]="item.disabled"
+        (click)="selectItem(item)"
+        (mouseenter)="highlightedIndex.set(idx)"
+        role="option"
+        [attr.aria-selected]="item.value === selectedValue()">
+        
+        <div class="opt-body">
+          <div class="opt-main-line">
+            <i *ngIf="item.icon" [class]="item.icon" class="item-icon"></i>
+            <span *ngIf="item.code" class="item-code">{{ item.code }}</span>
+            <span class="item-label">{{ item.label }}</span>
+            <span *ngIf="item.badge" class="item-badge" [ngClass]="item.badgeClass || 'badge-default'">
+              {{ item.badge }}
+            </span>
+          </div>
+          <div *ngIf="item.sublabel" class="opt-sub-line">
+            {{ item.sublabel }}
+          </div>
+        </div>
+
+        <div class="opt-check" *ngIf="item.value === selectedValue()">
+          <i class="pi pi-check"></i>
+        </div>
+      </div>
+
+      <!-- Empty Results State -->
+      <div class="empty-results" *ngIf="filteredItems().length === 0">
+        <i class="pi pi-search-minus empty-icon"></i>
+        <span>{{ effectiveEmptyMessage }}</span>
+      </div>
+    </div>
+
+    <!-- Dropdown Pagination Bar (الباجنيشن في القائمة المنسدلة) -->
+    <div class="select-pagination-bar" *ngIf="enablePagination && totalPages() > 1">
+      <div class="sel-pag-info">
+        <span>{{ 'accounting.journal.ui.page' | translate }} {{ currentPage() }} {{ 'common.of' | translate }} {{ totalPages() }}</span>
+        <span class="sel-pag-total">({{ filteredItems().length }} {{ 'ui.searchableSelect.a2468f' | translate }}</span>
+      </div>
+
+      <div class="sel-pag-btns">
+        <button 
+          type="button" 
+          class="sel-pag-btn" 
+          [disabled]="currentPage() === 1" 
+          (click)="prevPage($event)"
+          [title]="'ui.searchableSelect.f42b4e' | translate">
+          <i class="pi pi-chevron-right"></i>
+        </button>
+
+        <div class="sel-pag-chips">
+          <ng-container *ngFor="let p of pagesArray()">
+            <span *ngIf="p === '...'" class="sel-pag-dots">..</span>
+            <button 
+              *ngIf="p !== '...'" 
+              type="button" 
+              class="sel-page-num" 
+              [class.active]="p === currentPage()" 
+              (click)="goToPage(p, $event)">
+              {{ p }}
+            </button>
+          </ng-container>
+        </div>
+
+        <button 
+          type="button" 
+          class="sel-pag-btn" 
+          [disabled]="currentPage() === totalPages()" 
+          (click)="nextPage($event)"
+          [title]="'ui.searchableSelect.daebc8' | translate">
+          <i class="pi pi-chevron-left"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>

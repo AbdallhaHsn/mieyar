@@ -1,4 +1,4 @@
-<div class="invoicing-container" [attr.dir]="currentLang() === 'ar' ? 'rtl' : 'ltr'">
+<div class="invoicing-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'" [attr.dir]="currentLang() === 'ar' ? 'rtl' : 'ltr'">
   
   <!-- Header Strip with Official Compliance Badge -->
   <header class="page-header">
@@ -12,62 +12,151 @@
         <div>
           <div class="compliance-tag">
             <span class="live-dot"></span>
-            {{ currentLang() === 'ar' ? 'منظومة الفوترة الإلكترونية (ZATCA Phase 2) - الربط والتكامل المباشر' : 'ZATCA Phase 2 E-Invoicing Integration' }}
+            {{ 'invoices.complianceBadge' | translate }}
           </div>
           <h1 class="page-title">
-            {{ currentLang() === 'ar' ? 'إدارة الفواتير الضريبية والإشعارات (Tax Invoices)' : 'Tax Invoices & Credit/Debit Notes' }}
+            {{ pageTitle() }}
           </h1>
           <p class="page-subtitle">
-            {{ currentLang() === 'ar' 
-              ? 'إصدار واعتماد الفواتير وفق مواصفات هيئة الزكاة والضريبة والجمارك مع التوقيع الرقمي وبصمة التشفير ورمز QR القياسي (TLV Base64)' 
-              : 'Issue, sign, and clear tax invoices compliant with ZATCA Phase 2 UBL 2.1 XML specifications' }}
+            {{ pageSubtitle() }}
           </p>
         </div>
       </div>
 
       <div class="header-actions">
-        <button class="btn-refresh" (click)="loadInvoices()" [title]="currentLang() === 'ar' ? 'تحديث' : 'Refresh'">
+        <button class="btn-refresh" (click)="loadInvoices()" [title]="'invoices.refresh' | translate">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </button>
 
-        <a class="btn-primary" routerLink="/invoicing/tax-invoices/create" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+        <button 
+          type="button" 
+          class="btn-primary" 
+          (click)="openCreate()" 
+          style="display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; border: none;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          <span>{{ currentLang() === 'ar' ? 'إنشاء فاتورة ضريبية جديدة' : '+ New Tax Invoice' }}</span>
-        </a>
+          <span>{{ createButtonLabel() }}</span>
+        </button>
       </div>
     </div>
 
     <!-- KPI Metric Cards -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-title">{{ currentLang() === 'ar' ? 'إجمالي الفواتير' : 'Total Invoices' }}</div>
+        <div class="kpi-title">
+          {{ isQuotationsView() ? ('invoices.kpis.totalQuotations' | translate) : (isCreditNotesView() ? ('invoices.kpis.totalReturns' | translate) : ('invoices.kpis.totalInvoices' | translate)) }}
+        </div>
         <div class="kpi-val">{{ kpiTotalInvoices() }}</div>
-        <div class="kpi-meta">{{ currentLang() === 'ar' ? 'كافة الفواتير والإشعارات' : 'All invoice records' }}</div>
+        <div class="kpi-meta">
+          {{ isQuotationsView() ? ('invoices.kpis.allQuotationsMeta' | translate) : (isCreditNotesView() ? ('invoices.kpis.allReturnsMeta' | translate) : ('invoices.kpis.allInvoicesMeta' | translate)) }}
+        </div>
       </div>
 
       <div class="kpi-card emerald-accent">
-        <div class="kpi-title">{{ currentLang() === 'ar' ? 'المعتمدة والمبلغة لـ ZATCA' : 'ZATCA Cleared/Reported' }}</div>
+        <div class="kpi-title">
+          {{ isQuotationsView() ? ('invoices.kpis.acceptedQuotations' | translate) : ('invoices.kpis.clearedZatca' | translate) }}
+        </div>
         <div class="kpi-val text-emerald">{{ kpiClearedInvoices() }}</div>
-        <div class="kpi-meta">{{ currentLang() === 'ar' ? 'مطابقة ومختومة رقمياً' : 'Cryptographically Cleared' }}</div>
+        <div class="kpi-meta">
+          {{ isQuotationsView() ? ('invoices.kpis.readyForConversion' | translate) : ('invoices.kpis.clearedMeta' | translate) }}
+        </div>
       </div>
 
       <div class="kpi-card purple-accent">
-        <div class="kpi-title">{{ currentLang() === 'ar' ? 'إجمالي ضريبة 15% (VAT)' : 'Total VAT (15%)' }}</div>
+        <div class="kpi-title">
+          {{ isQuotationsView() ? ('invoices.kpis.estimatedVat' | translate) : (isCreditNotesView() ? ('invoices.kpis.returnedVat' | translate) : ('invoices.kpis.totalVat' | translate)) }}
+        </div>
         <div class="kpi-val text-purple">{{ kpiTotalVat() | number:'1.2-2' }} <small>SAR</small></div>
-        <div class="kpi-meta">{{ currentLang() === 'ar' ? 'جاهزة للإقرار الضريبي' : 'Output tax amount' }}</div>
+        <div class="kpi-meta">
+          {{ isQuotationsView() ? ('invoices.kpis.estimatedVatMeta' | translate) : (isCreditNotesView() ? ('invoices.kpis.returnedVatMeta' | translate) : ('invoices.kpis.vatMeta' | translate)) }}
+        </div>
       </div>
 
       <div class="kpi-card cyan-accent">
-        <div class="kpi-title">{{ currentLang() === 'ar' ? 'إجمالي المبيعات الشاملة' : 'Gross Total Volume' }}</div>
+        <div class="kpi-title">
+          {{ isQuotationsView() ? ('invoices.kpis.quotationsValue' | translate) : (isCreditNotesView() ? ('invoices.kpis.returnsValue' | translate) : ('invoices.kpis.grandTotal' | translate)) }}
+        </div>
         <div class="kpi-val text-cyan">{{ kpiGrandTotal() | number:'1.2-2' }} <small>SAR</small></div>
-        <div class="kpi-meta">{{ currentLang() === 'ar' ? 'المجموع شامل الضريبة' : 'With VAT included' }}</div>
+        <div class="kpi-meta">{{ 'invoices.kpis.withVat' | translate }}</div>
       </div>
     </div>
   </header>
+
+  <!-- Segmented Navigation Tabs for Sales Invoices View -->
+  <div *ngIf="isSalesInvoicesView()" class="sales-tabs-strip">
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'all'" (click)="setTab('all')">
+      <i class="pi pi-list"></i>
+      <span>{{ 'invoices.tabs.allSales' | translate }}</span>
+      <span class="tab-count-pill">{{ baseInvoices().length }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'cleared'" (click)="setTab('cleared')">
+      <i class="pi pi-check-circle"></i>
+      <span>{{ 'invoices.tabs.cleared' | translate }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'draft'" (click)="setTab('draft')">
+      <i class="pi pi-file-edit"></i>
+      <span>{{ 'invoices.tabs.drafts' | translate }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'unpaid'" (click)="setTab('unpaid')">
+      <i class="pi pi-clock"></i>
+      <span>{{ 'invoices.tabs.unpaid' | translate }}</span>
+    </button>
+    <div style="margin-inline-start: auto; display: flex; gap: 0.35rem;">
+      <a routerLink="/invoicing/quotations" class="sales-tab-btn" style="text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-weight: 600;">
+        <i class="pi pi-file-edit"></i>
+        <span>{{ 'invoices.tabs.quotationsLink' | translate }}</span>
+      </a>
+      <a routerLink="/invoicing/credit-notes" class="sales-tab-btn" style="text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-weight: 600;">
+        <i class="pi pi-replay"></i>
+        <span>{{ 'invoices.tabs.creditNotesLink' | translate }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Segmented Navigation Tabs for Quotations View -->
+  <div *ngIf="isQuotationsView()" class="sales-tabs-strip">
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'all'" (click)="setTab('all')">
+      <i class="pi pi-file-edit"></i>
+      <span>{{ 'invoices.tabs.allQuotations' | translate }}</span>
+      <span class="tab-count-pill">{{ baseInvoices().length }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'draft'" (click)="setTab('draft')">
+      <i class="pi pi-clock"></i>
+      <span>{{ 'invoices.tabs.pendingApproval' | translate }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'cleared'" (click)="setTab('cleared')">
+      <i class="pi pi-check-circle"></i>
+      <span>{{ 'invoices.tabs.approvedQuotations' | translate }}</span>
+    </button>
+    <a routerLink="/invoicing/tax-invoices" class="sales-tab-btn" style="margin-inline-start: auto; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-weight: 600;">
+      <i class="pi pi-file"></i>
+      <span>{{ 'invoices.tabs.allSales' | translate }} ↵</span>
+    </a>
+  </div>
+
+  <!-- Segmented Navigation Tabs for Credit Notes View -->
+  <div *ngIf="isCreditNotesView()" class="sales-tabs-strip">
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'all'" (click)="setTab('all')">
+      <i class="pi pi-replay"></i>
+      <span>{{ 'invoices.tabs.allCreditNotes' | translate }}</span>
+      <span class="tab-count-pill">{{ baseInvoices().length }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'cleared'" (click)="setTab('cleared')">
+      <i class="pi pi-check-circle"></i>
+      <span>{{ 'invoices.tabs.cleared' | translate }}</span>
+    </button>
+    <button class="sales-tab-btn" [class.active]="activeTab() === 'draft'" (click)="setTab('draft')">
+      <i class="pi pi-file-edit"></i>
+      <span>{{ 'invoices.tabs.drafts' | translate }}</span>
+    </button>
+    <a routerLink="/invoicing/tax-invoices" class="sales-tab-btn" style="margin-inline-start: auto; text-decoration: none; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-weight: 600;">
+      <i class="pi pi-file"></i>
+      <span>{{ 'invoices.tabs.allSales' | translate }} ↵</span>
+    </a>
+  </div>
 
   <!-- Filter & Search Controls -->
   <div class="filter-bar">
@@ -78,24 +167,24 @@
       </svg>
       <input 
         type="text" 
-        [placeholder]="currentLang() === 'ar' ? 'بحث برقم الفاتورة، اسم المشتري، أو الرقم الضريبي...' : 'Search by invoice number, buyer, VAT ID...'"
+        [placeholder]="'invoices.filters.searchPlaceholder' | translate"
         [ngModel]="searchQuery()" 
-        (ngModelChange)="searchQuery.set($event)" 
+        (ngModelChange)="searchQuery.set($event); currentPage.set(1)" 
       />
     </div>
 
     <div class="filter-controls">
-      <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event !== 'all' ? +$event : null)">
-        <option value="all">{{ currentLang() === 'ar' ? 'جميع أنواع الفواتير' : 'All Invoice Types' }}</option>
-        <option [value]="InvoiceType.StandardTaxInvoice">{{ currentLang() === 'ar' ? 'فاتورة ضريبية قياسية (B2B)' : 'Standard Tax (B2B)' }}</option>
-        <option [value]="InvoiceType.SimplifiedTaxInvoice">{{ currentLang() === 'ar' ? 'فاتورة ضريبية مبسطة (B2C)' : 'Simplified Tax (B2C)' }}</option>
+      <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event !== 'all' ? +$event : null); currentPage.set(1)">
+        <option value="all">{{ 'invoices.filters.allTypes' | translate }}</option>
+        <option [value]="InvoiceType.StandardTaxInvoice">{{ 'invoices.filters.standard' | translate }}</option>
+        <option [value]="InvoiceType.SimplifiedTaxInvoice">{{ 'invoices.filters.simplified' | translate }}</option>
       </select>
 
-      <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event !== 'all' ? +$event : null)">
-        <option value="all">{{ currentLang() === 'ar' ? 'جميع الحالات' : 'All Statuses' }}</option>
-        <option [value]="InvoiceStatus.Draft">{{ currentLang() === 'ar' ? 'مسودة (Draft)' : 'Draft' }}</option>
-        <option [value]="InvoiceStatus.Cleared">{{ currentLang() === 'ar' ? 'معتمدة من زاتكا (Cleared)' : 'Cleared (ZATCA)' }}</option>
-        <option [value]="InvoiceStatus.Reported">{{ currentLang() === 'ar' ? 'مبلغة لمنصة فاتورة (Reported)' : 'Reported' }}</option>
+      <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event !== 'all' ? +$event : null); currentPage.set(1)">
+        <option value="all">{{ 'invoices.filters.allStatuses' | translate }}</option>
+        <option [value]="InvoiceStatus.Draft">{{ 'invoices.filters.statusDraft' | translate }}</option>
+        <option [value]="InvoiceStatus.Cleared">{{ 'invoices.filters.statusCleared' | translate }}</option>
+        <option [value]="InvoiceStatus.Reported">{{ 'invoices.filters.statusReported' | translate }}</option>
       </select>
     </div>
   </div>
@@ -104,45 +193,58 @@
   <div class="table-container shadow-sm">
     <div *ngIf="isLoading()" class="loading-state">
       <div class="spinner"></div>
-      <p>{{ currentLang() === 'ar' ? 'جاري تحميل الفواتير الضريبية...' : 'Loading Tax Invoices...' }}</p>
+      <p>{{ 'invoicing.taxInvoices.loadingTaxInvoices' | translate }}</p>
     </div>
 
     <div *ngIf="!isLoading() && filteredInvoices().length === 0" class="empty-state">
-      <div class="empty-icon">📄</div>
-      <h3>{{ currentLang() === 'ar' ? 'لا توجد فواتير ضريبية مطابقة' : 'No Tax Invoices Found' }}</h3>
-      <p>{{ currentLang() === 'ar' ? 'ابدأ بإنشاء أول فاتورة ضريبية معتمدة ومتوافقة مع هيئة الزكاة والضريبة والجمارك.' : 'Create your first ZATCA Phase 2 compliant tax invoice.' }}</p>
-      <button class="btn-primary" (click)="openCreate()">+ {{ currentLang() === 'ar' ? 'إنشاء فاتورة جديدة' : 'New Invoice' }}</button>
+      <div class="empty-icon">{{ isQuotationsView() ? '📋' : (isCreditNotesView() ? '↺' : '📄') }}</div>
+      <h3>{{ isQuotationsView() ? ('invoicing.taxInvoices.noQuotationsFound' | translate) : (isCreditNotesView() ? ('invoicing.taxInvoices.noSalesReturnsFound' | translate) : ('invoicing.taxInvoices.noSalesInvoicesFound' | translate)) }}</h3>
+      <p>{{ isQuotationsView() ? ('invoicing.taxInvoices.createYourFirstPriceQuotation' | translate) : (isCreditNotesView() ? ('invoicing.taxInvoices.createYourFirstSalesReturn' | translate) : ('invoicing.taxInvoices.createYourFirstZatcaPhase' | translate)) }}</p>
+      <button class="btn-primary" (click)="openCreate()">{{ createButtonLabel() }}</button>
     </div>
 
     <table *ngIf="!isLoading() && filteredInvoices().length > 0" class="data-table">
       <thead>
         <tr>
-          <th>{{ currentLang() === 'ar' ? 'رقم الفاتورة' : 'Invoice #' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'النوع' : 'Type' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'العميل / المشتري' : 'Buyer' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'تاريخ الإصدار' : 'Issue Date' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'المجموع قبل الضريبة' : 'Subtotal' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'ضريبة 15%' : 'VAT 15%' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'الإجمالي الكلي' : 'Grand Total' }}</th>
-          <th>{{ currentLang() === 'ar' ? 'حالة ZATCA' : 'ZATCA Status' }}</th>
-          <th style="text-align: center;">{{ currentLang() === 'ar' ? 'الإجراءات' : 'Actions' }}</th>
+          <th>{{ 'invoices.table.invoiceNumber' | translate }}</th>
+          <th>{{ 'invoices.table.customer' | translate }}</th>
+          <th>{{ 'invoices.create.salesperson' | translate }}</th>
+          <th>{{ 'invoices.table.issueDate' | translate }}</th>
+          <th>{{ 'invoices.table.subtotal' | translate }}</th>
+          <th>{{ 'invoices.table.vatAmount' | translate }}</th>
+          <th>{{ 'invoices.table.total' | translate }}</th>
+          <th>{{ 'invoices.table.paymentStatus' | translate }}</th>
+          <th *ngIf="!isQuotationsView()">{{ 'invoices.view.journalEntry' | translate }}</th>
+          <th style="text-align: center;">{{ 'invoices.table.actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let inv of filteredInvoices()" class="table-row" (click)="previewInvoice(inv)">
+        <tr *ngFor="let inv of paginatedInvoices()" class="table-row" (click)="previewInvoice(inv)">
           <td>
             <div class="invoice-number-cell">
               <span class="inv-code">{{ inv.invoiceNumber }}</span>
+              <span *ngIf="inv.referenceInvoiceNumber" style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                <i class="pi pi-link" style="font-size: 0.65rem;"></i>
+                {{ 'invoices.table.returnedFrom' | translate }}: <strong style="color: #0f172a;">{{ inv.referenceInvoiceNumber }}</strong>
+              </span>
               <span class="inv-uuid" [title]="inv.uuid">{{ inv.uuid | slice:0:8 }}...</span>
             </div>
-          </td>
-          <td>
-            <span class="type-badge">{{ getTypeLabel(inv.invoiceType) }}</span>
           </td>
           <td>
             <div class="buyer-cell">
               <strong class="buyer-name">{{ inv.buyerName }}</strong>
               <small *ngIf="inv.buyerVatNumber" class="buyer-vat">VAT: {{ inv.buyerVatNumber }}</small>
+            </div>
+          </td>
+          <td>
+            <div class="salesperson-table-cell">
+              <span class="sp-name" [title]="inv.salespersonName || inv.createdBy || ('invoicing.taxInvoices.admin' | translate)">
+                <i class="pi pi-user text-purple"></i>
+                {{ inv.salespersonName || inv.createdBy || ('invoicing.taxInvoices.admin' | translate) }}
+              </span>
+              <small *ngIf="inv.warehouseCode" class="sp-wh-tag">
+                <i class="pi pi-box"></i> {{ inv.warehouseCode }}
+              </small>
             </div>
           </td>
           <td>
@@ -153,12 +255,35 @@
           </td>
           <td class="amount-cell">{{ inv.subtotal | number:'1.2-2' }}</td>
           <td class="amount-cell text-purple font-semibold">{{ inv.totalVatAmount | number:'1.2-2' }}</td>
-          <td class="amount-cell grand-total-cell">{{ inv.grandTotal | number:'1.2-2' }} SAR</td>
+          <td class="amount-cell grand-total-cell">{{ inv.grandTotal | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}</td>
           <td>
-            <span class="status-pill" [ngClass]="getStatusBadgeClass(inv.invoiceStatus)">
-              <span class="dot"></span>
-              {{ getStatusLabel(inv.invoiceStatus) }}
-            </span>
+            <div class="payment-cell">
+              <span class="status-pill" [ngClass]="getPaymentStatusInfo(inv).badgeClass">
+                <span class="dot"></span>
+                {{ getPaymentStatusInfo(inv).label }}
+              </span>
+              <div class="payment-amounts" *ngIf="getRemainingAmount(inv) > 0 || getReturnedAmount(inv) > 0">
+                <span *ngIf="getReturnedAmount(inv) > 0" class="pay-sub-tag ret-tag">
+                  <i class="pi pi-replay"></i>
+                  {{ 'invoices.table.returned' | translate }}: {{ getReturnedAmount(inv) | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}
+                </span>
+                <span *ngIf="getRemainingAmount(inv) > 0" class="pay-sub-tag rem-tag">
+                  {{ 'invoices.table.remaining' | translate }}: {{ getRemainingAmount(inv) | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}
+                </span>
+              </div>
+            </div>
+          </td>
+          <td *ngIf="!isQuotationsView()" (click)="$event.stopPropagation()">
+            <a 
+              *ngIf="inv.associatedJournalEntryNumber" 
+              [routerLink]="['/accounting/journal-entries']" 
+              [queryParams]="{ search: inv.associatedJournalEntryNumber }"
+              class="jv-table-pill"
+              [title]="('invoicing.taxInvoices.viewJournalEntryInGeneral' | translate)">
+              <i class="pi pi-book"></i>
+              #{{ inv.associatedJournalEntryNumber }}
+            </a>
+            <span *ngIf="!inv.associatedJournalEntryNumber" class="text-muted" style="font-size: 0.8rem; color: #94a3b8;">—</span>
           </td>
           <td class="actions-cell" (click)="$event.stopPropagation()">
             <div class="actions-wrapper">
@@ -167,15 +292,33 @@
                 *ngIf="inv.invoiceStatus === InvoiceStatus.Draft" 
                 class="btn-action-zatca" 
                 (click)="issueToZatca(inv, $event)"
-                [title]="currentLang() === 'ar' ? 'اعتماد وإرسال الفاتورة لهيئة الزكاة والضريبة والجمارك' : 'Issue to ZATCA'">
-                🚀 {{ currentLang() === 'ar' ? 'اعتماد' : 'Clear' }}
+                [title]="('invoicing.taxInvoices.issueToZatca' | translate)">
+                🚀 {{ 'invoicing.taxInvoices.clear' | translate }}
+              </button>
+
+              <!-- Quick Credit Note / Return Button (only on sales invoices with remaining returnable quota) -->
+              <button 
+                *ngIf="canCreateReturn(inv)" 
+                class="btn-action-return-quick" 
+                (click)="createCreditNoteFor(inv, $event)"
+                [title]="('invoicing.taxInvoices.createReturnCreditNote' | translate)">
+                ↺ {{ 'invoicing.taxInvoices.return' | translate }}
+              </button>
+
+              <!-- Quick Payment / Receipt Voucher Button -->
+              <button 
+                *ngIf="canReceivePayment(inv)" 
+                class="btn-action-pay" 
+                (click)="openPaymentModal(inv, $event)"
+                [title]="('invoicing.taxInvoices.recordReceiptVoucher' | translate)">
+                💳 {{ 'invoicing.taxInvoices.pay' | translate }}
               </button>
 
               <!-- Preview Button -->
               <button 
                 class="btn-icon" 
                 (click)="previewInvoice(inv)"
-                [title]="currentLang() === 'ar' ? 'معاينة الفاتورة ورمز الاستجابة السريعة QR' : 'Preview & QR'">
+                [title]="('invoicing.taxInvoices.previewQr' | translate)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -187,7 +330,7 @@
                 *ngIf="inv.invoiceStatus !== InvoiceStatus.Draft" 
                 class="btn-icon text-cyan" 
                 (click)="downloadXml(inv, $event)"
-                [title]="currentLang() === 'ar' ? 'تحميل ملف XML القياسي (UBL 2.1)' : 'Download UBL 2.1 XML'">
+                [title]="('invoicing.taxInvoices.downloadUbl21Xml' | translate)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -197,152 +340,165 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- Table Pagination Bar -->
+    <app-pagination
+      *ngIf="!isLoading() && filteredInvoices().length > 0"
+      [totalItems]="filteredInvoices().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      [pageSizeOptions]="[5, 10, 20, 50, 100]"
+      [itemLabelAr]="('ui.taxInvoices.eb847c' | translate)"
+      [itemLabelEn]="'invoices'"
+      (pageChange)="currentPage.set($event)"
+      (pageSizeChange)="pageSize.set($event)">
+    </app-pagination>
   </div>
 
 
 
-  <!-- ZATCA Phase 2 E-Invoice Preview & QR Code Modal -->
-  <div *ngIf="showPreviewModal() && selectedInvoice()" class="modal-backdrop">
-    <div class="modal-card max-w-4xl preview-card">
+  <!-- Quick Payment / Receipt Voucher Modal (سند قبض وتحصيل دفعة) -->
+  <div *ngIf="showPaymentModal() && paymentInvoice()" class="modal-backdrop" (click)="closePaymentModal()">
+    <div class="modal-card max-w-xl payment-modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-cluster">
-          <div class="modal-icon">
+          <div class="modal-icon bg-emerald text-white">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <line x1="2" y1="10" x2="22" y2="10" />
             </svg>
           </div>
           <div>
-            <h3>{{ currentLang() === 'ar' ? 'معاينة الفاتورة الضريبية الإلكترونية المعتمدة' : 'Official Tax Invoice Preview' }}</h3>
-            <p>{{ selectedInvoice()?.invoiceNumber }} — {{ selectedInvoice()?.uuid }}</p>
+            <h3>{{ 'invoices.paymentModal.title' | translate }}</h3>
+            <p class="modal-sub">{{ paymentInvoice()?.invoiceNumber }} • {{ paymentInvoice()?.buyerName }}</p>
           </div>
         </div>
-        
-        <div class="preview-header-actions">
-          <button class="btn-secondary" (click)="printInvoice()">🖨️ {{ currentLang() === 'ar' ? 'طباعة' : 'Print' }}</button>
-          <button *ngIf="selectedInvoice()?.invoiceStatus !== InvoiceStatus.Draft" class="btn-secondary text-cyan" (click)="downloadXml(selectedInvoice()!)">📥 UBL 2.1 XML</button>
-          <button class="modal-close-btn" (click)="closePreviewModal()">✕</button>
-        </div>
+        <button class="btn-close" (click)="closePaymentModal()">&times;</button>
       </div>
 
-      <div class="preview-body print-area" id="invoice-print-area">
-        <!-- Official Tax Invoice Header -->
-        <div class="inv-paper-header">
-          <div class="seller-info">
-            <h2>{{ selectedInvoice()?.sellerName }}</h2>
-            <p class="seller-vat"><strong>الرقم الضريبي (VAT ID):</strong> {{ selectedInvoice()?.sellerVatNumber }}</p>
-            <p>المملكة العربية السعودية - الرياض</p>
-            <span class="official-title-pill">{{ getTypeLabel(selectedInvoice()!.invoiceType) }}</span>
+      <div class="modal-body">
+        <!-- Invoice Balance Summary Card -->
+        <div class="payment-balance-card" [class.has-return]="paymentInvoice() && getReturnedAmount(paymentInvoice()!) > 0">
+          <div class="bal-col">
+            <span class="bal-label">{{ 'invoices.paymentModal.invoiceTotal' | translate }}</span>
+            <strong class="bal-val">{{ (paymentInvoice()?.grandTotal || paymentInvoice()?.totalAmount || 0) | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+          </div>
+          <div class="bal-col bal-return" *ngIf="paymentInvoice() && getReturnedAmount(paymentInvoice()!) > 0">
+            <span class="bal-label">{{ 'invoices.paymentModal.returned' | translate }}</span>
+            <strong class="bal-val">-{{ getReturnedAmount(paymentInvoice()!) | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+          </div>
+          <div class="bal-col bal-paid">
+            <span class="bal-label">{{ 'invoices.paymentModal.previouslyPaid' | translate }}</span>
+            <strong class="bal-val">{{ (paymentInvoice()?.paidAmount || 0) | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+          </div>
+          <div class="bal-col bal-remaining highlight">
+            <span class="bal-label">{{ 'invoices.paymentModal.netRemaining' | translate }}</span>
+            <strong class="bal-val">{{ (paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 0) | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+          </div>
+        </div>
+
+        <form (ngSubmit)="submitPayment()" class="payment-form">
+          <!-- Row 1: طريقة التحصيل + تاريخ السداد -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label class="form-label">{{ 'invoices.paymentModal.method' | translate }} <span class="required">*</span></label>
+              <select 
+                class="form-select font-semibold" 
+                [ngModel]="paymentMethod()" 
+                (ngModelChange)="paymentMethod.set($event)" 
+                name="paymentMethod">
+                <option value="Cash">{{ 'invoices.paymentModal.cashOption' | translate }}</option>
+                <option value="Bank">{{ 'invoices.paymentModal.bankOption' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="form-group col-half">
+              <label class="form-label">{{ 'invoices.paymentModal.date' | translate }} <span class="required">*</span></label>
+              <input 
+                type="date" 
+                class="form-input font-semibold" 
+                [ngModel]="paymentDate()" 
+                (ngModelChange)="paymentDate.set($event)" 
+                name="paymentDate" 
+                required />
+            </div>
           </div>
 
-          <div class="qr-code-box">
-            <!-- QR Code container -->
-            <div class="qr-frame" *ngIf="selectedInvoice()?.qrCodeBase64">
-              <div class="qr-placeholder">
-                <svg viewBox="0 0 100 100" class="qr-svg">
-                  <!-- Decorative stylized QR representation -->
-                  <rect width="100" height="100" fill="#ffffff" />
-                  <rect x="10" y="10" width="25" height="25" fill="#0f172a" />
-                  <rect x="15" y="15" width="15" height="15" fill="#ffffff" />
-                  <rect x="18" y="18" width="9" height="9" fill="#0f172a" />
-                  <rect x="65" y="10" width="25" height="25" fill="#0f172a" />
-                  <rect x="70" y="15" width="15" height="15" fill="#ffffff" />
-                  <rect x="73" y="18" width="9" height="9" fill="#0f172a" />
-                  <rect x="10" y="65" width="25" height="25" fill="#0f172a" />
-                  <rect x="15" y="70" width="15" height="15" fill="#ffffff" />
-                  <rect x="18" y="73" width="9" height="9" fill="#0f172a" />
-                  <rect x="42" y="15" width="6" height="6" fill="#0f172a" />
-                  <rect x="52" y="25" width="6" height="6" fill="#0f172a" />
-                  <rect x="45" y="45" width="10" height="10" fill="#0f172a" />
-                  <rect x="65" y="65" width="8" height="8" fill="#0f172a" />
-                  <rect x="78" y="78" width="8" height="8" fill="#0f172a" />
-                </svg>
+          <!-- Row 2: مبلغ الدفعة / التحصيل مع أزرار الاختيار السريع -->
+          <div class="form-group highlight-group">
+            <div class="label-with-max">
+              <label class="form-label font-bold">{{ 'invoices.paymentModal.amount' | translate }} <span class="required">*</span></label>
+              <span class="max-hint">{{ 'invoices.paymentModal.maxAllowed' | translate }} <strong>{{ (paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 0) | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}</strong></span>
+            </div>
+            <div class="amount-field-container">
+              <div class="amount-input-box">
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  min="0.01" 
+                  [max]="paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 9999999" 
+                  class="form-input payment-amt-input font-bold" 
+                  [ngModel]="paymentAmount()" 
+                  (ngModelChange)="paymentAmount.set(+$event)" 
+                  name="amount" 
+                  placeholder="0.00"
+                  required />
+                <span class="currency-badge">{{ 'invoices.kpis.sar' | translate }}</span>
               </div>
-              <span class="qr-caption">رمز ZATCA Phase 2 المعتمد</span>
-            </div>
-            <div class="qr-empty" *ngIf="!selectedInvoice()?.qrCodeBase64">
-              <span class="qr-empty-msg">يتم توليد الرمز عند اعتماد الفاتورة</span>
-            </div>
-          </div>
-        </div>
-
-        <hr class="inv-divider" />
-
-        <!-- Buyer & Metadata Grid -->
-        <div class="inv-meta-grid">
-          <div class="meta-box">
-            <h4>بيانات المشتري / العميل:</h4>
-            <p><strong>الاسم:</strong> {{ selectedInvoice()?.buyerName }}</p>
-            <p *ngIf="selectedInvoice()?.buyerVatNumber"><strong>الرقم الضريبي:</strong> {{ selectedInvoice()?.buyerVatNumber }}</p>
-            <p><strong>العنوان:</strong> {{ selectedInvoice()?.buyerCity }} {{ selectedInvoice()?.buyerDistrict ? ' - ' + selectedInvoice()?.buyerDistrict : '' }}</p>
-          </div>
-
-          <div class="meta-box">
-            <h4>بيانات الفاتورة:</h4>
-            <p><strong>رقم الفاتورة:</strong> {{ selectedInvoice()?.invoiceNumber }}</p>
-            <p><strong>تاريخ وتوقيت الإصدار:</strong> {{ selectedInvoice()?.issueDate | date:'yyyy-MM-dd HH:mm:ss' }}</p>
-            <p><strong>طريقة الدفع:</strong> {{ selectedInvoice()?.paymentMeansCode === '10' ? 'نقدي (Cash)' : 'تحويل بنكي / آجل' }}</p>
-          </div>
-        </div>
-
-        <!-- Items Table -->
-        <table class="inv-preview-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>بيان الصنف أو الخدمة</th>
-              <th>الكمية</th>
-              <th>سعر الوحدة</th>
-              <th>الخصم</th>
-              <th>المبلغ الخاضع</th>
-              <th>نسبة الضريبة</th>
-              <th>قيمة الضريبة</th>
-              <th>المجموع بالضريبة</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let line of selectedInvoice()?.lines; let idx = index">
-              <td>{{ idx + 1 }}</td>
-              <td><strong>{{ line.itemName }}</strong></td>
-              <td>{{ line.quantity }}</td>
-              <td>{{ line.unitPrice | number:'1.2-2' }}</td>
-              <td>{{ line.discountAmount | number:'1.2-2' }}</td>
-              <td>{{ line.netAmount | number:'1.2-2' }}</td>
-              <td>{{ line.vatPercent }}%</td>
-              <td class="text-purple">{{ line.vatAmount | number:'1.2-2' }}</td>
-              <td><strong>{{ line.totalWithVat | number:'1.2-2' }} SAR</strong></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Totals Card -->
-        <div class="inv-bottom-strip">
-          <div class="zatca-crypt-stamp" *ngIf="selectedInvoice()?.invoiceHash">
-            <span class="stamp-lbl">بصمة التشفير الرقمية (SHA-256 Digest):</span>
-            <code class="hash-code">{{ selectedInvoice()?.invoiceHash }}</code>
-          </div>
-
-          <div class="inv-totals-box">
-            <div class="t-row">
-              <span>إجمالي القيمة قبل الضريبة:</span>
-              <span>{{ (selectedInvoice()?.subTotal || selectedInvoice()?.subtotal) | number:'1.2-2' }} SAR</span>
-            </div>
-            <div class="t-row">
-              <span>مجموع الخصومات:</span>
-              <span>{{ selectedInvoice()?.totalDiscount | number:'1.2-2' }} SAR</span>
-            </div>
-            <div class="t-row highlight-vat">
-              <span>مجموع ضريبة القيمة المضافة (15%):</span>
-              <span>{{ selectedInvoice()?.totalVatAmount | number:'1.2-2' }} SAR</span>
-            </div>
-            <div class="t-row grand-total">
-              <span>الإجمالي الكلي المستحق:</span>
-              <span>{{ selectedInvoice()?.grandTotal | number:'1.2-2' }} SAR</span>
+              <div class="quick-amt-btns">
+                <button 
+                  type="button" 
+                  class="btn-quick-amt btn-quick-full" 
+                  (click)="paymentAmount.set(paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 0)">
+                  <i class="pi pi-check"></i> {{ 'invoices.paymentModal.fullRemaining' | translate }} ({{ (paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 0) | number:'1.2-2' }})
+                </button>
+                <button 
+                  type="button" 
+                  class="btn-quick-amt" 
+                  *ngIf="(paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 0) > 1" 
+                  (click)="paymentAmount.set(+((paymentInvoice() ? getRemainingAmount(paymentInvoice()!) : 0) / 2).toFixed(2))">
+                  {{ 'invoices.paymentModal.halfRemaining' | translate }}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+
+          <!-- Row 3: رقم الحوالة / المرجع -->
+          <div class="form-group">
+            <label class="form-label">{{ 'invoices.paymentModal.reference' | translate }}</label>
+            <input 
+              type="text" 
+              class="form-input font-code" 
+              [placeholder]="'invoices.paymentModal.refPlaceholder' | translate" 
+              [ngModel]="paymentReference()" 
+              (ngModelChange)="paymentReference.set($event)" 
+              name="reference" />
+          </div>
+
+          <!-- Row 4: البيان وملاحظات السند -->
+          <div class="form-group">
+            <label class="form-label">{{ 'invoices.paymentModal.notes' | translate }}</label>
+            <input 
+              type="text" 
+              class="form-input" 
+              [placeholder]="'invoices.paymentModal.notesPlaceholder' | translate" 
+              [ngModel]="paymentNotes()" 
+              (ngModelChange)="paymentNotes.set($event)" 
+              name="notes" />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closePaymentModal()">
+              {{ 'invoices.paymentModal.cancel' | translate }}
+            </button>
+            <button type="submit" class="btn-submit-payment" [disabled]="isProcessingPayment() || paymentAmount() <= 0">
+              <span *ngIf="isProcessingPayment()"><i class="pi pi-spin pi-spinner"></i> {{ 'invoices.paymentModal.submitting' | translate }}</span>
+              <span *ngIf="!isProcessingPayment()"><i class="pi pi-check-circle"></i> {{ 'invoices.paymentModal.submit' | translate }}</span>
+            </button>
+          </div>
+        </form>
   </div>
-
 </div>
+
+
+

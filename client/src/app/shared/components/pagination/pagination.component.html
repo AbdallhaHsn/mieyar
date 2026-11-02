@@ -1,0 +1,96 @@
+<div 
+  class="erp-pagination-container" 
+  [class.compact]="compact" 
+  [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  
+  <!-- Right Side / Summary Information -->
+  <div class="pag-summary" *ngIf="showSummary">
+    <span *ngIf="totalItems > 0">
+      <ng-container *ngIf="langService.currentLang() === 'ar'; else enSummary">
+        {{ 'accounting.journal.table.view' | translate }} <strong class="pag-num">{{ startItem() }}</strong> {{ 'accounting.financialStatements.ui.to1' | translate }} <strong class="pag-num">{{ endItem() }}</strong> {{ 'branchesWarehouses.outOf' | translate }} <strong class="pag-num total">{{ totalItems }}</strong> {{ itemLabelAr }}
+      </ng-container>
+      <ng-template #enSummary>
+        Showing <strong class="pag-num">{{ startItem() }}</strong> to <strong class="pag-num">{{ endItem() }}</strong> of <strong class="pag-num total">{{ totalItems }}</strong> {{ itemLabelEn }}
+      </ng-template>
+    </span>
+    <span *ngIf="totalItems === 0" class="empty-pag-text">
+      {{ 'common.pagination.noRecordsToDisplay' | translate }}
+    </span>
+  </div>
+
+  <!-- Center / Navigation Controls -->
+  <div class="pag-nav-group" *ngIf="totalPages() > 1 || totalItems > pageSize">
+    <!-- First Page Button -->
+    <button 
+      type="button" 
+      class="pag-btn edge-btn" 
+      [disabled]="currentPage === 1" 
+      (click)="firstPage()"
+      [title]="('common.pagination.firstPage' | translate)">
+      <i class="pi" [ngClass]="('common.pagination.piangledoubleleft' | translate)"></i>
+    </button>
+
+    <!-- Previous Page Button -->
+    <button 
+      type="button" 
+      class="pag-btn step-btn" 
+      [disabled]="currentPage === 1" 
+      (click)="prevPage()"
+      [title]="('common.pagination.previous' | translate)">
+      <i class="pi" [ngClass]="('common.pagination.pichevronleft' | translate)"></i>
+      <span class="btn-text">{{ 'common.pagination.prev' | translate }}</span>
+    </button>
+
+    <!-- Page Number Chips -->
+    <div class="pag-pages-list">
+      <ng-container *ngFor="let p of pagesArray(); track $index">
+        <span *ngIf="p === '...'" class="pag-ellipsis">...</span>
+        <button 
+          *ngIf="p !== '...'" 
+          type="button" 
+          class="pag-btn page-num-btn" 
+          [class.active]="p === currentPage" 
+          (click)="goToPage(p)">
+          {{ p }}
+        </button>
+      </ng-container>
+    </div>
+
+    <!-- Next Page Button -->
+    <button 
+      type="button" 
+      class="pag-btn step-btn" 
+      [disabled]="currentPage === totalPages()" 
+      (click)="nextPage()"
+      [title]="('common.pagination.next' | translate)">
+      <span class="btn-text">{{ 'common.pagination.next' | translate }}</span>
+      <i class="pi" [ngClass]="('common.pagination.pichevronright' | translate)"></i>
+    </button>
+
+    <!-- Last Page Button -->
+    <button 
+      type="button" 
+      class="pag-btn edge-btn" 
+      [disabled]="currentPage === totalPages()" 
+      (click)="lastPage()"
+      [title]="('common.pagination.lastPage' | translate)">
+      <i class="pi" [ngClass]="('common.pagination.piangledoubleright' | translate)"></i>
+    </button>
+  </div>
+
+  <!-- Left Side / Page Size Selector -->
+  <div class="pag-size-selector" *ngIf="showPageSize && totalItems > 0">
+    <label class="size-label">
+      {{ 'common.pagination.perPage' | translate }}
+    </label>
+    <select 
+      class="size-select" 
+      [ngModel]="pageSize" 
+      (ngModelChange)="onPageSizeSelected($event)">
+      <option *ngFor="let opt of pageSizeOptions" [value]="opt">
+        {{ opt }}
+      </option>
+    </select>
+  </div>
+
+</div>

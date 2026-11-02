@@ -1,0 +1,235 @@
+<div class="stock-trans-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="breadcrumbs">
+        <i class="pi pi-box me-1"></i>
+        <span>{{ 'purchasing.transfers.breadcrumbMain' | translate }}</span>
+        <i class="pi pi-angle-left mx-1"></i>
+        <strong>{{ 'purchasing.transfers.breadcrumbCurrent' | translate }}</strong>
+      </div>
+      <h1>{{ 'purchasing.transfers.title' | translate }}</h1>
+      <p class="subtitle">
+        {{ 'purchasing.transfers.subtitle' | translate }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadData()">
+        <i class="pi pi-refresh me-1" [class.pi-spin]="isLoading()"></i>
+        {{ 'purchasing.transfers.refresh' | translate }}</button>
+      <a routerLink="/purchasing/procurement" class="btn btn-secondary">
+        <i class="pi pi-compass me-1"></i>
+        {{ 'purchasing.transfers.procurementHub' | translate }}
+      </a>
+    </div>
+  </header>
+
+  <!-- Layout Grid: Form + History -->
+  <div class="transfer-layout">
+    <!-- Transfer Order Panel -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title">
+          <i class="pi pi-arrows-h text-emerald me-1"></i>
+          <strong>{{ 'purchasing.transfers.panelTitle' | translate }}</strong>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <!-- 1. Searchable Item Selection -->
+        <div class="form-group mb-3">
+          <label class="field-label required">
+            <i class="pi pi-box text-blue me-1"></i>
+            {{ 'purchasing.transfers.selectItem' | translate }}
+          </label>
+          <app-searchable-select
+            [items]="itemSelectOptions()"
+            [(ngModel)]="transferForm.itemId"
+            [placeholder]="'purchasing.transfers.searchItemPlaceholder' | translate"
+            [searchPlaceholder]="'ui.stockTransfers.b9ae76' | translate"
+            [emptyMessage]="'ui.stockTransfers.e5dd44' | translate">
+          </app-searchable-select>
+        </div>
+
+        <!-- Selected Item Live Snapshot -->
+        <div class="item-snapshot mb-3" *ngIf="selectedItem()">
+          <div class="snapshot-row">
+            <span>{{ 'ui.stockTransfers.697a64' | translate }}</span>
+            <strong class="font-mono text-blue ms-1">{{ selectedItem()?.currentStockQuantity }} {{ selectedItem()?.unitOfMeasure }}</strong>
+          </div>
+          <div class="snapshot-row">
+            <span>{{ 'ui.stockTransfers.dac017' | translate }}</span>
+            <strong class="font-mono text-emerald ms-1">{{ (selectedItem()?.costPrice || selectedItem()?.purchasePrice) | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+          </div>
+        </div>
+
+        <!-- 2. Source and Destination Warehouses (Searchable Selects) -->
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="field-label required">
+              <i class="pi pi-building text-blue me-1"></i>
+              {{ 'purchasing.transfers.fromWarehouse' | translate }}
+            </label>
+            <app-searchable-select
+              [items]="warehouseSelectOptions()"
+              [(ngModel)]="transferForm.sourceWarehouseCode"
+              [placeholder]="'ui.stockTransfers.b15196' | translate"
+              [searchPlaceholder]="'ui.stockTransfers.43c60d' | translate">
+            </app-searchable-select>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label required">
+              <i class="pi pi-building text-emerald me-1"></i>
+              {{ 'purchasing.transfers.toWarehouse' | translate }}
+            </label>
+            <app-searchable-select
+              [items]="warehouseSelectOptions()"
+              [(ngModel)]="transferForm.destinationWarehouseCode"
+              [placeholder]="'ui.stockTransfers.9a29b7' | translate"
+              [searchPlaceholder]="'ui.stockTransfers.43c60d' | translate">
+            </app-searchable-select>
+          </div>
+        </div>
+
+        <!-- 3. Quantity -->
+        <div class="form-group mt-3">
+          <label class="field-label required">
+            <i class="pi pi-hashtag text-blue me-1"></i>
+            {{ 'ui.stockTransfers.d0938f' | translate }}
+          </label>
+          <div class="input-wrap">
+            <input
+              type="number"
+              step="1"
+              min="1"
+              class="form-input font-mono font-bold"
+              [(ngModel)]="transferForm.quantity"
+              placeholder="1"
+            />
+          </div>
+        </div>
+
+        <!-- 4. Bilingual Reason (Single-entry Auto-Translation Standard) -->
+        <div class="form-grid-2 mt-3">
+          <div class="form-group">
+            <label class="field-label required">
+              <i class="pi pi-pencil text-muted me-1"></i>
+              {{ 'ui.stockTransfers.eeb2b6' | translate }}
+            </label>
+            <div class="input-wrap">
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="transferForm.reasonAr"
+                (ngModelChange)="onReasonArChange($event)"
+                [placeholder]="'ui.stockTransfers.4b44f4' | translate"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">
+              <i class="pi pi-globe text-blue me-1"></i>
+              {{ 'ui.stockTransfers.712ebb' | translate }}
+              <button type="button" class="btn-micro-trans" (click)="retranslateReason()" [title]="'projects.hub.workspace.wbs.retranslate' | translate">
+                <i class="pi pi-sync me-1"></i>
+                {{ 'purchasing.transfers.autoTranslate' | translate }}</button>
+            </label>
+            <div class="input-wrap">
+              <input
+                type="text"
+                class="form-input ltr-text"
+                [(ngModel)]="transferForm.reasonEn"
+                (ngModelChange)="onReasonEnChange($event)"
+                placeholder="Stock transfer reason..."
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="action-footer mt-4">
+          <button
+            class="btn btn-primary btn-block"
+            [disabled]="isSubmitting() || !selectedItem()"
+            (click)="submitTransfer()"
+          >
+            <i class="pi pi-check me-1" [class.pi-spin]="isSubmitting()"></i>
+            {{ 'ui.stockTransfers.28f5e1' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Log Panel -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title">
+          <i class="pi pi-history text-blue me-1"></i>
+          <strong>{{ 'ui.stockTransfers.0433b2' | translate }}</strong>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div class="search-box mb-3">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [ngModel]="searchHistory"
+            (ngModelChange)="searchHistory = $event; currentPage.set(1)"
+            [placeholder]="'ui.stockTransfers.863264' | translate"
+          />
+        </div>
+
+        <div class="card-table">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ 'ui.stockTransfers.9b3b34' | translate }}</th>
+                <th>{{ 'purchasing.transfers.date' | translate }}</th>
+                <th>{{ 'purchasing.transfers.item' | translate }}</th>
+                <th>{{ 'purchasing.transfers.quantity' | translate }}</th>
+                <th>{{ 'purchasing.transfers.cost' | translate }}</th>
+                <th>{{ 'ui.stockTransfers.798b39' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tx of paginatedTransfersHistory()">
+                <td><strong class="code-pill font-mono">{{ tx.referenceNumber || 'TRF-' + tx.id.substring(0, 8) }}</strong></td>
+                <td><span class="font-mono text-muted">{{ tx.transactionDate | date:'yyyy/MM/dd' }}</span></td>
+                <td><strong>{{ tx.itemNameAr }}</strong></td>
+                <td>
+                  <strong class="font-mono text-blue">
+                    {{ tx.quantityIn > 0 ? ('+' + tx.quantityIn) : ('-' + tx.quantityOut) }}
+                  </strong>
+                </td>
+                <td><span class="font-mono">{{ tx.totalCost | number:'1.2-2' }}</span></td>
+                <td><span class="text-muted">{{ tx.notes || '—' }}</span></td>
+              </tr>
+              <tr *ngIf="transfersHistory().length === 0">
+                <td colspan="6" class="text-center py-4 text-muted">
+                  <i class="pi pi-inbox text-lg"></i>
+                  <p class="mt-1">{{ 'ui.stockTransfers.1f776a' | translate }}</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Table Pagination Bar -->
+          <app-pagination
+            *ngIf="!isLoading() && transfersHistory().length > 0"
+            [totalItems]="transfersHistory().length"
+            [pageSize]="pageSize()"
+            [currentPage]="currentPage()"
+            [pageSizeOptions]="[5, 8, 15, 30]"
+            [itemLabelAr]="('accounting.gl.movementsCount' | translate)"
+            [itemLabelEn]="'transfers'"
+            (pageChange)="currentPage.set($event)"
+            (pageSizeChange)="pageSize.set($event)">
+          </app-pagination>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

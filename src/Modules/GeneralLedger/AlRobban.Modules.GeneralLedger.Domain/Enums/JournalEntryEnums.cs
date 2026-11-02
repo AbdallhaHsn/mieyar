@@ -5,7 +5,8 @@ public enum JournalEntryType
     Daily = 1,       // قيد يومية عامة تشغيلي
     Opening = 2,     // قيد افتتاحي
     Adjustment = 3,  // قيد تسوية جردية
-    Closing = 4      // قيد إقفال ختامي
+    Closing = 4,     // قيد إقفال ختامي
+    Payroll = 5      // قيد مسيّر الرواتب والأجور
 }
 
 public enum JournalEntryStatus

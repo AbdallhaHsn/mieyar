@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component, inject, signal, computed, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +8,7 @@ import { LanguageService } from '../../core/services/language.service';
 @Component({
   selector: 'app-sticky-notes-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <!-- Backdrop -->
     <div class="drawer-backdrop" (click)="close()">
@@ -23,15 +24,15 @@ import { LanguageService } from '../../core/services/language.service';
             <div>
               <div class="header-title-row">
                 <h3 class="header-title">
-                  {{ langService.currentLang() === 'ar' ? 'الملاحظات اللاصقة الخاصة' : 'My Sticky Notes' }}
+                  {{ 'layout.stickyNotes.myStickyNotes' | translate }}
                 </h3>
-                <span class="private-badge" title="بيانات سرية خاصة بحسابك فقط">
+                <span class="private-badge" [title]="'ui.stickyNotesDrawer.be8c8e' | translate">
                   <i class="pi pi-lock"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'خاصة بك فقط' : 'Private' }}</span>
+                  <span>{{ 'layout.stickyNotes.private' | translate }}</span>
                 </span>
               </div>
               <p class="header-subtitle">
-                {{ langService.currentLang() === 'ar' ? 'اكتب ملاحظاتك وتنبيهاتك المحاسبية وثبتها بدبوس لسهولة الرجوع إليها' : 'Write and pin personal accounting notes with colors' }}
+                {{ 'layout.stickyNotes.writeAndPinPersonalAccounting' | translate }}
               </p>
             </div>
           </div>
@@ -39,9 +40,9 @@ import { LanguageService } from '../../core/services/language.service';
           <div class="header-actions">
             <button type="button" class="btn-new-note" (click)="toggleCreateForm()">
               <i class="pi" [ngClass]="showCreate() ? 'pi-minus' : 'pi-plus'"></i>
-              <span>{{ showCreate() ? (langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel') : (langService.currentLang() === 'ar' ? 'ملاحظة جديدة' : 'New Note') }}</span>
+              <span>{{ showCreate() ? ('layout.stickyNotes.cancel' | translate) : ('layout.stickyNotes.newNote' | translate) }}</span>
             </button>
-            <button type="button" class="btn-close-drawer" (click)="close()" title="إغلاق">
+            <button type="button" class="btn-close-drawer" (click)="close()" [title]="'common.close' | translate">
               <i class="pi pi-times"></i>
             </button>
           </div>
@@ -50,7 +51,7 @@ import { LanguageService } from '../../core/services/language.service';
         <!-- Create Note Box (Collapsible) -->
         <div class="create-note-box" *ngIf="showCreate()">
           <div class="create-header">
-            <span class="create-lbl">{{ langService.currentLang() === 'ar' ? 'إضافة قصاصة ملاحظة جديدة' : 'Add New Sticky Note' }}</span>
+            <span class="create-lbl">{{ 'layout.stickyNotes.addNewStickyNote' | translate }}</span>
             <!-- Color Selector -->
             <div class="color-palette">
               <button 
@@ -68,26 +69,26 @@ import { LanguageService } from '../../core/services/language.service';
             type="text" 
             class="note-title-input" 
             [(ngModel)]="newTitle" 
-            [placeholder]="langService.currentLang() === 'ar' ? 'عنوان الملاحظة (اختياري)...' : 'Note Title (Optional)...'" 
+            [placeholder]="('layout.stickyNotes.noteTitleOptional' | translate)" 
           />
 
           <textarea 
             rows="3" 
             class="note-content-input" 
             [(ngModel)]="newContent" 
-            [placeholder]="langService.currentLang() === 'ar' ? 'اكتب محتوى الملاحظة هنا (قيود، أرقام تواصل، تذكيرات، نسب ضريبية)...' : 'Write note content here...'">
+            [placeholder]="('layout.stickyNotes.writeNoteContentHere' | translate)">
           </textarea>
 
           <div class="create-footer">
             <label class="pin-checkbox-lbl">
               <input type="checkbox" [(ngModel)]="newIsPinned" />
               <i class="pi pi-thumbtack text-amber"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'تثبيت الملاحظة في الأعلى (Pin)' : 'Pin Note to Top' }}</span>
+              <span>{{ 'layout.stickyNotes.pinNoteToTop' | translate }}</span>
             </label>
 
             <button type="button" class="btn-save-note" (click)="saveNewNote()" [disabled]="!newContent.trim() && !newTitle.trim()">
               <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'حفظ الملاحظة' : 'Save Note' }}</span>
+              <span>{{ 'layout.stickyNotes.saveNote' | translate }}</span>
             </button>
           </div>
         </div>
@@ -99,7 +100,7 @@ import { LanguageService } from '../../core/services/language.service';
             <input 
               type="text" 
               [(ngModel)]="searchTerm" 
-              [placeholder]="langService.currentLang() === 'ar' ? 'بحث في الملاحظات...' : 'Search notes...'" 
+              [placeholder]="('layout.stickyNotes.searchNotes' | translate)" 
             />
             <button *ngIf="searchTerm" type="button" class="clear-search" (click)="searchTerm = ''">
               <i class="pi pi-times"></i>
@@ -112,7 +113,7 @@ import { LanguageService } from '../../core/services/language.service';
               class="pill-btn" 
               [class.active]="selectedColorFilter === 'all'" 
               (click)="selectedColorFilter = 'all'">
-              {{ langService.currentLang() === 'ar' ? 'الكل' : 'All' }} ({{ notesService.totalCount() }})
+              {{ 'layout.stickyNotes.all' | translate }} ({{ notesService.totalCount() }})
             </button>
 
             <button 
@@ -121,7 +122,7 @@ import { LanguageService } from '../../core/services/language.service';
               [class.active]="selectedColorFilter === 'pinned'" 
               (click)="selectedColorFilter = 'pinned'">
               <i class="pi pi-thumbtack"></i>
-              {{ langService.currentLang() === 'ar' ? 'المثبتة' : 'Pinned' }} ({{ notesService.pinnedCount() }})
+              {{ 'layout.stickyNotes.pinned' | translate }} ({{ notesService.pinnedCount() }})
             </button>
 
             <button 
@@ -141,8 +142,8 @@ import { LanguageService } from '../../core/services/language.service';
             <div class="empty-icon-box">
               <i class="pi pi-file-edit"></i>
             </div>
-            <h4>{{ langService.currentLang() === 'ar' ? 'لا توجد ملاحظات تطابق بحثك' : 'No notes found' }}</h4>
-            <p>{{ langService.currentLang() === 'ar' ? 'انقر على "ملاحظة جديدة" لتدوين وتثبيت أفكارك وملاحظاتك بألوان جميلة' : 'Click "New Note" to create your first sticky note' }}</p>
+            <h4>{{ 'layout.stickyNotes.noNotesFound' | translate }}</h4>
+            <p>{{ 'layout.stickyNotes.clickNewNoteToCreate' | translate }}</p>
           </div>
 
           <div class="notes-grid" *ngIf="filteredNotes().length > 0">
@@ -158,7 +159,7 @@ import { LanguageService } from '../../core/services/language.service';
                   class="pin-btn" 
                   [class.pinned]="note.isPinned"
                   (click)="notesService.togglePin(note.id)" 
-                  [title]="note.isPinned ? (langService.currentLang() === 'ar' ? 'إلغاء التثبيت' : 'Unpin') : (langService.currentLang() === 'ar' ? 'تثبيت في الأعلى' : 'Pin to top')"
+                  [title]="note.isPinned ? ('layout.stickyNotes.unpin' | translate) : ('layout.stickyNotes.pinToTop' | translate)"
                 >
                   <i class="pi pi-thumbtack"></i>
                 </button>
@@ -167,7 +168,7 @@ import { LanguageService } from '../../core/services/language.service';
               <!-- Note Header -->
               <div class="card-header">
                 <strong class="card-title" *ngIf="!editingNoteId || editingNoteId !== note.id">
-                  {{ note.title || (langService.currentLang() === 'ar' ? 'ملاحظة محاسبية' : 'Note') }}
+                  {{ note.title || ('layout.stickyNotes.note' | translate) }}
                 </strong>
                 <input 
                   type="text" 
@@ -203,7 +204,7 @@ import { LanguageService } from '../../core/services/language.service';
                     class="action-icon-btn" 
                     [class.active-float]="notesService.floatingNoteId() === note.id"
                     (click)="notesService.toggleFloat(note.id)" 
-                    [title]="notesService.floatingNoteId() === note.id ? (langService.currentLang() === 'ar' ? 'إلغاء التعليق على الشاشة' : 'Unfloat') : (langService.currentLang() === 'ar' ? 'تعليق ومتابعة على الشاشة' : 'Float on screen')"
+                    [title]="notesService.floatingNoteId() === note.id ? ('layout.stickyNotes.unfloat' | translate) : ('layout.stickyNotes.floatOnScreen' | translate)"
                   >
                     <i class="pi pi-external-link"></i>
                   </button>
@@ -221,12 +222,12 @@ import { LanguageService } from '../../core/services/language.service';
                   </div>
 
                   <!-- Edit -->
-                  <button type="button" class="action-icon-btn" (click)="startEdit(note)" title="تعديل">
+                  <button type="button" class="action-icon-btn" (click)="startEdit(note)" [title]="'common.edit' | translate">
                     <i class="pi pi-pencil"></i>
                   </button>
 
                   <!-- Delete -->
-                  <button type="button" class="action-icon-btn delete-btn" (click)="notesService.deleteNote(note.id)" title="حذف">
+                  <button type="button" class="action-icon-btn delete-btn" (click)="notesService.deleteNote(note.id)" [title]="'common.delete' | translate">
                     <i class="pi pi-trash"></i>
                   </button>
                 </div>

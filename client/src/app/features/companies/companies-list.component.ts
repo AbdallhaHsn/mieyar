@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { CompanyOnboardingComponent } from '../company-onboarding/company-onboarding.component';
 import { AuthService } from '../../core/services/auth.service';
 import { LanguageService } from '../../core/services/language.service';
@@ -21,23 +22,23 @@ interface TenantCompanyRow {
 @Component({
   selector: 'app-companies-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, CompanyOnboardingComponent],
+  imports: [CommonModule, FormsModule, CompanyOnboardingComponent, TranslatePipe],
   template: `
     <div class="companies-wrap">
       <!-- Minimalist Header -->
       <div class="page-top">
         <div>
           <h1 class="page-title">
-            {{ langService.currentLang() === 'ar' ? 'إدارة المنشآت والشركات المستأجرة' : 'Tenants & Companies Directory' }}
+            {{ 'companies.portal.tenantsDirectory' | translate }}
           </h1>
           <span class="page-sub">
-            {{ langService.currentLang() === 'ar' ? 'عزل كامل للبيانات المحاسبية عبر SESSION_CONTEXT وتزويد مدراء الشركات ببيانات الدخول' : 'Multi-tenant isolation & credential provisioning' }}
+            {{ 'companies.portal.isolationSubtitle' | translate }}
           </span>
         </div>
 
         <button class="btn-create" (click)="openOnboarding()">
           <i class="pi pi-plus"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'إضافة منشأة جديدة' : 'Onboard Company' }}</span>
+          <span>{{ 'companies.portal.onboardCompany' | translate }}</span>
         </button>
       </div>
 
@@ -48,12 +49,12 @@ interface TenantCompanyRow {
           <input 
             type="text" 
             [(ngModel)]="searchQuery" 
-            [placeholder]="langService.currentLang() === 'ar' ? 'بحث بالاسم، الرقم الضريبي، السجل التجاري...' : 'Search company, VAT, CR...'" 
+            [placeholder]="'companies.portal.searchPlaceholder' | translate" 
           />
         </div>
 
         <div class="count-tag">
-          {{ langService.currentLang() === 'ar' ? 'الشركات النشطة: ' : 'Active Tenants: ' }}
+          {{ 'companies.portal.activeTenantsLabel' | translate }}
           <strong class="text-cyber-green">{{ companies.length }}</strong>
         </div>
       </div>
@@ -64,20 +65,20 @@ interface TenantCompanyRow {
           <table class="clean-table">
             <thead>
               <tr>
-                <th>{{ langService.currentLang() === 'ar' ? 'الشركة والرمز' : 'Company & Code' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الرقم الضريبي' : 'VAT Number' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'السجل التجاري' : 'CR Number' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'المسؤول' : 'Admin' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الفروع' : 'Branches' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'ZATCA فاز 2' : 'ZATCA' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الإجراء' : 'Action' }}</th>
+                <th>{{ 'companies.portal.companyAndCode' | translate }}</th>
+                <th>{{ 'companies.portal.vatNumber' | translate }}</th>
+                <th>{{ 'companies.portal.crNumber' | translate }}</th>
+                <th>{{ 'companies.portal.admin' | translate }}</th>
+                <th>{{ 'companies.portal.branches' | translate }}</th>
+                <th>{{ 'companies.portal.zatca' | translate }}</th>
+                <th>{{ 'companies.portal.action' | translate }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let comp of filteredCompanies">
                 <td>
                   <div class="comp-col">
-                    <strong class="text-dark">{{ comp.nameAr }}</strong>
+                    <strong class="text-dark">{{ langService.currentLang() === 'ar' ? comp.nameAr : comp.nameEn }}</strong>
                     <small class="code-pill font-mono">{{ comp.code }}</small>
                   </div>
                 </td>
@@ -89,7 +90,7 @@ interface TenantCompanyRow {
                 <td>
                   <button class="btn-impersonate" (click)="switchToTenant(comp)">
                     <i class="pi pi-external-link"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? 'دخول نيابة عنها' : 'Impersonate' }}</span>
+                    <span>{{ 'companies.portal.impersonate' | translate }}</span>
                   </button>
                 </td>
               </tr>

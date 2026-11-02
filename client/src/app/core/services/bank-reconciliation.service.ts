@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface BankAccountSummary {
   accountId: string;
@@ -69,7 +70,7 @@ export interface BankReconciliationResult {
   providedIn: 'root'
 })
 export class BankReconciliationService {
-  private readonly baseUrl = 'http://localhost:5000/api/bank-reconciliation';
+  private readonly baseUrl = `${environment.apiUrl}/api/bank-reconciliation`;
 
   constructor(private http: HttpClient) {}
 
@@ -109,6 +110,21 @@ export class BankReconciliationService {
   autoMatch(request: ImportBankStatementRequest): Observable<AutoMatchResultDto> {
     return this.http.post<AutoMatchResultDto>(`${this.baseUrl}/auto-match`, request);
   }
+
+  createAdjustment(request: CreateBankAdjustmentEntryRequest): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/adjustment-entry`, request);
+  }
+}
+
+export interface CreateBankAdjustmentEntryRequest {
+  companyId: string;
+  bankAccountId: string;
+  counterAccountId: string;
+  amount: number;
+  isExpenseOrWithdrawal: boolean;
+  entryDate: string;
+  description: string;
+  referenceNumber?: string;
 }
 
 export interface ImportBankStatementRequest {

@@ -1,0 +1,639 @@
+<div class="salespersons-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  
+  <!-- Header Bar -->
+  <header class="page-header">
+    <div class="header-title-side">
+      <div class="header-icon-box">
+        <i class="pi pi-id-card"></i>
+      </div>
+      <div>
+        <h1 class="page-title">
+          {{ 'salespersons.title' | translate }}
+        </h1>
+        <p class="page-subtitle">
+          {{ 'salespersons.subtitle' | translate }}
+        </p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-refresh" (click)="loadData()" [title]="'salespersons.refresh' | translate">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        <span>{{ 'salespersons.refresh' | translate }}</span>
+      </button>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <i class="pi pi-plus"></i>
+        <span>{{ 'salespersons.addSalesperson' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Strip -->
+  <section class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon-box purple">
+        <i class="pi pi-users"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'salespersons.kpis.totalReps' | translate }}</span>
+        <strong class="kpi-value">{{ totalCount() }}</strong>
+        <span class="kpi-subtext">{{ activeCount() }} {{ 'salespersons.kpis.activeCountSuffix' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon-box emerald">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'salespersons.kpis.activeReps' | translate }}</span>
+        <strong class="kpi-value">{{ activeCount() }}</strong>
+        <span class="kpi-subtext">{{ 'salespersons.kpis.readyToBill' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon-box blue">
+        <i class="pi pi-box"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'salespersons.kpis.isolatedStores' | translate }}</span>
+        <strong class="kpi-value">{{ uniqueWarehousesCount() }}</strong>
+        <span class="kpi-subtext">{{ 'salespersons.kpis.vansAndCounters' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon-box amber">
+        <i class="pi pi-user-plus"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-label">{{ 'salespersons.kpis.linkedUsers' | translate }}</span>
+        <strong class="kpi-value">{{ linkedUsersCount() }}</strong>
+        <span class="kpi-subtext">{{ 'salespersons.kpis.directLogin' | translate }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="filters-bar">
+    <div class="filter-pills">
+      <button [class.active]="filterStatus() === 'all'" (click)="filterStatus.set('all'); currentPage.set(1)">
+        {{ 'salespersons.filters.all' | translate }}
+        <span class="pill-count">{{ totalCount() }}</span>
+      </button>
+      <button [class.active]="filterStatus() === 'active'" (click)="filterStatus.set('active'); currentPage.set(1)">
+        {{ 'salespersons.filters.active' | translate }}
+        <span class="pill-count">{{ activeCount() }}</span>
+      </button>
+      <button [class.active]="filterStatus() === 'inactive'" (click)="filterStatus.set('inactive'); currentPage.set(1)">
+        {{ 'salespersons.filters.inactive' | translate }}
+        <span class="pill-count">{{ totalCount() - activeCount() }}</span>
+      </button>
+    </div>
+
+    <div class="search-box">
+      <i class="pi pi-search search-icon"></i>
+      <input 
+        type="text" 
+        [placeholder]="'salespersons.filters.searchPlaceholder' | translate" 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+        class="search-input" />
+      <button *ngIf="searchTerm()" (click)="searchTerm.set(''); currentPage.set(1)" class="clear-btn">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Table Card -->
+  <div class="table-card">
+    <div *ngIf="isLoading()" class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>{{ 'salespersons.loading' | translate }}</p>
+    </div>
+
+    <table class="data-table" *ngIf="!isLoading()">
+      <thead>
+        <tr>
+          <th style="width: 100px;">{{ 'salespersons.table.code' | translate }}</th>
+          <th>{{ 'salespersons.table.name' | translate }}</th>
+          <th>{{ 'salespersons.table.warehouse' | translate }}</th>
+          <th>{{ 'salespersons.table.linkedUser' | translate }}</th>
+          <th>{{ 'salespersons.table.phone' | translate }}</th>
+          <th>{{ 'salespersons.table.privileges' | translate }}</th>
+          <th class="text-center" style="width: 90px;">{{ 'salespersons.table.commission' | translate }}</th>
+          <th class="text-center" style="width: 100px;">{{ 'salespersons.table.status' | translate }}</th>
+          <th class="text-end" style="width: 110px;">{{ 'salespersons.table.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of paginatedSalespersons()">
+          <td>
+            <span class="code-pill">{{ s.code }}</span>
+          </td>
+          <td>
+            <div class="salesperson-profile">
+              <div class="avatar-circle">
+                <i class="pi pi-user"></i>
+              </div>
+              <div class="name-block">
+                <strong class="entity-name-text">
+                  {{ langService.currentLang() === 'ar' ? s.nameAr : (s.nameEn || s.nameAr) }}
+                </strong>
+                <span class="text-sub" *ngIf="s.email">{{ s.email }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="warehouse-pill">
+              <i class="pi pi-box"></i>
+              <strong class="wh-code">{{ s.warehouseCode }}</strong>
+              <span class="wh-name">{{ s.warehouseNameAr }}</span>
+            </div>
+          </td>
+          <td>
+            <span *ngIf="s.userName" class="user-badge">
+              <i class="pi pi-shield"></i>
+              <strong>{{ s.userName }}</strong>
+            </span>
+            <span *ngIf="!s.userName" class="text-muted font-small">
+              {{ 'salespersons.table.noUserLinked' | translate }}
+            </span>
+          </td>
+          <td>
+            <span *ngIf="s.phoneNumber" class="font-code">{{ s.phoneNumber }}</span>
+            <span *ngIf="!s.phoneNumber" class="text-muted">—</span>
+          </td>
+          <td>
+            <div class="privileges-badges">
+              <span *ngIf="s.canSellCredit" class="priv-badge credit" [title]="'salespersons.table.credit' | translate">
+                <i class="pi pi-credit-card"></i>
+                <span>{{ 'salespersons.table.credit' | translate }}</span>
+              </span>
+              <span *ngIf="s.canGiveDiscount" class="priv-badge discount" [title]="('ui.salespersons.0a4518' | translate)">
+                <i class="pi pi-percentage"></i>
+                <span>{{ s.maxDiscountPercent || 5 }}%</span>
+              </span>
+              <span *ngIf="s.canEditPrice" class="priv-badge price" [title]="'salespersons.table.priceEdit' | translate">
+                <i class="pi pi-pencil"></i>
+                <span>{{ 'salespersons.table.priceEdit' | translate }}</span>
+              </span>
+              <span *ngIf="s.canSellFromAnyWarehouse" class="priv-badge warehouse" [title]="'salespersons.table.multiStore' | translate">
+                <i class="pi pi-globe"></i>
+                <span>{{ 'salespersons.table.multiStore' | translate }}</span>
+              </span>
+              <span *ngIf="s.canProcessReturns" class="priv-badge return" [title]="'salespersons.table.refunds' | translate">
+                <i class="pi pi-replay"></i>
+                <span>{{ 'salespersons.table.refunds' | translate }}</span>
+              </span>
+              <span *ngIf="!s.canSellCredit && !s.canEditPrice && !s.canSellFromAnyWarehouse && !s.canProcessReturns && (!s.maxDiscountPercent || s.maxDiscountPercent <= 5)" class="text-muted font-small">
+                {{ 'salespersons.table.standardPrivileges' | translate }}
+              </span>
+            </div>
+          </td>
+          <td class="text-center">
+            <span *ngIf="s.commissionRate > 0" class="commission-pill">{{ s.commissionRate | number:'1.1-2' }}%</span>
+            <span *ngIf="!s.commissionRate" class="text-muted">—</span>
+          </td>
+          <td class="text-center">
+            <button 
+              type="button" 
+              class="status-toggle-btn" 
+              [class.active]="s.isActive"
+              (click)="toggleActive(s)"
+              [title]="s.isActive ? ('salespersons.table.clickToDisable' | translate) : ('salespersons.table.clickToEnable' | translate)">
+              <i class="pi" [ngClass]="s.isActive ? 'pi-check-circle' : 'pi-ban'"></i>
+              <span>{{ s.isActive ? ('branches.statusActive' | translate) : ('branches.statusInactive' | translate) }}</span>
+            </button>
+          </td>
+          <td class="text-end">
+            <div class="row-actions">
+              <button 
+                type="button" 
+                class="action-btn edit" 
+                (click)="openEditModal(s)"
+                [title]="'salespersons.editSalesperson' | translate">
+                <i class="pi pi-pencil"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <tr *ngIf="filteredSalespersons().length === 0">
+          <td colspan="9">
+            <div class="empty-state">
+              <div class="empty-icon-halo">
+                <i class="pi" [ngClass]="searchTerm() ? 'pi-search' : 'pi-id-card'"></i>
+              </div>
+              <h3 class="empty-title">
+                {{ (searchTerm() ? 'salespersons.empty.noMatchTitle' : 'salespersons.empty.title') | translate }}
+              </h3>
+              <p class="empty-desc">
+                {{ (searchTerm() ? 'salespersons.empty.noMatchSubtitle' : 'salespersons.empty.subtitle') | translate }}
+              </p>
+              <button *ngIf="!searchTerm()" type="button" class="btn-primary-sm" (click)="openCreateModal()">
+                <i class="pi pi-plus"></i>
+                <span>{{ 'salespersons.empty.action' | translate }}</span>
+              </button>
+              <button *ngIf="searchTerm()" type="button" class="btn-secondary-sm" (click)="searchTerm.set(''); currentPage.set(1)">
+                <i class="pi pi-times"></i>
+                <span>{{ 'salespersons.empty.clearSearch' | translate }}</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Table Pagination Bar -->
+    <app-pagination
+      *ngIf="!isLoading() && filteredSalespersons().length > 0"
+      [totalItems]="filteredSalespersons().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      [itemLabelAr]="('ui.salespersons.4297db' | translate)"
+      [itemLabelEn]="'salespersons'"
+      (pageChange)="currentPage.set($event)"
+      (pageSizeChange)="pageSize.set($event)">
+    </app-pagination>
+  </div>
+
+  <!-- Unified Salesperson & User Mapping Modal -->
+  <div class="modal-backdrop" *ngIf="showModal()" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="pi pi-id-card text-emerald"></i>
+          <h3>
+            {{ isEditMode() 
+              ? ('invoicing.salespersons.editSalespersonWarehouse' | translate)
+              : ('invoicing.salespersons.newSalespersonUserMapping' | translate) }}
+          </h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        
+        <!-- SECTION 1: Identity Source & System Account Mapping (Eliminating Data Duplication) -->
+        <div class="form-section">
+          <div class="section-title">
+            <i class="pi pi-shield"></i>
+            <span>{{ 'invoicing.salespersons.1IdentitySourceUserAccount' | translate }}</span>
+          </div>
+
+          <div class="user-mapping-modes">
+            <!-- Mode 1: Link Existing User (Recommended) -->
+            <button 
+              type="button" 
+              class="mode-btn" 
+              [class.active]="userMappingMode() === 'link'"
+              (click)="setMappingMode('link')">
+              <i class="pi pi-link"></i>
+              <span>{{ 'invoicing.salespersons.linkExistingUserRecommended' | translate }}</span>
+              <small class="text-muted">{{ 'invoicing.salespersons.autofillProfileWithNoDuplicate' | translate }}</small>
+            </button>
+
+            <!-- Mode 2: Create New User & Salesperson in One Step -->
+            <button 
+              type="button" 
+              class="mode-btn" 
+              [class.active]="userMappingMode() === 'create'"
+              (click)="setMappingMode('create')">
+              <i class="pi pi-user-plus"></i>
+              <span>{{ 'invoicing.salespersons.createUserRepIn1' | translate }}</span>
+              <small class="text-muted">{{ 'invoicing.salespersons.createLoginRepSimultaneously' | translate }}</small>
+            </button>
+
+            <!-- Mode 3: Field Salesperson without Login -->
+            <button 
+              type="button" 
+              class="mode-btn" 
+              [class.active]="userMappingMode() === 'none'"
+              (click)="setMappingMode('none')">
+              <i class="pi pi-minus-circle"></i>
+              <span>{{ 'invoicing.salespersons.fieldRepNoLogin' | translate }}</span>
+              <small class="text-muted">{{ 'invoicing.salespersons.offlineStatsInvoicesOnly' | translate }}</small>
+            </button>
+          </div>
+
+          <!-- Mode: Link Existing User Dropdown -->
+          <div *ngIf="userMappingMode() === 'link'" class="user-subform mt-2">
+            <div class="form-group">
+              <label>{{ 'invoicing.salespersons.selectSystemUserToAutofill' | translate }}</label>
+              <select class="form-control" [ngModel]="selectedUserId()" (ngModelChange)="onUserSelected($event)">
+                <option value="">{{ 'invoicing.salespersons.selectUser' | translate }}</option>
+                <option *ngFor="let u of availableUsers()" [value]="u.id">
+                  {{ u.fullNameAr || u.userName }} ({{ u.userName }}) — {{ u.role }} {{ u.isAlreadyLinked ? ('invoicing.salespersons.alreadyLinked' | translate) : ('ui.salespersons.00b2c6' | translate) }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Auto-Fill Success Banner -->
+            <div *ngIf="selectedUser()" class="user-sync-banner">
+              <i class="pi pi-check-circle"></i>
+              <div class="sync-user-details">
+                <span>{{ 'invoicing.salespersons.userProfileLinked' | translate }}</span>
+                <strong>{{ selectedUser()?.fullNameAr }}</strong>
+                <span class="sync-chip">&#64;{{ selectedUser()?.userName }}</span>
+                <span *ngIf="selectedUser()?.email" class="sync-chip">{{ selectedUser()?.email }}</span>
+                <span *ngIf="selectedUser()?.phoneNumber" class="sync-chip">{{ selectedUser()?.phoneNumber }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode: Create New User -->
+          <div *ngIf="userMappingMode() === 'create'" class="user-subform mt-2">
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>{{ 'invoicing.salespersons.username' | translate }}</label>
+                <input type="text" [(ngModel)]="newUserName" [placeholder]="'ui.salespersons.e49c08' | translate" class="form-control font-code" />
+              </div>
+              <div class="form-group">
+                <label>{{ 'invoicing.salespersons.defaultPassword' | translate }}</label>
+                <input type="text" [(ngModel)]="newUserPassword" class="form-control font-code" />
+              </div>
+              <div class="form-group">
+                <label>{{ 'invoicing.salespersons.systemRole' | translate }}</label>
+                <select class="form-control font-bold" [ngModel]="targetUserRole()" (ngModelChange)="targetUserRole.set($event)">
+                  <option *ngFor="let r of availableRoles" [value]="r.value">
+                    {{ langService.currentLang() === 'ar' ? r.labelAr : r.labelEn }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <p class="subform-hint">
+              <i class="pi pi-shield"></i>
+              {{ 'invoicing.salespersons.selectTheSystemRoleAccording' | translate }}
+            </p>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Personal & Contact Information -->
+        <div class="form-section mt-3">
+          <div class="section-title">
+            <i class="pi pi-user"></i>
+            <span>{{ 'invoicing.salespersons.2SalespersonProfileContact' | translate }}</span>
+            <span *ngIf="userMappingMode() === 'link' && selectedUser()" class="badge-lock">
+              <i class="pi pi-sync"></i>
+              {{ 'invoicing.salespersons.syncedWithUserProfile' | translate }}
+            </span>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group" style="max-width: 180px;">
+              <label>{{ 'invoicing.salespersons.repCode' | translate }}</label>
+              <input type="text" [(ngModel)]="formCode" class="form-control font-code" [readonly]="isEditMode()" />
+            </div>
+
+            <!-- Single Unified Salesperson Name with Background Auto-Translation -->
+            <div class="form-group" style="flex: 1;">
+              <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">
+                  <span>{{ 'invoicing.salespersons.salespersonName' | translate }}</span>
+                  <span class="req" style="color: #ef4444;">*</span>
+                  <span style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-right: 0.5rem; margin-left: 0.5rem;">
+                    {{ 'invoicing.salespersons.arabicOrEnglishAutotranslated' | translate }}
+                  </span>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span *ngIf="backgroundTranslation()" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                    {{ backgroundTranslation() }}
+                  </span>
+                  <button type="button" class="btn-translate-icon" (click)="forceRetranslate()" [title]="('invoicing.salespersons.instantTranslation' | translate)">
+                    <i class="pi pi-globe"></i>
+                    <span>{{ 'invoicing.salespersons.translate' | translate }}</span>
+                  </button>
+                </div>
+              </div>
+              <input 
+                type="text" 
+                [ngModel]="unifiedSalespersonName()" 
+                (ngModelChange)="onUnifiedNameChange($event)"
+                [placeholder]="('invoicing.salespersons.egAhmedAbdullah' | translate)" 
+                class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-grid-3 mt-2">
+            <div class="form-group">
+              <label>{{ 'invoicing.salespersons.phoneNumber' | translate }}</label>
+              <input type="text" [(ngModel)]="formPhone" placeholder="05xxxxxxxx" class="form-control font-code" />
+            </div>
+            <div class="form-group">
+              <label>{{ 'invoicing.salespersons.emailAddress' | translate }}</label>
+              <input type="email" [(ngModel)]="formEmail" placeholder="rep@company.com" class="form-control font-code" />
+            </div>
+            <div class="form-group">
+              <label>{{ 'invoicing.salespersons.commission' | translate }}</label>
+              <input type="number" [(ngModel)]="formCommissionRate" min="0" max="100" step="0.5" class="form-control text-end" />
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Dedicated Warehouse Binding (عزل المخزون) -->
+        <div class="form-section mt-3 highlight-warehouse">
+          <div class="section-title">
+            <i class="pi pi-box"></i>
+            <span>{{ 'invoicing.salespersons.3IsolatedWarehouseBinding' | translate }}</span>
+            <span class="badge-lock">
+              <i class="pi pi-lock"></i>
+              {{ 'invoicing.salespersons.defaultAssignedWarehouse' | translate }}
+            </span>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>{{ 'invoicing.salespersons.selectDedicatedWarehouse' | translate }}</label>
+              <select 
+                class="form-control" 
+                [ngModel]="selectedPresetWarehouse()" 
+                (ngModelChange)="onPresetWarehouseChange($event)">
+                <option *ngFor="let w of presetWarehouses" [value]="w.code">
+                  {{ langService.currentLang() === 'ar' ? w.nameAr : w.nameEn }} ({{ w.code }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group" *ngIf="selectedPresetWarehouse() === 'CUSTOM'">
+              <label>{{ 'invoicing.salespersons.customWarehouseCode' | translate }}</label>
+              <input type="text" [ngModel]="formWarehouseCode()" (ngModelChange)="formWarehouseCode.set($event)" [placeholder]="'ui.salespersons.b1baff' | translate" class="form-control font-code" />
+            </div>
+          </div>
+
+          <div class="form-grid-2 mt-2" *ngIf="selectedPresetWarehouse() === 'CUSTOM'">
+            <div class="form-group">
+              <label>{{ 'invoicing.salespersons.warehouseNameAr' | translate }}</label>
+              <input type="text" [ngModel]="formWarehouseNameAr()" (ngModelChange)="formWarehouseNameAr.set($event)" [placeholder]="'ui.salespersons.22c277' | translate" class="form-control" />
+            </div>
+          </div>
+
+          <div class="notice-box">
+            <i class="pi pi-shield text-emerald"></i>
+            <span>
+              {{ 'invoicing.salespersons.duringSalesInvoicingItemInvent' | translate }}
+            </span>
+          </div>
+        </div>
+
+        <!-- SECTION 4: Operational Permissions & Overrides (الصلاحيات التشغيلية والاستثنائية للبائع) -->
+        <div class="form-section mt-3 highlight-permissions">
+          <div class="section-title">
+            <i class="pi pi-key"></i>
+            <span>{{ 'invoicing.salespersons.4OperationalPermissionsPrivile' | translate }}</span>
+            <span class="badge-lock purple">
+              <i class="pi pi-sliders-h"></i>
+              {{ 'invoicing.salespersons.customOverrides' | translate }}
+            </span>
+          </div>
+
+          <p class="permissions-intro">
+            <i class="pi pi-info-circle"></i>
+            {{ 'invoicing.salespersons.configureGranularOperationalPe' | translate }}
+          </p>
+
+          <div class="permissions-grid">
+            <!-- 1. Max Discount Permission -->
+            <div class="perm-card" [class.active]="formCanGiveDiscount()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanGiveDiscount()" (ngModelChange)="formCanGiveDiscount.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.allowDiscounts' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.setCustomMaxDiscountLimit' | translate }}</small>
+                </div>
+              </div>
+              <div class="perm-body mt-2" *ngIf="formCanGiveDiscount()">
+                <div class="discount-limit-group">
+                  <span class="limit-label">{{ 'invoicing.salespersons.maxDiscountLimit' | translate }}</span>
+                  <div class="limit-input-wrap">
+                    <input 
+                      type="number" 
+                      [ngModel]="formMaxDiscountPercent()" 
+                      (ngModelChange)="formMaxDiscountPercent.set($event)" 
+                      min="0" 
+                      max="100" 
+                      step="1" 
+                      class="form-control text-center font-bold" />
+                    <span class="unit-suffix">%</span>
+                  </div>
+                  <span class="limit-hint text-warning font-small" *ngIf="formMaxDiscountPercent() >= 20">
+                    {{ 'invoicing.salespersons.highDiscount' | translate }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Credit Sales (البيع الآجل) -->
+            <div class="perm-card" [class.active]="formCanSellCredit()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanSellCredit()" (ngModelChange)="formCanSellCredit.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.allowCreditSales' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.issueOnaccountInvoices' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Manual Unit Price Editing -->
+            <div class="perm-card" [class.active]="formCanEditPrice()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanEditPrice()" (ngModelChange)="formCanEditPrice.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.allowManualPriceEdit' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.overrideUnitPricesInInvoice' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Cross-Warehouse Selling -->
+            <div class="perm-card" [class.active]="formCanSellFromAnyWarehouse()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanSellFromAnyWarehouse()" (ngModelChange)="formCanSellFromAnyWarehouse.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.multiwarehouseSelling' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.sellFromAnyWarehouseUpon' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Instant Returns / Refunds -->
+            <div class="perm-card" [class.active]="formCanProcessReturns()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanProcessReturns()" (ngModelChange)="formCanProcessReturns.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.allowInstantRefunds' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.directRefundWithoutManagerAppr' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 6. View Cost & Profit Margin -->
+            <div class="perm-card" [class.active]="formCanViewCostPrice()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanViewCostPrice()" (ngModelChange)="formCanViewCostPrice.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.viewCostMargin' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.showCostPriceInPosinvoicing' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. Below Minimum / Cost Price Selling -->
+            <div class="perm-card" [class.active]="formCanSellBelowCost()">
+              <div class="perm-header">
+                <label class="custom-switch">
+                  <input type="checkbox" [ngModel]="formCanSellBelowCost()" (ngModelChange)="formCanSellBelowCost.set($event)" />
+                  <span class="slider"></span>
+                </label>
+                <div class="perm-info">
+                  <strong>{{ 'invoicing.salespersons.allowBelowCostSales' | translate }}</strong>
+                  <small>{{ 'invoicing.salespersons.authorizedForClearanceSales' | translate }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeModal()">
+          <span>{{ 'invoicing.salespersons.cancel' | translate }}</span>
+        </button>
+        <button type="button" class="btn-submit" (click)="saveSalesperson()" [disabled]="isSubmitting()">
+          <i class="pi pi-save" *ngIf="!isSubmitting()"></i>
+          <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+          <span>{{ isEditMode() ? ('invoicing.salespersons.updateRep' | translate) : ('invoicing.salespersons.saveSalesperson' | translate) }}</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

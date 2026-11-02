@@ -1,0 +1,3345 @@
+<div class="projects-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Toast Notification -->
+  <div *ngIf="toastMessage" class="toast-alert" [ngClass]="toastType">
+    <i class="pi" [ngClass]="{
+      'pi-check-circle': toastType === 'success',
+      'pi-times-circle': toastType === 'error',
+      'pi-info-circle': toastType === 'info'
+    }"></i>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 1: PROJECTS HUB MAIN DASHBOARD (viewMode === 'hub')                  -->
+  <!-- ========================================================================= -->
+  <ng-container *ngIf="viewMode === 'hub'">
+    <!-- Header Section -->
+    <div class="hub-header">
+      <div class="header-titles">
+        <div class="badge-title">
+          <i class="pi pi-building"></i>
+          <span>{{ 'projects.hub.titleBadge' | translate }}</span>
+        </div>
+        <h2>{{ 'projects.hub.title' | translate }}</h2>
+        <p>{{ 'projects.hub.subtitle' | translate }}</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-outline" (click)="toggleMetricsRibbon()" [title]="'projects.hub.toggleMetricsTitle' | translate">
+          <i class="pi" [ngClass]="showMetricsRibbon ? 'pi-chevron-up' : 'pi-chart-bar'"></i>
+          <span>{{ showMetricsRibbon ? ('projects.hub.collapseMetrics' | translate) : ('projects.hub.showMetrics' | translate) }}</span>
+        </button>
+        <button class="btn btn-secondary" (click)="openAddTimesheetModal()">
+          <i class="pi pi-clock"></i>
+          <span>{{ 'projects.hub.recordTimesheet' | translate }}</span>
+        </button>
+        <button class="btn btn-secondary" (click)="openAddTaskModal()">
+          <i class="pi pi-calendar-plus"></i>
+          <span>{{ 'projects.hub.planTask' | translate }}</span>
+        </button>
+        <button class="btn btn-secondary" (click)="openGuaranteeForm()">
+          <i class="pi pi-shield"></i>
+          <span>{{ 'projects.hub.letterOfGuarantee' | translate }}</span>
+        </button>
+        <button class="btn btn-secondary" (click)="openBillingForm()">
+          <i class="pi pi-file-edit"></i>
+          <span>{{ 'projects.hub.progressBilling' | translate }}</span>
+        </button>
+        <button class="btn btn-primary" (click)="openProjectForm()">
+          <i class="pi pi-plus"></i>
+          <span>{{ 'projects.hub.newProject' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Executive Financial Metrics (Collapsible to prevent clutter) -->
+    <div class="metrics-grid" *ngIf="metrics && showMetricsRibbon">
+      <div class="metric-card card-blue">
+        <div class="metric-icon"><i class="pi pi-briefcase"></i></div>
+        <div class="metric-info">
+          <span class="metric-label">{{ 'projects.hub.kpis.totalContracts' | translate }}</span>
+          <h3 class="metric-val">{{ formatCurrency(metrics.totalContractAmount) }}</h3>
+          <span class="metric-sub">{{ metrics.activeProjects }} {{ 'projects.hub.kpis.activeProjectWord' | translate }} / {{ metrics.totalProjects }} {{ 'projects.hub.kpis.totalWord' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-teal">
+        <div class="metric-icon"><i class="pi pi-check-square"></i></div>
+        <div class="metric-info">
+          <span class="metric-label">{{ 'projects.hub.kpis.billedAmount' | translate }}</span>
+          <h3 class="metric-val">{{ formatCurrency(metrics.totalBilledAmount) }}</h3>
+          <span class="metric-sub">{{ 'projects.hub.kpis.retentionHeldLabel' | translate }} {{ formatCurrency(metrics.totalRetentionHeld) }}</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-amber">
+        <div class="metric-icon"><i class="pi pi-money-bill"></i></div>
+        <div class="metric-info">
+          <span class="metric-label">{{ 'projects.hub.kpis.actualExpenses' | translate }}</span>
+          <h3 class="metric-val">{{ formatCurrency(metrics.totalExpenses) }}</h3>
+          <span class="metric-sub">{{ 'projects.hub.kpis.budgetLabel' | translate }} {{ formatCurrency(metrics.totalEstimatedCost) }}</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-green">
+        <div class="metric-icon"><i class="pi pi-chart-line"></i></div>
+        <div class="metric-info">
+          <span class="metric-label">{{ 'projects.hub.kpis.netProfitCompleted' | translate }}</span>
+          <h3 class="metric-val">{{ formatCurrency(metrics.totalNetProfit) }}</h3>
+          <span class="metric-sub">{{ 'projects.hub.kpis.profitMargin' | translate }} <strong class="text-success">{{ metrics.averageProfitMargin }}%</strong></span>
+        </div>
+      </div>
+
+      <div class="metric-card card-purple">
+        <div class="metric-icon"><i class="pi pi-shield"></i></div>
+        <div class="metric-info">
+          <span class="metric-label">{{ 'projects.hub.kpis.guaranteesAndCover' | translate }}</span>
+          <h3 class="metric-val">{{ formatCurrency(metrics.totalActiveGuaranteesAmount) }}</h3>
+          <span class="metric-sub">{{ 'projects.hub.kpis.bankCover' | translate }} {{ formatCurrency(metrics.totalCashMarginHeldInBanks) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Hub Tabs: Projects | Billings | Guarantees -->
+    <div class="tabs-and-toolbar">
+      <div class="hub-tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'projects'" (click)="setTab('projects')">
+          <i class="pi pi-folder"></i>
+          <span>{{ 'projects.hub.navTabs.projectsAndContracts' | translate }} ({{ projects.length }})</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'planning'" (click)="setTab('planning')">
+          <i class="pi pi-calendar"></i>
+          <span>{{ 'projects.hub.navTabs.planningAndGantt' | translate }} ({{ planningTasks.length }})</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'timesheet'" (click)="setTab('timesheet')">
+          <i class="pi pi-clock"></i>
+          <span>{{ 'projects.hub.navTabs.timesheetAndField' | translate }} ({{ timesheets.length }})</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'billings'" (click)="setTab('billings')">
+          <i class="pi pi-file-edit"></i>
+          <span>{{ 'projects.hub.navTabs.progressBillings' | translate }} ({{ billings.length }})</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'guarantees'" (click)="setTab('guarantees')">
+          <i class="pi pi-shield"></i>
+          <span>{{ 'projects.hub.navTabs.bankGuarantees' | translate }} ({{ guarantees.length }})</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'settings'" (click)="setTab('settings')">
+          <i class="pi pi-cog"></i>
+          <span>{{ 'projects.hub.navTabs.contractingSettings' | translate }}</span>
+        </button>
+      </div>
+
+      <div class="hub-toolbar">
+        <div class="search-input-wrap">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+            [placeholder]="'projects.hub.searchPlaceholder' | translate"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: PROJECTS & CONTRACTS (STAGES PIPELINE ARCHITECTURE)             -->
+    <!-- ===================================================================== -->
+    <ng-container *ngIf="activeTab === 'projects'">
+      <!-- Project Lifecycle Stages Pipeline Bar (شريط مراحل دورة حياة المشاريع) -->
+      <div class="stages-pipeline-strip">
+        <div class="stages-scroll-wrapper">
+          <button
+            class="stage-step-btn"
+            [class.active]="selectedStage === 'all'"
+            (click)="setStage('all')"
+          >
+            <span class="stage-step-icon"><i class="pi pi-th-large"></i></span>
+            <div class="stage-step-text">
+              <span class="stage-title">{{ 'projects.hub.pipeline.allProjects' | translate }}</span>
+              <span class="stage-count">{{ stageCounts.all }} {{ 'projects.hub.pipeline.projectUnit' | translate }}</span>
+            </div>
+          </button>
+
+          <div class="stage-separator"><i class="pi pi-chevron-left"></i></div>
+
+          <button
+            class="stage-step-btn stage-planning"
+            [class.active]="selectedStage === 'planning'"
+            (click)="setStage('planning')"
+          >
+            <span class="stage-step-num">1</span>
+            <div class="stage-step-text">
+              <span class="stage-title">{{ 'projects.hub.pipeline.planningAndContracting' | translate }}</span>
+              <span class="stage-count">{{ stageCounts.planning }} {{ 'projects.hub.pipeline.initialContracts' | translate }}</span>
+            </div>
+          </button>
+
+          <div class="stage-separator"><i class="pi pi-chevron-left"></i></div>
+
+          <button
+            class="stage-step-btn stage-execution"
+            [class.active]="selectedStage === 'execution'"
+            (click)="setStage('execution')"
+          >
+            <span class="stage-step-num">2</span>
+            <div class="stage-step-text">
+              <span class="stage-title">{{ 'projects.hub.pipeline.executionAndConstruction' | translate }}</span>
+              <span class="stage-count">{{ stageCounts.execution }} {{ 'projects.hub.pipeline.underWork' | translate }}</span>
+            </div>
+          </button>
+
+          <div class="stage-separator"><i class="pi pi-chevron-left"></i></div>
+
+          <button
+            class="stage-step-btn stage-billing"
+            [class.active]="selectedStage === 'billing'"
+            (click)="setStage('billing')"
+          >
+            <span class="stage-step-num">3</span>
+            <div class="stage-step-text">
+              <span class="stage-title">{{ 'projects.hub.pipeline.billingsAndHandover' | translate }}</span>
+              <span class="stage-count">{{ stageCounts.billing }} {{ 'projects.hub.pipeline.disbursementStage' | translate }}</span>
+            </div>
+          </button>
+
+          <div class="stage-separator"><i class="pi pi-chevron-left"></i></div>
+
+          <button
+            class="stage-step-btn stage-completed"
+            [class.active]="selectedStage === 'completed'"
+            (click)="setStage('completed')"
+          >
+            <span class="stage-step-num">4</span>
+            <div class="stage-step-text">
+              <span class="stage-title">{{ 'projects.hub.pipeline.completedAndClosed' | translate }}</span>
+              <span class="stage-count">{{ stageCounts.completed }} {{ 'projects.hub.pipeline.handedOver' | translate }}</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- View Switcher: Spacious Cards vs Compact Table -->
+        <div class="view-mode-buttons">
+          <button
+            class="view-toggle-btn"
+            [class.active]="displayMode === 'cards'"
+            (click)="setDisplayMode('cards')"
+            [title]="'projects.hub.pipeline.stageCards' | translate"
+          >
+            <i class="pi pi-th-large"></i>
+            <span>{{ 'projects.hub.pipeline.stageCards' | translate }}</span>
+          </button>
+          <button
+            class="view-toggle-btn"
+            [class.active]="displayMode === 'table'"
+            (click)="setDisplayMode('table')"
+            [title]="'projects.hub.pipeline.simpleTable' | translate"
+          >
+            <i class="pi pi-bars"></i>
+            <span>{{ 'projects.hub.pipeline.simpleTable' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- OPTION A: SPACIOUS STAGE CARDS VIEW (Clean, Uncrowded & Stage-Oriented) -->
+      <div class="stage-cards-container" *ngIf="displayMode === 'cards'">
+        <div class="project-stage-card" *ngFor="let p of paginatedProjects">
+          <!-- Card Top: Identity, Client & Status -->
+          <div class="stage-card-header">
+            <div class="identity-group">
+              <span class="badge-code lg font-bold">{{ p.code }}</span>
+              <div class="titles-wrap">
+                <h3 class="card-project-title" (click)="openProjectWorkspace(p.id)">{{ p.nameAr }}</h3>
+                <span class="card-project-sub">{{ p.nameEn }}</span>
+              </div>
+            </div>
+
+            <div class="header-tags">
+              <span class="client-pill"><i class="pi pi-user"></i> {{ p.customerName }}</span>
+              <span class="contract-pill"><i class="pi pi-file"></i> {{ 'projects.hub.stageCards.contract' | translate }} {{ p.contractNumber }}</span>
+              <span class="status-badge" [ngClass]="getStatusClass(p.status)">{{ p.statusText }}</span>
+            </div>
+          </div>
+
+          <!-- Project Lifecycle 4-Step Stepper (المسار الميداني للمشروع) -->
+          <div class="project-lifecycle-stepper">
+            <div class="step-node" [class.done]="getStageStepNumber(p) >= 1" [class.current]="getStageStepNumber(p) === 1">
+              <div class="node-circle">
+                <i class="pi pi-check" *ngIf="getStageStepNumber(p) > 1"></i>
+                <span *ngIf="getStageStepNumber(p) <= 1">1</span>
+              </div>
+              <span class="node-label">{{ 'projects.hub.stageCards.step1' | translate }}</span>
+            </div>
+            <div class="stepper-line" [class.active]="getStageStepNumber(p) >= 2"></div>
+
+            <div class="step-node" [class.done]="getStageStepNumber(p) >= 2" [class.current]="getStageStepNumber(p) === 2">
+              <div class="node-circle">
+                <i class="pi pi-check" *ngIf="getStageStepNumber(p) > 2"></i>
+                <span *ngIf="getStageStepNumber(p) <= 2">2</span>
+              </div>
+              <span class="node-label">{{ 'projects.hub.stageCards.step2' | translate }}</span>
+            </div>
+            <div class="stepper-line" [class.active]="getStageStepNumber(p) >= 3"></div>
+
+            <div class="step-node" [class.done]="getStageStepNumber(p) >= 3" [class.current]="getStageStepNumber(p) === 3">
+              <div class="node-circle">
+                <i class="pi pi-check" *ngIf="getStageStepNumber(p) > 3"></i>
+                <span *ngIf="getStageStepNumber(p) <= 3">3</span>
+              </div>
+              <span class="node-label">{{ 'projects.hub.stageCards.step3' | translate }}</span>
+            </div>
+            <div class="stepper-line" [class.active]="getStageStepNumber(p) >= 4"></div>
+
+            <div class="step-node" [class.done]="getStageStepNumber(p) >= 4" [class.current]="getStageStepNumber(p) === 4">
+              <div class="node-circle">
+                <i class="pi pi-check" *ngIf="getStageStepNumber(p) >= 4"></i>
+                <span *ngIf="getStageStepNumber(p) < 4">4</span>
+              </div>
+              <span class="node-label">{{ 'projects.hub.stageCards.step4' | translate }}</span>
+            </div>
+          </div>
+
+          <!-- Key Financial & Operational Pillars Grid (4 Spacious Columns) -->
+          <div class="stage-pillars-grid">
+            <div class="pillar-card">
+              <span class="pillar-label"><i class="pi pi-briefcase"></i> {{ 'projects.hub.stageCards.pillarValueBudget' | translate }}</span>
+              <strong class="pillar-val">{{ formatCurrency(p.contractAmount) }}</strong>
+              <small class="pillar-sub">{{ 'projects.hub.stageCards.pillarBudget' | translate }} {{ formatCurrency(p.estimatedCost) }}</small>
+            </div>
+
+            <div class="pillar-card">
+              <span class="pillar-label"><i class="pi pi-file-edit"></i> {{ 'projects.hub.stageCards.pillarBillingsCosts' | translate }}</span>
+              <strong class="pillar-val text-info">{{ formatCurrency(p.totalBilledAmount) }}</strong>
+              <small class="pillar-sub text-warning">{{ 'projects.hub.stageCards.pillarActualExpenses' | translate }} {{ formatCurrency(p.totalExpensesAmount) }}</small>
+            </div>
+
+            <div class="pillar-card">
+              <div class="pillar-label-row">
+                <span class="pillar-label"><i class="pi pi-chart-pie"></i> {{ 'projects.hub.stageCards.pillarActualProgress' | translate }}</span>
+                <span class="pct-badge">{{ p.completionPercentage }}%</span>
+              </div>
+              <div class="progress-bar-bg mt-1">
+                <div class="progress-bar-fill" [style.width.%]="p.completionPercentage"></div>
+              </div>
+              <small class="pillar-sub">{{ p.phasesCount }} {{ 'projects.hub.stageCards.pillarRegisteredPhases' | translate }}</small>
+            </div>
+
+            <div class="pillar-card">
+              <span class="pillar-label"><i class="pi pi-chart-line"></i> {{ 'projects.hub.stageCards.pillarEstimatedProfit' | translate }}</span>
+              <strong class="pillar-val text-success">{{ formatCurrency(p.profitabilityAmount) }}</strong>
+              <small class="pillar-sub">{{ 'projects.hub.stageCards.pillarProfitMargin' | translate }} <strong class="text-success">{{ p.profitMarginPercentage }}%</strong></small>
+            </div>
+          </div>
+
+          <!-- Card Bottom Action Ribbon -->
+          <div class="stage-card-footer">
+            <div class="footer-meta">
+              <span><i class="pi pi-calendar"></i> {{ 'projects.hub.stageCards.startDate' | translate }} {{ p.startDate | date:'yyyy-MM-dd' }}</span>
+              <span><i class="pi pi-clock"></i> {{ 'projects.hub.stageCards.handoverDate' | translate }} {{ p.expectedEndDate | date:'yyyy-MM-dd' }}</span>
+              <span *ngIf="p.projectManager"><i class="pi pi-id-card"></i> {{ p.projectManager }}</span>
+            </div>
+
+            <div class="footer-actions">
+              <button class="btn btn-sm btn-primary" (click)="openProjectWorkspace(p.id)">
+                <i class="pi pi-desktop"></i>
+                <span>{{ 'projects.hub.stageCards.commandCenter' | translate }}</span>
+              </button>
+              <button class="btn btn-sm btn-outline" (click)="openEngineerReport(p.id)">
+                <i class="pi pi-print"></i>
+                <span>{{ 'projects.hub.stageCards.technicalReport' | translate }}</span>
+              </button>
+              <button class="btn btn-sm btn-outline" (click)="openBillingForm(p)">
+                <i class="pi pi-file-edit"></i>
+                <span>{{ 'projects.hub.stageCards.newBilling' | translate }}</span>
+              </button>
+              <button class="btn btn-sm btn-outline" (click)="openProjectForm(p)">
+                <i class="pi pi-pencil"></i>
+                <span>{{ 'common.edit' | translate }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filteredProjects.length === 0" class="empty-state">
+          <i class="pi pi-folder-open empty-icon"></i>
+          <h4>{{ 'projects.hub.stageCards.noProjectsInStage' | translate }}</h4>
+          <p>{{ 'projects.hub.stageCards.switchStageOrAdd' | translate }}</p>
+          <button class="btn btn-primary" (click)="openProjectForm()">
+            <i class="pi pi-plus"></i> {{ 'projects.hub.stageCards.createNewProject' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <!-- OPTION B: COMPACT STREAMLINED TABLE VIEW -->
+      <div class="table-container" *ngIf="displayMode === 'table'">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.table.projectCode' | translate }}</th>
+              <th>{{ 'projects.hub.table.nameAndClient' | translate }}</th>
+              <th>{{ 'projects.hub.table.currentStage' | translate }}</th>
+              <th>{{ 'projects.hub.table.contractValue' | translate }}</th>
+              <th>{{ 'projects.hub.table.approvedBillings' | translate }}</th>
+              <th>{{ 'projects.hub.table.actualCosts' | translate }}</th>
+              <th>{{ 'projects.hub.table.completionPct' | translate }}</th>
+              <th>{{ 'projects.hub.table.status' | translate }}</th>
+              <th class="actions-col">{{ 'projects.hub.table.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of paginatedProjects" class="interactive-row">
+              <td><span class="badge-code font-bold">{{ p.code }}</span></td>
+              <td>
+                <div class="project-name-cell">
+                  <strong class="clickable-title" (click)="openProjectWorkspace(p.id)">{{ p.nameAr }}</strong>
+                  <span class="client-badge">{{ p.customerName }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="stage-tag" [ngClass]="'stage-' + getStageForProject(p)">
+                  {{ 'projects.hub.table.stage' | translate }} {{ getStageStepNumber(p) }}: {{ getStageForProject(p) === 'planning' ? ('projects.hub.table.stagePlanning' | translate) : getStageForProject(p) === 'execution' ? ('projects.hub.table.stageExecution' | translate) : getStageForProject(p) === 'billing' ? ('projects.hub.table.stageBilling' | translate) : ('projects.hub.table.stageCompleted' | translate) }}
+                </span>
+              </td>
+              <td><strong>{{ formatCurrency(p.contractAmount) }}</strong></td>
+              <td><span class="text-info font-bold">{{ formatCurrency(p.totalBilledAmount) }}</span></td>
+              <td><span class="text-warning font-bold">{{ formatCurrency(p.totalExpensesAmount) }}</span></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" [style.width.%]="p.completionPercentage"></div>
+                  </div>
+                  <span class="progress-val">{{ p.completionPercentage }}%</span>
+                </div>
+              </td>
+              <td><span class="status-badge" [ngClass]="getStatusClass(p.status)">{{ p.statusText }}</span></td>
+              <td class="actions-col">
+                <div class="action-buttons-group">
+                  <button class="btn-sm btn-primary" (click)="openProjectWorkspace(p.id)" [title]="'projects.hub.table.commandCenterTitle' | translate">
+                    <i class="pi pi-desktop"></i>
+                  </button>
+                  <button class="btn-sm btn-outline" (click)="openEngineerReport(p.id)" [title]="'projects.hub.table.technicalReportTitle' | translate">
+                    <i class="pi pi-print"></i>
+                  </button>
+                  <button class="btn-sm btn-outline" (click)="openBillingForm(p)" [title]="'projects.hub.table.newBillingTitle' | translate">
+                    <i class="pi pi-file-edit"></i>
+                  </button>
+                  <button class="btn-sm btn-outline" (click)="openProjectForm(p)" [title]="'common.edit' | translate">
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modern Projects Pagination Bar -->
+      <div class="projects-pagination-bar" *ngIf="filteredProjects.length > 0">
+        <div class="pagination-info">
+          <span>{{ 'projects.hub.pagination.showing' | translate }} <strong>{{ (projectsCurrentPage - 1) * projectsPageSize + 1 }}</strong> {{ 'projects.hub.pagination.to' | translate }} <strong>{{ Math.min(projectsCurrentPage * projectsPageSize, filteredProjects.length) }}</strong> {{ 'projects.hub.pagination.ofTotal' | translate }} <strong>{{ filteredProjects.length }}</strong> {{ 'projects.hub.pipeline.projectUnit' | translate }}</span>
+          <div class="page-size-selector">
+            <label>{{ 'projects.hub.pagination.perPage' | translate }}</label>
+            <select [ngModel]="projectsPageSize" (ngModelChange)="onProjectsPageSizeChange($event)" class="size-select">
+              <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pagination-controls" *ngIf="totalProjectsPages > 1">
+          <button type="button" class="pag-btn" [disabled]="projectsCurrentPage === 1" (click)="prevProjectsPage()" [title]="'projects.hub.pagination.prev' | translate">
+            <i class="pi pi-chevron-right"></i>
+            <span>{{ 'projects.hub.pagination.prev' | translate }}</span>
+          </button>
+          <div class="pag-numbers">
+            <ng-container *ngFor="let p of projectsPagesArray">
+              <span *ngIf="p === '...'" class="pag-dots">...</span>
+              <button *ngIf="p !== '...'" type="button" class="page-num-btn" [class.active]="p === projectsCurrentPage" (click)="goToProjectsPage(+p)">
+                {{ p }}
+              </button>
+            </ng-container>
+          </div>
+          <button type="button" class="pag-btn" [disabled]="projectsCurrentPage === totalProjectsPages" (click)="nextProjectsPage()" [title]="'projects.hub.pagination.next' | translate">
+            <span>{{ 'projects.hub.pagination.next' | translate }}</span>
+            <i class="pi pi-chevron-left"></i>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- TAB 2: BILLINGS TABLE -->
+    <div class="table-container" *ngIf="activeTab === 'billings'">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'projects.hub.billings.billingNumber' | translate }}</th>
+            <th>{{ 'projects.hub.billings.project' | translate }}</th>
+            <th>{{ 'projects.hub.billings.dateAndPeriod' | translate }}</th>
+            <th>{{ 'projects.hub.billings.currentWork' | translate }}</th>
+            <th>{{ 'projects.hub.billings.retention' | translate }}</th>
+            <th>{{ 'projects.hub.billings.advanceRecovery' | translate }}</th>
+            <th>{{ 'projects.hub.billings.netDueWithVat' | translate }}</th>
+            <th>{{ 'projects.hub.table.status' | translate }}</th>
+            <th class="actions-col">{{ 'projects.hub.billings.actionsAndApprovals' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of billings" class="interactive-row">
+            <td>
+              <strong class="badge-code font-bold">{{ b.billingNumber }}</strong>
+              <small class="d-block text-muted">{{ 'projects.hub.billings.billingSeq' | translate }} #{{ b.billingSequence }}</small>
+            </td>
+            <td>
+              <strong>{{ b.projectName }}</strong>
+              <span class="d-block text-muted sm">{{ b.projectCode }}</span>
+            </td>
+            <td>
+              <div>{{ b.billingDate | date:'yyyy-MM-dd' }}</div>
+              <small class="text-muted">{{ 'projects.hub.billings.period' | translate }} {{ b.periodStart | date:'MM/dd' }} {{ 'projects.hub.billings.to' | translate }} {{ b.periodEnd | date:'MM/dd' }}</small>
+            </td>
+            <td><strong>{{ formatCurrency(b.currentWorkAmount) }}</strong></td>
+            <td><span class="text-danger">-{{ formatCurrency(b.retentionAmount) }} ({{ b.retentionPercentage }}%)</span></td>
+            <td>
+              <span class="text-warning" *ngIf="b.advancePaymentDeduction > 0">-{{ formatCurrency(b.advancePaymentDeduction) }}</span>
+              <span class="text-muted" *ngIf="b.advancePaymentDeduction === 0">—</span>
+            </td>
+            <td>
+              <div class="amount-cell">
+                <strong class="text-primary">{{ formatCurrency(b.totalWithVat) }}</strong>
+                <small class="text-muted">{{ 'projects.hub.billings.netBeforeVat' | translate }} {{ formatCurrency(b.netAmount) }}</small>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getBillingStatusClass(b.status)">{{ b.statusText }}</span>
+            </td>
+            <td class="actions-col">
+              <div class="action-buttons-group">
+                <button *ngIf="b.status === BillingStatus.Draft" class="btn-sm btn-outline" (click)="submitBilling(b.id)">
+                  <i class="pi pi-send"></i> {{ 'projects.hub.billings.submitToConsultant' | translate }}
+                </button>
+                <button *ngIf="b.status === BillingStatus.Submitted" class="btn-sm btn-amber" (click)="approveBilling(b.id)">
+                  <i class="pi pi-check"></i> {{ 'projects.hub.billings.consultantApprove' | translate }}
+                </button>
+                <button *ngIf="b.status === BillingStatus.ConsultantApproved" class="btn-sm btn-success-outline" (click)="certifyBilling(b.id)">
+                  <i class="pi pi-verified"></i> {{ 'projects.hub.billings.certifyFinancial' | translate }}
+                </button>
+                <button class="btn-sm btn-outline" (click)="openProjectWorkspace(b.projectId, 'billings')">
+                  <i class="pi pi-external-link"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="billings.length === 0">
+            <td colspan="9" class="empty-state">
+              <i class="pi pi-file-edit empty-icon"></i>
+              <h4>{{ 'projects.hub.billings.noBillings' | translate }}</h4>
+              <button class="btn btn-primary" (click)="openBillingForm()">
+                <i class="pi pi-plus"></i> {{ 'projects.hub.billings.newProgressBilling' | translate }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Billings Pagination -->
+      <div class="projects-pagination-bar" *ngIf="totalBillingsPages > 1">
+        <div class="pagination-info">
+          <span>{{ 'projects.hub.billings.page' | translate }} <strong>{{ billingsCurrentPage }}</strong> {{ 'projects.hub.billings.of' | translate }} <strong>{{ totalBillingsPages }}</strong> ({{ 'projects.hub.billings.totalOf' | translate }} {{ billings.length }} {{ 'projects.hub.billings.billingsUnit' | translate }})</span>
+        </div>
+        <div class="pagination-controls">
+          <button type="button" class="pag-btn" [disabled]="billingsCurrentPage === 1" (click)="prevBillingsPage()">
+            <i class="pi pi-chevron-right"></i> {{ 'projects.hub.table.prev' | translate }}
+          </button>
+          <button type="button" class="pag-btn" [disabled]="billingsCurrentPage === totalBillingsPages" (click)="nextBillingsPage()">
+            {{ 'projects.hub.table.next' | translate }} <i class="pi pi-chevron-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: GUARANTEES TABLE -->
+    <div class="table-container" *ngIf="activeTab === 'guarantees'">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'projects.hub.guarantees.guaranteeNumber' | translate }}</th>
+            <th>{{ 'projects.hub.guarantees.type' | translate }}</th>
+            <th>{{ 'projects.hub.guarantees.projectAndBeneficiary' | translate }}</th>
+            <th>{{ 'projects.hub.guarantees.issuingBank' | translate }}</th>
+            <th>{{ 'projects.hub.guarantees.totalAmount' | translate }}</th>
+            <th>{{ 'projects.hub.guarantees.cashMargin' | translate }}</th>
+            <th>{{ 'projects.hub.guarantees.expiryDate' | translate }}</th>
+            <th>{{ 'projects.hub.table.status' | translate }}</th>
+            <th class="actions-col">{{ 'projects.hub.table.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of guarantees" class="interactive-row">
+            <td><strong class="badge-code font-bold">{{ g.guaranteeNumber }}</strong></td>
+            <td><span class="type-pill">{{ getGuaranteeTypeText(g.type) }}</span></td>
+            <td>
+              <strong>{{ g.beneficiaryName }}</strong>
+              <small class="d-block text-muted">{{ g.projectName }} ({{ g.projectCode }})</small>
+            </td>
+            <td>
+              <div>{{ g.issuingBank }}</div>
+              <small class="text-muted">{{ g.bankBranch || ('projects.hub.guarantees.mainBranch' | translate) }}</small>
+            </td>
+            <td><strong>{{ formatCurrency(g.amount) }}</strong></td>
+            <td>
+              <strong class="text-info">{{ formatCurrency(g.cashMarginAmount) }}</strong>
+              <small class="d-block text-muted">({{ g.cashMarginPercentage }}% {{ 'projects.hub.guarantees.cover' | translate }})</small>
+            </td>
+            <td>
+              <div>{{ g.expiryDate | date:'yyyy-MM-dd' }}</div>
+              <span class="days-badge" [class.days-warning]="g.daysRemaining <= 30" [class.days-danger]="g.daysRemaining <= 7">
+                {{ g.daysRemaining > 0 ? (g.daysRemaining + ' ' + ('projects.hub.guarantees.daysRemaining' | translate)) : ('projects.hub.guarantees.expired' | translate) }}
+              </span>
+            </td>
+            <td><span class="status-badge" [ngClass]="getGuaranteeStatusClass(g.status)">{{ g.statusText }}</span></td>
+            <td class="actions-col">
+              <div class="action-buttons-group">
+                <button *ngIf="g.status === GuaranteeStatus.Active || g.status === GuaranteeStatus.Extended" class="btn-sm btn-outline" (click)="extendGuaranteeSwal(g)">{{ 'projects.hub.guarantees.extend' | translate }}</button>
+                <button *ngIf="g.status === GuaranteeStatus.Active || g.status === GuaranteeStatus.Extended" class="btn-sm btn-success-outline" (click)="releaseGuarantee(g.id)">{{ 'projects.hub.guarantees.release' | translate }}</button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="guarantees.length === 0">
+            <td colspan="9" class="empty-state">
+              <i class="pi pi-shield empty-icon"></i>
+              <h4>{{ 'projects.hub.guarantees.noGuarantees' | translate }}</h4>
+              <button class="btn btn-secondary" (click)="openGuaranteeForm()">
+                <i class="pi pi-plus"></i> {{ 'projects.hub.guarantees.newGuarantee' | translate }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Guarantees Pagination -->
+      <div class="projects-pagination-bar" *ngIf="totalGuaranteesPages > 1">
+        <div class="pagination-info">
+          <span>{{ 'projects.hub.billings.page' | translate }} <strong>{{ guaranteesCurrentPage }}</strong> {{ 'projects.hub.billings.of' | translate }} <strong>{{ totalGuaranteesPages }}</strong> ({{ 'projects.hub.guarantees.totalOf' | translate }} {{ guarantees.length }} {{ 'projects.hub.guarantees.guaranteesUnit' | translate }})</span>
+        </div>
+        <div class="pagination-controls">
+          <button type="button" class="pag-btn" [disabled]="guaranteesCurrentPage === 1" (click)="prevGuaranteesPage()">
+            <i class="pi pi-chevron-right"></i> {{ 'projects.hub.table.prev' | translate }}
+          </button>
+          <button type="button" class="pag-btn" [disabled]="guaranteesCurrentPage === totalGuaranteesPages" (click)="nextGuaranteesPage()">
+            {{ 'projects.hub.table.next' | translate }} <i class="pi pi-chevron-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: PLANNING & GANTT TIMELINE ARCHITECTURE (activeTab === 'planning')-->
+    <!-- Microsoft Project & Odoo Planning Style Interactive Gantt Timeline    -->
+    <!-- ===================================================================== -->
+    <div class="hub-tab-content planning-hub-view" *ngIf="activeTab === 'planning'">
+      <!-- Planning Metric KPI Strip -->
+      <div class="planning-kpis-strip">
+        <div class="planning-kpi-card card-blue">
+          <div class="kpi-icon"><i class="pi pi-calendar"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.planning.kpis.totalTasks' | translate }}</span>
+            <h3 class="kpi-val">{{ filteredPlanningTasks.length }}</h3>
+            <span class="kpi-sub">{{ 'projects.hub.planning.kpis.totalTasksSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="planning-kpi-card card-green">
+          <div class="kpi-icon"><i class="pi pi-check-circle"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.planning.kpis.completedTasks' | translate }}</span>
+            <h3 class="kpi-val">{{ completedPlanningTasksCount }}</h3>
+            <span class="kpi-sub">{{ 'projects.hub.planning.kpis.completedTasksSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="planning-kpi-card card-teal">
+          <div class="kpi-icon"><i class="pi pi-spinner"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.planning.kpis.inProgress' | translate }}</span>
+            <h3 class="kpi-val">{{ inProgressPlanningTasksCount }}</h3>
+            <span class="kpi-sub">{{ 'projects.hub.planning.kpis.inProgressSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="planning-kpi-card card-amber">
+          <div class="kpi-icon"><i class="pi pi-clock"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.planning.kpis.planned' | translate }}</span>
+            <h3 class="kpi-val">{{ plannedPlanningTasksCount }}</h3>
+            <span class="kpi-sub">{{ 'projects.hub.planning.kpis.plannedSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="planning-kpi-card card-rose">
+          <div class="kpi-icon"><i class="pi pi-exclamation-triangle"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.planning.kpis.delayed' | translate }}</span>
+            <h3 class="kpi-val">{{ delayedPlanningTasksCount }}</h3>
+            <span class="kpi-sub">{{ 'projects.hub.planning.kpis.delayedSub' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Planning Control Toolbar -->
+      <div class="planning-toolbar">
+        <div class="toolbar-left">
+          <div class="filter-group">
+            <label><i class="pi pi-briefcase"></i> {{ 'projects.hub.planning.filterProject' | translate }}</label>
+            <select [(ngModel)]="selectedPlanningProjectId" class="planning-select">
+              <option value="all">{{ 'projects.hub.planning.allProjects' | translate }}</option>
+              <option *ngFor="let p of projects" [value]="p.id">{{ p.nameAr }} ({{ p.code }})</option>
+            </select>
+          </div>
+
+          <div class="planning-search-box">
+            <i class="pi pi-search"></i>
+            <input
+              type="text"
+              [(ngModel)]="planningSearchTerm"
+              [placeholder]="'projects.hub.planning.searchPlaceholder' | translate"
+            />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- View Mode Toggle: Gantt vs Grid -->
+          <div class="view-switch-btns">
+            <button
+              class="switch-btn"
+              [class.active]="planningViewMode === 'gantt'"
+              (click)="planningViewMode = 'gantt'"
+              [title]="'projects.hub.planning.ganttTimelineTitle' | translate"
+            >
+              <i class="pi pi-chart-bar"></i>
+              <span>{{ 'projects.hub.planning.ganttTimeline' | translate }}</span>
+            </button>
+            <button
+              class="switch-btn"
+              [class.active]="planningViewMode === 'grid'"
+              (click)="planningViewMode = 'grid'"
+              [title]="'projects.hub.planning.wbsGridTitle' | translate"
+            >
+              <i class="pi pi-table"></i>
+              <span>{{ 'projects.hub.planning.wbsGrid' | translate }}</span>
+            </button>
+          </div>
+
+          <button class="btn btn-primary" (click)="openAddTaskModal()">
+            <i class="pi pi-plus"></i>
+            <span>{{ 'projects.hub.planning.newTask' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW A: GANTT TIMELINE VIEW -->
+      <div class="gantt-board-wrapper card" *ngIf="planningViewMode === 'gantt'">
+        <!-- Gantt Header -->
+        <div class="gantt-header-row">
+          <div class="gantt-col-task-header">
+            <span>{{ 'projects.hub.planning.taskHeader' | translate }}</span>
+          </div>
+          <div class="gantt-timeline-months-header">
+            <div class="gantt-month-cell" *ngFor="let m of ganttMonths">
+              <span class="month-name">{{ m.label }}</span>
+              <span class="month-year">{{ m.year }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gantt Task Rows -->
+        <div class="gantt-body">
+          <div
+            class="gantt-task-row"
+            *ngFor="let task of filteredPlanningTasks"
+            [class.row-milestone]="task.isMilestone"
+          >
+            <!-- Left Info Column -->
+            <div class="gantt-col-task-info">
+              <div class="task-title-group">
+                <span class="milestone-badge" *ngIf="task.isMilestone" [title]="'projects.hub.planning.milestoneBadge' | translate">
+                  <i class="pi pi-flag"></i>
+                </span>
+                <div class="task-text-wrap">
+                  <strong class="task-name-ar">{{ task.titleAr }}</strong>
+                  <small class="task-name-en">{{ task.titleEn }}</small>
+                </div>
+              </div>
+
+              <div class="task-sub-meta">
+                <span class="badge-project-code">{{ task.projectCode }}</span>
+                <span class="badge-assigned"><i class="pi pi-user"></i> {{ task.assignedTo }}</span>
+                <div class="quick-progress-group">
+                  <button class="btn-micro" (click)="quickUpdateTaskProgress(task, -10)" [title]="'projects.hub.planning.decProgress' | translate">-</button>
+                  <span class="progress-pill" [ngClass]="{
+                    'pill-done': task.progressPercentage === 100,
+                    'pill-prog': task.progressPercentage > 0 && task.progressPercentage < 100,
+                    'pill-zero': task.progressPercentage === 0
+                  }">{{ task.progressPercentage }}%</span>
+                  <button class="btn-micro" (click)="quickUpdateTaskProgress(task, 10)" [title]="'projects.hub.planning.incProgress' | translate">+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Timeline Track Column -->
+            <div class="gantt-timeline-track">
+              <!-- Grid month lines -->
+              <div class="gantt-grid-line" *ngFor="let m of ganttMonths"></div>
+
+              <!-- Interactive Gantt Bar -->
+              <div
+                class="gantt-bar"
+                [ngClass]="'status-' + task.status.toLowerCase()"
+                [ngStyle]="getGanttBarStyle(task)"
+                [title]="task.titleAr + ' (' + task.startDate + ' - ' + task.endDate + ') - ' + task.progressPercentage + '%'"
+              >
+                <!-- Filled Progress Portion -->
+                <div
+                  class="gantt-bar-fill"
+                  [style.width.%]="task.progressPercentage"
+                ></div>
+
+                <!-- Content Inside Bar -->
+                <div class="gantt-bar-content">
+                  <span class="bar-title" *ngIf="!task.isMilestone">{{ task.titleAr }} ({{ task.progressPercentage }}%)</span>
+                  <span class="bar-milestone" *ngIf="task.isMilestone"><i class="pi pi-flag"></i> {{ task.titleAr }}</span>
+                  <div class="bar-actions-micro">
+                    <button class="btn-bar-action" (click)="quickUpdateTaskProgress(task, 100)" *ngIf="task.progressPercentage < 100" [title]="'projects.hub.planning.markCompleted' | translate">
+                      <i class="pi pi-check"></i>
+                    </button>
+                    <button class="btn-bar-action delete-action" (click)="deletePlanningTaskEntry(task.id)" [title]="'projects.hub.planning.deleteTask' | translate">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gantt-empty-state" *ngIf="filteredPlanningTasks.length === 0">
+            <i class="pi pi-calendar-times empty-icon"></i>
+            <h4>{{ 'projects.hub.planning.emptyGantt' | translate }}</h4>
+            <button class="btn btn-primary" (click)="openAddTaskModal()">
+              <i class="pi pi-plus"></i> {{ 'projects.hub.planning.addNewTask' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW B: DETAILED WBS GRID VIEW -->
+      <div class="planning-grid-card card" *ngIf="planningViewMode === 'grid'">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.planning.table.task' | translate }}</th>
+              <th>{{ 'projects.hub.billings.project' | translate }}</th>
+              <th>{{ 'projects.hub.planning.table.fieldManager' | translate }}</th>
+              <th>{{ 'projects.hub.planning.table.startDate' | translate }}</th>
+              <th>{{ 'projects.hub.guarantees.expiryDate' | translate }}</th>
+              <th>{{ 'projects.hub.planning.table.progressPct' | translate }}</th>
+              <th>{{ 'projects.hub.table.status' | translate }}</th>
+              <th>{{ 'projects.hub.planning.table.estimatedCost' | translate }}</th>
+              <th class="actions-col">{{ 'projects.hub.table.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of filteredPlanningTasks" class="interactive-row">
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="pi pi-flag text-warning" *ngIf="t.isMilestone" [title]="'projects.hub.planning.milestoneBadge' | translate"></i>
+                  <div>
+                    <strong>{{ t.titleAr }}</strong>
+                    <small class="d-block text-muted">{{ t.titleEn }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge-code">{{ t.projectCode }}</span>
+                <small class="d-block text-muted">{{ t.projectName }}</small>
+              </td>
+              <td>
+                <div>{{ t.assignedTo }}</div>
+                <small class="text-muted">{{ t.assignedRole }}</small>
+              </td>
+              <td>{{ t.startDate }}</td>
+              <td>{{ t.endDate }}</td>
+              <td>
+                <div class="wbs-progress-cell">
+                  <div class="progress-bar-bg" style="height: 7px; width: 80px;">
+                    <div class="progress-bar-fill fill-teal" [style.width.%]="t.progressPercentage"></div>
+                  </div>
+                  <strong>{{ t.progressPercentage }}%</strong>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="'status-' + t.status.toLowerCase()">
+                  {{ t.status === 'Completed' ? ('projects.hub.planning.table.statusCompleted' | translate) : (t.status === 'InProgress' ? ('projects.hub.planning.table.statusInProgress' | translate) : (t.status === 'Delayed' ? ('projects.hub.planning.table.statusDelayed' | translate) : ('projects.hub.planning.table.statusScheduled' | translate))) }}
+                </span>
+              </td>
+              <td><strong>{{ formatCurrency(t.estimatedCost) }}</strong></td>
+              <td class="actions-col">
+                <div class="action-buttons-group">
+                  <button class="btn-sm btn-outline" (click)="quickUpdateTaskProgress(t, t.progressPercentage >= 100 ? 0 : 100)">
+                    {{ t.progressPercentage >= 100 ? ('projects.hub.planning.table.reopen' | translate) : ('projects.hub.planning.table.approveProgress' | translate) }}
+                  </button>
+                  <button class="btn-sm btn-outline-danger" (click)="deletePlanningTaskEntry(t.id)">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredPlanningTasks.length === 0">
+              <td colspan="9" class="empty-state">
+                <i class="pi pi-inbox empty-icon"></i>
+                <h4>{{ 'projects.hub.planning.table.empty' | translate }}</h4>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 5: TIMESHEETS & FIELD WORK LOG (activeTab === 'timesheet')         -->
+    <!-- Odoo Timesheet Style Engineering & Labor Cost Tracking                -->
+    <!-- ===================================================================== -->
+    <div class="hub-tab-content timesheet-hub-view" *ngIf="activeTab === 'timesheet'">
+      <!-- Timesheet Metric KPI Cards -->
+      <div class="timesheet-kpis-strip">
+        <div class="timesheet-kpi-card card-blue">
+          <div class="kpi-icon"><i class="pi pi-clock"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.timesheets.kpis.totalHours' | translate }}</span>
+            <h3 class="kpi-val">{{ totalTimesheetHours }} <small>{{ 'projects.hub.timesheets.kpis.hour' | translate }}</small></h3>
+            <span class="kpi-sub">{{ 'projects.hub.timesheets.kpis.totalHoursSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="timesheet-kpi-card card-green">
+          <div class="kpi-icon"><i class="pi pi-check-square"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.timesheets.kpis.billableHours' | translate }}</span>
+            <h3 class="kpi-val">{{ totalBillableHours }} <small>{{ 'projects.hub.timesheets.kpis.hour' | translate }}</small></h3>
+            <span class="kpi-sub">{{ 'projects.hub.timesheets.kpis.billableHoursSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="timesheet-kpi-card card-teal">
+          <div class="kpi-icon"><i class="pi pi-percentage"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.timesheets.kpis.billablePct' | translate }}</span>
+            <h3 class="kpi-val">{{ billablePercentage }}%</h3>
+            <span class="kpi-sub">{{ 'projects.hub.timesheets.kpis.billablePctSub' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="timesheet-kpi-card card-amber">
+          <div class="kpi-icon"><i class="pi pi-money-bill"></i></div>
+          <div class="kpi-meta">
+            <span class="kpi-title">{{ 'projects.hub.timesheets.kpis.laborCost' | translate }}</span>
+            <h3 class="kpi-val">{{ formatCurrency(totalTimesheetLaborCost) }}</h3>
+            <span class="kpi-sub">{{ 'projects.hub.timesheets.kpis.laborCostSub' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timesheet Control Toolbar -->
+      <div class="timesheet-toolbar">
+        <div class="toolbar-left">
+          <div class="filter-group">
+            <label><i class="pi pi-briefcase"></i> {{ 'projects.hub.planning.filterProject' | translate }}</label>
+            <select [(ngModel)]="selectedTimesheetProjectId" class="timesheet-select">
+              <option value="all">{{ 'projects.hub.planning.allProjects' | translate }}</option>
+              <option *ngFor="let p of projects" [value]="p.id">{{ p.nameAr }} ({{ p.code }})</option>
+            </select>
+          </div>
+
+          <div class="timesheet-search-box">
+            <i class="pi pi-search"></i>
+            <input
+              type="text"
+              [(ngModel)]="timesheetSearchTerm"
+              [placeholder]="'projects.hub.timesheets.searchPlaceholder' | translate"
+            />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <button class="btn btn-primary" (click)="openAddTimesheetModal()">
+            <i class="pi pi-clock"></i>
+            <span>{{ 'projects.hub.timesheets.newTimesheet' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Timesheet Table -->
+      <div class="timesheet-table-card card">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.timesheets.table.date' | translate }}</th>
+              <th>{{ 'projects.hub.timesheets.table.performer' | translate }}</th>
+              <th>{{ 'projects.hub.billings.project' | translate }}</th>
+              <th>{{ 'projects.hub.timesheets.table.taskDesc' | translate }}</th>
+              <th class="text-center">{{ 'projects.hub.timesheets.table.qtyProgress' | translate }}</th>
+              <th>{{ 'projects.hub.timesheets.table.unitPrice' | translate }}</th>
+              <th>{{ 'projects.hub.timesheets.table.totalNet' | translate }}</th>
+              <th class="text-center">{{ 'projects.hub.timesheets.table.billingType' | translate }}</th>
+              <th>{{ 'projects.hub.table.status' | translate }}</th>
+              <th class="actions-col">{{ 'projects.hub.table.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ts of filteredTimesheets" class="interactive-row">
+              <td><strong>{{ ts.date }}</strong></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="employee-avatar" [ngClass]="ts.entryType === 'subcontractor' ? 'avatar-sub' : 'avatar-staff'">
+                    <i class="pi" [ngClass]="ts.entryType === 'subcontractor' ? 'pi-building' : 'pi-user'"></i>
+                  </div>
+                  <div>
+                    <div class="d-flex align-items-center gap-1">
+                      <strong>{{ ts.entryType === 'subcontractor' ? (ts.subcontractorName || ts.employeeName) : ts.employeeName }}</strong>
+                      <span class="entity-type-tag" [ngClass]="ts.entryType === 'subcontractor' ? 'tag-subcontractor' : 'tag-internal'">
+                        {{ ts.entryType === 'subcontractor' ? ('projects.hub.timesheets.table.subcontractor' | translate) : ('projects.hub.timesheets.table.internalLabor' | translate) }}
+                      </span>
+                    </div>
+                    <small class="d-block text-muted">{{ ts.employeeRole }}</small>
+                    <small class="d-block text-cyan" *ngIf="ts.subcontractorContractNo">{{ 'projects.hub.timesheets.table.contract' | translate }}: {{ ts.subcontractorContractNo }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge-code">{{ ts.projectCode }}</span>
+                <small class="d-block text-muted">{{ ts.projectName }}</small>
+              </td>
+              <td>
+                <div class="task-desc-cell">
+                  <span>{{ ts.taskDescription }}</span>
+                  <small class="d-block text-muted" *ngIf="ts.notes">{{ ts.notes }}</small>
+                </div>
+              </td>
+              <td class="text-center">
+                <span class="hours-badge" [ngClass]="ts.unitOfMeasure !== 'hour' ? 'unit-badge-metric' : ''">
+                  {{ ts.quantity || ts.hours }} {{ getUnitLabel(ts.unitOfMeasure) }}
+                </span>
+              </td>
+              <td>{{ formatCurrency(ts.unitPrice || ts.hourlyRate) }}</td>
+              <td>
+                <strong class="text-info">{{ formatCurrency(ts.totalCost || (ts.hours * ts.hourlyRate)) }}</strong>
+                <small class="d-block text-emerald" *ngIf="ts.entryType === 'subcontractor' && ts.retentionAmount">
+                  {{ 'projects.hub.timesheets.table.net' | translate }}: {{ formatCurrency(ts.netPayable) }} ({{ 'projects.hub.timesheets.table.deduction' | translate }} {{ ts.retentionPercentage }}%)
+                </small>
+              </td>
+              <td class="text-center">
+                <span class="billable-badge" [class.is-billable]="ts.isBillable">
+                  <i class="pi" [ngClass]="ts.isBillable ? 'pi-check-circle' : 'pi-minus-circle'"></i>
+                  {{ ts.isBillable ? ('projects.hub.timesheets.table.billable' | translate) : ('projects.hub.timesheets.table.nonBillable' | translate) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="ts.status === 'Approved' ? 'status-active' : 'status-planning'">
+                  {{ ts.status === 'Approved' ? ('projects.hub.timesheets.table.approved' | translate) : ('projects.hub.timesheets.table.draft' | translate) }}
+                </span>
+              </td>
+              <td class="actions-col">
+                <button class="btn-sm btn-outline-danger" (click)="deleteTimesheetEntry(ts.id)" [title]="'projects.hub.timesheets.table.deleteEntry' | translate">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredTimesheets.length === 0">
+              <td colspan="10" class="empty-state">
+                <i class="pi pi-clock empty-icon"></i>
+                <h4>{{ 'projects.hub.timesheets.table.empty' | translate }}</h4>
+                <button class="btn btn-primary" (click)="openAddTimesheetModal()">
+                  <i class="pi pi-plus"></i> {{ 'projects.hub.timesheets.table.addFirst' | translate }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 6: CONTRACTING & PROJECT SETTINGS (activeTab === 'settings')     -->
+    <!-- Intelligent Contracting, Subcontractors & Unit Pricing Configurations -->
+    <!-- ===================================================================== -->
+    <div class="hub-tab-content settings-hub-view" *ngIf="activeTab === 'settings'">
+      <!-- Settings Header Banner -->
+      <div class="settings-banner-card card">
+        <div class="banner-info">
+          <div class="banner-icon-box">
+            <i class="pi pi-sliders-h"></i>
+          </div>
+          <div>
+            <h3>{{ 'projects.hub.settings.banner.title' | translate }}</h3>
+            <p>{{ 'projects.hub.settings.banner.subtitle' | translate }}</p>
+          </div>
+        </div>
+        <div class="banner-actions">
+          <button type="button" class="btn btn-secondary" (click)="resetProjectSettings()">
+            <i class="pi pi-refresh"></i>
+            <span>{{ 'projects.hub.settings.banner.restoreDefaults' | translate }}</span>
+          </button>
+          <button type="button" class="btn btn-primary" (click)="saveProjectSettings()">
+            <i class="pi pi-save"></i>
+            <span>{{ 'projects.hub.settings.banner.saveSettings' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings Cards Grid -->
+      <div class="settings-sections-grid">
+        <!-- ================================================================= -->
+        <!-- SECTION 0: التوجيه المحاسبي لقيود المستخلصات والمشاريع في شجرة الحسابات -->
+        <!-- ================================================================= -->
+        <div class="settings-section-card card gl-routing-section">
+          <div class="section-card-header">
+            <div class="header-main-title">
+              <i class="pi pi-book header-icon text-indigo"></i>
+              <div>
+                <h4>{{ 'projects.hub.settings.gl.title' | translate }}</h4>
+                <p>{{ 'projects.hub.settings.gl.subtitle' | translate }}</p>
+              </div>
+            </div>
+            <div class="header-action-btn">
+              <button type="button" class="btn btn-outline-info btn-sm" (click)="resetAccountingRoutingToDefault()" [title]="'projects.hub.settings.gl.resetTitle' | translate">
+                <i class="pi pi-history"></i>
+                <span>{{ 'projects.hub.settings.gl.resetButton' | translate }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="section-card-body">
+            <!-- Alert Banner explaining the 5 legs of the billing entry -->
+            <div class="gl-routing-guide-alert">
+              <div class="guide-icon"><i class="pi pi-info-circle"></i></div>
+              <div class="guide-text">
+                <strong>{{ 'projects.hub.settings.gl.guideTitle' | translate }}</strong>
+                {{ 'projects.hub.settings.gl.guideText' | translate }}
+              </div>
+            </div>
+
+            <!-- Billing 5 Accounts Routing Grid -->
+            <div class="gl-accounts-routing-grid">
+              <!-- Leg 1: حساب العملاء (مدين) -->
+              <div class="account-routing-card debit-card">
+                <div class="arc-header">
+                  <span class="arc-side-badge debit">{{ 'projects.hub.settings.gl.debitSide' | translate }}</span>
+                  <span class="arc-code-pill mono">{{ projectSettings.arAccountCode || '11301' }}</span>
+                </div>
+                <div class="arc-body">
+                  <label class="arc-title">
+                    <i class="pi pi-id-card"></i>
+                    {{ 'projects.hub.settings.gl.arTitle' | translate }}
+                  </label>
+                  <p class="arc-desc">{{ 'projects.hub.settings.gl.arDesc' | translate }}</p>
+                  
+                  <div class="arc-selector">
+                    <app-searchable-select 
+                      [items]="postableAccountOptions" 
+                      [(ngModel)]="projectSettings.arAccountId" 
+                      (ngModelChange)="onAccountChange('ar', $event)"
+                      [placeholder]="'projects.hub.settings.gl.arPlaceholder' | translate">
+                    </app-searchable-select>
+                  </div>
+                  <div class="arc-active-account" *ngIf="projectSettings.arAccountName">
+                    <i class="pi pi-check-circle text-success"></i>
+                    <span>{{ 'projects.hub.settings.gl.approvedAccount' | translate }} <strong>{{ projectSettings.arAccountCode }} - {{ projectSettings.arAccountName }}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leg 2: حساب تأمينات وضمان أعمال محتجزة (مدين) -->
+              <div class="account-routing-card debit-card">
+                <div class="arc-header">
+                  <span class="arc-side-badge debit">{{ 'projects.hub.settings.gl.debitSide' | translate }}</span>
+                  <span class="arc-code-pill mono">{{ projectSettings.retentionAccountCode || '11303' }}</span>
+                </div>
+                <div class="arc-body">
+                  <label class="arc-title">
+                    <i class="pi pi-shield"></i>
+                    {{ 'projects.hub.settings.gl.retentionTitle' | translate }}
+                  </label>
+                  <p class="arc-desc">{{ 'projects.hub.settings.gl.retentionDesc' | translate }}</p>
+                  
+                  <div class="arc-selector">
+                    <app-searchable-select 
+                      [items]="postableAccountOptions" 
+                      [(ngModel)]="projectSettings.retentionAccountId" 
+                      (ngModelChange)="onAccountChange('retention', $event)"
+                      [placeholder]="'projects.hub.settings.gl.retentionPlaceholder' | translate">
+                    </app-searchable-select>
+                  </div>
+                  <div class="arc-active-account" *ngIf="projectSettings.retentionAccountName">
+                    <i class="pi pi-check-circle text-success"></i>
+                    <span>{{ 'projects.hub.settings.gl.approvedAccount' | translate }} <strong>{{ projectSettings.retentionAccountCode }} - {{ projectSettings.retentionAccountName }}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leg 3: حساب استرداد الدفعات المقدمة (مدين) -->
+              <div class="account-routing-card debit-card">
+                <div class="arc-header">
+                  <span class="arc-side-badge debit">{{ 'projects.hub.settings.gl.debitSide' | translate }}</span>
+                  <span class="arc-code-pill mono">{{ projectSettings.advancePaymentAccountCode || '21302' }}</span>
+                </div>
+                <div class="arc-body">
+                  <label class="arc-title">
+                    <i class="pi pi-replay"></i>
+                    {{ 'projects.hub.settings.gl.advanceTitle' | translate }}
+                  </label>
+                  <p class="arc-desc">{{ 'projects.hub.settings.gl.advanceDesc' | translate }}</p>
+                  
+                  <div class="arc-selector">
+                    <app-searchable-select 
+                      [items]="postableAccountOptions" 
+                      [(ngModel)]="projectSettings.advancePaymentAccountId" 
+                      (ngModelChange)="onAccountChange('advance', $event)"
+                      [placeholder]="'projects.hub.settings.gl.advancePlaceholder' | translate">
+                    </app-searchable-select>
+                  </div>
+                  <div class="arc-active-account" *ngIf="projectSettings.advancePaymentAccountName">
+                    <i class="pi pi-check-circle text-success"></i>
+                    <span>{{ 'projects.hub.settings.gl.approvedAccount' | translate }} <strong>{{ projectSettings.advancePaymentAccountCode }} - {{ projectSettings.advancePaymentAccountName }}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leg 4: حساب إيرادات العقود والمشاريع (دائن) -->
+              <div class="account-routing-card credit-card">
+                <div class="arc-header">
+                  <span class="arc-side-badge credit">{{ 'projects.hub.settings.gl.creditSide' | translate }}</span>
+                  <span class="arc-code-pill mono">{{ projectSettings.revenueAccountCode || '41103' }}</span>
+                </div>
+                <div class="arc-body">
+                  <label class="arc-title">
+                    <i class="pi pi-chart-line"></i>
+                    {{ 'projects.hub.settings.gl.revenueTitle' | translate }}
+                  </label>
+                  <p class="arc-desc">{{ 'projects.hub.settings.gl.revenueDesc' | translate }}</p>
+                  
+                  <div class="arc-selector">
+                    <app-searchable-select 
+                      [items]="postableAccountOptions" 
+                      [(ngModel)]="projectSettings.revenueAccountId" 
+                      (ngModelChange)="onAccountChange('revenue', $event)"
+                      [placeholder]="'projects.hub.settings.gl.revenuePlaceholder' | translate">
+                    </app-searchable-select>
+                  </div>
+                  <div class="arc-active-account" *ngIf="projectSettings.revenueAccountName">
+                    <i class="pi pi-check-circle text-success"></i>
+                    <span>{{ 'projects.hub.settings.gl.approvedAccount' | translate }} <strong>{{ projectSettings.revenueAccountCode }} - {{ projectSettings.revenueAccountName }}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leg 5: حساب ضريبة القيمة المضافة المحصلة (دائن) -->
+              <div class="account-routing-card credit-card">
+                <div class="arc-header">
+                  <span class="arc-side-badge credit">{{ 'projects.hub.settings.gl.creditSide' | translate }}</span>
+                  <span class="arc-code-pill mono">{{ projectSettings.vatAccountCode || '21201' }}</span>
+                </div>
+                <div class="arc-body">
+                  <label class="arc-title">
+                    <i class="pi pi-percentage"></i>
+                    {{ 'projects.hub.settings.gl.vatTitle' | translate }}
+                  </label>
+                  <p class="arc-desc">{{ 'projects.hub.settings.gl.vatDesc' | translate }}</p>
+                  
+                  <div class="arc-selector">
+                    <app-searchable-select 
+                      [items]="postableAccountOptions" 
+                      [(ngModel)]="projectSettings.vatAccountId" 
+                      (ngModelChange)="onAccountChange('vat', $event)"
+                      [placeholder]="'projects.hub.settings.gl.vatPlaceholder' | translate">
+                    </app-searchable-select>
+                  </div>
+                  <div class="arc-active-account" *ngIf="projectSettings.vatAccountName">
+                    <i class="pi pi-check-circle text-success"></i>
+                    <span>{{ 'projects.hub.settings.gl.approvedAccount' | translate }} <strong>{{ projectSettings.vatAccountCode }} - {{ projectSettings.vatAccountName }}</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Letters of Guarantee Routing (خطابات الضمان البنكية) -->
+            <div class="guarantees-routing-subcard mt-4">
+              <div class="subcard-title">
+                <i class="pi pi-building text-amber"></i>
+                <h5>{{ 'projects.hub.settings.gl.guaranteesHeader' | translate }}</h5>
+              </div>
+              <div class="form-grid two-col">
+                <div class="form-field">
+                  <label>{{ 'projects.hub.settings.gl.marginLabel' | translate }}</label>
+                  <app-searchable-select 
+                    [items]="postableAccountOptions" 
+                    [(ngModel)]="projectSettings.guaranteeMarginAccountId" 
+                    (ngModelChange)="onAccountChange('margin', $event)"
+                    [placeholder]="'projects.hub.settings.gl.marginPlaceholder' | translate">
+                  </app-searchable-select>
+                  <small class="text-muted">{{ 'projects.hub.settings.gl.defaultHint' | translate }} {{ projectSettings.guaranteeMarginAccountCode }} - {{ projectSettings.guaranteeMarginAccountName }}</small>
+                </div>
+
+                <div class="form-field">
+                  <label>{{ 'projects.hub.settings.gl.commissionLabel' | translate }}</label>
+                  <app-searchable-select 
+                    [items]="postableAccountOptions" 
+                    [(ngModel)]="projectSettings.guaranteeCommissionAccountId" 
+                    (ngModelChange)="onAccountChange('commission', $event)"
+                    [placeholder]="'projects.hub.settings.gl.commissionPlaceholder' | translate">
+                  </app-searchable-select>
+                  <small class="text-muted">{{ 'projects.hub.settings.gl.defaultHint' | translate }} {{ projectSettings.guaranteeCommissionAccountCode }} - {{ projectSettings.guaranteeCommissionAccountName }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Accounting Journal Entry Preview (معاينة حية ومباشرة لشكل القيد المحاسبي المتولد) -->
+            <div class="live-gl-preview-box mt-4">
+              <div class="gl-preview-header">
+                <div class="gph-title">
+                  <i class="pi pi-eye"></i>
+                  <span>{{ 'projects.hub.settings.gl.previewTitle' | translate }}</span>
+                </div>
+                <span class="gph-badge">{{ 'projects.hub.settings.gl.previewBadge' | translate }}</span>
+              </div>
+              <div class="gl-preview-table-wrapper">
+                <table class="gl-preview-table">
+                  <thead>
+                    <tr>
+                      <th class="w-side">{{ 'projects.hub.settings.gl.thSide' | translate }}</th>
+                      <th class="w-code">{{ 'projects.hub.settings.gl.thCode' | translate }}</th>
+                      <th class="w-name">{{ 'projects.hub.settings.gl.thName' | translate }}</th>
+                      <th class="w-nature">{{ 'projects.hub.settings.gl.thNature' | translate }}</th>
+                      <th class="w-cc">{{ 'projects.hub.settings.gl.thCostCenter' | translate }}</th>
+                      <th class="w-formula">{{ 'projects.hub.settings.gl.thFormula' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="row-debit">
+                      <td><span class="badge-side debit">{{ 'projects.hub.settings.gl.debitBadge' | translate }}</span></td>
+                      <td class="mono font-bold">{{ projectSettings.arAccountCode || '11301' }}</td>
+                      <td><strong>{{ projectSettings.arAccountName || ('projects.hub.settings.gl.arRowName' | translate) }}</strong></td>
+                      <td>{{ 'projects.hub.settings.gl.arRowNature' | translate }}</td>
+                      <td><span class="badge-cc"><i class="pi pi-check"></i> {{ 'projects.hub.settings.gl.linkedCc' | translate }}</span></td>
+                      <td class="text-emerald font-bold">{{ 'projects.hub.settings.gl.arRowFormula' | translate }}</td>
+                    </tr>
+                    <tr class="row-debit">
+                      <td><span class="badge-side debit">{{ 'projects.hub.settings.gl.debitBadge' | translate }}</span></td>
+                      <td class="mono font-bold">{{ projectSettings.retentionAccountCode || '11303' }}</td>
+                      <td><strong>{{ projectSettings.retentionAccountName || ('projects.hub.settings.gl.retRowName' | translate) }}</strong></td>
+                      <td>{{ 'projects.hub.settings.gl.retRowNature' | translate }}</td>
+                      <td><span class="badge-cc"><i class="pi pi-check"></i> {{ 'projects.hub.settings.gl.linkedCc' | translate }}</span></td>
+                      <td class="text-slate font-bold">{{ 'projects.hub.settings.gl.retRowFormula' | translate }}</td>
+                    </tr>
+                    <tr class="row-debit">
+                      <td><span class="badge-side debit">{{ 'projects.hub.settings.gl.debitBadge' | translate }}</span></td>
+                      <td class="mono font-bold">{{ projectSettings.advancePaymentAccountCode || '21302' }}</td>
+                      <td><strong>{{ projectSettings.advancePaymentAccountName || ('projects.hub.settings.gl.advRowName' | translate) }}</strong></td>
+                      <td>{{ 'projects.hub.settings.gl.advRowNature' | translate }}</td>
+                      <td><span class="badge-cc"><i class="pi pi-check"></i> {{ 'projects.hub.settings.gl.linkedCc' | translate }}</span></td>
+                      <td class="text-slate font-bold">{{ 'projects.hub.settings.gl.advRowFormula' | translate }}</td>
+                    </tr>
+                    <tr class="row-credit">
+                      <td><span class="badge-side credit">{{ 'projects.hub.settings.gl.creditBadge' | translate }}</span></td>
+                      <td class="mono font-bold">{{ projectSettings.revenueAccountCode || '41103' }}</td>
+                      <td><strong>{{ projectSettings.revenueAccountName || ('projects.hub.settings.gl.revRowName' | translate) }}</strong></td>
+                      <td>{{ 'projects.hub.settings.gl.revRowNature' | translate }}</td>
+                      <td><span class="badge-cc active-cc"><i class="pi pi-star-fill"></i> {{ 'projects.hub.settings.gl.activeProjectCc' | translate }}</span></td>
+                      <td class="text-indigo font-bold">{{ 'projects.hub.settings.gl.revRowFormula' | translate }}</td>
+                    </tr>
+                    <tr class="row-credit">
+                      <td><span class="badge-side credit">{{ 'projects.hub.settings.gl.creditBadge' | translate }}</span></td>
+                      <td class="mono font-bold">{{ projectSettings.vatAccountCode || '21201' }}</td>
+                      <td><strong>{{ projectSettings.vatAccountName || ('projects.hub.settings.gl.vatRowName' | translate) }}</strong></td>
+                      <td>{{ 'projects.hub.settings.gl.vatRowNature' | translate }}</td>
+                      <td><span class="badge-cc-none">-</span></td>
+                      <td class="text-rose font-bold">{{ 'projects.hub.settings.gl.vatRowFormula' | translate }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1: طرق الاحتساب ووحدات القياس الافتراضية -->
+        <div class="settings-section-card card">
+          <div class="section-card-header">
+            <i class="pi pi-calculator header-icon"></i>
+            <div>
+              <h4>{{ 'projects.hub.settings.pricing.title' | translate }}</h4>
+              <p>{{ 'projects.hub.settings.pricing.subtitle' | translate }}</p>
+            </div>
+          </div>
+          <div class="section-card-body">
+            <div class="form-grid two-col">
+              <div class="form-field">
+                <label>{{ 'projects.hub.settings.pricing.defaultUomLabel' | translate }} <span class="required">*</span></label>
+                <select [(ngModel)]="projectSettings.defaultUnitOfMeasure" class="form-control-styled">
+                  <option value="hour">{{ 'projects.hub.settings.pricing.optHour' | translate }}</option>
+                  <option value="sqm">{{ 'projects.hub.settings.pricing.optSqm' | translate }}</option>
+                  <option value="cum">{{ 'projects.hub.settings.pricing.optCum' | translate }}</option>
+                  <option value="linear_m">{{ 'projects.hub.settings.pricing.optLinearM' | translate }}</option>
+                  <option value="unit">{{ 'projects.hub.settings.pricing.optUnit' | translate }}</option>
+                  <option value="day">{{ 'projects.hub.settings.pricing.optDay' | translate }}</option>
+                  <option value="lump_sum">{{ 'projects.hub.settings.pricing.optLumpSum' | translate }}</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label>{{ 'projects.hub.settings.pricing.defaultPerformerLabel' | translate }}</label>
+                <select [(ngModel)]="projectSettings.defaultEntryType" class="form-control-styled">
+                  <option value="internal_labor">{{ 'projects.hub.settings.pricing.optInternal' | translate }}</option>
+                  <option value="subcontractor">{{ 'projects.hub.settings.pricing.optSubcontractor' | translate }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="unit-rates-grid">
+              <div class="unit-rate-item">
+                <div class="rate-badge-title">{{ 'projects.hub.settings.pricing.rateHour' | translate }}</div>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.defaultHourlyRate" min="0" step="5" class="form-control-styled" />
+                  <span class="currency-tag">{{ 'projects.hub.settings.pricing.currencyPerHr' | translate }}</span>
+                </div>
+                <small class="rate-hint">{{ 'projects.hub.settings.pricing.hintHour' | translate }}</small>
+              </div>
+
+              <div class="unit-rate-item">
+                <div class="rate-badge-title">{{ 'projects.hub.settings.pricing.rateSqm' | translate }}</div>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.defaultSqmRate" min="0" step="1" class="form-control-styled" />
+                  <span class="currency-tag">{{ 'projects.hub.settings.pricing.currencyPerSqm' | translate }}</span>
+                </div>
+                <small class="rate-hint">{{ 'projects.hub.settings.pricing.hintSqm' | translate }}</small>
+              </div>
+
+              <div class="unit-rate-item">
+                <div class="rate-badge-title">{{ 'projects.hub.settings.pricing.rateCum' | translate }}</div>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.defaultCumRate" min="0" step="5" class="form-control-styled" />
+                  <span class="currency-tag">{{ 'projects.hub.settings.pricing.currencyPerCum' | translate }}</span>
+                </div>
+                <small class="rate-hint">{{ 'projects.hub.settings.pricing.hintCum' | translate }}</small>
+              </div>
+
+              <div class="unit-rate-item">
+                <div class="rate-badge-title">{{ 'projects.hub.settings.pricing.rateLinearM' | translate }}</div>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.defaultLinearMRate" min="0" step="1" class="form-control-styled" />
+                  <span class="currency-tag">{{ 'projects.hub.settings.pricing.currencyPerLinearM' | translate }}</span>
+                </div>
+                <small class="rate-hint">{{ 'projects.hub.settings.pricing.hintLinearM' | translate }}</small>
+              </div>
+
+              <div class="unit-rate-item">
+                <div class="rate-badge-title">{{ 'projects.hub.settings.pricing.rateDaily' | translate }}</div>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.defaultDailyRate" min="0" step="10" class="form-control-styled" />
+                  <span class="currency-tag">{{ 'projects.hub.settings.pricing.currencyPerDay' | translate }}</span>
+                </div>
+                <small class="rate-hint">{{ 'projects.hub.settings.pricing.hintDaily' | translate }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: سياسات مقاولي الباطن والضمانات -->
+        <div class="settings-section-card card">
+          <div class="section-card-header">
+            <i class="pi pi-building header-icon text-amber"></i>
+            <div>
+              <h4>{{ 'projects.hub.settings.subcontractors.title' | translate }}</h4>
+              <p>{{ 'projects.hub.settings.subcontractors.subtitle' | translate }}</p>
+            </div>
+          </div>
+          <div class="section-card-body">
+            <div class="form-grid two-col">
+              <div class="form-field">
+                <label>{{ 'projects.hub.settings.subcontractors.retentionLabel' | translate }}</label>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.defaultSubcontractorRetentionPct" min="0" max="30" step="1" class="form-control-styled" />
+                  <span class="currency-tag">%</span>
+                </div>
+                <small class="text-muted">{{ 'projects.hub.settings.subcontractors.retentionHint' | translate }}</small>
+              </div>
+
+              <div class="form-field">
+                <label>{{ 'projects.hub.settings.subcontractors.categoryLabel' | translate }}</label>
+                <select [(ngModel)]="projectSettings.autoPostCategory" class="form-control-styled">
+                  <option value="auto">{{ 'projects.hub.settings.subcontractors.catAuto' | translate }}</option>
+                  <option value="subcontractor">{{ 'projects.hub.settings.subcontractors.catSubcontractor' | translate }}</option>
+                  <option value="labor">{{ 'projects.hub.settings.subcontractors.catLabor' | translate }}</option>
+                </select>
+                <small class="text-muted">{{ 'projects.hub.settings.subcontractors.categoryHint' | translate }}</small>
+              </div>
+            </div>
+
+            <div class="options-checklist mt-3">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="projectSettings.requireSubcontractorContractNumber" />
+                <span><strong>{{ 'projects.hub.settings.subcontractors.requireContractBold' | translate }}</strong> {{ 'projects.hub.settings.subcontractors.requireContractText' | translate }}</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="projectSettings.autoPostToCosting" />
+                <span><strong>{{ 'projects.hub.settings.subcontractors.autoPostBold' | translate }}</strong> {{ 'projects.hub.settings.subcontractors.autoPostText' | translate }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: الفوترة للعميل وهوامش الأرباح -->
+        <div class="settings-section-card card">
+          <div class="section-card-header">
+            <i class="pi pi-percentage header-icon text-green"></i>
+            <div>
+              <h4>{{ 'projects.hub.settings.billingPolicy.title' | translate }}</h4>
+              <p>{{ 'projects.hub.settings.billingPolicy.subtitle' | translate }}</p>
+            </div>
+          </div>
+          <div class="section-card-body">
+            <div class="form-grid two-col">
+              <div class="form-field">
+                <label>{{ 'projects.hub.settings.billingPolicy.markupLabel' | translate }}</label>
+                <div class="input-with-currency">
+                  <input type="number" [(ngModel)]="projectSettings.billableMarkupPercentage" min="0" max="100" step="1" class="form-control-styled" />
+                  <span class="currency-tag">%</span>
+                </div>
+                <small class="text-muted">{{ 'projects.hub.settings.billingPolicy.markupHint' | translate }}</small>
+              </div>
+
+              <div class="form-field">
+                <label>{{ 'projects.hub.settings.billingPolicy.scopeLabel' | translate }}</label>
+                <div class="active-company-box">
+                  <i class="pi pi-shield text-success"></i>
+                  <span>{{ 'projects.hub.settings.billingPolicy.scopeText' | translate }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 2: INLINE STEP-BY-STEP PROJECT WIZARD (نظام مراحل إنشاء المشروع)    -->
+  <!-- ========================================================================= -->
+  <div class="inline-workspace wizard-mode card" *ngIf="viewMode === 'project-form'">
+    <!-- Top Action & Navigation Bar -->
+    <div class="workspace-header-bar">
+      <div class="breadcrumb-group">
+        <button class="btn-back" (click)="backToHub()">
+          <i class="pi pi-arrow-right"></i>
+          <span>{{ 'projects.hub.wizard.back' | translate }}</span>
+        </button>
+        <div class="current-crumb">
+          <i class="pi pi-building"></i>
+          <h3>{{ isEditingProject ? ('projects.hub.wizard.editTitle' | translate) : ('projects.hub.wizard.createTitle' | translate) }}</h3>
+        </div>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="btn btn-secondary" (click)="backToHub()">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveProject()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'projects.hub.wizard.save' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stepper Navigation (مراحل إدخال بيانات العقد والمشروع) -->
+    <div class="wizard-stepper-strip">
+      <div class="wizard-step-node" [class.active]="projectFormStep === 1" [class.completed]="projectFormStep > 1" (click)="goToFormStep(1)">
+        <div class="node-icon"><i class="pi pi-check" *ngIf="projectFormStep > 1"></i><span *ngIf="projectFormStep <= 1">1</span></div>
+        <div class="node-meta">
+          <span class="step-num-txt">{{ 'projects.hub.wizard.step1Num' | translate }}</span>
+          <span class="step-label-txt">{{ 'projects.hub.wizard.step1Label' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="wizard-connector" [class.active]="projectFormStep > 1"></div>
+
+      <div class="wizard-step-node" [class.active]="projectFormStep === 2" [class.completed]="projectFormStep > 2" (click)="goToFormStep(2)">
+        <div class="node-icon"><i class="pi pi-check" *ngIf="projectFormStep > 2"></i><span *ngIf="projectFormStep <= 2">2</span></div>
+        <div class="node-meta">
+          <span class="step-num-txt">{{ 'projects.hub.wizard.step2Num' | translate }}</span>
+          <span class="step-label-txt">{{ 'projects.hub.wizard.step2Label' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="wizard-connector" [class.active]="projectFormStep > 2"></div>
+
+      <div class="wizard-step-node" [class.active]="projectFormStep === 3" [class.completed]="projectFormStep > 3" (click)="goToFormStep(3)">
+        <div class="node-icon"><i class="pi pi-check" *ngIf="projectFormStep > 3"></i><span *ngIf="projectFormStep <= 3">3</span></div>
+        <div class="node-meta">
+          <span class="step-num-txt">{{ 'projects.hub.wizard.step3Num' | translate }}</span>
+          <span class="step-label-txt">{{ 'projects.hub.wizard.step3Label' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="wizard-connector" [class.active]="projectFormStep > 3"></div>
+
+      <div class="wizard-step-node" [class.active]="projectFormStep === 4" (click)="goToFormStep(4)">
+        <div class="node-icon"><span>4</span></div>
+        <div class="node-meta">
+          <span class="step-num-txt">{{ 'projects.hub.wizard.step4Num' | translate }}</span>
+          <span class="step-label-txt">{{ 'projects.hub.wizard.step4Label' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard Body: Step 1 -->
+    <div class="workspace-body" *ngIf="projectFormStep === 1">
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-id-card"></i>
+          <span>{{ 'projects.hub.wizard.step1Title' | translate }}</span>
+        </div>
+
+        <div class="form-grid one-col">
+          <div class="form-field full-width">
+            <div class="field-label-row">
+              <label>
+                {{ 'projects.hub.wizard.projectNameLabel' | translate }} <span class="required">*</span>
+                <span class="field-hint">{{ 'projects.hub.wizard.projectNameHint' | translate }}</span>
+              </label>
+              <div class="d-flex align-items-center gap-2">
+                <span *ngIf="backgroundTranslationPreview" class="badge-bg-translation">
+                  <i class="pi" [ngClass]="isTranslatingOnline ? 'pi-spin pi-spinner' : 'pi-language'"></i>
+                  {{ backgroundTranslationPreview }}
+                </span>
+                <button *ngIf="unifiedProjectName" type="button" class="badge-translate-btn" (click)="forceRetranslateProjectName()" [disabled]="isTranslatingOnline" [title]="'projects.hub.wizard.retranslateBtn' | translate">
+                  <i class="pi" [ngClass]="isTranslatingOnline ? 'pi-spin pi-spinner' : 'pi-sync'"></i>
+                  {{ isTranslatingOnline ? ('projects.hub.wizard.translating' | translate) : ('projects.hub.wizard.retranslateBtn' | translate) }}
+                </button>
+              </div>
+            </div>
+            <div class="input-with-icon">
+              <i class="pi pi-briefcase"></i>
+              <input type="text" [(ngModel)]="unifiedProjectName" (input)="onUnifiedProjectNameInput()" [placeholder]="'projects.hub.wizard.projectNamePlaceholder' | translate" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.clientLabel' | translate }} <span class="required">*</span></label>
+            <app-searchable-select
+              [items]="customerOptions"
+              [value]="projectForm.customerId"
+              (valueChange)="onCustomerSelect($event)"
+              [placeholder]="'projects.hub.wizard.clientPlaceholder' | translate"
+              [searchPlaceholder]="'projects.hub.wizard.clientSearchPlaceholder' | translate"
+              [enablePagination]="true"
+              [pageSize]="6">
+            </app-searchable-select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.contractNumLabel' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="projectForm.contractNumber" placeholder="CNT-2026-9840" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.contractDateLabel' | translate }}</label>
+            <input type="date" [(ngModel)]="projectForm.contractDate" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard Body: Step 2 -->
+    <div class="workspace-body" *ngIf="projectFormStep === 2">
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-dollar"></i>
+          <span>{{ 'projects.hub.wizard.step2Title' | translate }}</span>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.contractAmountLabel' | translate }} <span class="required">*</span></label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="projectForm.contractAmount" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.budgetLabel' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="projectForm.estimatedCost" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.retentionPctLabel' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="projectForm.retentionPercentage" min="0" max="30" />
+              <span class="currency-tag">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.advanceAmountLabel' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="projectForm.advancePaymentAmount" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.advanceDeductionLabel' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="projectForm.advancePaymentDeductionPercentage" min="0" max="100" />
+              <span class="currency-tag">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard Body: Step 3 -->
+    <div class="workspace-body" *ngIf="projectFormStep === 3">
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-calendar"></i>
+          <span>{{ 'projects.hub.wizard.step3Title' | translate }}</span>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.startDateLabel' | translate }}</label>
+            <input type="date" [(ngModel)]="projectForm.startDate" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.endDateLabel' | translate }}</label>
+            <input type="date" [(ngModel)]="projectForm.expectedEndDate" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.projectManagerLabel' | translate }}</label>
+            <input type="text" [(ngModel)]="projectForm.projectManager" [placeholder]="'projects.hub.wizard.projectManagerPlaceholder' | translate" />
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.siteLocationLabel' | translate }}</label>
+            <input type="text" [(ngModel)]="projectForm.siteLocation" [placeholder]="'projects.hub.wizard.siteLocationPlaceholder' | translate" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.wizard.costCenterLabel' | translate }}</label>
+            <input type="text" [(ngModel)]="projectForm.costCenterName" [placeholder]="'projects.hub.wizard.costCenterPlaceholder' | translate" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>{{ 'projects.hub.wizard.notesLabel' | translate }}</label>
+          <textarea [(ngModel)]="projectForm.notes" rows="2" [placeholder]="'projects.hub.wizard.notesPlaceholder' | translate"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard Body: Step 4 (Review & Confirmation) -->
+    <div class="workspace-body" *ngIf="projectFormStep === 4">
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-check-circle"></i>
+          <span>{{ 'projects.hub.wizard.step4Title' | translate }}</span>
+        </div>
+
+        <div class="info-grid two-col">
+          <div class="info-card">
+            <h4>{{ 'projects.hub.wizard.reviewContractIdentity' | translate }}</h4>
+            <div class="info-rows">
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewProjectNameAr' | translate }}</span> <strong>{{ projectForm.nameAr }}</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewProjectNameEn' | translate }}</span> <strong>{{ projectForm.nameEn }}</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewClient' | translate }}</span> <strong>{{ projectForm.customerName }}</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewContractNum' | translate }}</span> <strong>{{ projectForm.contractNumber }}</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewDates' | translate }}</span> <strong>{{ projectForm.startDate }} {{ 'projects.hub.wizard.reviewTo' | translate }} {{ projectForm.expectedEndDate }}</strong></div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h4>{{ 'projects.hub.wizard.reviewFinancials' | translate }}</h4>
+            <div class="info-rows">
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewTotalContract' | translate }}</span> <strong class="text-primary">{{ formatCurrency(projectForm.contractAmount) }}</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewEstimatedCost' | translate }}</span> <strong>{{ formatCurrency(projectForm.estimatedCost) }}</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewExpectedProfit' | translate }}</span> <strong class="text-success">{{ formatCurrency(expectedProfit) }} ({{ expectedProfitMargin }}%)</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewRetentionHeld' | translate }}</span> <strong>{{ formatCurrency(expectedRetentionAmount) }} ({{ projectForm.retentionPercentage }}%)</strong></div>
+              <div class="info-row"><span>{{ 'projects.hub.wizard.reviewAdvanceRecoupment' | translate }}</span> <strong>{{ projectForm.advancePaymentDeductionPercentage }}% {{ 'projects.hub.wizard.reviewPerBilling' | translate }}</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard Footer Navigation Buttons -->
+    <div class="wizard-footer-buttons">
+      <button class="btn btn-secondary" (click)="prevFormStep()" *ngIf="projectFormStep > 1">
+        <i class="pi pi-arrow-right"></i>
+        <span>{{ 'projects.hub.wizard.prevStep' | translate }}</span>
+      </button>
+
+      <div class="flex-spacer"></div>
+
+      <button class="btn btn-primary" (click)="nextFormStep()" *ngIf="projectFormStep < 4">
+        <span>{{ 'projects.hub.wizard.nextStep' | translate }}</span>
+        <i class="pi pi-arrow-left"></i>
+      </button>
+
+      <button class="btn btn-success font-bold" (click)="saveProject()" *ngIf="projectFormStep === 4">
+        <i class="pi pi-check"></i>
+        <span>{{ 'projects.hub.wizard.confirmSave' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 3: SMART ENGINEER COMMAND CENTER (viewMode === 'project-workspace')  -->
+  <!-- ========================================================================= -->
+  <div class="inline-workspace" *ngIf="viewMode === 'project-workspace' && selectedProject">
+    <div class="workspace-header-bar">
+      <div class="breadcrumb-group">
+        <button class="btn-back" (click)="backToHub()">
+          <i class="pi pi-arrow-right"></i>
+          <span>{{ 'projects.hub.workspace.projectsList' | translate }}</span>
+        </button>
+        <div class="current-crumb">
+          <span class="badge-code lg">{{ selectedProject.code }}</span>
+          <div>
+            <h3>{{ selectedProject.nameAr }}</h3>
+            <span class="sub-text">{{ selectedProject.nameEn }} | {{ 'projects.hub.wizard.reviewClient' | translate }} {{ selectedProject.customerName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="btn btn-outline" (click)="openEngineerReport(selectedProject.id)">
+          <i class="pi pi-print"></i>
+          <span>{{ 'projects.hub.stageCards.technicalReport' | translate }}</span>
+        </button>
+        <button class="btn btn-secondary" (click)="openBillingForm(selectedProject)">
+          <i class="pi pi-file-edit"></i>
+          <span>{{ 'projects.hub.workspace.issueBilling' | translate }}</span>
+        </button>
+        <button class="btn btn-secondary" (click)="openGuaranteeForm(selectedProject)">
+          <i class="pi pi-shield"></i>
+          <span>{{ 'projects.hub.letterOfGuarantee' | translate }}</span>
+        </button>
+        <button class="btn btn-primary" (click)="openProjectForm(selectedProject)">
+          <i class="pi pi-pencil"></i>
+          <span>{{ 'projects.hub.workspace.editContract' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Executive Engineering Dashboard Hero Card -->
+    <div class="hero-command-card">
+      <div class="hero-kpis-grid">
+        <div class="hero-kpi-item">
+          <span class="hero-label">{{ 'projects.hub.workspace.contractValue' | translate }}</span>
+          <h4 class="hero-val">{{ formatCurrency(selectedProject.contractAmount) }}</h4>
+          <span class="hero-sub">{{ 'projects.hub.workspace.contractNum' | translate }} {{ selectedProject.contractNumber }}</span>
+        </div>
+
+        <div class="hero-kpi-item">
+          <span class="hero-label">{{ 'projects.hub.workspace.certifiedBillings' | translate }}</span>
+          <h4 class="hero-val text-info">{{ formatCurrency(selectedProject.totalBilledAmount) }}</h4>
+          <span class="hero-sub">{{ getFinancialProgressPercentage(selectedProject) }}% {{ 'projects.hub.workspace.billedFinancially' | translate }}</span>
+        </div>
+
+        <div class="hero-kpi-item">
+          <span class="hero-label">{{ 'projects.hub.workspace.actualExpenses' | translate }}</span>
+          <h4 class="hero-val text-warning">{{ formatCurrency(selectedProject.totalExpensesAmount) }}</h4>
+          <span class="hero-sub">{{ 'projects.hub.workspace.budget' | translate }} {{ formatCurrency(selectedProject.estimatedCost) }}</span>
+        </div>
+
+        <div class="hero-kpi-item">
+          <span class="hero-label">{{ 'projects.hub.workspace.costVariance' | translate }}</span>
+          <h4 class="hero-val" [class.text-success]="getCostVariance(selectedProject) >= 0" [class.text-danger]="getCostVariance(selectedProject) < 0">
+            {{ formatCurrency(getCostVariance(selectedProject)) }}
+          </h4>
+          <span class="hero-sub">{{ getCostVariance(selectedProject) >= 0 ? ('projects.hub.workspace.costSavings' | translate) : ('projects.hub.workspace.budgetOverrun' | translate) }}</span>
+        </div>
+
+        <div class="hero-kpi-item">
+          <span class="hero-label">{{ 'projects.hub.workspace.netProfitAchieved' | translate }}</span>
+          <h4 class="hero-val text-success">{{ formatCurrency(selectedProject.profitabilityAmount) }}</h4>
+          <span class="hero-sub">{{ 'projects.hub.workspace.profitMargin' | translate }} {{ selectedProject.profitMarginPercentage }}%</span>
+        </div>
+      </div>
+
+      <!-- Tri-Bar Progress Comparison (Physical % vs Financial % vs Budget Burn %) -->
+      <div class="tri-progress-section">
+        <div class="tri-progress-header">
+          <span class="tri-title">{{ 'projects.hub.workspace.triProgressTitle' | translate }}</span>
+          <span class="status-badge" [ngClass]="getStatusClass(selectedProject.status)">{{ selectedProject.statusText }}</span>
+        </div>
+
+        <div class="progress-bar-row">
+          <div class="bar-label">
+            <span>{{ 'projects.hub.workspace.physicalProgress' | translate }}</span>
+            <strong>{{ selectedProject.completionPercentage }}%</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-blue" [style.width.%]="selectedProject.completionPercentage"></div>
+          </div>
+        </div>
+
+        <div class="progress-bar-row">
+          <div class="bar-label">
+            <span>{{ 'projects.hub.workspace.financialProgress' | translate }}</span>
+            <strong>{{ getFinancialProgressPercentage(selectedProject) }}%</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-teal" [style.width.%]="getFinancialProgressPercentage(selectedProject)"></div>
+          </div>
+        </div>
+
+        <div class="progress-bar-row">
+          <div class="bar-label">
+            <span>{{ 'projects.hub.workspace.budgetBurnRate' | translate }}</span>
+            <strong>{{ getBudgetBurnPercentage(selectedProject) }}%</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill fill-amber" [style.width.%]="getBudgetBurnPercentage(selectedProject)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Sub-Tabs Navigation -->
+    <div class="workspace-subtabs">
+      <button class="subtab-btn" [class.active]="workspaceTab === 'overview'" (click)="setWorkspaceTab('overview')">
+        <i class="pi pi-compass"></i>
+        <span>{{ 'projects.hub.workspace.tabs.overview' | translate }}</span>
+      </button>
+      <button class="subtab-btn" [class.active]="workspaceTab === 'wbs'" (click)="setWorkspaceTab('wbs')">
+        <i class="pi pi-list"></i>
+        <span>{{ 'projects.hub.workspace.tabs.wbs' | translate }} ({{ selectedProject.phases.length }})</span>
+      </button>
+      <button class="subtab-btn" [class.active]="workspaceTab === 'planning'" (click)="setWorkspaceTab('planning')">
+        <i class="pi pi-calendar"></i>
+        <span>{{ 'projects.hub.workspace.tabs.planning' | translate }}</span>
+      </button>
+      <button class="subtab-btn" [class.active]="workspaceTab === 'timesheet'" (click)="setWorkspaceTab('timesheet')">
+        <i class="pi pi-clock"></i>
+        <span>{{ 'projects.hub.workspace.tabs.timesheet' | translate }}</span>
+      </button>
+      <button class="subtab-btn" [class.active]="workspaceTab === 'costs'" (click)="setWorkspaceTab('costs')">
+        <i class="pi pi-money-bill"></i>
+        <span>{{ 'projects.hub.workspace.tabs.costs' | translate }} ({{ selectedProject.expenses.length }})</span>
+      </button>
+      <button class="subtab-btn" [class.active]="workspaceTab === 'billings'" (click)="setWorkspaceTab('billings')">
+        <i class="pi pi-file-edit"></i>
+        <span>{{ 'projects.hub.workspace.tabs.billings' | translate }} ({{ selectedProject.billings.length }})</span>
+      </button>
+      <button class="subtab-btn" [class.active]="workspaceTab === 'guarantees'" (click)="setWorkspaceTab('guarantees')">
+        <i class="pi pi-shield"></i>
+        <span>{{ 'projects.hub.workspace.tabs.guarantees' | translate }} ({{ selectedProject.guarantees.length }})</span>
+      </button>
+    </div>
+
+    <!-- SUB-TAB 1: OVERVIEW -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'overview'">
+      <div class="info-grid two-col">
+        <div class="info-card">
+          <h4><i class="pi pi-info-circle"></i> {{ 'projects.hub.workspace.overview.contractAndSite' | translate }}</h4>
+          <div class="info-rows">
+            <div class="info-row"><span>{{ 'projects.hub.wizard.reviewContractNum' | translate }}</span> <strong>{{ selectedProject.contractNumber }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.clientOwner' | translate }}</span> <strong>{{ selectedProject.customerName }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.projectManager' | translate }}</span> <strong>{{ selectedProject.projectManager || ('projects.hub.wizard.projectManagerPlaceholder' | translate) }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.siteLocation' | translate }}</span> <strong>{{ selectedProject.siteLocation || ('ui.projectsHub.ec7f24' | translate) }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.startDate' | translate }}</span> <strong>{{ selectedProject.startDate | date:'yyyy-MM-dd' }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.endDate' | translate }}</span> <strong>{{ selectedProject.expectedEndDate | date:'yyyy-MM-dd' }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.costCenter' | translate }}</span> <strong>{{ selectedProject.costCenterName || ('projects.hub.wizard.costCenterPlaceholder' | translate) }}</strong></div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h4><i class="pi pi-chart-pie"></i> {{ 'projects.hub.workspace.overview.retentionAndDeductions' | translate }}</h4>
+          <div class="info-rows">
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.retentionRate' | translate }}</span> <strong>{{ selectedProject.retentionPercentage }}%</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.advanceReceived' | translate }}</span> <strong>{{ formatCurrency(selectedProject.advancePaymentAmount) }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.advanceRecoupRate' | translate }}</span> <strong>{{ selectedProject.advancePaymentDeductionPercentage }}%</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.totalBilled' | translate }}</span> <strong class="text-info">{{ formatCurrency(selectedProject.totalBilledAmount) }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.remainingContract' | translate }}</span> <strong class="text-primary">{{ formatCurrency(selectedProject.remainingContractAmount) }}</strong></div>
+            <div class="info-row"><span>{{ 'projects.hub.workspace.overview.techNotes' | translate }}</span> <span>{{ selectedProject.notes || ('projects.hub.workspace.overview.defaultTechNotes' | translate) }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 2: WBS PHASES & MILESTONES -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'wbs'">
+      <div class="inline-add-card">
+        <div class="card-top-row">
+          <h4><i class="pi pi-list"></i> {{ 'projects.hub.workspace.wbs.title' | translate }}</h4>
+          <button class="btn btn-sm btn-primary" (click)="initAddPhase()" *ngIf="!showAddPhaseForm">
+            <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.wbs.addNew' | translate }}
+          </button>
+        </div>
+
+        <div class="inline-entry-box" *ngIf="showAddPhaseForm">
+          <div class="entry-box-header">
+            <strong>{{ 'projects.hub.workspace.wbs.boxHeader' | translate }}</strong>
+            <button class="btn btn-sm btn-secondary" (click)="showAddPhaseForm = false">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+          </div>
+          <div class="form-grid three-col">
+            <div class="form-field">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">
+                  <span>{{ 'projects.hub.workspace.wbs.phaseNameLabel' | translate }}</span>
+                  <span class="required" style="color: #ef4444;">*</span>
+                  <small class="text-muted ms-1 me-1" style="font-weight: normal;">{{ 'projects.hub.workspace.wbs.langHint' | translate }}</small>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <span *ngIf="phaseTranslationBadge" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                    {{ phaseTranslationBadge }}
+                  </span>
+                  <button type="button" class="btn btn-xs btn-outline-secondary" (click)="forceRetranslatePhase()" [title]="'projects.hub.workspace.wbs.retranslate' | translate" style="padding: 1px 5px; font-size: 0.72rem;">
+                    <i class="pi pi-globe"></i>
+                  </button>
+                </div>
+              </div>
+              <input 
+                type="text" 
+                [ngModel]="unifiedPhaseName || phaseForm.nameAr || phaseForm.nameEn" 
+                (ngModelChange)="onUnifiedPhaseNameChange($event)" 
+                [placeholder]="'projects.hub.workspace.wbs.phaseNamePlaceholder' | translate" 
+                required />
+            </div>
+            <div class="form-field">
+              <label>{{ 'projects.hub.workspace.wbs.weightLabel' | translate }} <span class="required">*</span></label>
+              <input type="number" [(ngModel)]="phaseForm.weightPercentage" min="1" max="100" />
+            </div>
+            <div class="form-field">
+              <label>{{ 'projects.hub.workspace.wbs.estCostLabel' | translate }}</label>
+              <input type="number" [(ngModel)]="phaseForm.estimatedCost" min="0" />
+            </div>
+          </div>
+          <div class="entry-box-footer">
+            <button class="btn btn-sm btn-secondary" (click)="showAddPhaseForm = false">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+            <button class="btn btn-sm btn-primary" (click)="savePhase()">{{ 'projects.hub.workspace.wbs.savePhase' | translate }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="phases-cards-grid" *ngIf="selectedProject.phases.length > 0">
+        <div class="phase-workspace-card" *ngFor="let ph of selectedProject.phases">
+          <div class="phase-card-top">
+            <div class="phase-title-group">
+              <span class="phase-num">#{{ ph.phaseOrder }}</span>
+              <div>
+                <strong>{{ ph.nameAr }}</strong>
+                <small class="d-block text-muted">{{ ph.nameEn }}</small>
+              </div>
+            </div>
+            <div class="phase-badges">
+              <span class="weight-badge">{{ 'projects.hub.workspace.wbs.weight' | translate }} {{ ph.weightPercentage }}%</span>
+              <span class="cost-badge">{{ formatCurrency(ph.estimatedCost) }}</span>
+            </div>
+          </div>
+
+          <div class="phase-progress-control">
+            <div class="slider-row">
+              <label>{{ 'projects.hub.workspace.wbs.actualProgressLabel' | translate }}</label>
+              <span class="slider-percent">{{ ph.completionPercentage }}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              class="phase-range-slider"
+              [value]="ph.completionPercentage"
+              (change)="updatePhaseProgress(ph, +$any($event.target).value)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="selectedProject.phases.length === 0" class="empty-state">
+        <i class="pi pi-list empty-icon"></i>
+        <h4>{{ 'projects.hub.workspace.wbs.emptyTitle' | translate }}</h4>
+        <p>{{ 'projects.hub.workspace.wbs.emptySubtitle' | translate }}</p>
+        <button class="btn btn-primary" (click)="initAddPhase()">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.wbs.addFirst' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 3: COST CONTROL & EXPENSES -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'costs'">
+      <div class="cost-categories-grid">
+        <div class="category-card">
+          <span>{{ 'projects.hub.workspace.costs.catMaterials' | translate }}</span>
+          <strong>{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Materials)) }}</strong>
+          <small>{{ getExpensePercentageByCategory(ProjectExpenseCategory.Materials) }}% {{ 'projects.hub.workspace.costs.ofCosts' | translate }}</small>
+        </div>
+        <div class="category-card">
+          <span>{{ 'projects.hub.workspace.costs.catLabor' | translate }}</span>
+          <strong>{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Labor)) }}</strong>
+          <small>{{ getExpensePercentageByCategory(ProjectExpenseCategory.Labor) }}% {{ 'projects.hub.workspace.costs.ofCosts' | translate }}</small>
+        </div>
+        <div class="category-card">
+          <span>{{ 'projects.hub.workspace.costs.catSubcontractors' | translate }}</span>
+          <strong>{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Subcontractors)) }}</strong>
+          <small>{{ getExpensePercentageByCategory(ProjectExpenseCategory.Subcontractors) }}% {{ 'projects.hub.workspace.costs.ofCosts' | translate }}</small>
+        </div>
+        <div class="category-card">
+          <span>{{ 'projects.hub.workspace.costs.catEquipment' | translate }}</span>
+          <strong>{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Equipment)) }}</strong>
+          <small>{{ getExpensePercentageByCategory(ProjectExpenseCategory.Equipment) }}% {{ 'projects.hub.workspace.costs.ofCosts' | translate }}</small>
+        </div>
+        <div class="category-card">
+          <span>{{ 'projects.hub.workspace.costs.catOverhead' | translate }}</span>
+          <strong>{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Overhead)) }}</strong>
+          <small>{{ getExpensePercentageByCategory(ProjectExpenseCategory.Overhead) }}% {{ 'projects.hub.workspace.costs.ofCosts' | translate }}</small>
+        </div>
+      </div>
+
+      <div class="inline-add-card">
+        <div class="card-top-row">
+          <h4><i class="pi pi-money-bill"></i> {{ 'projects.hub.workspace.costs.logTitle' | translate }}</h4>
+          <button class="btn btn-sm btn-primary" (click)="initAddExpense()" *ngIf="!showAddExpenseForm">
+            <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.costs.recordCost' | translate }}
+          </button>
+        </div>
+
+        <div class="inline-entry-box" *ngIf="showAddExpenseForm">
+          <div class="entry-box-header">
+            <strong>{{ 'projects.hub.workspace.costs.boxHeader' | translate }}</strong>
+            <button class="btn btn-sm btn-secondary" (click)="showAddExpenseForm = false">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+          </div>
+          <div class="form-grid four-col">
+            <div class="form-field">
+              <label>{{ 'projects.hub.workspace.costs.catLabel' | translate }} <span class="required">*</span></label>
+              <select [(ngModel)]="expenseForm.category" class="form-select">
+                <option [value]="ProjectExpenseCategory.Materials">{{ 'projects.hub.workspace.costs.catMaterials' | translate }}</option>
+                <option [value]="ProjectExpenseCategory.Labor">{{ 'projects.hub.workspace.costs.catLabor' | translate }}</option>
+                <option [value]="ProjectExpenseCategory.Subcontractors">{{ 'projects.hub.workspace.costs.catSubcontractors' | translate }}</option>
+                <option [value]="ProjectExpenseCategory.Equipment">{{ 'projects.hub.workspace.costs.catEquipment' | translate }}</option>
+                <option [value]="ProjectExpenseCategory.Overhead">{{ 'projects.hub.workspace.costs.catOverhead' | translate }}</option>
+                <option [value]="ProjectExpenseCategory.Other">{{ 'projects.hub.workspace.costs.catOther' | translate }}</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>{{ 'projects.hub.workspace.costs.amountLabel' | translate }} <span class="required">*</span></label>
+              <input type="number" [(ngModel)]="expenseForm.amount" min="0" />
+            </div>
+            <div class="form-field">
+              <label>{{ 'projects.hub.workspace.costs.descLabel' | translate }} <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="expenseForm.description" [placeholder]="'projects.hub.workspace.costs.descPlaceholder' | translate" />
+            </div>
+            <div class="form-field">
+              <label>{{ 'projects.hub.workspace.costs.supplierLabel' | translate }}</label>
+              <input type="text" [(ngModel)]="expenseForm.supplierOrWorkerName" [placeholder]="'projects.hub.workspace.costs.supplierPlaceholder' | translate" />
+            </div>
+          </div>
+          <div class="entry-box-footer">
+            <button class="btn btn-sm btn-secondary" (click)="showAddExpenseForm = false">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+            <button class="btn btn-sm btn-primary" (click)="saveExpense()">{{ 'projects.hub.workspace.costs.saveCost' | translate }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container" *ngIf="selectedProject.expenses.length > 0">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.timesheets.table.date' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.costs.thCategory' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.costs.thDesc' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.costs.thSupplier' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.costs.thReference' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.costs.thActualAmount' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let exp of selectedProject.expenses">
+              <td>{{ exp.expenseDate | date:'yyyy-MM-dd' }}</td>
+              <td><span class="type-pill">{{ getExpenseCategoryText(exp.category) }}</span></td>
+              <td><strong>{{ exp.description }}</strong></td>
+              <td>{{ exp.supplierOrWorkerName || '—' }}</td>
+              <td><span class="badge-code sm">{{ exp.referenceNumber || exp.referenceType }}</span></td>
+              <td><strong class="text-danger">{{ formatCurrency(exp.amount) }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="selectedProject.expenses.length === 0" class="empty-state">
+        <i class="pi pi-money-bill empty-icon"></i>
+        <h4>{{ 'projects.hub.workspace.costs.emptyTitle' | translate }}</h4>
+        <button class="btn btn-primary" (click)="initAddExpense()">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.costs.addFirst' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 4: BILLINGS -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'billings'">
+      <div class="card-top-row mb-3">
+        <h4><i class="pi pi-file-edit"></i> {{ 'projects.hub.workspace.projectBillings.title' | translate }}</h4>
+        <button class="btn btn-sm btn-primary" (click)="openBillingForm(selectedProject)">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectBillings.issueNew' | translate }}
+        </button>
+      </div>
+
+      <div class="table-container" *ngIf="selectedProject.billings.length > 0">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.billings.billingNumber' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectBillings.thDatePeriod' | translate }}</th>
+              <th>{{ 'projects.hub.billings.currentWork' | translate }}</th>
+              <th>{{ 'projects.hub.billings.retention' | translate }}</th>
+              <th>{{ 'projects.hub.billings.advanceRecovery' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectBillings.thNetVat' | translate }}</th>
+              <th>{{ 'projects.hub.table.status' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectBillings.thAction' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of selectedProject.billings">
+              <td><strong>{{ b.billingNumber }}</strong></td>
+              <td>{{ b.billingDate | date:'yyyy-MM-dd' }}</td>
+              <td><strong>{{ formatCurrency(b.currentWorkAmount) }}</strong></td>
+              <td class="text-danger">-{{ formatCurrency(b.retentionAmount) }}</td>
+              <td class="text-warning">{{ b.advancePaymentDeduction > 0 ? ('-' + formatCurrency(b.advancePaymentDeduction)) : '—' }}</td>
+              <td><strong class="text-primary">{{ formatCurrency(b.totalWithVat) }}</strong></td>
+              <td><span class="status-badge" [ngClass]="getBillingStatusClass(b.status)">{{ b.statusText }}</span></td>
+              <td>
+                <button *ngIf="b.status === BillingStatus.Draft" class="btn-sm btn-outline" (click)="submitBilling(b.id)">{{ 'projects.hub.workspace.projectBillings.submit' | translate }}</button>
+                <button *ngIf="b.status === BillingStatus.Submitted" class="btn-sm btn-amber" (click)="approveBilling(b.id)">{{ 'projects.hub.workspace.projectBillings.approve' | translate }}</button>
+                <button *ngIf="b.status === BillingStatus.ConsultantApproved" class="btn-sm btn-success-outline" (click)="certifyBilling(b.id)">{{ 'projects.hub.workspace.projectBillings.certify' | translate }}</button>
+                <span *ngIf="b.status === BillingStatus.Certified" class="text-success small font-bold"><i class="pi pi-check-circle"></i> {{ 'projects.hub.workspace.projectBillings.certified' | translate }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="selectedProject.billings.length === 0" class="empty-state">
+        <i class="pi pi-file-edit empty-icon"></i>
+        <h4>{{ 'projects.hub.workspace.projectBillings.emptyTitle' | translate }}</h4>
+        <button class="btn btn-primary" (click)="openBillingForm(selectedProject)">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectBillings.addFirst' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 5: GUARANTEES -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'guarantees'">
+      <div class="card-top-row mb-3">
+        <h4><i class="pi pi-shield"></i> {{ 'projects.hub.workspace.projectGuarantees.title' | translate }}</h4>
+        <button class="btn btn-sm btn-primary" (click)="openGuaranteeForm(selectedProject)">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectGuarantees.issueNew' | translate }}
+        </button>
+      </div>
+
+      <div class="table-container" *ngIf="selectedProject.guarantees.length > 0">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.guarantees.guaranteeNumber' | translate }}</th>
+              <th>{{ 'projects.hub.guarantees.type' | translate }}</th>
+              <th>{{ 'projects.hub.guarantees.issuingBank' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectGuarantees.thAmount' | translate }}</th>
+              <th>{{ 'projects.hub.guarantees.cashMargin' | translate }}</th>
+              <th>{{ 'projects.hub.guarantees.expiryDate' | translate }}</th>
+              <th>{{ 'projects.hub.table.status' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectBillings.thAction' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let g of selectedProject.guarantees">
+              <td><strong>{{ g.guaranteeNumber }}</strong></td>
+              <td><span class="type-pill">{{ getGuaranteeTypeText(g.type) }}</span></td>
+              <td>{{ g.issuingBank }}</td>
+              <td><strong>{{ formatCurrency(g.amount) }}</strong></td>
+              <td class="text-info">{{ formatCurrency(g.cashMarginAmount) }} ({{ g.cashMarginPercentage }}%)</td>
+              <td>{{ g.expiryDate | date:'yyyy-MM-dd' }}</td>
+              <td><span class="status-badge" [ngClass]="getGuaranteeStatusClass(g.status)">{{ g.statusText }}</span></td>
+              <td>
+                <div class="action-buttons-group">
+                  <button *ngIf="g.status === GuaranteeStatus.Active || g.status === GuaranteeStatus.Extended" class="btn-sm btn-outline" (click)="extendGuaranteeSwal(g)">{{ 'projects.hub.guarantees.extend' | translate }}</button>
+                  <button *ngIf="g.status === GuaranteeStatus.Active || g.status === GuaranteeStatus.Extended" class="btn-sm btn-success-outline" (click)="releaseGuarantee(g.id)">{{ 'projects.hub.guarantees.release' | translate }}</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="selectedProject.guarantees.length === 0" class="empty-state">
+        <i class="pi pi-shield empty-icon"></i>
+        <h4>{{ 'projects.hub.workspace.projectGuarantees.emptyTitle' | translate }}</h4>
+        <button class="btn btn-primary" (click)="openGuaranteeForm(selectedProject)">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectGuarantees.addFirst' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 6: PROJECT PLANNING & GANTT -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'planning'">
+      <div class="workspace-subtab-header">
+        <div>
+          <h4><i class="pi pi-calendar"></i> {{ 'projects.hub.workspace.projectPlanning.title' | translate }}</h4>
+          <p class="text-muted">{{ 'projects.hub.workspace.projectPlanning.subtitle' | translate }}</p>
+        </div>
+        <button class="btn btn-primary" (click)="openAddTaskModal(selectedProject.id)">
+          <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectPlanning.newTask' | translate }}
+        </button>
+      </div>
+
+      <!-- Gantt Board for this project -->
+      <div class="gantt-board-wrapper card">
+        <div class="gantt-header-row">
+          <div class="gantt-col-task-header">
+            <span>{{ 'projects.hub.planning.taskHeader' | translate }}</span>
+          </div>
+          <div class="gantt-timeline-months-header">
+            <div class="gantt-month-cell" *ngFor="let m of ganttMonths">
+              <span class="month-name">{{ m.label }}</span>
+              <span class="month-year">{{ m.year }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gantt-body">
+          <div
+            class="gantt-task-row"
+            *ngFor="let task of filteredPlanningTasks"
+            [class.row-milestone]="task.isMilestone"
+          >
+            <div class="gantt-col-task-info">
+              <div class="task-title-group">
+                <span class="milestone-badge" *ngIf="task.isMilestone" [title]="'projects.hub.planning.milestoneBadge' | translate">
+                  <i class="pi pi-flag"></i>
+                </span>
+                <div class="task-text-wrap">
+                  <strong class="task-name-ar">{{ task.titleAr }}</strong>
+                  <small class="task-name-en">{{ task.titleEn }}</small>
+                </div>
+              </div>
+
+              <div class="task-sub-meta">
+                <span class="badge-assigned"><i class="pi pi-user"></i> {{ task.assignedTo }}</span>
+                <div class="quick-progress-group">
+                  <button class="btn-micro" (click)="quickUpdateTaskProgress(task, -10)">-</button>
+                  <span class="progress-pill">{{ task.progressPercentage }}%</span>
+                  <button class="btn-micro" (click)="quickUpdateTaskProgress(task, 10)">+</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="gantt-timeline-track">
+              <div class="gantt-grid-line" *ngFor="let m of ganttMonths"></div>
+              <div
+                class="gantt-bar"
+                [ngClass]="'status-' + task.status.toLowerCase()"
+                [ngStyle]="getGanttBarStyle(task)"
+              >
+                <div class="gantt-bar-fill" [style.width.%]="task.progressPercentage"></div>
+                <div class="gantt-bar-content">
+                  <span class="bar-title">{{ task.titleAr }} ({{ task.progressPercentage }}%)</span>
+                  <div class="bar-actions-micro">
+                    <button class="btn-bar-action" (click)="quickUpdateTaskProgress(task, 100)" *ngIf="task.progressPercentage < 100">
+                      <i class="pi pi-check"></i>
+                    </button>
+                    <button class="btn-bar-action delete-action" (click)="deletePlanningTaskEntry(task.id)">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gantt-empty-state" *ngIf="filteredPlanningTasks.length === 0">
+            <i class="pi pi-calendar empty-icon"></i>
+            <h4>{{ 'projects.hub.workspace.projectPlanning.emptyTitle' | translate }}</h4>
+            <button class="btn btn-primary" (click)="openAddTaskModal(selectedProject.id)">
+              <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectPlanning.addFirst' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 7: PROJECT TIMESHEETS -->
+    <div class="subtab-content" *ngIf="workspaceTab === 'timesheet'">
+      <div class="workspace-subtab-header">
+        <div>
+          <h4><i class="pi pi-clock"></i> {{ 'projects.hub.workspace.projectTimesheets.title' | translate }}</h4>
+          <p class="text-muted">{{ 'projects.hub.workspace.projectTimesheets.subtitle' | translate }}</p>
+        </div>
+        <button class="btn btn-primary" (click)="openAddTimesheetModal(selectedProject.id)">
+          <i class="pi pi-clock"></i> {{ 'projects.hub.workspace.projectTimesheets.newRecord' | translate }}
+        </button>
+      </div>
+
+      <div class="timesheet-table-card card">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.timesheets.table.date' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectTimesheets.thEmployee' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectTimesheets.thTaskDesc' | translate }}</th>
+              <th class="text-center">{{ 'projects.hub.workspace.projectTimesheets.thHours' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectTimesheets.thRate' | translate }}</th>
+              <th>{{ 'projects.hub.workspace.projectTimesheets.thTotalCost' | translate }}</th>
+              <th class="text-center">{{ 'projects.hub.timesheets.table.billingType' | translate }}</th>
+              <th>{{ 'projects.hub.table.status' | translate }}</th>
+              <th class="actions-col">{{ 'projects.hub.table.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ts of filteredTimesheets" class="interactive-row">
+              <td><strong>{{ ts.date }}</strong></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="employee-avatar"><i class="pi pi-user"></i></div>
+                  <div>
+                    <strong>{{ ts.employeeName }}</strong>
+                    <small class="d-block text-muted">{{ ts.employeeRole }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>{{ ts.taskDescription }}</td>
+              <td class="text-center"><span class="hours-badge">{{ ts.hours }} {{ 'projects.hub.workspace.projectTimesheets.hourShort' | translate }}</span></td>
+              <td>{{ formatCurrency(ts.hourlyRate) }}</td>
+              <td><strong class="text-info">{{ formatCurrency(ts.hours * ts.hourlyRate) }}</strong></td>
+              <td class="text-center">
+                <span class="billable-badge" [class.is-billable]="ts.isBillable">
+                  <i class="pi" [ngClass]="ts.isBillable ? 'pi-check-circle' : 'pi-minus-circle'"></i>
+                  {{ ts.isBillable ? ('projects.hub.timesheets.table.billable' | translate) : ('projects.hub.timesheets.table.nonBillable' | translate) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="ts.status === 'Approved' ? 'status-active' : 'status-planning'">
+                  {{ ts.status === 'Approved' ? ('projects.hub.timesheets.table.approved' | translate) : ('projects.hub.timesheets.table.draft' | translate) }}
+                </span>
+              </td>
+              <td class="actions-col">
+                <button class="btn-sm btn-outline-danger" (click)="deleteTimesheetEntry(ts.id)">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredTimesheets.length === 0">
+              <td colspan="9" class="empty-state">
+                <i class="pi pi-clock empty-icon"></i>
+                <h4>{{ 'projects.hub.workspace.projectTimesheets.emptyTitle' | translate }}</h4>
+                <button class="btn btn-primary" (click)="openAddTimesheetModal(selectedProject.id)">
+                  <i class="pi pi-plus"></i> {{ 'projects.hub.workspace.projectTimesheets.addFirst' | translate }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 4: INLINE BILLING FORM (viewMode === 'billing-form') - ZERO POPUPS   -->
+  <!-- ========================================================================= -->
+  <div class="inline-workspace wizard-mode card" *ngIf="viewMode === 'billing-form'">
+    <div class="workspace-header-bar">
+      <div class="breadcrumb-group">
+        <button class="btn-back" (click)="backToHub()">
+          <i class="pi pi-arrow-right"></i>
+          <span>{{ 'projects.hub.forms.billing.back' | translate }}</span>
+        </button>
+        <div class="current-crumb">
+          <i class="pi pi-file-edit"></i>
+          <h3>{{ 'projects.hub.forms.billing.title' | translate }}</h3>
+        </div>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="btn btn-secondary" (click)="backToHub()">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveBilling()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'projects.hub.forms.billing.saveDraft' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-building"></i>
+          <span>{{ 'projects.hub.forms.billing.projectAndPeriod' | translate }}</span>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.linkedProject' | translate }} <span class="required">*</span></label>
+            <app-searchable-select
+              [items]="projectSelectOptions"
+              [value]="billingForm.projectId"
+              (valueChange)="onBillingProjectSelect($event)"
+              [placeholder]="'projects.hub.forms.billing.selectProject' | translate"
+              [searchPlaceholder]="'projects.hub.forms.billing.searchProject' | translate"
+              [enablePagination]="true"
+              [pageSize]="6">
+            </app-searchable-select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.submissionDate' | translate }}</label>
+            <input type="date" [(ngModel)]="billingForm.billingDate" />
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.periodFrom' | translate }}</label>
+            <input type="date" [(ngModel)]="billingForm.periodStart" />
+          </div>
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.periodTo' | translate }}</label>
+            <input type="date" [(ngModel)]="billingForm.periodEnd" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-calculator"></i>
+          <span>{{ 'projects.hub.forms.billing.worksAndDeductions' | translate }}</span>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.currentWorkAmount' | translate }} <span class="required">*</span></label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="billingForm.currentWorkAmount" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.retentionPct' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="billingForm.retentionPercentage" min="0" max="30" />
+              <span class="currency-tag">%</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.advanceRecovery' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="billingForm.advancePaymentDeduction" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.otherDeductions' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="billingForm.otherDeductions" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.consultant' | translate }}</label>
+            <input type="text" [(ngModel)]="billingForm.consultantName" [placeholder]="'projects.hub.forms.billing.consultantPlaceholder' | translate" />
+          </div>
+        </div>
+
+        <div class="forecast-box">
+          <div class="forecast-item">
+            <span>{{ 'projects.hub.forms.billing.forecastWork' | translate }}</span>
+            <strong>{{ formatCurrency(billingForm.currentWorkAmount) }}</strong>
+          </div>
+          <div class="forecast-item text-danger">
+            <span>{{ 'projects.hub.forms.billing.forecastRetention' | translate }} ({{ billingForm.retentionPercentage }}%):</span>
+            <strong>-{{ formatCurrency(computedBillingRetention) }}</strong>
+          </div>
+          <div class="forecast-item text-warning" *ngIf="billingForm.advancePaymentDeduction > 0">
+            <span>{{ 'projects.hub.forms.billing.forecastAdvance' | translate }}</span>
+            <strong>-{{ formatCurrency(billingForm.advancePaymentDeduction) }}</strong>
+          </div>
+          <div class="forecast-item">
+            <span>{{ 'projects.hub.forms.billing.forecastNet' | translate }}</span>
+            <strong class="text-primary">{{ formatCurrency(computedBillingNet) }}</strong>
+          </div>
+          <div class="forecast-item">
+            <span>{{ 'projects.hub.forms.billing.forecastVat' | translate }}</span>
+            <strong>{{ formatCurrency(computedBillingVat) }}</strong>
+          </div>
+          <div class="forecast-item highlight">
+            <span>{{ 'projects.hub.forms.billing.forecastTotal' | translate }}</span>
+            <strong class="text-success font-xl">{{ formatCurrency(computedBillingTotal) }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 5: INLINE GUARANTEE FORM (viewMode === 'guarantee-form') - ZERO POPUPS-->
+  <!-- ========================================================================= -->
+  <div class="inline-workspace wizard-mode card" *ngIf="viewMode === 'guarantee-form'">
+    <div class="workspace-header-bar">
+      <div class="breadcrumb-group">
+        <button class="btn-back" (click)="backToHub()">
+          <i class="pi pi-arrow-right"></i>
+          <span>{{ 'projects.hub.forms.billing.back' | translate }}</span>
+        </button>
+        <div class="current-crumb">
+          <i class="pi pi-shield"></i>
+          <h3>{{ 'projects.hub.forms.guarantee.title' | translate }}</h3>
+        </div>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="btn btn-secondary" (click)="backToHub()">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveGuarantee()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'projects.hub.forms.guarantee.save' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="form-section-card">
+        <div class="section-title">
+          <i class="pi pi-id-card"></i>
+          <span>{{ 'projects.hub.forms.guarantee.sectionTitle' | translate }}</span>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.linkedProject' | translate }} <span class="required">*</span></label>
+            <app-searchable-select
+              [items]="projectSelectOptions"
+              [value]="guaranteeForm.projectId"
+              (valueChange)="onGuaranteeProjectSelect($event)"
+              [placeholder]="'projects.hub.forms.billing.selectProject' | translate"
+              [searchPlaceholder]="'projects.hub.forms.billing.searchProject' | translate"
+              [enablePagination]="true"
+              [pageSize]="6">
+            </app-searchable-select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.typeLabel' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="guaranteeForm.type" class="form-select">
+              <option [value]="GuaranteeType.BidBond">{{ 'projects.hub.forms.guarantee.optBid' | translate }}</option>
+              <option [value]="GuaranteeType.PerformanceBond">{{ 'projects.hub.forms.guarantee.optPerformance' | translate }}</option>
+              <option [value]="GuaranteeType.AdvancePaymentBond">{{ 'projects.hub.forms.guarantee.optAdvance' | translate }}</option>
+              <option [value]="GuaranteeType.RetentionBond">{{ 'projects.hub.forms.guarantee.optRetention' | translate }}</option>
+              <option [value]="GuaranteeType.MaintenanceBond">{{ 'projects.hub.forms.guarantee.optMaintenance' | translate }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.numberLabel' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="guaranteeForm.guaranteeNumber" placeholder="LG-SNB-2026-9812" required />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.issuingBankLabel' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="guaranteeForm.issuingBank" [placeholder]="'projects.hub.forms.guarantee.bankPlaceholder' | translate" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.beneficiaryLabel' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="guaranteeForm.beneficiaryName" [placeholder]="'projects.hub.forms.guarantee.beneficiaryPlaceholder' | translate" />
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.totalAmountLabel' | translate }} <span class="required">*</span></label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="guaranteeForm.amount" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.marginPctLabel' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="guaranteeForm.cashMarginPercentage" min="0" max="100" />
+              <span class="currency-tag">%</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.commissionLabel' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="guaranteeForm.bankCommission" min="0" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.issueDateLabel' | translate }}</label>
+            <input type="date" [(ngModel)]="guaranteeForm.issueDate" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.guarantee.expiryDateLabel' | translate }} <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="guaranteeForm.expiryDate" />
+          </div>
+        </div>
+
+        <div class="forecast-box">
+          <div class="forecast-item">
+            <span>{{ 'projects.hub.forms.guarantee.marginHeld' | translate }}</span>
+            <strong class="text-info">{{ formatCurrency(computedGuaranteeMargin) }}</strong>
+          </div>
+          <div class="forecast-item">
+            <span>{{ 'projects.hub.forms.guarantee.instantPosting' | translate }}</span>
+            <strong class="text-success">{{ 'projects.hub.forms.guarantee.postingRule' | translate }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 6: EXECUTIVE ENGINEERING STATUS REPORT (viewMode === 'engineer-report')-->
+  <!-- High-Standard Printable A4 Engineering Status Report                      -->
+  <!-- ========================================================================= -->
+  <div class="executive-report-wrapper" *ngIf="viewMode === 'engineer-report' && selectedProject">
+    <div class="report-actions-bar no-print">
+      <div class="breadcrumb-group">
+        <button class="btn-back" (click)="openProjectWorkspace(selectedProject.id)">
+          <i class="pi pi-arrow-right"></i>
+          <span>{{ 'projects.hub.report.backToWorkspace' | translate }}</span>
+        </button>
+        <span class="badge-code">{{ selectedProject.code }}</span>
+        <h4>{{ 'projects.hub.report.reportTitle' | translate }}</h4>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="btn btn-outline" (click)="backToHub()">
+          <i class="pi pi-home"></i>
+          <span>{{ 'projects.hub.report.home' | translate }}</span>
+        </button>
+        <button class="btn btn-primary" (click)="printReport()">
+          <i class="pi pi-print"></i>
+          <span>{{ 'projects.hub.report.printReport' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Official Printable A4 Engineering Sheet -->
+    <div class="report-paper">
+      <div class="report-header">
+        <div class="org-brand">
+          <div class="org-logo-symbol"><i class="pi pi-building"></i></div>
+          <div class="org-names">
+            <h2>{{ 'projects.hub.report.companyName' | translate }}</h2>
+            <small>{{ 'projects.hub.report.companyEn' | translate }}</small>
+          </div>
+        </div>
+
+        <div class="report-meta-box">
+          <div class="report-badge">{{ 'projects.hub.report.badgeTitle' | translate }}</div>
+          <div class="meta-line"><span>{{ 'projects.hub.report.reportDate' | translate }}</span> <strong>{{ '2026-10-27' }}</strong></div>
+          <div class="meta-line"><span>{{ 'projects.hub.report.refNum' | translate }}</span> <strong>REP-{{ selectedProject.code }}-01</strong></div>
+        </div>
+      </div>
+
+      <div class="report-divider"></div>
+
+      <div class="report-section">
+        <h4 class="section-heading"><i class="pi pi-info-circle"></i> {{ 'projects.hub.report.sec1' | translate }}</h4>
+        <div class="contract-spec-grid">
+          <div class="spec-cell"><span>{{ 'projects.hub.wizard.reviewProjectNameAr' | translate }}</span> <strong>{{ selectedProject.nameAr }}</strong></div>
+          <div class="spec-cell"><span>Project Name:</span> <strong>{{ selectedProject.nameEn }}</strong></div>
+          <div class="spec-cell"><span>{{ 'projects.hub.report.client' | translate }}</span> <strong>{{ selectedProject.customerName }}</strong></div>
+          <div class="spec-cell"><span>{{ 'projects.hub.wizard.reviewContractNum' | translate }}</span> <strong>{{ selectedProject.contractNumber }}</strong></div>
+          <div class="spec-cell"><span>{{ 'projects.hub.report.engineer' | translate }}</span> <strong>{{ selectedProject.projectManager || ('projects.hub.wizard.projectManagerPlaceholder' | translate) }}</strong></div>
+          <div class="spec-cell"><span>{{ 'projects.hub.workspace.overview.siteLocation' | translate }}</span> <strong>{{ selectedProject.siteLocation || ('ui.projectsHub.ec7f24' | translate) }}</strong></div>
+          <div class="spec-cell"><span>{{ 'projects.hub.report.startDate' | translate }}</span> <strong>{{ selectedProject.startDate | date:'yyyy-MM-dd' }}</strong></div>
+          <div class="spec-cell"><span>{{ 'projects.hub.report.endDate' | translate }}</span> <strong>{{ selectedProject.expectedEndDate | date:'yyyy-MM-dd' }}</strong></div>
+        </div>
+      </div>
+
+      <div class="report-section">
+        <h4 class="section-heading"><i class="pi pi-chart-line"></i> {{ 'projects.hub.report.sec2' | translate }}</h4>
+        <div class="report-kpis-grid">
+          <div class="report-kpi">
+            <span>{{ 'projects.hub.report.totalContract' | translate }}</span>
+            <strong>{{ formatCurrency(selectedProject.contractAmount) }}</strong>
+          </div>
+          <div class="report-kpi">
+            <span>{{ 'projects.hub.report.budget' | translate }}</span>
+            <strong>{{ formatCurrency(selectedProject.estimatedCost) }}</strong>
+          </div>
+          <div class="report-kpi">
+            <span>{{ 'projects.hub.report.actualExpenses' | translate }}</span>
+            <strong class="text-danger">{{ formatCurrency(selectedProject.totalExpensesAmount) }}</strong>
+          </div>
+          <div class="report-kpi">
+            <span>{{ 'projects.hub.report.variance' | translate }}</span>
+            <strong [class.text-success]="getCostVariance(selectedProject) >= 0" [class.text-danger]="getCostVariance(selectedProject) < 0">
+              {{ formatCurrency(getCostVariance(selectedProject)) }}
+            </strong>
+          </div>
+          <div class="report-kpi">
+            <span>{{ 'projects.hub.report.totalBilled' | translate }}</span>
+            <strong class="text-primary">{{ formatCurrency(selectedProject.totalBilledAmount) }}</strong>
+          </div>
+          <div class="report-kpi">
+            <span>{{ 'projects.hub.report.retentionHeld' | translate }}</span>
+            <strong>{{ formatCurrency(selectedProject.totalBilledAmount * (selectedProject.retentionPercentage / 100)) }}</strong>
+          </div>
+          <div class="report-kpi highlight-kpi">
+            <span>{{ 'projects.hub.report.physicalPct' | translate }}</span>
+            <strong class="text-primary font-xl">{{ selectedProject.completionPercentage }}%</strong>
+          </div>
+          <div class="report-kpi highlight-kpi">
+            <span>{{ 'projects.hub.report.financialPct' | translate }}</span>
+            <strong class="text-info font-xl">{{ getFinancialProgressPercentage(selectedProject) }}%</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="report-section">
+        <h4 class="section-heading"><i class="pi pi-list"></i> {{ 'projects.hub.report.sec3' | translate }}</h4>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>{{ 'projects.hub.report.thPhase' | translate }}</th>
+              <th>{{ 'projects.hub.report.thPhaseEn' | translate }}</th>
+              <th>{{ 'projects.hub.report.thWeight' | translate }}</th>
+              <th>{{ 'projects.hub.planning.table.estimatedCost' | translate }}</th>
+              <th>{{ 'projects.hub.report.thActualProgress' | translate }}</th>
+              <th>{{ 'projects.hub.report.thStatus' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ph of selectedProject.phases">
+              <td class="text-center font-bold">{{ ph.phaseOrder }}</td>
+              <td><strong>{{ ph.nameAr }}</strong></td>
+              <td>{{ ph.nameEn }}</td>
+              <td class="text-center">{{ ph.weightPercentage }}%</td>
+              <td class="text-left">{{ formatCurrency(ph.estimatedCost) }}</td>
+              <td class="text-center"><span class="report-pct-badge">{{ ph.completionPercentage }}%</span></td>
+              <td>
+                <span *ngIf="ph.completionPercentage === 100" class="badge-completed">{{ 'projects.hub.report.statusCompleted' | translate }}</span>
+                <span *ngIf="ph.completionPercentage > 0 && ph.completionPercentage < 100" class="badge-active">{{ 'projects.hub.report.statusActive' | translate }}</span>
+                <span *ngIf="ph.completionPercentage === 0" class="badge-pending">{{ 'projects.hub.report.statusPending' | translate }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="selectedProject.phases.length === 0">
+              <td colspan="7" class="text-center text-muted py-2">{{ 'projects.hub.report.noPhases' | translate }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="report-section">
+        <h4 class="section-heading"><i class="pi pi-money-bill"></i> {{ 'projects.hub.report.sec4' | translate }}</h4>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>{{ 'projects.hub.report.thCostCat' | translate }}</th>
+              <th>{{ 'projects.hub.report.thCostMemo' | translate }}</th>
+              <th>{{ 'projects.hub.report.thTotalActual' | translate }}</th>
+              <th>{{ 'projects.hub.report.thCostPct' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>{{ 'projects.hub.workspace.costs.catMaterials' | translate }}</strong></td>
+              <td>{{ 'projects.hub.report.matMemo' | translate }}</td>
+              <td class="text-left font-bold">{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Materials)) }}</td>
+              <td class="text-center">{{ getExpensePercentageByCategory(ProjectExpenseCategory.Materials) }}%</td>
+            </tr>
+            <tr>
+              <td><strong>{{ 'projects.hub.workspace.costs.catLabor' | translate }}</strong></td>
+              <td>{{ 'projects.hub.report.laborMemo' | translate }}</td>
+              <td class="text-left font-bold">{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Labor)) }}</td>
+              <td class="text-center">{{ getExpensePercentageByCategory(ProjectExpenseCategory.Labor) }}%</td>
+            </tr>
+            <tr>
+              <td><strong>{{ 'projects.hub.workspace.costs.catSubcontractors' | translate }}</strong></td>
+              <td>{{ 'projects.hub.report.subMemo' | translate }}</td>
+              <td class="text-left font-bold">{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Subcontractors)) }}</td>
+              <td class="text-center">{{ getExpensePercentageByCategory(ProjectExpenseCategory.Subcontractors) }}%</td>
+            </tr>
+            <tr>
+              <td><strong>{{ 'projects.hub.workspace.costs.catEquipment' | translate }}</strong></td>
+              <td>{{ 'projects.hub.report.eqMemo' | translate }}</td>
+              <td class="text-left font-bold">{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Equipment)) }}</td>
+              <td class="text-center">{{ getExpensePercentageByCategory(ProjectExpenseCategory.Equipment) }}%</td>
+            </tr>
+            <tr>
+              <td><strong>{{ 'projects.hub.workspace.costs.catOverhead' | translate }}</strong></td>
+              <td>{{ 'projects.hub.report.ohMemo' | translate }}</td>
+              <td class="text-left font-bold">{{ formatCurrency(getExpensesByCategory(ProjectExpenseCategory.Overhead)) }}</td>
+              <td class="text-center">{{ getExpensePercentageByCategory(ProjectExpenseCategory.Overhead) }}%</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="2"><strong>{{ 'projects.hub.report.grandTotal' | translate }}</strong></td>
+              <td class="text-left text-danger font-bold">{{ formatCurrency(selectedProject.totalExpensesAmount) }}</td>
+              <td class="text-center font-bold">100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="report-section">
+        <h4 class="section-heading"><i class="pi pi-pencil"></i> {{ 'projects.hub.report.sec5' | translate }}</h4>
+        <div class="report-notes-box">
+          <p>{{ 'projects.hub.report.notes1' | translate }}</p>
+          <p>{{ 'projects.hub.report.notes2' | translate }}</p>
+          <p>{{ 'projects.hub.report.notes3' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="report-signatures-grid">
+        <div class="signature-box">
+          <span class="sig-title">{{ 'projects.hub.report.sigPrep' | translate }}</span>
+          <div class="sig-line"></div>
+          <span class="sig-name">{{ selectedProject.projectManager || ('projects.hub.wizard.projectManagerPlaceholder' | translate) }}</span>
+          <small class="sig-role">{{ 'projects.hub.report.sigPrepRole' | translate }}</small>
+        </div>
+
+        <div class="signature-box">
+          <span class="sig-title">{{ 'projects.hub.report.sigRev' | translate }}</span>
+          <div class="sig-line"></div>
+          <span class="sig-name">{{ 'projects.hub.report.sigRevDept' | translate }}</span>
+          <small class="sig-role">{{ 'projects.hub.report.sigRevRole' | translate }}</small>
+        </div>
+
+        <div class="signature-box">
+          <span class="sig-title">{{ 'projects.hub.report.sigApprove' | translate }}</span>
+          <div class="sig-stamp-box">
+            <span>{{ 'projects.hub.report.sigStamp' | translate }}</span>
+          </div>
+          <span class="sig-name">{{ 'projects.hub.report.sigConsultantOffice' | translate }}</span>
+        </div>
+
+        <div class="signature-box">
+          <span class="sig-title">{{ 'projects.hub.report.sigOwner' | translate }}</span>
+          <div class="sig-line"></div>
+          <span class="sig-name">{{ selectedProject.customerName }}</span>
+          <small class="sig-role">{{ 'projects.hub.report.sigOwnerRole' | translate }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT SMART FIELD WORK & SUBCONTRACTOR ENTRY                 -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" *ngIf="showTimesheetModal">
+    <div class="modal-dialog card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="pi pi-sliders-h"></i>
+          <div>
+            <h3>{{ 'projects.hub.modals.timesheet.title' | translate }}</h3>
+            <p>{{ 'projects.hub.modals.timesheet.subtitle' | translate }}</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="showTimesheetModal = false"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- 1. Entity Type Switcher (Internal Staff vs Subcontractor) -->
+        <div class="entity-type-selector">
+          <button
+            type="button"
+            class="type-pill-btn"
+            [class.active]="timesheetForm.entryType === 'internal_labor'"
+            (click)="timesheetForm.entryType = 'internal_labor'; onTimesheetEntryTypeChange()">
+            <i class="pi pi-user"></i>
+            <span>{{ 'projects.hub.modals.timesheet.internalLabor' | translate }}</span>
+          </button>
+          <button
+            type="button"
+            class="type-pill-btn"
+            [class.active]="timesheetForm.entryType === 'subcontractor'"
+            (click)="timesheetForm.entryType = 'subcontractor'; onTimesheetEntryTypeChange()">
+            <i class="pi pi-building"></i>
+            <span>{{ 'projects.hub.modals.timesheet.subcontractor' | translate }}</span>
+          </button>
+        </div>
+
+        <!-- 2. Calculation & Unit of Measure Strip -->
+        <div class="unit-selector-strip">
+          <span class="strip-label">{{ 'projects.hub.modals.timesheet.calcUom' | translate }}</span>
+          <div class="unit-pills-row">
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'hour'" (click)="timesheetForm.unitOfMeasure = 'hour'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.hour' | translate }}</button>
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'sqm'" (click)="timesheetForm.unitOfMeasure = 'sqm'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.sqm' | translate }}</button>
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'cum'" (click)="timesheetForm.unitOfMeasure = 'cum'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.cum' | translate }}</button>
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'linear_m'" (click)="timesheetForm.unitOfMeasure = 'linear_m'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.linearM' | translate }}</button>
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'unit'" (click)="timesheetForm.unitOfMeasure = 'unit'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.unit' | translate }}</button>
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'day'" (click)="timesheetForm.unitOfMeasure = 'day'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.day' | translate }}</button>
+            <button type="button" class="unit-pill" [class.active]="timesheetForm.unitOfMeasure === 'lump_sum'" (click)="timesheetForm.unitOfMeasure = 'lump_sum'; onTimesheetUnitChange()">{{ 'projects.hub.modals.timesheet.lumpSum' | translate }}</button>
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.linkedProject' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="timesheetForm.projectId" class="form-control-styled">
+              <option *ngFor="let p of projects" [value]="p.id">{{ p.nameAr }} ({{ p.code }})</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.timesheet.executionDate' | translate }} <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="timesheetForm.date" class="form-control-styled" />
+          </div>
+        </div>
+
+        <!-- Dynamic Entity Details: Subcontractor Fields -->
+        <ng-container *ngIf="timesheetForm.entryType === 'subcontractor'">
+          <div class="form-grid two-col">
+            <div class="form-field">
+              <label>{{ 'projects.hub.modals.timesheet.subcontractorAr' | translate }} <span class="required">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="timesheetForm.subcontractorName"
+                (input)="onSubcontractorNameArInput()"
+                [placeholder]="'projects.hub.modals.timesheet.subcontractorArPlaceholder' | translate"
+                class="form-control-styled"
+              />
+            </div>
+
+            <div class="form-field">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">{{ 'projects.hub.modals.timesheet.subcontractorEn' | translate }}</label>
+                <button
+                  type="button"
+                  class="btn-inline-translate"
+                  (click)="retranslateSubcontractorName()"
+                  [title]="'projects.hub.workspace.wbs.retranslate' | translate"
+                >
+                  <i class="pi pi-globe"></i> {{ 'projects.hub.wizard.retranslateBtn' | translate }}
+                </button>
+              </div>
+              <input
+                type="text"
+                [(ngModel)]="timesheetForm.subcontractorNameEn"
+                placeholder="Elite Plastering & Painting Co."
+                class="form-control-styled"
+              />
+            </div>
+          </div>
+
+          <div class="form-grid two-col">
+            <div class="form-field">
+              <label>{{ 'projects.hub.modals.timesheet.subcontractorContractNo' | translate }}</label>
+              <input
+                type="text"
+                [(ngModel)]="timesheetForm.subcontractorContractNo"
+                [placeholder]="'projects.hub.modals.timesheet.contractNoPlaceholder' | translate"
+                class="form-control-styled"
+              />
+            </div>
+
+            <div class="form-field">
+              <label>{{ 'projects.hub.modals.timesheet.specialty' | translate }}</label>
+              <input
+                type="text"
+                [(ngModel)]="timesheetForm.employeeRole"
+                [placeholder]="'projects.hub.modals.timesheet.specialtyPlaceholder' | translate"
+                class="form-control-styled"
+              />
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Dynamic Entity Details: Internal Staff Fields -->
+        <ng-container *ngIf="timesheetForm.entryType === 'internal_labor'">
+          <div class="form-grid two-col">
+            <div class="form-field">
+              <label>{{ 'projects.hub.modals.timesheet.staffName' | translate }} <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="timesheetForm.employeeName" [placeholder]="'projects.hub.modals.timesheet.staffNamePlaceholder' | translate" class="form-control-styled" />
+            </div>
+
+            <div class="form-field">
+              <label>{{ 'projects.hub.modals.timesheet.staffRole' | translate }}</label>
+              <input type="text" [(ngModel)]="timesheetForm.employeeRole" [placeholder]="'projects.hub.modals.timesheet.staffRolePlaceholder' | translate" class="form-control-styled" />
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="form-field">
+          <label>{{ 'projects.hub.modals.timesheet.taskDesc' | translate }} <span class="required">*</span></label>
+          <textarea [(ngModel)]="timesheetForm.taskDescription" rows="2" [placeholder]="'projects.hub.modals.timesheet.taskDescPlaceholder' | translate" class="form-control-styled"></textarea>
+        </div>
+
+        <!-- Dynamic Quantities, Pricing & Real-Time Calculation -->
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'hour'">{{ 'projects.hub.modals.timesheet.qtyHour' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'sqm'">{{ 'projects.hub.modals.timesheet.qtySqm' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'cum'">{{ 'projects.hub.modals.timesheet.qtyCum' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'linear_m'">{{ 'projects.hub.modals.timesheet.qtyLinearM' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'unit'">{{ 'projects.hub.modals.timesheet.qtyUnit' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'day'">{{ 'projects.hub.modals.timesheet.qtyDay' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'lump_sum'">{{ 'projects.hub.modals.timesheet.qtyLumpSum' | translate }}</span>
+            </label>
+            <div class="input-with-currency">
+              <input
+                type="number"
+                [(ngModel)]="timesheetForm.quantity"
+                (input)="recalcTimesheetTotals()"
+                min="0.1"
+                step="0.5"
+                class="form-control-styled"
+              />
+              <span class="currency-tag">{{ getUnitLabel(timesheetForm.unitOfMeasure) }}</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'hour'">{{ 'projects.hub.modals.timesheet.rateHour' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'sqm'">{{ 'projects.hub.modals.timesheet.rateSqm' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'cum'">{{ 'projects.hub.modals.timesheet.rateCum' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'linear_m'">{{ 'projects.hub.modals.timesheet.rateLinearM' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'unit'">{{ 'projects.hub.modals.timesheet.rateUnit' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'day'">{{ 'projects.hub.modals.timesheet.rateDay' | translate }}</span>
+              <span *ngIf="timesheetForm.unitOfMeasure === 'lump_sum'">{{ 'projects.hub.modals.timesheet.rateLumpSum' | translate }}</span>
+            </label>
+            <div class="input-with-currency">
+              <input
+                type="number"
+                [(ngModel)]="timesheetForm.unitPrice"
+                (input)="recalcTimesheetTotals()"
+                min="0"
+                step="5"
+                class="form-control-styled"
+              />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+
+          <div class="form-field" *ngIf="timesheetForm.entryType === 'subcontractor'">
+            <label>{{ 'projects.hub.forms.billing.retentionPct' | translate }}</label>
+            <div class="input-with-currency">
+              <input
+                type="number"
+                [(ngModel)]="timesheetForm.retentionPercentage"
+                (input)="recalcTimesheetTotals()"
+                min="0"
+                max="30"
+                class="form-control-styled"
+              />
+              <span class="currency-tag">%</span>
+            </div>
+          </div>
+
+          <div class="form-field" *ngIf="timesheetForm.entryType === 'internal_labor'">
+            <label>{{ 'projects.hub.modals.timesheet.totalLaborCost' | translate }}</label>
+            <div class="cost-preview-box">
+              <strong>{{ formatCurrency(timesheetForm.quantity * timesheetForm.unitPrice) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subcontractor Financial Preview Bar -->
+        <div class="subcontractor-cost-preview-card" *ngIf="timesheetForm.entryType === 'subcontractor'">
+          <div class="preview-item">
+            <span class="p-label">{{ 'projects.hub.modals.timesheet.previewTotalWorks' | translate }}</span>
+            <span class="p-val text-dark font-bold">{{ formatCurrency(timesheetForm.quantity * timesheetForm.unitPrice) }}</span>
+          </div>
+          <div class="preview-divider"></div>
+          <div class="preview-item">
+            <span class="p-label">{{ 'projects.hub.modals.timesheet.previewRetention' | translate }} ({{ timesheetForm.retentionPercentage }}%):</span>
+            <span class="p-val text-amber font-bold">-{{ formatCurrency(timesheetForm.retentionAmount) }}</span>
+          </div>
+          <div class="preview-divider"></div>
+          <div class="preview-item">
+            <span class="p-label">{{ 'projects.hub.modals.timesheet.previewNet' | translate }}</span>
+            <span class="p-val text-emerald font-bold">{{ formatCurrency(timesheetForm.netPayable) }}</span>
+          </div>
+        </div>
+
+        <!-- Billable & Expense Options -->
+        <div class="options-checklist">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="timesheetForm.isBillable" />
+            <span>
+              <strong>{{ 'projects.hub.modals.timesheet.billableBold' | translate }}</strong>
+              {{ 'projects.hub.modals.timesheet.billableText' | translate }} {{ projectSettings.billableMarkupPercentage }}%)
+            </span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="timesheetForm.postAsProjectExpense" />
+            <span>
+              <strong>{{ 'projects.hub.modals.timesheet.postCostBold' | translate }}</strong>
+              {{ 'projects.hub.modals.timesheet.postCostText' | translate }}
+              <strong class="text-cyan">
+                {{ timesheetForm.entryType === 'subcontractor' ? ('projects.hub.workspace.costs.catSubcontractors' | translate) : ('projects.hub.workspace.costs.catLabor' | translate) }}
+              </strong>
+              {{ 'projects.hub.modals.timesheet.inProject' | translate }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showTimesheetModal = false">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveTimesheetEntry()">
+          <i class="pi pi-check"></i>
+          <span>{{ timesheetForm.entryType === 'subcontractor' ? ('projects.hub.modals.timesheet.saveSubcontractor' | translate) : ('projects.hub.modals.timesheet.saveStaff' | translate) }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT PLANNING GANTT TASK (مهمة تخطيط وجدول زمني)             -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" *ngIf="showTaskModal">
+    <div class="modal-dialog card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="pi pi-calendar-plus"></i>
+          <div>
+            <h3>{{ 'projects.hub.modals.task.title' | translate }}</h3>
+            <p>{{ 'projects.hub.modals.task.subtitle' | translate }}</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="showTaskModal = false"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.forms.billing.linkedProject' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="taskForm.projectId" class="form-control-styled">
+              <option *ngFor="let p of projects" [value]="p.id">{{ p.nameAr }} ({{ p.code }})</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.fieldManager' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="taskForm.assignedTo" [placeholder]="'projects.hub.modals.timesheet.staffNamePlaceholder' | translate" class="form-control-styled" />
+          </div>
+        </div>
+
+        <!-- Rule 1: Bilingual Single-Entry Auto-Translation Standard -->
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.taskTitleAr' | translate }} <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="taskForm.titleAr"
+              (input)="onTaskTitleArInput()"
+              [placeholder]="'projects.hub.modals.task.taskPlaceholder' | translate"
+              class="form-control-styled"
+            />
+          </div>
+
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="margin-bottom: 0;">{{ 'projects.hub.modals.task.taskTitleEn' | translate }}</label>
+              <button
+                type="button"
+                class="btn-inline-translate"
+                (click)="retranslateTaskTitle()"
+                [title]="'projects.hub.workspace.wbs.retranslate' | translate"
+              >
+                <i class="pi pi-globe"></i> {{ 'projects.hub.wizard.retranslateBtn' | translate }}
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="taskForm.titleEn"
+              placeholder="Supply & Installation of Fire Fighting System"
+              class="form-control-styled"
+            />
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.startDate' | translate }} <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="taskForm.startDate" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.endDate' | translate }} <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="taskForm.endDate" class="form-control-styled" />
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.statusLabel' | translate }}</label>
+            <select [(ngModel)]="taskForm.status" class="form-control-styled">
+              <option value="Planned">{{ 'projects.hub.modals.task.optPlanned' | translate }}</option>
+              <option value="InProgress">{{ 'projects.hub.modals.task.optInProgress' | translate }}</option>
+              <option value="Completed">{{ 'projects.hub.modals.task.optCompleted' | translate }}</option>
+              <option value="Delayed">{{ 'projects.hub.modals.task.optDelayed' | translate }}</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.currentProgress' | translate }} <strong>{{ taskForm.progressPercentage }}%</strong></label>
+            <input type="range" [(ngModel)]="taskForm.progressPercentage" min="0" max="100" class="progress-range-slider" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'projects.hub.modals.task.estCost' | translate }}</label>
+            <div class="input-with-currency">
+              <input type="number" [(ngModel)]="taskForm.estimatedCost" min="0" class="form-control-styled" />
+              <span class="currency-tag">{{ 'projects.hub.currency' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="options-checklist">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="taskForm.isMilestone" />
+            <span><strong>{{ 'projects.hub.modals.task.milestoneBold' | translate }}</strong> {{ 'projects.hub.modals.task.milestoneText' | translate }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showTaskModal = false">{{ 'projects.hub.wizard.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="savePlanningTaskEntry()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'projects.hub.modals.task.saveTask' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

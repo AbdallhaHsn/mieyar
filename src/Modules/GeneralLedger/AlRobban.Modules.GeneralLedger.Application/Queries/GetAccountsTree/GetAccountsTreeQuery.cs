@@ -24,8 +24,8 @@ public class GetAccountsTreeQueryHandler : IRequestHandler<GetAccountsTreeQuery,
 
     public async Task<Result<IReadOnlyList<AccountDto>>> Handle(GetAccountsTreeQuery request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
 
         // 1. Auto-seed IFRS standard chart of accounts if company has no accounts
         var hasAccounts = await _accountRepository.HasAnyAccountsAsync(companyId, cancellationToken);

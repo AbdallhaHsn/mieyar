@@ -6,17 +6,20 @@ import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts
 import { AccountDto, AccountingStandardGuidance, AccountNature, AccountType, CreateAccountRequest, FinancialStatement } from '../../../core/models/account.model';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { AccountPickerComponent } from '../../../shared/components/account-picker/account-picker.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-account-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AccountPickerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AccountPickerComponent, TranslatePipe],
   templateUrl: './account-create.component.html',
   styleUrls: ['./account-create.component.scss']
 })
 export class AccountCreateComponent implements OnInit {
+  public langService = inject(LanguageService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -126,39 +129,72 @@ export class AccountCreateComponent implements OnInit {
     this.accountForm.get('nameAr')?.valueChanges.subscribe(arText => {
       if (!this.isAutoTranslateEnabled() || this.isTranslating) return;
 
-      if (!arText || !arText.trim()) {
+      const trimmed = (arText || '').trim();
+      if (!trimmed) {
         this.isTranslating = true;
         this.accountForm.patchValue({ nameEn: '' }, { emitEvent: false });
         this.isTranslating = false;
         return;
       }
 
-      const enTranslation = this.translator.translateArabicToEnglish(arText);
-      this.isTranslating = true;
-      this.accountForm.patchValue({ nameEn: enTranslation }, { emitEvent: false });
-      this.isTranslating = false;
+      const isAr = this.translator.containsArabic(trimmed);
+      if (isAr) {
+        this.isTranslating = true;
+        const instant = this.translator.translateArabicToEnglish(trimmed);
+        this.accountForm.patchValue({ nameEn: instant }, { emitEvent: false });
+        this.isTranslating = false;
+
+        this.translator.translateWithOnlineRefinement(
+          trimmed,
+          () => {},
+          (refined) => {
+            if (this.isAutoTranslateEnabled() && refined) {
+              this.isTranslating = true;
+              this.accountForm.patchValue({ nameEn: refined }, { emitEvent: false });
+              this.isTranslating = false;
+            }
+          }
+        );
+      }
     });
 
-    // When English Name changes -> auto translate to Arabic
+    // When English Name changes manually -> only auto-translate to Arabic if Arabic is completely empty
     this.accountForm.get('nameEn')?.valueChanges.subscribe(enText => {
       if (!this.isAutoTranslateEnabled() || this.isTranslating) return;
 
-      if (!enText || !enText.trim()) {
-        this.isTranslating = true;
-        this.accountForm.patchValue({ nameAr: '' }, { emitEvent: false });
-        this.isTranslating = false;
-        return;
-      }
+      const trimmed = (enText || '').trim();
+      const currentAr = (this.accountForm.get('nameAr')?.value || '').trim();
 
-      const arTranslation = this.translator.translateEnglishToArabic(enText);
-      this.isTranslating = true;
-      this.accountForm.patchValue({ nameAr: arTranslation }, { emitEvent: false });
-      this.isTranslating = false;
+      // STRICT RULE: If Arabic name is already populated, NEVER overwrite it!
+      if (!currentAr && trimmed) {
+        this.isTranslating = true;
+        const arTranslation = this.translator.translateEnglishToArabic(trimmed);
+        this.accountForm.patchValue({ nameAr: arTranslation }, { emitEvent: false });
+        this.isTranslating = false;
+      }
     });
   }
 
   toggleAutoTranslate(): void {
     this.isAutoTranslateEnabled.set(!this.isAutoTranslateEnabled());
+  }
+
+  forceRetranslateAccount(): void {
+    const arText = (this.accountForm.get('nameAr')?.value || '').trim();
+    if (!arText) return;
+
+    this.isTranslating = true;
+    const instant = this.translator.translateArabicToEnglish(arText);
+    this.accountForm.patchValue({ nameEn: instant }, { emitEvent: false });
+    this.isTranslating = false;
+
+    this.translator.translateOnline(arText, 'ar', 'en').then(refined => {
+      if (refined) {
+        this.isTranslating = true;
+        this.accountForm.patchValue({ nameEn: refined }, { emitEvent: false });
+        this.isTranslating = false;
+      }
+    });
   }
 
   onParentSelected(parentId: string): void {
@@ -185,6 +221,10 @@ export class AccountCreateComponent implements OnInit {
 
   setAccountCategory(type: AccountType): void {
     this.accountForm.patchValue({ accountType: type });
+  }
+
+  setAccountPosting(isPostable: boolean): void {
+    this.accountForm.patchValue({ isPostable });
   }
 
   private applyParent(parentId: string): void {
@@ -256,7 +296,7 @@ export class AccountCreateComponent implements OnInit {
 
     if (this.accountForm.invalid) {
       this.accountForm.markAllAsTouched();
-      this.errorMessage.set('يرجى استكمال الحقول المطلوبة والتأكد من صحة رمز الحساب والاسم.');
+      this.errorMessage.set(this.langService.t('accounting.accountCreate.validation.formInvalid'));
       return;
     }
 
@@ -279,10 +319,11 @@ export class AccountCreateComponent implements OnInit {
     this.coaService.createAccount(request).subscribe({
       next: (created) => {
         this.isSaving.set(false);
-        this.successMessage.set(`تم حفظ الحساب (${created.accountCode} - ${created.nameAr}) بنجاح.`);
+        const accName = this.langService.currentLang() === 'en' ? (created.nameEn || created.nameAr) : created.nameAr;
+        this.successMessage.set(this.langService.t('accounting.accountCreate.alerts.saveSuccessMsg').replace('{code}', created.accountCode).replace('{name}', accName));
 
         Swal.fire({
-          title: 'تم حفظ الحساب بنجاح',
+          title: this.langService.t('accounting.accountCreate.alerts.saveSuccessTitle'),
           html: `
             <div style="font-family: inherit; text-align: center; padding: 0.25rem 0;">
               <div style="font-size: 1.15rem; font-weight: 700; color: #065f46; margin-bottom: 0.35rem;">
@@ -295,7 +336,7 @@ export class AccountCreateComponent implements OnInit {
           `,
           icon: 'success',
           confirmButtonColor: '#059669',
-          confirmButtonText: 'حسناً',
+          confirmButtonText: this.langService.t('common.ok'),
           timer: 2500,
           timerProgressBar: true
         });
@@ -323,15 +364,15 @@ export class AccountCreateComponent implements OnInit {
       },
       error: (err) => {
         this.isSaving.set(false);
-        const msg = err.error?.description || 'حدث خطأ أثناء حفظ الحساب في قاعدة البيانات.';
+        const msg = err.error?.description || this.langService.t('accounting.accountCreate.alerts.saveErrorDefault');
         this.errorMessage.set(msg);
 
         Swal.fire({
-          title: 'تعذر حفظ الحساب',
+          title: this.langService.t('accounting.accountCreate.alerts.saveErrorTitle'),
           text: msg,
           icon: 'error',
           confirmButtonColor: '#059669',
-          confirmButtonText: 'موافق'
+          confirmButtonText: this.langService.t('common.ok')
         });
       }
     });

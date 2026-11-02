@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import {
   FinancialStatementsService,
@@ -16,13 +17,15 @@ import { FinancialSettingsService, CostCenter } from '../../../core/services/fin
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { TafqeetService } from '../../../core/services/tafqeet.service';
+import { DashboardService, EnterpriseAuditLogDto } from '../../../core/services/dashboard.service';
+import Swal from 'sweetalert2';
 
-type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' | 'vat-return' | 'settings';
+type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' | 'vat-return' | 'audit-trail' | 'settings';
 
 @Component({
   selector: 'app-financial-statements',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="fs-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -31,14 +34,14 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <div class="fs-header-inner">
           <div class="fs-header-left">
             <div class="fs-breadcrumb">
-              <a routerLink="/dashboard" class="bc-link"><i class="pi pi-home"></i> {{ langService.currentLang() === 'ar' ? 'الرئيسية' : 'Home' }}</a>
+              <a routerLink="/dashboard" class="bc-link"><i class="pi pi-home"></i> {{ 'accounting.financialStatements.ui.home' | translate }}</a>
               <span class="bc-sep">/</span>
-              <span>{{ langService.currentLang() === 'ar' ? 'المحاسبة والمالية' : 'Accounting' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.accounting' | translate }}</span>
               <span class="bc-sep">/</span>
-              <span class="bc-highlight">{{ langService.currentLang() === 'ar' ? 'القوائم المالية الختامية' : 'Financial Statements' }}</span>
+              <span class="bc-highlight">{{ 'accounting.financialStatements.ui.financialStatements' | translate }}</span>
             </div>
             <div class="fs-title-row">
-              <h1 class="fs-title">{{ langService.currentLang() === 'ar' ? 'القوائم المالية الختامية والتقارير التنفيذية' : 'Financial Statements & Executive Reports' }}</h1>
+              <h1 class="fs-title">{{ 'accounting.financialStatements.ui.financialStatementsExecutiveReports' | translate }}</h1>
               <span class="socpa-badge"><i class="pi pi-verified"></i> SOCPA & IFRS Compliant</span>
             </div>
           </div>
@@ -51,7 +54,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               [class.active]="activeTab === 'income-statement'" 
               (click)="switchTab('income-statement')">
               <i class="pi pi-chart-line"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'قائمة الدخل (الأرباح والخسائر)' : 'Income Statement (P&L)' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.incomeStatementPl' | translate }}</span>
             </button>
             <button 
               type="button"
@@ -59,7 +62,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               [class.active]="activeTab === 'balance-sheet'" 
               (click)="switchTab('balance-sheet')">
               <i class="pi pi-building"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'قائمة المركز المالي (الميزانية العمومية)' : 'Balance Sheet' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.balanceSheet' | translate }}</span>
             </button>
             <button 
               type="button"
@@ -67,7 +70,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               [class.active]="activeTab === 'cash-flow'" 
               (click)="switchTab('cash-flow')">
               <i class="pi pi-money-bill"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'قائمة التدفقات النقدية (IAS 7)' : 'Statement of Cash Flows' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.statementOfCashFlows' | translate }}</span>
             </button>
             <button 
               type="button"
@@ -75,7 +78,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               [class.active]="activeTab === 'equity'" 
               (click)="switchTab('equity')">
               <i class="pi pi-users"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'التغير في حقوق الملكية (IAS 1)' : 'Statement of Changes in Equity' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.statementOfChangesInEquity' | translate }}</span>
             </button>
             <button 
               type="button"
@@ -83,7 +86,15 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               [class.active]="activeTab === 'vat-return'" 
               (click)="switchTab('vat-return')">
               <i class="pi pi-percentage"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إقرار ضريبة القيمة المضافة (ZATCA)' : 'ZATCA VAT Return' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.zatcaVatReturn' | translate }}</span>
+            </button>
+            <button 
+              type="button"
+              class="fs-tab-btn" 
+              [class.active]="activeTab === 'audit-trail'" 
+              (click)="switchTab('audit-trail')">
+              <i class="pi pi-shield"></i>
+              <span>{{ 'accounting.financialStatements.ui.enterpriseAuditTrail' | translate }}</span>
             </button>
             <button 
               type="button"
@@ -91,7 +102,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               [class.active]="activeTab === 'settings'" 
               (click)="switchTab('settings')">
               <i class="pi pi-cog"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'محددات وسياسات العرض' : 'Settings' }}</span>
+              <span>{{ 'accounting.financialStatements.ui.settings' | translate }}</span>
             </button>
           </div>
         </div>
@@ -106,7 +117,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <section class="fs-metrics-bar" *ngIf="incomeStatement()">
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-arrow-circle-up text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'إيرادات النشاط التشغيلي' : 'Operating Revenue' }}</span>
+              <span class="seg-lbl"><i class="pi pi-arrow-circle-up text-emerald"></i> {{ 'accounting.financialStatements.ui.operatingRevenue' | translate }}</span>
               <span class="seg-badge bg-emerald-subtle">100%</span>
             </div>
             <div class="seg-val font-mono text-emerald">
@@ -118,7 +129,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-calculator text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'مجمل الربح (Gross Profit)' : 'Gross Profit' }}</span>
+              <span class="seg-lbl"><i class="pi pi-calculator text-cyan"></i> {{ 'accounting.financialStatements.ui.grossProfit' | translate }}</span>
               <span class="seg-badge" [class.bg-emerald-subtle]="incomeStatement()!.grossProfit >= 0" [class.bg-rose-subtle]="incomeStatement()!.grossProfit < 0">
                 {{ incomeStatement()!.grossMarginPercentage }}%
               </span>
@@ -132,7 +143,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-cog text-amber"></i> {{ langService.currentLang() === 'ar' ? 'الربح التشغيلي (EBIT)' : 'Operating Profit' }}</span>
+              <span class="seg-lbl"><i class="pi pi-cog text-amber"></i> {{ 'accounting.financialStatements.ui.operatingProfit' | translate }}</span>
               <span class="seg-badge bg-amber-subtle">{{ incomeStatement()!.operatingMarginPercentage }}%</span>
             </div>
             <div class="seg-val font-mono text-amber">
@@ -146,10 +157,10 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="seg-top">
               <span class="seg-lbl">
                 <i [class]="incomeStatement()!.isProfit ? 'pi pi-check-circle text-emerald' : 'pi pi-exclamation-circle text-rose'"></i>
-                <strong>{{ langService.currentLang() === 'ar' ? 'صافي نتيجة الفترة' : 'Net Income' }}</strong>
+                <strong>{{ 'accounting.financialStatements.ui.netIncome' | translate }}</strong>
               </span>
               <span class="seg-badge-solid" [class.bg-emerald]="incomeStatement()!.isProfit" [class.bg-rose]="!incomeStatement()!.isProfit">
-                {{ incomeStatement()!.isProfit ? (langService.currentLang() === 'ar' ? 'صافي ربح' : 'Net Profit') : (langService.currentLang() === 'ar' ? 'صافي خسارة' : 'Net Loss') }}
+                {{ incomeStatement()!.isProfit ? ('accounting.financialStatements.ui.netProfit' | translate) : ('accounting.financialStatements.ui.netLoss' | translate) }}
                 ({{ incomeStatement()!.netMarginPercentage }}%)
               </span>
             </div>
@@ -165,42 +176,42 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             
             <!-- From Date -->
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'من تاريخ:' : 'From:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.from' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="fromDate" (change)="loadIncomeStatement()" />
             </div>
 
             <!-- To Date -->
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'إلى تاريخ:' : 'To:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.to' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="toDate" (change)="loadIncomeStatement()" />
             </div>
 
             <!-- Cost Center -->
             <div class="form-group cc-group">
-              <label><i class="pi pi-compass"></i> <span>{{ langService.currentLang() === 'ar' ? 'مركز التكلفة:' : 'Cost Center:' }}</span></label>
+              <label><i class="pi pi-compass"></i> <span>{{ 'accounting.financialStatements.ui.costCenter' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="selectedCostCenterId" (change)="loadIncomeStatement()">
-                <option value="">{{ langService.currentLang() === 'ar' ? 'جميع مراكز التكلفة' : 'All Cost Centers' }}</option>
-                <option *ngFor="let cc of costCenters" [value]="cc.id">{{ cc.code }} - {{ cc.nameAr }}</option>
+                <option value="">{{ 'accounting.financialStatements.ui.allCostCenters' | translate }}</option>
+                <option *ngFor="let cc of costCenters" [value]="cc.id">{{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : (cc.nameEn || cc.nameAr) }}</option>
               </select>
             </div>
 
             <!-- Tree Level Selector -->
             <div class="form-group level-group">
-              <label><i class="pi pi-sitemap"></i> <span>{{ langService.currentLang() === 'ar' ? 'المستوى الشجري:' : 'Level:' }}</span></label>
+              <label><i class="pi pi-sitemap"></i> <span>{{ 'accounting.financialStatements.ui.level' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="selectedMaxLevel" (change)="loadIncomeStatement()">
-                <option [ngValue]="null">{{ langService.currentLang() === 'ar' ? 'كافة المستويات التحليلية' : 'All Levels' }}</option>
-                <option [ngValue]="1">{{ langService.currentLang() === 'ar' ? 'المستوى 1 (رئيسي فقط)' : 'Level 1' }}</option>
-                <option [ngValue]="2">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 2 (مجموعات رئيسية)' : 'Up to Level 2' }}</option>
-                <option [ngValue]="3">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 3' : 'Up to Level 3' }}</option>
+                <option [ngValue]="null">{{ 'accounting.financialStatements.ui.allLevels' | translate }}</option>
+                <option [ngValue]="1">{{ 'accounting.financialStatements.ui.level1' | translate }}</option>
+                <option [ngValue]="2">{{ 'accounting.financialStatements.ui.upToLevel2' | translate }}</option>
+                <option [ngValue]="3">{{ 'accounting.financialStatements.ui.upToLevel3' | translate }}</option>
               </select>
             </div>
 
             <!-- Presentation Format -->
             <div class="form-group format-group">
-              <label><i class="pi pi-sliders-h"></i> <span>{{ langService.currentLang() === 'ar' ? 'هيكل العرض:' : 'Format:' }}</span></label>
+              <label><i class="pi pi-sliders-h"></i> <span>{{ 'accounting.financialStatements.ui.format' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="presentationFormat" (change)="loadIncomeStatement()">
-                <option value="multi-step">{{ langService.currentLang() === 'ar' ? 'متعدد المراحل (IFRS القياسي)' : 'Multi-Step (IFRS)' }}</option>
-                <option value="single-step">{{ langService.currentLang() === 'ar' ? 'مرحلة واحدة (Single-Step)' : 'Single-Step' }}</option>
+                <option value="multi-step">{{ 'accounting.financialStatements.ui.multistepIfrs' | translate }}</option>
+                <option value="single-step">{{ 'accounting.financialStatements.ui.singlestep' | translate }}</option>
               </select>
             </div>
 
@@ -208,7 +219,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="form-group toggle-group">
               <label class="checkbox-label">
                 <input type="checkbox" [(ngModel)]="hideZeroBalances" (change)="loadIncomeStatement()" />
-                <span>{{ langService.currentLang() === 'ar' ? 'إخفاء الأرصدة الصفرية' : 'Hide Zeros' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.hideZeros' | translate }}</span>
               </label>
             </div>
 
@@ -217,24 +228,24 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Presets and Action Buttons -->
           <div class="filters-subbar">
             <div class="presets-group">
-              <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'فترات سريعة:' : 'Presets:' }}</span>
-              <button class="preset-btn" (click)="setPreset('thisYear')">{{ langService.currentLang() === 'ar' ? 'هذا العام' : 'This Year' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ langService.currentLang() === 'ar' ? 'الربع الحالي' : 'This Quarter' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisMonth')">{{ langService.currentLang() === 'ar' ? 'هذا الشهر' : 'This Month' }}</button>
+              <span class="preset-label">{{ 'accounting.financialStatements.ui.presets' | translate }}</span>
+              <button class="preset-btn" (click)="setPreset('thisYear')">{{ 'accounting.financialStatements.ui.thisYear' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ 'accounting.financialStatements.ui.thisQuarter' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisMonth')">{{ 'accounting.financialStatements.ui.thisMonth' | translate }}</button>
             </div>
 
             <div class="actions-group">
               <button class="secondary-btn" (click)="loadIncomeStatement()" [disabled]="loading()">
                 <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.refresh' | translate }}</span>
               </button>
               <button class="secondary-btn btn-export" (click)="exportIncomeStatementExcel()">
                 <i class="pi pi-file-excel"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تصدير Excel منسق' : 'Export Excel' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.exportExcel' | translate }}</span>
               </button>
               <button class="primary-btn btn-print" (click)="openPrintModal('income-statement')">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة القائمة A4' : 'Print A4' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.printA4' | translate }}</span>
               </button>
             </div>
           </div>
@@ -246,14 +257,14 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="table-title-box">
               <i class="pi pi-chart-bar text-emerald"></i>
               <h3 class="table-title-text">
-                {{ langService.currentLang() === 'ar' ? 'قائمة الدخل عن الفترة من' : 'Income Statement for period' }}
+                {{ 'accounting.financialStatements.ui.incomeStatementForPeriod' | translate }}
                 {{ incomeStatement()!.fromDate | date:'yyyy-MM-dd' }} 
-                {{ langService.currentLang() === 'ar' ? 'إلى' : 'to' }} 
+                {{ 'accounting.financialStatements.ui.to1' | translate }} 
                 {{ incomeStatement()!.toDate | date:'yyyy-MM-dd' }}
               </h3>
             </div>
             <span class="count-badge">
-              {{ langService.currentLang() === 'ar' ? 'العملة المعتمدة: ريال سعودي (SAR)' : 'Currency: SAR' }}
+              {{ 'accounting.financialStatements.ui.currencySar' | translate }}
             </span>
           </div>
 
@@ -261,12 +272,12 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <table class="fs-statement-table">
               <thead>
                 <tr>
-                  <th class="th-code">{{ langService.currentLang() === 'ar' ? 'رمز الحساب' : 'Code' }}</th>
-                  <th class="th-name">{{ langService.currentLang() === 'ar' ? 'البيان والبنود المالية' : 'Account / Financial Item' }}</th>
-                  <th class="th-level">{{ langService.currentLang() === 'ar' ? 'المستوى' : 'Level' }}</th>
-                  <th class="th-pct">{{ langService.currentLang() === 'ar' ? '% من المبيعات' : '% of Revenue' }}</th>
-                  <th class="th-amount">{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR)' : 'Amount (SAR)' }}</th>
-                  <th class="th-action">{{ langService.currentLang() === 'ar' ? 'كشف الحساب' : 'Ledger' }}</th>
+                  <th class="th-code">{{ 'accounting.financialStatements.ui.code' | translate }}</th>
+                  <th class="th-name">{{ 'accounting.financialStatements.ui.accountFinancialItem' | translate }}</th>
+                  <th class="th-level">{{ 'accounting.financialStatements.ui.level2' | translate }}</th>
+                  <th class="th-pct">{{ 'accounting.financialStatements.ui.ofRevenue' | translate }}</th>
+                  <th class="th-amount">{{ 'accounting.financialStatements.ui.amountSar' | translate }}</th>
+                  <th class="th-action">{{ 'accounting.financialStatements.ui.ledger' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,7 +296,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -311,7 +322,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -328,7 +339,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-calculator text-emerald"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'مجمل الربح / الخسارة (Gross Profit)' : 'Gross Profit' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.grossProfit1' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">{{ incomeStatement()!.grossMarginPercentage }}%</td>
@@ -352,7 +363,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -378,7 +389,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -395,7 +406,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-cog text-amber"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'الربح التشغيلي قبل التمويل والزكاة (EBIT)' : 'Operating Profit (EBIT)' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.operatingProfitEbit' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">{{ incomeStatement()!.operatingMarginPercentage }}%</td>
@@ -419,7 +430,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -444,7 +455,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -461,7 +472,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="grand-total-title">
                       <i [class]="incomeStatement()!.isProfit ? 'pi pi-verified text-emerald' : 'pi pi-exclamation-triangle text-rose'"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'صافي أرباح / (خسائر) الفترة المالية' : 'Net Profit / (Loss) for the Period' }}</span>
+                      <span>{{ 'accounting.financialStatements.ui.netProfitLossForThe' | translate }}</span>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">{{ incomeStatement()!.netMarginPercentage }}%</td>
@@ -478,7 +489,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Arabic Tafqeet Strip -->
           <div class="tafqeet-strip">
             <i class="pi pi-info-circle text-emerald"></i>
-            <span class="tafqeet-label">{{ langService.currentLang() === 'ar' ? 'التفقيع المالي المعتمد:' : 'Amount in words:' }}</span>
+            <span class="tafqeet-label">{{ 'accounting.financialStatements.ui.amountInWords' | translate }}</span>
             <strong class="tafqeet-text">{{ incomeStatement()!.netProfitTafqeetAr }}</strong>
           </div>
         </section>
@@ -494,8 +505,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <section class="fs-metrics-bar" *ngIf="balanceSheet()">
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-box text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'إجمالي الأصول (Assets)' : 'Total Assets' }}</span>
-              <span class="seg-badge bg-emerald-subtle">الموارد</span>
+              <span class="seg-lbl"><i class="pi pi-box text-emerald"></i> {{ 'accounting.financialStatements.ui.totalAssets' | translate }}</span>
+              <span class="seg-badge bg-emerald-subtle">{{ 'ui.financialStatements.b318f1' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-emerald">
               {{ balanceSheet()!.totalAssets | number:'1.2-2' }} <small>SAR</small>
@@ -506,8 +517,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-file text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'إجمالي الالتزامات (Liabilities)' : 'Total Liabilities' }}</span>
-              <span class="seg-badge bg-cyan-subtle">الخصوم</span>
+              <span class="seg-lbl"><i class="pi pi-file text-cyan"></i> {{ 'accounting.financialStatements.ui.totalLiabilities' | translate }}</span>
+              <span class="seg-badge bg-cyan-subtle">{{ 'ui.financialStatements.d22e1e' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-cyan">
               {{ balanceSheet()!.totalLiabilities | number:'1.2-2' }} <small>SAR</small>
@@ -518,8 +529,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-shield text-amber"></i> {{ langService.currentLang() === 'ar' ? 'حقوق الملكية (Equity)' : 'Total Equity' }}</span>
-              <span class="seg-badge bg-amber-subtle">{{ langService.currentLang() === 'ar' ? 'شامل الأرباح' : 'With Net' }}</span>
+              <span class="seg-lbl"><i class="pi pi-shield text-amber"></i> {{ 'accounting.financialStatements.ui.totalEquity' | translate }}</span>
+              <span class="seg-badge bg-amber-subtle">{{ 'accounting.financialStatements.ui.withNet' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-amber">
               {{ balanceSheet()!.totalEquity | number:'1.2-2' }} <small>SAR</small>
@@ -532,14 +543,14 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="seg-top">
               <span class="seg-lbl">
                 <i [class]="balanceSheet()!.isBalanced ? 'pi pi-check-circle text-emerald' : 'pi pi-exclamation-triangle text-rose'"></i>
-                <strong>{{ langService.currentLang() === 'ar' ? 'معادلة التوازن المحاسبي' : 'Accounting Balance' }}</strong>
+                <strong>{{ 'accounting.financialStatements.ui.accountingBalance' | translate }}</strong>
               </span>
               <span class="seg-badge-solid" [class.bg-emerald]="balanceSheet()!.isBalanced" [class.bg-rose]="!balanceSheet()!.isBalanced">
-                {{ balanceSheet()!.isBalanced ? (langService.currentLang() === 'ar' ? 'متوازنة 100%' : 'Balanced') : (langService.currentLang() === 'ar' ? 'غير متوازنة' : 'Unbalanced') }}
+                {{ balanceSheet()!.isBalanced ? ('accounting.financialStatements.ui.balanced' | translate) : ('accounting.financialStatements.ui.unbalanced' | translate) }}
               </span>
             </div>
             <div class="seg-val font-mono font-bold" [class.text-emerald]="balanceSheet()!.isBalanced" [class.text-rose]="!balanceSheet()!.isBalanced">
-              {{ balanceSheet()!.isBalanced ? (langService.currentLang() === 'ar' ? 'الفرق: 0.00' : 'Diff: 0.00') : ('فرق: ' + (balanceSheet()!.balanceDifference | number:'1.2-2')) }}
+              {{ balanceSheet()!.isBalanced ? ('accounting.financialStatements.ui.diff000' | translate) : (('ui.financialStatements.70e618' | translate) + (balanceSheet()!.balanceDifference | number:'1.2-2')) }}
             </div>
           </div>
         </section>
@@ -550,27 +561,27 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             
             <!-- As of Date -->
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'في تاريخ (As of):' : 'As of Date:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.asOfDate' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="asOfDate" (change)="loadBalanceSheet()" />
             </div>
 
             <!-- Cost Center -->
             <div class="form-group cc-group">
-              <label><i class="pi pi-compass"></i> <span>{{ langService.currentLang() === 'ar' ? 'مركز التكلفة:' : 'Cost Center:' }}</span></label>
+              <label><i class="pi pi-compass"></i> <span>{{ 'accounting.financialStatements.ui.costCenter' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="selectedCostCenterId" (change)="loadBalanceSheet()">
-                <option value="">{{ langService.currentLang() === 'ar' ? 'جميع مراكز التكلفة' : 'All Cost Centers' }}</option>
-                <option *ngFor="let cc of costCenters" [value]="cc.id">{{ cc.code }} - {{ cc.nameAr }}</option>
+                <option value="">{{ 'accounting.financialStatements.ui.allCostCenters' | translate }}</option>
+                <option *ngFor="let cc of costCenters" [value]="cc.id">{{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : (cc.nameEn || cc.nameAr) }}</option>
               </select>
             </div>
 
             <!-- Tree Level Selector -->
             <div class="form-group level-group">
-              <label><i class="pi pi-sitemap"></i> <span>{{ langService.currentLang() === 'ar' ? 'المستوى الشجري:' : 'Level:' }}</span></label>
+              <label><i class="pi pi-sitemap"></i> <span>{{ 'accounting.financialStatements.ui.level' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="selectedMaxLevel" (change)="loadBalanceSheet()">
-                <option [ngValue]="null">{{ langService.currentLang() === 'ar' ? 'كافة المستويات التحليلية' : 'All Levels' }}</option>
-                <option [ngValue]="1">{{ langService.currentLang() === 'ar' ? 'المستوى 1 (رئيسي فقط)' : 'Level 1' }}</option>
-                <option [ngValue]="2">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 2 (مجموعات رئيسية)' : 'Up to Level 2' }}</option>
-                <option [ngValue]="3">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 3' : 'Up to Level 3' }}</option>
+                <option [ngValue]="null">{{ 'accounting.financialStatements.ui.allLevels' | translate }}</option>
+                <option [ngValue]="1">{{ 'accounting.financialStatements.ui.level1' | translate }}</option>
+                <option [ngValue]="2">{{ 'accounting.financialStatements.ui.upToLevel2' | translate }}</option>
+                <option [ngValue]="3">{{ 'accounting.financialStatements.ui.upToLevel3' | translate }}</option>
               </select>
             </div>
 
@@ -578,7 +589,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="form-group toggle-group">
               <label class="checkbox-label">
                 <input type="checkbox" [(ngModel)]="hideZeroBalances" (change)="loadBalanceSheet()" />
-                <span>{{ langService.currentLang() === 'ar' ? 'إخفاء الأرصدة الصفرية' : 'Hide Zeros' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.hideZeros' | translate }}</span>
               </label>
             </div>
 
@@ -587,24 +598,24 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Presets and Actions -->
           <div class="filters-subbar">
             <div class="presets-group">
-              <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'محطات المركز المالي:' : 'Dates:' }}</span>
-              <button class="preset-btn" (click)="setAsOfPreset('today')">{{ langService.currentLang() === 'ar' ? 'تاريخ اليوم' : 'Today' }}</button>
-              <button class="preset-btn" (click)="setAsOfPreset('endOfYear')">{{ langService.currentLang() === 'ar' ? 'نهاية العام الحالي' : 'Year End' }}</button>
-              <button class="preset-btn" (click)="setAsOfPreset('prevYearEnd')">{{ langService.currentLang() === 'ar' ? 'نهاية العام السابق' : 'Prev Year End' }}</button>
+              <span class="preset-label">{{ 'accounting.financialStatements.ui.dates' | translate }}</span>
+              <button class="preset-btn" (click)="setAsOfPreset('today')">{{ 'accounting.financialStatements.ui.today' | translate }}</button>
+              <button class="preset-btn" (click)="setAsOfPreset('endOfYear')">{{ 'accounting.financialStatements.ui.yearEnd' | translate }}</button>
+              <button class="preset-btn" (click)="setAsOfPreset('prevYearEnd')">{{ 'accounting.financialStatements.ui.prevYearEnd' | translate }}</button>
             </div>
 
             <div class="actions-group">
               <button class="secondary-btn" (click)="loadBalanceSheet()" [disabled]="loading()">
                 <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.refresh' | translate }}</span>
               </button>
               <button class="secondary-btn btn-export" (click)="exportBalanceSheetExcel()">
                 <i class="pi pi-file-excel"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تصدير Excel منسق' : 'Export Excel' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.exportExcel' | translate }}</span>
               </button>
               <button class="primary-btn btn-print" (click)="openPrintModal('balance-sheet')">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة الميزانية A4' : 'Print A4' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.printA41' | translate }}</span>
               </button>
             </div>
           </div>
@@ -616,13 +627,13 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="table-title-box">
               <i class="pi pi-building text-emerald"></i>
               <h3 class="table-title-text">
-                {{ langService.currentLang() === 'ar' ? 'قائمة المركز المالي (الميزانية العمومية) كما هي في' : 'Statement of Financial Position as of' }}
+                {{ 'accounting.financialStatements.ui.statementOfFinancialPositionAs' | translate }}
                 {{ balanceSheet()!.asOfDate | date:'yyyy-MM-dd' }}
               </h3>
             </div>
             <span class="count-badge" [class.badge-balanced]="balanceSheet()!.isBalanced">
               <i class="pi pi-verified"></i>
-              {{ balanceSheet()!.isBalanced ? (langService.currentLang() === 'ar' ? 'الميزانية مطابقة ومتوازنة (الأصول = الخصوم + الملكية)' : 'Balanced Equation') : 'Imbalance' }}
+              {{ balanceSheet()!.isBalanced ? ('accounting.financialStatements.ui.balancedEquation' | translate) : 'Imbalance' }}
             </span>
           </div>
 
@@ -630,12 +641,12 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <table class="fs-statement-table">
               <thead>
                 <tr>
-                  <th class="th-code">{{ langService.currentLang() === 'ar' ? 'رمز الحساب' : 'Code' }}</th>
-                  <th class="th-name">{{ langService.currentLang() === 'ar' ? 'البيان والبنود المالية' : 'Account / Financial Item' }}</th>
-                  <th class="th-level">{{ langService.currentLang() === 'ar' ? 'المستوى' : 'Level' }}</th>
-                  <th class="th-pct">{{ langService.currentLang() === 'ar' ? '% من الأصول' : '% of Assets' }}</th>
-                  <th class="th-amount">{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR)' : 'Amount (SAR)' }}</th>
-                  <th class="th-action">{{ langService.currentLang() === 'ar' ? 'كشف الحساب' : 'Ledger' }}</th>
+                  <th class="th-code">{{ 'accounting.financialStatements.ui.code' | translate }}</th>
+                  <th class="th-name">{{ 'accounting.financialStatements.ui.accountFinancialItem' | translate }}</th>
+                  <th class="th-level">{{ 'accounting.financialStatements.ui.level2' | translate }}</th>
+                  <th class="th-pct">{{ 'accounting.financialStatements.ui.ofAssets' | translate }}</th>
+                  <th class="th-amount">{{ 'accounting.financialStatements.ui.amountSar' | translate }}</th>
+                  <th class="th-action">{{ 'accounting.financialStatements.ui.ledger' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -655,7 +666,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -681,7 +692,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -698,7 +709,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-check-circle text-emerald"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'إجمالي الأصول والموجودات (Total Assets)' : 'Total Assets' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.totalAssets1' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">100.00%</td>
@@ -723,7 +734,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -749,7 +760,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -766,7 +777,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-file text-cyan"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'إجمالي الالتزامات والخصوم (Total Liabilities)' : 'Total Liabilities' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.totalLiabilities1' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">{{ balanceSheet()!.totalAssets > 0 ? ((balanceSheet()!.totalLiabilities / balanceSheet()!.totalAssets) * 100 | number:'1.2-2') : '0.00' }}%</td>
@@ -790,7 +801,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ item.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(item.level - 1) * 20">
                     <span class="tree-bullet"></span>
-                    <span>{{ item.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ item.level }}</span></td>
                   <td class="td-pct font-mono text-muted">{{ item.percentage }}%</td>
@@ -807,9 +818,9 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono text-emerald"><strong>32103</strong></td>
                   <td class="td-name" style="padding-inline-start: 40px;">
                     <i class="pi pi-sparkles text-emerald"></i>
-                    <strong>{{ langService.currentLang() === 'ar' ? 'صافي أرباح / (خسائر) الفترة المحاسبية الحالية (منقولة من قائمة الدخل)' : 'Current Period Net Income (from P&L)' }}</strong>
+                    <strong>{{ 'accounting.financialStatements.ui.currentPeriodNetIncomeFrom' | translate }}</strong>
                   </td>
-                  <td class="td-level"><span class="level-pill bg-emerald-subtle">آلي</span></td>
+                  <td class="td-level"><span class="level-pill bg-emerald-subtle">{{ 'ui.financialStatements.f9975a' | translate }}</span></td>
                   <td class="td-pct font-mono text-emerald font-bold">
                     {{ balanceSheet()!.totalAssets > 0 ? ((balanceSheet()!.currentPeriodNetIncome / balanceSheet()!.totalAssets) * 100 | number:'1.2-2') : '0.00' }}%
                   </td>
@@ -824,7 +835,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-shield text-amber"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'إجمالي حقوق الملكية (Total Equity)' : 'Total Equity' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.totalEquity1' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">{{ balanceSheet()!.totalAssets > 0 ? ((balanceSheet()!.totalEquity / balanceSheet()!.totalAssets) * 100 | number:'1.2-2') : '0.00' }}%</td>
@@ -839,7 +850,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="grand-total-title">
                       <i [class]="balanceSheet()!.isBalanced ? 'pi pi-verified text-emerald' : 'pi pi-exclamation-triangle text-rose'"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'مجموع الالتزامات وحقوق الملكية (Total Liabilities & Equity)' : 'Total Liabilities & Equity' }}</span>
+                      <span>{{ 'accounting.financialStatements.ui.totalLiabilitiesEquity' | translate }}</span>
                     </div>
                   </td>
                   <td class="td-pct font-mono font-bold">100.00%</td>
@@ -856,15 +867,15 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Ratios & Tafqeet Footer Strip -->
           <div class="ratios-footer-strip">
             <div class="ratio-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'رأس المال العامل:' : 'Working Capital:' }}</span>
+              <span class="lbl">{{ 'accounting.financialStatements.ui.workingCapital' | translate }}</span>
               <strong class="val font-mono">{{ balanceSheet()!.workingCapital | number:'1.2-2' }} SAR</strong>
             </div>
             <div class="ratio-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'نسبة التداول (السيولة):' : 'Current Ratio:' }}</span>
+              <span class="lbl">{{ 'accounting.financialStatements.ui.currentRatio' | translate }}</span>
               <strong class="val font-mono">{{ balanceSheet()!.currentRatio }}</strong>
             </div>
             <div class="ratio-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'نسبة المديونية للملكية:' : 'Debt to Equity:' }}</span>
+              <span class="lbl">{{ 'accounting.financialStatements.ui.debtToEquity' | translate }}</span>
               <strong class="val font-mono">{{ balanceSheet()!.debtToEquityRatio }}%</strong>
             </div>
           </div>
@@ -882,7 +893,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- 1. Operating -->
           <div class="metric-card-box">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-bolt text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'التدفقات التشغيلية' : 'Operating Cash Flow' }}</span>
+              <span class="seg-lbl"><i class="pi pi-bolt text-emerald"></i> {{ 'accounting.financialStatements.ui.operatingCashFlow' | translate }}</span>
               <span class="seg-badge" [class.bg-emerald-subtle]="cashFlow()!.netCashFromOperatingActivities >= 0" [class.bg-rose-subtle]="cashFlow()!.netCashFromOperatingActivities < 0">
                 {{ cashFlow()!.netCashFromOperatingActivities >= 0 ? '+' : '' }}SAR
               </span>
@@ -895,7 +906,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- 2. Investing -->
           <div class="metric-card-box">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-box text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'التدفقات الاستثمارية' : 'Investing (CapEx)' }}</span>
+              <span class="seg-lbl"><i class="pi pi-box text-cyan"></i> {{ 'accounting.financialStatements.ui.investingCapex' | translate }}</span>
               <span class="seg-badge bg-cyan-subtle">SAR</span>
             </div>
             <div class="seg-val font-mono text-cyan">
@@ -906,7 +917,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- 3. Financing -->
           <div class="metric-card-box">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-briefcase text-amber"></i> {{ langService.currentLang() === 'ar' ? 'التدفقات التمويلية' : 'Financing' }}</span>
+              <span class="seg-lbl"><i class="pi pi-briefcase text-amber"></i> {{ 'accounting.financialStatements.ui.financing' | translate }}</span>
               <span class="seg-badge bg-amber-subtle">SAR</span>
             </div>
             <div class="seg-val font-mono text-amber">
@@ -917,7 +928,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- 4. Net Change -->
           <div class="metric-card-box">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-dollar text-purple"></i> {{ langService.currentLang() === 'ar' ? 'صافي التغير في النقدية' : 'Net Cash Change' }}</span>
+              <span class="seg-lbl"><i class="pi pi-dollar text-purple"></i> {{ 'accounting.financialStatements.ui.netCashChange' | translate }}</span>
               <span class="seg-badge" [class.bg-emerald-subtle]="cashFlow()!.netChangeInCashAndEquivalents >= 0" [class.bg-rose-subtle]="cashFlow()!.netChangeInCashAndEquivalents < 0">
                 {{ cashFlow()!.netChangeInCashAndEquivalents >= 0 ? '+' : '' }}SAR
               </span>
@@ -930,7 +941,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- 5. Ending Cash -->
           <div class="metric-card-box">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-wallet text-slate"></i> {{ langService.currentLang() === 'ar' ? 'نقدية نهاية الفترة' : 'Ending Cash' }}</span>
+              <span class="seg-lbl"><i class="pi pi-wallet text-slate"></i> {{ 'accounting.financialStatements.ui.endingCash' | translate }}</span>
               <span class="seg-badge bg-slate-subtle">111</span>
             </div>
             <div class="seg-val font-mono font-bold text-slate">
@@ -941,12 +952,12 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- 6. GL Reconciliation -->
           <div class="metric-card-box" [class.metric-box-success]="cashFlow()!.isReconciled" [class.metric-box-danger]="!cashFlow()!.isReconciled">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-shield" [class.text-emerald]="cashFlow()!.isReconciled" [class.text-rose]="!cashFlow()!.isReconciled"></i> {{ langService.currentLang() === 'ar' ? 'مطابقة الخزينة' : 'Reconciliation' }}</span>
+              <span class="seg-lbl"><i class="pi pi-shield" [class.text-emerald]="cashFlow()!.isReconciled" [class.text-rose]="!cashFlow()!.isReconciled"></i> {{ 'accounting.financialStatements.ui.reconciliation' | translate }}</span>
               <span class="badge-balanced" *ngIf="cashFlow()!.isReconciled">
                 <i class="pi pi-check"></i> 100%
               </span>
               <span class="badge-unbalanced" *ngIf="!cashFlow()!.isReconciled">
-                <i class="pi pi-exclamation-triangle"></i> فارق
+                <i class="pi pi-exclamation-triangle"></i> {{ 'accounting.trialBalance.difference' | translate }}
               </span>
             </div>
             <div class="seg-val font-mono font-bold text-emerald" *ngIf="cashFlow()!.isReconciled">
@@ -963,31 +974,31 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <div class="filters-row">
             <!-- From Date -->
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'من تاريخ:' : 'From:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.from' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="fromDate" (change)="loadCashFlowStatement()" />
             </div>
 
             <!-- To Date -->
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'إلى تاريخ:' : 'To:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.to' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="toDate" (change)="loadCashFlowStatement()" />
             </div>
 
             <!-- Cost Center -->
             <div class="form-group cc-group">
-              <label><i class="pi pi-compass"></i> <span>{{ langService.currentLang() === 'ar' ? 'مركز التكلفة:' : 'Cost Center:' }}</span></label>
+              <label><i class="pi pi-compass"></i> <span>{{ 'accounting.financialStatements.ui.costCenter' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="selectedCostCenterId" (change)="loadCashFlowStatement()">
-                <option value="">{{ langService.currentLang() === 'ar' ? 'كافة مراكز التكلفة' : 'All Cost Centers' }}</option>
-                <option *ngFor="let cc of costCenters" [value]="cc.id">{{ cc.code }} - {{ cc.nameAr }}</option>
+                <option value="">{{ 'accounting.financialStatements.ui.allCostCenters1' | translate }}</option>
+                <option *ngFor="let cc of costCenters" [value]="cc.id">{{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : (cc.nameEn || cc.nameAr) }}</option>
               </select>
             </div>
 
             <!-- Calculation Method -->
             <div class="form-group format-group">
-              <label><i class="pi pi-sliders-h"></i> <span>{{ langService.currentLang() === 'ar' ? 'طريقة الاحتساب:' : 'Method:' }}</span></label>
+              <label><i class="pi pi-sliders-h"></i> <span>{{ 'accounting.financialStatements.ui.method' | translate }}</span></label>
               <select class="form-control" [(ngModel)]="cashFlowMethod" (change)="loadCashFlowStatement()">
-                <option value="indirect">{{ langService.currentLang() === 'ar' ? 'غير مباشرة (IAS 7 القياسي)' : 'Indirect (IAS 7)' }}</option>
-                <option value="direct">{{ langService.currentLang() === 'ar' ? 'مباشرة (Direct Method)' : 'Direct' }}</option>
+                <option value="indirect">{{ 'accounting.financialStatements.ui.indirectIas7' | translate }}</option>
+                <option value="direct">{{ 'accounting.financialStatements.ui.direct' | translate }}</option>
               </select>
             </div>
 
@@ -995,7 +1006,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="form-group toggle-group">
               <label class="checkbox-label">
                 <input type="checkbox" [(ngModel)]="hideZeroBalances" (change)="loadCashFlowStatement()" />
-                <span>{{ langService.currentLang() === 'ar' ? 'إخفاء الأرصدة الصفرية' : 'Hide Zeros' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.hideZeros' | translate }}</span>
               </label>
             </div>
           </div>
@@ -1003,24 +1014,24 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Presets and Action Buttons -->
           <div class="filters-subbar">
             <div class="presets-group">
-              <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'فترات سريعة:' : 'Presets:' }}</span>
-              <button class="preset-btn" (click)="setPreset('thisYear')">{{ langService.currentLang() === 'ar' ? 'هذا العام' : 'This Year' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ langService.currentLang() === 'ar' ? 'الربع الحالي' : 'This Quarter' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisMonth')">{{ langService.currentLang() === 'ar' ? 'هذا الشهر' : 'This Month' }}</button>
+              <span class="preset-label">{{ 'accounting.financialStatements.ui.presets' | translate }}</span>
+              <button class="preset-btn" (click)="setPreset('thisYear')">{{ 'accounting.financialStatements.ui.thisYear' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ 'accounting.financialStatements.ui.thisQuarter' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisMonth')">{{ 'accounting.financialStatements.ui.thisMonth' | translate }}</button>
             </div>
 
             <div class="actions-group">
               <button class="secondary-btn" (click)="loadCashFlowStatement()" [disabled]="loading()">
                 <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.refresh' | translate }}</span>
               </button>
               <button class="secondary-btn btn-export" (click)="exportCashFlowExcel()" [disabled]="!cashFlow()">
                 <i class="pi pi-file-excel text-emerald"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تصدير Excel منسق' : 'Export Excel' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.exportExcel' | translate }}</span>
               </button>
               <button class="primary-btn btn-print" (click)="openPrintModal('cash-flow')" [disabled]="!cashFlow()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة القائمة A4' : 'Print A4' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.printA4' | translate }}</span>
               </button>
             </div>
           </div>
@@ -1032,19 +1043,19 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="table-title-box">
               <i class="pi pi-money-bill text-emerald"></i>
               <h3 class="table-title-text">
-                {{ langService.currentLang() === 'ar' ? 'قائمة التدفقات النقدية (IAS 7) عن الفترة من' : 'Statement of Cash Flows (IAS 7) for period' }}
+                {{ 'accounting.financialStatements.ui.statementOfCashFlowsIas' | translate }}
                 {{ cashFlow()!.fromDate | date:'yyyy-MM-dd' }} 
-                {{ langService.currentLang() === 'ar' ? 'إلى' : 'to' }} 
+                {{ 'accounting.financialStatements.ui.to1' | translate }} 
                 {{ cashFlow()!.toDate | date:'yyyy-MM-dd' }}
               </h3>
             </div>
             <div class="header-status-group">
               <span class="count-badge" [class.badge-balanced]="cashFlow()!.isReconciled">
                 <i class="pi pi-verified"></i>
-                {{ cashFlow()!.isReconciled ? (langService.currentLang() === 'ar' ? 'مطابقة 100% مع أرصدة الخزينة والبنوك' : '100% Reconciled') : 'فارق تسوية' }}
+                {{ cashFlow()!.isReconciled ? ('accounting.financialStatements.ui.100Reconciled' | translate) : ('ui.financialStatements.4105df' | translate) }}
               </span>
               <span class="count-badge">
-                {{ langService.currentLang() === 'ar' ? 'العملة: ريال سعودي (SAR)' : 'Currency: SAR' }}
+                {{ 'accounting.financialStatements.ui.currencySar1' | translate }}
               </span>
             </div>
           </div>
@@ -1053,11 +1064,11 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <table class="fs-statement-table">
               <thead>
                 <tr>
-                  <th class="th-code">{{ langService.currentLang() === 'ar' ? 'رمز الحساب' : 'Code' }}</th>
-                  <th class="th-name">{{ langService.currentLang() === 'ar' ? 'البيان والبنود المحاسبية' : 'Account / Financial Item' }}</th>
-                  <th class="th-level">{{ langService.currentLang() === 'ar' ? 'المستوى' : 'Level' }}</th>
-                  <th class="th-amount">{{ langService.currentLang() === 'ar' ? 'المبلغ (SAR)' : 'Amount (SAR)' }}</th>
-                  <th class="th-action">{{ langService.currentLang() === 'ar' ? 'كشف الحساب' : 'Ledger' }}</th>
+                  <th class="th-code">{{ 'accounting.financialStatements.ui.code' | translate }}</th>
+                  <th class="th-name">{{ 'accounting.financialStatements.ui.accountFinancialItem1' | translate }}</th>
+                  <th class="th-level">{{ 'accounting.financialStatements.ui.level2' | translate }}</th>
+                  <th class="th-amount">{{ 'accounting.financialStatements.ui.amountSar' | translate }}</th>
+                  <th class="th-action">{{ 'accounting.financialStatements.ui.ledger' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1065,7 +1076,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                 <!-- ================= 1. OPERATING ACTIVITIES ================= -->
                 <tr class="section-header-row bg-emerald-tint">
                   <td colspan="3">
-                    <strong><i class="pi pi-bolt text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'أولاً: التدفقات النقدية من الأنشطة التشغيلية (Operating Activities)' : 'I. Cash Flows from Operating Activities' }}</strong>
+                    <strong><i class="pi pi-bolt text-emerald"></i> {{ 'accounting.financialStatements.ui.iCashFlowsFromOperating' | translate }}</strong>
                   </td>
                   <td class="td-amount font-mono font-bold text-emerald">
                     {{ cashFlow()!.netCashFromOperatingActivities | number:'1.2-2' }}
@@ -1078,7 +1089,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">-</td>
                   <td class="td-name" style="padding-inline-start: 10px;">
                     <span class="tree-bullet"></span>
-                    <strong>{{ langService.currentLang() === 'ar' ? 'صافي أرباح / (خسائر) الفترة المحاسبية (محول آلياً من قائمة الدخل)' : 'Net Profit / (Loss) for the period' }}</strong>
+                    <strong>{{ 'accounting.financialStatements.ui.netProfitLossForThe1' | translate }}</strong>
                   </td>
                   <td class="td-level"><span class="level-pill">P&L</span></td>
                   <td class="td-amount font-mono font-bold" [class.text-emerald]="cashFlow()!.startingNetProfitOrLoss >= 0" [class.text-rose]="cashFlow()!.startingNetProfitOrLoss < 0">
@@ -1103,7 +1114,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ it.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(it.level * 16)">
                     <span class="tree-bullet"></span>
-                    <span>{{ it.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? it.nameAr : (it.nameEn || it.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ it.level }}</span></td>
                   <td class="td-amount font-mono">{{ it.amount | number:'1.2-2' }}</td>
@@ -1119,7 +1130,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-check text-amber"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'الربح التشغيلي قبل التغيرات في رأس المال العامل' : 'Operating Profit before Working Capital Changes' }}</span>
+                      <span>{{ 'accounting.financialStatements.ui.operatingProfitBeforeWorkingCapital' | translate }}</span>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold text-amber">
@@ -1144,7 +1155,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ it.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(it.level * 16)">
                     <span class="tree-bullet"></span>
-                    <span>{{ it.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? it.nameAr : (it.nameEn || it.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ it.level }}</span></td>
                   <td class="td-amount font-mono" [class.text-rose]="it.amount < 0" [class.text-emerald]="it.amount > 0">
@@ -1158,7 +1169,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-check-circle text-emerald"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'صافي النقدية المتولدة من الأنشطة التشغيلية' : 'Net Cash from Operating Activities' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.netCashFromOperatingActivities' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold text-emerald">
@@ -1170,7 +1181,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                 <!-- ================= 2. INVESTING ACTIVITIES ================= -->
                 <tr class="section-header-row bg-cyan-tint">
                   <td colspan="3">
-                    <strong><i class="pi pi-box text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'ثانياً: التدفقات النقدية من الأنشطة الاستثمارية (Investing Activities / CapEx)' : 'II. Cash Flows from Investing Activities' }}</strong>
+                    <strong><i class="pi pi-box text-cyan"></i> {{ 'accounting.financialStatements.ui.iiCashFlowsFromInvesting' | translate }}</strong>
                   </td>
                   <td class="td-amount font-mono font-bold text-cyan">
                     {{ cashFlow()!.netCashFromInvestingActivities | number:'1.2-2' }}
@@ -1181,7 +1192,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ it.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(it.level * 16)">
                     <span class="tree-bullet"></span>
-                    <span>{{ it.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? it.nameAr : (it.nameEn || it.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ it.level }}</span></td>
                   <td class="td-amount font-mono" [class.text-rose]="it.amount < 0" [class.text-emerald]="it.amount > 0">
@@ -1193,7 +1204,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-check-circle text-cyan"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'صافي النقدية المستخدمة في الأنشطة الاستثمارية' : 'Net Cash used in Investing Activities' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.netCashUsedInInvesting' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold text-cyan">
@@ -1205,7 +1216,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                 <!-- ================= 3. FINANCING ACTIVITIES ================= -->
                 <tr class="section-header-row bg-amber-tint">
                   <td colspan="3">
-                    <strong><i class="pi pi-briefcase text-amber"></i> {{ langService.currentLang() === 'ar' ? 'ثالثاً: التدفقات النقدية من الأنشطة التمويلية (Financing Activities)' : 'III. Cash Flows from Financing Activities' }}</strong>
+                    <strong><i class="pi pi-briefcase text-amber"></i> {{ 'accounting.financialStatements.ui.iiiCashFlowsFromFinancing' | translate }}</strong>
                   </td>
                   <td class="td-amount font-mono font-bold text-amber">
                     {{ cashFlow()!.netCashFromFinancingActivities | number:'1.2-2' }}
@@ -1216,7 +1227,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">{{ it.accountCode }}</td>
                   <td class="td-name" [style.padding-inline-start.px]="(it.level * 16)">
                     <span class="tree-bullet"></span>
-                    <span>{{ it.nameAr }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? it.nameAr : (it.nameEn || it.nameAr) }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">L{{ it.level }}</span></td>
                   <td class="td-amount font-mono" [class.text-rose]="it.amount < 0" [class.text-emerald]="it.amount > 0">
@@ -1228,7 +1239,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-check-circle text-amber"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'صافي النقدية من الأنشطة التمويلية' : 'Net Cash from Financing Activities' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.netCashFromFinancingActivities' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold text-amber">
@@ -1243,7 +1254,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="grand-total-title">
                       <i class="pi pi-star-fill text-emerald"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'صافي التغير في النقدية وما في حكمها خلال الفترة' : 'Net Change in Cash and Cash Equivalents' }}</span>
+                      <span>{{ 'accounting.financialStatements.ui.netChangeInCashAnd' | translate }}</span>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold grand-total-amount" [class.text-emerald]="cashFlow()!.netChangeInCashAndEquivalents >= 0" [class.text-rose]="cashFlow()!.netChangeInCashAndEquivalents < 0">
@@ -1257,7 +1268,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">-</td>
                   <td class="td-name" style="padding-inline-start: 10px;">
                     <i class="pi pi-calendar text-muted"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? 'رصيد النقدية وما في حكمها في بداية الفترة' : 'Cash at beginning of period' }}</span>
+                    <span>{{ 'accounting.financialStatements.ui.cashAtBeginningOfPeriod' | translate }}</span>
                   </td>
                   <td class="td-level"><span class="level-pill">Start</span></td>
                   <td class="td-amount font-mono font-bold">
@@ -1271,7 +1282,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td class="td-code font-mono">-</td>
                   <td class="td-name" style="padding-inline-start: 10px;">
                     <i class="pi pi-calendar-plus text-muted"></i>
-                    <strong>{{ langService.currentLang() === 'ar' ? 'رصيد النقدية وما في حكمها المحسوب في نهاية الفترة' : 'Calculated cash at end of period' }}</strong>
+                    <strong>{{ 'accounting.financialStatements.ui.calculatedCashAtEndOf' | translate }}</strong>
                   </td>
                   <td class="td-level"><span class="level-pill">End</span></td>
                   <td class="td-amount font-mono font-bold text-slate">
@@ -1285,7 +1296,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-building-columns text-emerald"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'الرصيد الفعلي في دفتر الأستاذ لحسابات الصندوق والبنوك (كود 111)' : 'Actual Cash & Bank balance in General Ledger (111)' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.actualCashBankBalanceIn' | translate }}</strong>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold text-emerald">
@@ -1299,12 +1310,12 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="subtotal-title">
                       <i class="pi pi-check-circle" [class.text-emerald]="cashFlow()!.isReconciled" [class.text-rose]="!cashFlow()!.isReconciled"></i>
-                      <strong>{{ langService.currentLang() === 'ar' ? 'حالة المطابقة المحاسبية مع دفتر الأستاذ:' : 'Audit Reconciliation Status:' }}</strong>
+                      <strong>{{ 'accounting.financialStatements.ui.auditReconciliationStatus' | translate }}</strong>
                       <span class="badge-balanced mr-2" *ngIf="cashFlow()!.isReconciled">
-                        {{ langService.currentLang() === 'ar' ? 'مطابقة تامة 100% (فارق 0.00 ريال)' : '100% Reconciled (Diff: 0.00 SAR)' }}
+                        {{ 'accounting.financialStatements.ui.100ReconciledDiff000Sar' | translate }}
                       </span>
                       <span class="badge-unbalanced mr-2" *ngIf="!cashFlow()!.isReconciled">
-                        {{ langService.currentLang() === 'ar' ? 'يوجد فارق تسوية قدره:' : 'Reconciliation Diff:' }} {{ cashFlow()!.reconciliationDifference | number:'1.2-2' }} SAR
+                        {{ 'accounting.financialStatements.ui.reconciliationDiff' | translate }} {{ cashFlow()!.reconciliationDifference | number:'1.2-2' }} SAR
                       </span>
                     </div>
                   </td>
@@ -1321,26 +1332,26 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Tafqeet & Reconciliation Strip -->
           <div class="tafqeet-strip">
             <i class="pi pi-receipt text-emerald"></i>
-            <span class="tafqeet-label">{{ langService.currentLang() === 'ar' ? 'صافي التدفق كتابة:' : 'Amount in Words:' }}</span>
+            <span class="tafqeet-label">{{ 'accounting.financialStatements.ui.amountInWords1' | translate }}</span>
             <span class="tafqeet-text">{{ cashFlow()!.netCashTafqeetAr }}</span>
           </div>
 
           <div class="ratios-footer-strip">
             <div class="ratio-pill">
-              <span class="lbl"><i class="pi pi-bolt text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'التشغيلية:' : 'Operating:' }}</span>
+              <span class="lbl"><i class="pi pi-bolt text-emerald"></i> {{ 'accounting.financialStatements.ui.operating' | translate }}</span>
               <span class="val font-mono">{{ cashFlow()!.netCashFromOperatingActivities | number:'1.2-2' }} SAR</span>
             </div>
             <div class="ratio-pill">
-              <span class="lbl"><i class="pi pi-box text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'الاستثمارية:' : 'Investing:' }}</span>
+              <span class="lbl"><i class="pi pi-box text-cyan"></i> {{ 'accounting.financialStatements.ui.investing' | translate }}</span>
               <span class="val font-mono">{{ cashFlow()!.netCashFromInvestingActivities | number:'1.2-2' }} SAR</span>
             </div>
             <div class="ratio-pill">
-              <span class="lbl"><i class="pi pi-briefcase text-amber"></i> {{ langService.currentLang() === 'ar' ? 'التمويلية:' : 'Financing:' }}</span>
+              <span class="lbl"><i class="pi pi-briefcase text-amber"></i> {{ 'accounting.financialStatements.ui.financing1' | translate }}</span>
               <span class="val font-mono">{{ cashFlow()!.netCashFromFinancingActivities | number:'1.2-2' }} SAR</span>
             </div>
             <div class="ratio-pill">
-              <span class="lbl"><i class="pi pi-verified text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'نسبة المطابقة:' : 'Reconciliation:' }}</span>
-              <span class="val font-mono text-emerald">{{ cashFlow()!.isReconciled ? '100%' : 'فارق تسوية' }}</span>
+              <span class="lbl"><i class="pi pi-verified text-emerald"></i> {{ 'accounting.financialStatements.ui.reconciliation1' | translate }}</span>
+              <span class="val font-mono text-emerald">{{ cashFlow()!.isReconciled ? '100%' : ('ui.financialStatements.4105df' | translate) }}</span>
             </div>
           </div>
         </section>
@@ -1356,8 +1367,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <section class="fs-metrics-bar" *ngIf="equityStatement()">
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-building text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'رأس المال المدفوع' : 'Share Capital' }}</span>
-              <span class="seg-badge bg-emerald-subtle">حساب 31</span>
+              <span class="seg-lbl"><i class="pi pi-building text-emerald"></i> {{ 'accounting.financialStatements.ui.shareCapital' | translate }}</span>
+              <span class="seg-badge bg-emerald-subtle">{{ 'ui.financialStatements.7ca81f' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-emerald">
               {{ (equityStatement()!.rows.length > 0 ? equityStatement()!.rows[equityStatement()!.rows.length - 1].shareCapital : 0) | number:'1.2-2' }} <small>SAR</small>
@@ -1368,8 +1379,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-shield text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'الاحتياطي النظامي (10%)' : 'Statutory Reserve' }}</span>
-              <span class="seg-badge bg-cyan-subtle">نظام الشركات</span>
+              <span class="seg-lbl"><i class="pi pi-shield text-cyan"></i> {{ 'accounting.financialStatements.ui.statutoryReserve' | translate }}</span>
+              <span class="seg-badge bg-cyan-subtle">{{ 'ui.financialStatements.0505b5' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-cyan">
               {{ (equityStatement()!.rows.length > 0 ? equityStatement()!.rows[equityStatement()!.rows.length - 1].statutoryReserve : 0) | number:'1.2-2' }} <small>SAR</small>
@@ -1380,8 +1391,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-database text-amber"></i> {{ langService.currentLang() === 'ar' ? 'الأرباح المبقاة والمحتجزة' : 'Retained Earnings' }}</span>
-              <span class="seg-badge bg-amber-subtle">حساب 32102</span>
+              <span class="seg-lbl"><i class="pi pi-database text-amber"></i> {{ 'accounting.financialStatements.ui.retainedEarnings' | translate }}</span>
+              <span class="seg-badge bg-amber-subtle">{{ 'ui.financialStatements.06bc43' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-amber">
               {{ (equityStatement()!.rows.length > 0 ? equityStatement()!.rows[equityStatement()!.rows.length - 1].retainedEarnings : 0) | number:'1.2-2' }} <small>SAR</small>
@@ -1394,7 +1405,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="seg-top">
               <span class="seg-lbl">
                 <i [class]="equityStatement()!.endingTotalEquity >= 0 ? 'pi pi-check-circle text-emerald' : 'pi pi-exclamation-triangle text-rose'"></i>
-                <strong>{{ langService.currentLang() === 'ar' ? 'إجمالي حقوق الملكية الختامية' : 'Ending Total Equity' }}</strong>
+                <strong>{{ 'accounting.financialStatements.ui.endingTotalEquity' | translate }}</strong>
               </span>
               <span class="seg-badge-solid" [class.bg-emerald]="equityStatement()!.endingTotalEquity >= 0" [class.bg-rose]="equityStatement()!.endingTotalEquity < 0">
                 IAS 1 Mapped
@@ -1410,32 +1421,32 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <section class="fs-filters-card">
           <div class="filters-row">
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'من تاريخ:' : 'From:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.from' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="fromDate" (change)="loadEquityStatement()" />
             </div>
 
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'إلى تاريخ:' : 'To:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.to' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="toDate" (change)="loadEquityStatement()" />
             </div>
           </div>
 
           <div class="filters-subbar">
             <div class="presets-group">
-              <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'فترات سريعة:' : 'Presets:' }}</span>
-              <button class="preset-btn" (click)="setPreset('thisYear')">{{ langService.currentLang() === 'ar' ? 'هذا العام' : 'This Year' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ langService.currentLang() === 'ar' ? 'الربع الحالي' : 'This Quarter' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisMonth')">{{ langService.currentLang() === 'ar' ? 'هذا الشهر' : 'This Month' }}</button>
+              <span class="preset-label">{{ 'accounting.financialStatements.ui.presets' | translate }}</span>
+              <button class="preset-btn" (click)="setPreset('thisYear')">{{ 'accounting.financialStatements.ui.thisYear' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ 'accounting.financialStatements.ui.thisQuarter' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisMonth')">{{ 'accounting.financialStatements.ui.thisMonth' | translate }}</button>
             </div>
 
             <div class="actions-group">
               <button class="secondary-btn" (click)="loadEquityStatement()" [disabled]="loading()">
                 <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.refresh' | translate }}</span>
               </button>
               <button class="primary-btn btn-print" (click)="windowPrint()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة القائمة A4' : 'Print A4' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.printA4' | translate }}</span>
               </button>
             </div>
           </div>
@@ -1447,15 +1458,15 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="table-title-box">
               <i class="pi pi-users text-emerald"></i>
               <h3 class="table-title-text">
-                {{ langService.currentLang() === 'ar' ? 'قائمة التغير في حقوق الملكية عن الفترة من' : 'Statement of Changes in Equity for period' }}
+                {{ 'accounting.financialStatements.ui.statementOfChangesInEquity1' | translate }}
                 {{ equityStatement()!.fromDate | date:'yyyy-MM-dd' }} 
-                {{ langService.currentLang() === 'ar' ? 'إلى' : 'to' }} 
+                {{ 'accounting.financialStatements.ui.to1' | translate }} 
                 {{ equityStatement()!.toDate | date:'yyyy-MM-dd' }}
               </h3>
             </div>
             <span class="count-badge">
               <i class="pi pi-verified"></i>
-              {{ langService.currentLang() === 'ar' ? 'متوافقة مع معيار المحاسبة الدولي (IAS 1)' : 'IAS 1 Compliant' }}
+              {{ 'accounting.financialStatements.ui.ias1Compliant' | translate }}
             </span>
           </div>
 
@@ -1463,12 +1474,12 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <table class="fs-statement-table">
               <thead>
                 <tr>
-                  <th class="th-name" style="min-width: 280px;">{{ langService.currentLang() === 'ar' ? 'بيان حركة العمليات وحقوق المساهمين' : 'Equity Transaction / Movement' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'رأس المال (SAR)' : 'Share Capital' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'الاحتياطي النظامي (SAR)' : 'Statutory Reserve' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'الأرباح المبقاة (SAR)' : 'Retained Earnings' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'أرباح / (خسائر) الفترة' : 'Period Net P&L' }}</th>
-                  <th class="th-amount font-mono" style="background: rgba(16, 185, 129, 0.08);">{{ langService.currentLang() === 'ar' ? 'إجمالي حقوق الملكية (SAR)' : 'Total Equity' }}</th>
+                  <th class="th-name" style="min-width: 280px;">{{ 'accounting.financialStatements.ui.equityTransactionMovement' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.shareCapital1' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.statutoryReserve1' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.retainedEarnings1' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.periodNetPl' | translate }}</th>
+                  <th class="th-amount font-mono" style="background: rgba(16, 185, 129, 0.08);">{{ 'accounting.financialStatements.ui.totalEquity2' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1491,7 +1502,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="tafqeet-strip">
             <i class="pi pi-info-circle text-emerald"></i>
-            <span class="tafqeet-label">{{ langService.currentLang() === 'ar' ? 'إجمالي حقوق الملكية كتابة:' : 'Total Equity in Words:' }}</span>
+            <span class="tafqeet-label">{{ 'accounting.financialStatements.ui.totalEquityInWords' | translate }}</span>
             <strong class="tafqeet-text">{{ equityStatement()!.endingEquityTafqeetAr }}</strong>
           </div>
         </section>
@@ -1507,8 +1518,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <section class="fs-metrics-bar" *ngIf="vatReturn()">
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-shopping-bag text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'إجمالي المبيعات الخاضعة 15%' : 'Standard Sales (15%)' }}</span>
-              <span class="seg-badge bg-emerald-subtle">بند 1</span>
+              <span class="seg-lbl"><i class="pi pi-shopping-bag text-emerald"></i> {{ 'accounting.financialStatements.ui.standardSales15' | translate }}</span>
+              <span class="seg-badge bg-emerald-subtle">{{ 'ui.financialStatements.1ae8f5' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-emerald">
               {{ vatReturn()!.standardRatedSales.amount | number:'1.2-2' }} <small>SAR</small>
@@ -1519,8 +1530,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-arrow-up-right text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'إجمالي ضريبة المخرجات' : 'Total Output VAT' }}</span>
-              <span class="seg-badge bg-emerald-subtle">بند 12</span>
+              <span class="seg-lbl"><i class="pi pi-arrow-up-right text-emerald"></i> {{ 'accounting.financialStatements.ui.totalOutputVat' | translate }}</span>
+              <span class="seg-badge bg-emerald-subtle">{{ 'ui.financialStatements.f9275f' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-emerald">
               {{ vatReturn()!.totalVatDue | number:'1.2-2' }} <small>SAR</small>
@@ -1531,8 +1542,8 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="metric-segment">
             <div class="seg-top">
-              <span class="seg-lbl"><i class="pi pi-arrow-down-left text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'إجمالي ضريبة المدخلات' : 'Total Input VAT' }}</span>
-              <span class="seg-badge bg-cyan-subtle">بند 13</span>
+              <span class="seg-lbl"><i class="pi pi-arrow-down-left text-cyan"></i> {{ 'accounting.financialStatements.ui.totalInputVat' | translate }}</span>
+              <span class="seg-badge bg-cyan-subtle">{{ 'ui.financialStatements.0dc10e' | translate }}</span>
             </div>
             <div class="seg-val font-mono text-cyan">
               {{ vatReturn()!.totalVatDeductible | number:'1.2-2' }} <small>SAR</small>
@@ -1545,10 +1556,10 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="seg-top">
               <span class="seg-lbl">
                 <i [class]="!vatReturn()!.isRefundable ? 'pi pi-exclamation-circle text-amber' : 'pi pi-check-circle text-emerald'"></i>
-                <strong>{{ langService.currentLang() === 'ar' ? 'صافي الضريبة (بند 16)' : 'Net VAT Due / Refundable' }}</strong>
+                <strong>{{ 'accounting.financialStatements.ui.netVatDueRefundable' | translate }}</strong>
               </span>
               <span class="seg-badge-solid" [class.bg-amber]="!vatReturn()!.isRefundable" [class.bg-emerald]="vatReturn()!.isRefundable">
-                {{ !vatReturn()!.isRefundable ? (langService.currentLang() === 'ar' ? 'واجبة السداد' : 'Payable') : (langService.currentLang() === 'ar' ? 'مستردة للمكلف' : 'Refundable') }}
+                {{ !vatReturn()!.isRefundable ? ('accounting.financialStatements.ui.payable' | translate) : ('accounting.financialStatements.ui.refundable' | translate) }}
               </span>
             </div>
             <div class="seg-val font-mono font-bold" [class.text-amber]="!vatReturn()!.isRefundable" [class.text-emerald]="vatReturn()!.isRefundable">
@@ -1561,36 +1572,40 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
         <section class="fs-filters-card">
           <div class="filters-row">
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'من تاريخ:' : 'From:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.from' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="fromDate" (change)="loadZatcaVatReturn()" />
             </div>
 
             <div class="form-group date-group">
-              <label><i class="pi pi-calendar"></i> <span>{{ langService.currentLang() === 'ar' ? 'إلى تاريخ:' : 'To:' }}</span></label>
+              <label><i class="pi pi-calendar"></i> <span>{{ 'accounting.financialStatements.ui.to' | translate }}</span></label>
               <input type="date" class="form-control" [(ngModel)]="toDate" (change)="loadZatcaVatReturn()" />
             </div>
 
             <div class="form-group cc-group">
-              <label><i class="pi pi-sliders-h"></i> <span>{{ langService.currentLang() === 'ar' ? 'تعديلات فترات سابقة (بند 15):' : 'Prior Adjustments:' }}</span></label>
+              <label><i class="pi pi-sliders-h"></i> <span>{{ 'accounting.financialStatements.ui.priorAdjustments' | translate }}</span></label>
               <input type="number" class="form-control font-mono" [(ngModel)]="vatAdjustments" (change)="loadZatcaVatReturn()" placeholder="0.00" />
             </div>
           </div>
 
           <div class="filters-subbar">
             <div class="presets-group">
-              <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'الفترات الضريبية:' : 'Tax Quarters:' }}</span>
-              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ langService.currentLang() === 'ar' ? 'الربع الحالي' : 'Current Quarter' }}</button>
-              <button class="preset-btn" (click)="setPreset('thisYear')">{{ langService.currentLang() === 'ar' ? 'السنة الضريبية كاملة' : 'Full Tax Year' }}</button>
+              <span class="preset-label">{{ 'accounting.financialStatements.ui.taxQuarters' | translate }}</span>
+              <button class="preset-btn" (click)="setPreset('thisQuarter')">{{ 'accounting.financialStatements.ui.currentQuarter' | translate }}</button>
+              <button class="preset-btn" (click)="setPreset('thisYear')">{{ 'accounting.financialStatements.ui.fullTaxYear' | translate }}</button>
             </div>
 
             <div class="actions-group">
               <button class="secondary-btn" (click)="loadZatcaVatReturn()" [disabled]="loading()">
                 <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.refresh' | translate }}</span>
               </button>
               <button class="primary-btn btn-print" (click)="windowPrint()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة نموذج الإقرار A4' : 'Print ZATCA Form A4' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.printZatcaFormA4' | translate }}</span>
+              </button>
+              <button class="primary-btn btn-close-period" (click)="closeVatPeriod()" [disabled]="closingVatPeriod() || loading() || !vatReturn()" style="background: #047857; border-color: #047857;">
+                <i class="pi" [ngClass]="closingVatPeriod() ? 'pi-spin pi-spinner' : 'pi-lock'"></i>
+                <span>{{ 'accounting.financialStatements.ui.closeVatPeriod' | translate }}</span>
               </button>
             </div>
           </div>
@@ -1602,12 +1617,12 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="table-title-box">
               <i class="pi pi-percentage text-emerald"></i>
               <h3 class="table-title-text">
-                {{ langService.currentLang() === 'ar' ? 'إقرار ضريبة القيمة المضافة - هيئة الزكاة والضريبة والجمارك (ZATCA)' : 'ZATCA VAT Return Form' }}
+                {{ 'accounting.financialStatements.ui.zatcaVatReturnForm' | translate }}
               </h3>
             </div>
             <span class="count-badge">
               <i class="pi pi-id-card"></i>
-              {{ langService.currentLang() === 'ar' ? 'الرقم الضريبي:' : 'TIN:' }} {{ vatReturn()!.vatRegistrationNumber }}
+              {{ 'accounting.financialStatements.ui.tin' | translate }} {{ vatReturn()!.vatRegistrationNumber }}
             </span>
           </div>
 
@@ -1615,11 +1630,11 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <table class="fs-statement-table">
               <thead>
                 <tr>
-                  <th style="width: 70px;">{{ langService.currentLang() === 'ar' ? 'رقم البند' : 'Box' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'البيان والوصف الرسمي لهيئة الزكاة والضريبة والجمارك' : 'ZATCA Description' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'المبلغ الخاضع للضريبة (SAR)' : 'Taxable Amount' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'التعديل (SAR)' : 'Adjustment' }}</th>
-                  <th class="th-amount font-mono">{{ langService.currentLang() === 'ar' ? 'مبلغ الضريبة (SAR)' : 'VAT Amount' }}</th>
+                  <th style="width: 70px;">{{ 'accounting.financialStatements.ui.box' | translate }}</th>
+                  <th>{{ 'accounting.financialStatements.ui.zatcaDescription' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.taxableAmount' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.adjustment' | translate }}</th>
+                  <th class="th-amount font-mono">{{ 'accounting.financialStatements.ui.vatAmount' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1627,40 +1642,40 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                 <!-- Section 1: Sales / Supplies -->
                 <tr class="section-header-row bg-emerald-tint">
                   <td colspan="5">
-                    <strong><i class="pi pi-folder-open text-emerald"></i> أولاً: المبيعات / التوريدات (Sales & Supplies)</strong>
+                    <strong><i class="pi pi-folder-open text-emerald"></i> {{ 'ui.financialStatements.60a0dd' | translate }}</strong>
                   </td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">1</td>
-                  <td>المبيعات الخاضعة للنسبة الأساسية (15%)</td>
+                  <td>{{ 'ui.financialStatements.f409d6' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.standardRatedSales.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.standardRatedSales.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono font-bold text-emerald">{{ vatReturn()!.standardRatedSales.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">2</td>
-                  <td>المبيعات لعملاء مسجلين في دول مجلس التعاون الخليجي</td>
+                  <td>{{ 'ui.financialStatements.9848ad' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.specialSalesToGcc.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.specialSalesToGcc.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.specialSalesToGcc.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">3</td>
-                  <td>التوريدات الخاضعة للنسبة الصفرية (الصادرات والخدمات المؤهلة)</td>
+                  <td>{{ 'ui.financialStatements.a87d59' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.zeroRatedSales.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.zeroRatedSales.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.zeroRatedSales.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">4</td>
-                  <td>التوريدات المعفاة من الضريبة</td>
+                  <td>{{ 'ui.financialStatements.a8da04' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.exemptSales.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.exemptSales.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.exemptSales.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="subtotal-row gross-profit-row">
                   <td class="font-mono text-center font-bold">5</td>
-                  <td><strong>إجمالي المبيعات والتوريدات (البنود 1 + 2 + 3 + 4)</strong></td>
+                  <td><strong>{{ 'ui.financialStatements.be4262' | translate }}</strong></td>
                   <td class="td-amount font-mono font-bold">{{ vatReturn()!.totalSales.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono font-bold">0.00</td>
                   <td class="td-amount font-mono font-bold text-emerald">{{ vatReturn()!.totalSales.vatAmount | number:'1.2-2' }}</td>
@@ -1669,47 +1684,47 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                 <!-- Section 2: Purchases -->
                 <tr class="section-header-row bg-slate-tint">
                   <td colspan="5">
-                    <strong><i class="pi pi-folder-open text-slate"></i> ثانياً: المشتريات / النفقات (Purchases & Expenses)</strong>
+                    <strong><i class="pi pi-folder-open text-slate"></i> {{ 'ui.financialStatements.d63de3' | translate }}</strong>
                   </td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">6</td>
-                  <td>المشتريات المحلية الخاضعة للنسبة الأساسية (15%)</td>
+                  <td>{{ 'ui.financialStatements.2d3e1f' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.standardRatedPurchases.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.standardRatedPurchases.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono font-bold text-cyan">{{ vatReturn()!.standardRatedPurchases.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">7</td>
-                  <td>الاستيراد الخاضع لضريبة القيمة المضافة المدفوعة في الجمارك (15%)</td>
+                  <td>{{ 'ui.financialStatements.7053d3' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.customsImports.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.customsImports.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono text-cyan">{{ vatReturn()!.customsImports.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">8</td>
-                  <td>الاستيراد الخاضع لآلية الاحتساب العكسي</td>
+                  <td>{{ 'ui.financialStatements.6ef391' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.reverseChargeImports.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.reverseChargeImports.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono text-cyan">{{ vatReturn()!.reverseChargeImports.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">9</td>
-                  <td>المشتريات الخاضعة للنسبة الصفرية</td>
+                  <td>{{ 'ui.financialStatements.6811c2' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.zeroRatedPurchases.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.zeroRatedPurchases.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.zeroRatedPurchases.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">10</td>
-                  <td>المشتريات المعفاة من الضريبة</td>
+                  <td>{{ 'ui.financialStatements.e6b6e0' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.exemptPurchases.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.exemptPurchases.adjustment | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.exemptPurchases.vatAmount | number:'1.2-2' }}</td>
                 </tr>
                 <tr class="subtotal-row gross-profit-row">
                   <td class="font-mono text-center font-bold">11</td>
-                  <td><strong>إجمالي المشتريات والنفقات (البنود 6 + 7 + 8 + 9 + 10)</strong></td>
+                  <td><strong>{{ 'ui.financialStatements.c64ae1' | translate }}</strong></td>
                   <td class="td-amount font-mono font-bold">{{ vatReturn()!.totalPurchases.amount | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono font-bold">0.00</td>
                   <td class="td-amount font-mono font-bold text-cyan">{{ vatReturn()!.totalPurchases.vatAmount | number:'1.2-2' }}</td>
@@ -1718,27 +1733,27 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                 <!-- Section 3: Totals & Net VAT -->
                 <tr class="section-header-row bg-slate-tint">
                   <td colspan="5">
-                    <strong><i class="pi pi-folder-open text-slate"></i> ثالثاً: احتساب صافي الضريبة (Net VAT Calculation)</strong>
+                    <strong><i class="pi pi-folder-open text-slate"></i> {{ 'ui.financialStatements.bde8fb' | translate }}</strong>
                   </td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">12</td>
-                  <td colspan="3">إجمالي ضريبة القيمة المضافة المستحقة عن الفترة الحالية (ضريبة المخرجات)</td>
+                  <td colspan="3">{{ 'ui.financialStatements.4be515' | translate }}</td>
                   <td class="td-amount font-mono font-bold text-emerald">{{ vatReturn()!.totalVatDue | number:'1.2-2' }} SAR</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">13</td>
-                  <td colspan="3">إجمالي ضريبة القيمة المضافة القابلة للخصم عن الفترة الحالية (ضريبة المدخلات)</td>
+                  <td colspan="3">{{ 'ui.financialStatements.43195b' | translate }}</td>
                   <td class="td-amount font-mono font-bold text-cyan">({{ vatReturn()!.totalVatDeductible | number:'1.2-2' }}) SAR</td>
                 </tr>
                 <tr class="item-row bg-slate-tint">
                   <td class="font-mono text-center font-bold">14</td>
-                  <td colspan="3">صافي ضريبة القيمة المضافة للفترة الحالية (البند 12 - البند 13)</td>
+                  <td colspan="3">{{ 'ui.financialStatements.5cd21f' | translate }}</td>
                   <td class="td-amount font-mono font-bold">{{ vatReturn()!.netVatDue | number:'1.2-2' }} SAR</td>
                 </tr>
                 <tr class="item-row">
                   <td class="font-mono text-center font-bold">15</td>
-                  <td colspan="3">تصحيحات أو تعديلات من فترات سابقة (وفق إشعارات الهيئة)</td>
+                  <td colspan="3">{{ 'ui.financialStatements.481746' | translate }}</td>
                   <td class="td-amount font-mono">{{ vatReturn()!.adjustmentsFromPrevious | number:'1.2-2' }} SAR</td>
                 </tr>
                 <tr class="grand-total-row" [class.is-profit]="!vatReturn()!.isRefundable" [class.is-loss]="vatReturn()!.isRefundable">
@@ -1746,7 +1761,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <td colspan="3">
                     <div class="grand-total-title">
                       <i [class]="!vatReturn()!.isRefundable ? 'pi pi-exclamation-circle text-amber' : 'pi pi-check-circle text-emerald'"></i>
-                      <span>{{ !vatReturn()!.isRefundable ? 'صافي الضريبة واجبة السداد للهيئة' : 'صافي الضريبة المستردة لصالح المكلف' }}</span>
+                      <span>{{ !vatReturn()!.isRefundable ? ('ui.financialStatements.461701' | translate) : ('ui.financialStatements.832e11' | translate) }}</span>
                     </div>
                   </td>
                   <td class="td-amount font-mono font-bold grand-total-amount">
@@ -1760,11 +1775,173 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
 
           <div class="tafqeet-strip">
             <i class="pi pi-info-circle text-emerald"></i>
-            <span class="tafqeet-label">{{ langService.currentLang() === 'ar' ? 'صافي الضريبة المعتمد كتابة:' : 'Net VAT in Words:' }}</span>
+            <span class="tafqeet-label">{{ 'accounting.financialStatements.ui.netVatInWords' | translate }}</span>
             <strong class="tafqeet-text">{{ vatReturn()!.netVatTafqeetAr }}</strong>
           </div>
         </section>
 
+      </ng-container>
+
+      <!-- =========================================================================
+           TAB 6: ENTERPRISE AUDIT TRAIL (سجل تدقيق العمليات الموحد لكافة الموديولات)
+           ========================================================================= -->
+      <ng-container *ngIf="activeTab === 'audit-trail'">
+        <section class="fs-metrics-bar">
+          <div class="metric-segment">
+            <div class="seg-top">
+              <span class="seg-lbl"><i class="pi pi-history text-cyan"></i> {{ 'accounting.financialStatements.ui.totalLoggedEvents' | translate }}</span>
+              <span class="seg-badge bg-cyan-subtle">Audit Stream</span>
+            </div>
+            <div class="seg-val font-mono text-cyan">{{ auditLogs().length }}</div>
+          </div>
+
+          <div class="seg-divider"></div>
+
+          <div class="metric-segment">
+            <div class="seg-top">
+              <span class="seg-lbl"><i class="pi pi-receipt text-emerald"></i> {{ 'accounting.financialStatements.ui.invoicesZatca' | translate }}</span>
+              <span class="seg-badge bg-emerald-subtle">Sales / ZATCA</span>
+            </div>
+            <div class="seg-val font-mono text-emerald">{{ getAuditCategoryCount(('ui.financialStatements.dac8c7' | translate)) }}</div>
+          </div>
+
+          <div class="seg-divider"></div>
+
+          <div class="metric-segment">
+            <div class="seg-top">
+              <span class="seg-lbl"><i class="pi pi-credit-card text-purple"></i> {{ 'accounting.financialStatements.ui.vouchersGl' | translate }}</span>
+              <span class="seg-badge bg-purple-subtle">Treasury & GL</span>
+            </div>
+            <div class="seg-val font-mono text-purple">{{ getAuditCategoryCount(('ui.financialStatements.ba3fab' | translate)) + getAuditCategoryCount(('ui.financialStatements.7ef970' | translate)) }}</div>
+          </div>
+
+          <div class="seg-divider"></div>
+
+          <div class="metric-segment">
+            <div class="seg-top">
+              <span class="seg-lbl"><i class="pi pi-box text-amber"></i> {{ 'accounting.financialStatements.ui.inventoryMovements' | translate }}</span>
+              <span class="seg-badge bg-amber-subtle">Warehouses</span>
+            </div>
+            <div class="seg-val font-mono text-amber">{{ getAuditCategoryCount(('ui.financialStatements.384cb5' | translate)) }}</div>
+          </div>
+        </section>
+
+        <!-- Audit Filters Bar -->
+        <section class="fs-filters-card">
+          <div class="filters-row">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label><i class="pi pi-search"></i> <span>{{ 'accounting.financialStatements.ui.search' | translate }}</span></label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="auditSearch" 
+                (ngModelChange)="loadAuditLogs()" 
+                [placeholder]="'ui.financialStatements.d100b4' | translate" 
+              />
+            </div>
+
+            <div class="form-group" style="min-width: 200px;">
+              <label><i class="pi pi-filter"></i> <span>{{ 'accounting.financialStatements.ui.module' | translate }}</span></label>
+              <select class="form-control" [(ngModel)]="auditModule" (change)="loadAuditLogs()">
+                <option value="">{{ 'accounting.financialStatements.ui.allModules' | translate }}</option>
+                <option value="المبيعات">{{ 'accounting.financialStatements.ui.salesZatca' | translate }}</option>
+                <option value="الخزينة">{{ 'accounting.financialStatements.ui.treasuryVouchers' | translate }}</option>
+                <option value="الأستاذ">{{ 'accounting.financialStatements.ui.glVat' | translate }}</option>
+                <option value="المستودعات">{{ 'accounting.financialStatements.ui.inventoryTransfers' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="min-width: 140px;">
+              <label><i class="pi pi-list"></i> <span>{{ 'accounting.financialStatements.ui.limit' | translate }}</span></label>
+              <select class="form-control" [(ngModel)]="auditTake" (change)="loadAuditLogs()">
+                <option [ngValue]="25">{{ 'ui.financialStatements.7b2bda' | translate }}</option>
+                <option [ngValue]="50">{{ 'ui.financialStatements.a7175d' | translate }}</option>
+                <option [ngValue]="100">{{ 'ui.financialStatements.091880' | translate }}</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="align-self: flex-end;">
+              <button class="primary-btn" (click)="loadAuditLogs()" [disabled]="loadingAudit()">
+                <i class="pi pi-refresh" [class.pi-spin]="loadingAudit()"></i>
+                <span>{{ 'accounting.financialStatements.ui.refresh1' | translate }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Audit Trail Table -->
+        <section class="fs-table-card">
+          <div class="table-top-header">
+            <div class="table-title-box">
+              <i class="pi pi-shield text-cyan"></i>
+              <h3 class="table-title-text">
+                {{ 'accounting.financialStatements.ui.certifiedEnterpriseActivityAuditTrail' | translate }}
+              </h3>
+            </div>
+            <span class="count-badge">
+              <i class="pi pi-check-circle text-emerald"></i>
+              {{ 'accounting.financialStatements.ui.immutableAuditLog' | translate }}
+            </span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="fs-statement-table">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">{{ 'accounting.financialStatements.ui.timestamp' | translate }}</th>
+                  <th style="width: 160px;">{{ 'accounting.financialStatements.ui.reference' | translate }}</th>
+                  <th style="width: 180px;">{{ 'accounting.financialStatements.ui.module1' | translate }}</th>
+                  <th>{{ 'accounting.financialStatements.ui.actionDetails' | translate }}</th>
+                  <th style="width: 140px;">{{ 'accounting.financialStatements.ui.actor' | translate }}</th>
+                  <th class="th-amount font-mono" style="width: 130px;">{{ 'accounting.financialStatements.ui.amount' | translate }}</th>
+                  <th style="width: 90px; text-align: center;">{{ 'accounting.financialStatements.ui.status' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let log of auditLogs()" class="item-row">
+                  <td class="font-mono text-muted" style="font-size: 0.82rem;">{{ log.formattedTimestamp }}</td>
+                  <td>
+                    <span class="font-mono font-bold text-dark" style="background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">
+                      {{ log.referenceNumber }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getModuleBadgeClass(log.moduleAr)">
+                      {{ langService.currentLang() === 'ar' ? log.moduleAr : log.moduleEn }}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="font-weight: 700; color: #1e293b; margin-bottom: 2px;">
+                      {{ langService.currentLang() === 'ar' ? log.actionAr : log.actionEn }}
+                    </div>
+                    <div class="text-muted" style="font-size: 0.82rem;">{{ log.description }}</div>
+                  </td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <i class="pi pi-user text-muted" style="font-size: 0.8rem;"></i>
+                      <span style="font-size: 0.85rem; font-weight: 600;">{{ log.actor }}</span>
+                    </div>
+                  </td>
+                  <td class="td-amount font-mono font-bold" [class.text-emerald]="(log.amount || 0) > 0">
+                    {{ log.amount ? (log.amount | number:'1.2-2') + ' SAR' : '—' }}
+                  </td>
+                  <td style="text-align: center;">
+                    <span class="badge" [ngClass]="log.badgeSeverity === 'success' ? 'badge-success' : (log.badgeSeverity === 'warning' ? 'badge-warning' : 'badge-info')">
+                      {{ log.statusBadge }}
+                    </span>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!loadingAudit() && auditLogs().length === 0">
+                  <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                    <i class="pi pi-search" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 0.5rem; display: block;"></i>
+                    <strong>{{ 'ui.financialStatements.36c729' | translate }}</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </ng-container>
 
       <!-- =========================================================================
@@ -1776,14 +1953,14 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="settings-title-group">
               <i class="pi pi-sliders-h text-emerald"></i>
               <div>
-                <h3 class="settings-title">{{ langService.currentLang() === 'ar' ? 'سياسات ومحددات عرض القوائم المالية' : 'Financial Statement Presentation Policies' }}</h3>
-                <p class="settings-sub">{{ langService.currentLang() === 'ar' ? 'تخصيص هيكل العرض ومستوى التفصيل وسياسات الإقفال وفق دورة عمل المنشأة' : 'Configure statement presentation, detail levels, and closing policies' }}</p>
+                <h3 class="settings-title">{{ 'accounting.financialStatements.ui.financialStatementPresentationPolicies' | translate }}</h3>
+                <p class="settings-sub">{{ 'accounting.financialStatements.ui.configureStatementPresentationDetailLevels' | translate }}</p>
               </div>
             </div>
 
             <button class="primary-btn btn-save" (click)="saveSettings()" [disabled]="savingSettings()">
               <i class="pi pi-check" [class.pi-spin]="savingSettings()"></i>
-              <span>{{ savingSettings() ? (langService.currentLang() === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (langService.currentLang() === 'ar' ? 'حفظ السياسات' : 'Save Policies') }}</span>
+              <span>{{ savingSettings() ? ('accounting.financialStatements.ui.saving' | translate) : ('accounting.financialStatements.ui.savePolicies' | translate) }}</span>
             </button>
           </div>
 
@@ -1794,30 +1971,30 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="setting-box">
               <div class="box-head">
                 <i class="pi pi-palette text-emerald"></i>
-                <h4>{{ langService.currentLang() === 'ar' ? 'طريقة ونمط العرض' : 'Presentation Format' }}</h4>
+                <h4>{{ 'accounting.financialStatements.ui.presentationFormat' | translate }}</h4>
               </div>
               <div class="box-body">
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'نمط هيكل قائمة الدخل المعتمد:' : 'Income Statement Presentation:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.incomeStatementPresentation' | translate }}</label>
                   <select class="form-control" [(ngModel)]="settings()!.incomeStatementFormat">
-                    <option value="multi-step">{{ langService.currentLang() === 'ar' ? 'متعدد المراحل IFRS (إيرادات، تكلفة مبيعات، مجمل ربح، أرباح تشغيل، صافي ربح)' : 'Multi-Step IFRS (Revenues, COGS, Gross, Operating, Net)' }}</option>
-                    <option value="single-step">{{ langService.currentLang() === 'ar' ? 'مرحلة واحدة (إجمالي الإيرادات - إجمالي المصروفات)' : 'Single-Step (Total Revenues - Total Expenses)' }}</option>
+                    <option value="multi-step">{{ 'accounting.financialStatements.ui.multistepIfrsRevenuesCogsGross' | translate }}</option>
+                    <option value="single-step">{{ 'accounting.financialStatements.ui.singlestepTotalRevenuesTotalExpenses' | translate }}</option>
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'دقة الأرقام والكسور:' : 'Decimal Precision:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.decimalPrecision' | translate }}</label>
                   <select class="form-control" [(ngModel)]="settings()!.decimalPlaces">
-                    <option [ngValue]="2">{{ langService.currentLang() === 'ar' ? 'خانتان عشريتان (هللات 0.00) - القياسي محاسبياً' : '2 Decimals (0.00)' }}</option>
-                    <option [ngValue]="0">{{ langService.currentLang() === 'ar' ? 'تقريب لأقرب ريال صحيح (0) - للتقارير التنفيذية ومجالس الإدارة' : 'Whole SAR (0)' }}</option>
+                    <option [ngValue]="2">{{ 'accounting.financialStatements.ui.2Decimals000' | translate }}</option>
+                    <option [ngValue]="0">{{ 'accounting.financialStatements.ui.wholeSar0' | translate }}</option>
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'الأساس المحاسبي المتبع:' : 'Accounting Basis:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.accountingBasis' | translate }}</label>
                   <select class="form-control" [(ngModel)]="settings()!.accountingBasis">
-                    <option value="accrual">{{ langService.currentLang() === 'ar' ? 'أساس الاستحقاق (Accrual Basis) - معايير المحاسبة الدولية' : 'Accrual Basis (IFRS)' }}</option>
-                    <option value="cash">{{ langService.currentLang() === 'ar' ? 'الأساس النقدي (Cash Basis) - للأنشطة والمنشآت الصغيرة' : 'Cash Basis' }}</option>
+                    <option value="accrual">{{ 'accounting.financialStatements.ui.accrualBasisIfrs' | translate }}</option>
+                    <option value="cash">{{ 'accounting.financialStatements.ui.cashBasis' | translate }}</option>
                   </select>
                 </div>
               </div>
@@ -1827,29 +2004,29 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="setting-box">
               <div class="box-head">
                 <i class="pi pi-database text-cyan"></i>
-                <h4>{{ langService.currentLang() === 'ar' ? 'الحسابات ومستوى التفصيل' : 'Accounts & Depth' }}</h4>
+                <h4>{{ 'accounting.financialStatements.ui.accountsDepth' | translate }}</h4>
               </div>
               <div class="box-body">
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'كود حساب الأرباح المبقاة والمحتجزة:' : 'Retained Earnings Account Code:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.retainedEarningsAccountCode' | translate }}</label>
                   <input type="text" class="form-control font-mono" [(ngModel)]="settings()!.retainedEarningsAccountCode" placeholder="32102" />
-                  <small class="hint-text">{{ langService.currentLang() === 'ar' ? 'الحساب المعتمد لترحيل أرباح وخسائر الفترات السابقة في حقوق الملكية (الافتراضي 32102)' : 'Account code for retained earnings in equity' }}</small>
+                  <small class="hint-text">{{ 'accounting.financialStatements.ui.accountCodeForRetainedEarnings' | translate }}</small>
                 </div>
 
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'مستوى التفصيل الافتراضي للقوائم:' : 'Default Level Depth:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.defaultLevelDepth' | translate }}</label>
                   <select class="form-control" [(ngModel)]="settings()!.defaultLevelDepth">
-                    <option [ngValue]="null">{{ langService.currentLang() === 'ar' ? 'كافة المستويات الشجرية التحليلية' : 'All Levels' }}</option>
-                    <option [ngValue]="1">{{ langService.currentLang() === 'ar' ? 'المستوى 1 (مجموعات رئيسية فقط)' : 'Level 1' }}</option>
-                    <option [ngValue]="2">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 2 (مجموعات ثانوية)' : 'Up to Level 2' }}</option>
-                    <option [ngValue]="3">{{ langService.currentLang() === 'ar' ? 'حتى المستوى 3' : 'Up to Level 3' }}</option>
+                    <option [ngValue]="null">{{ 'accounting.financialStatements.ui.allLevels1' | translate }}</option>
+                    <option [ngValue]="1">{{ 'accounting.financialStatements.ui.level11' | translate }}</option>
+                    <option [ngValue]="2">{{ 'accounting.financialStatements.ui.upToLevel21' | translate }}</option>
+                    <option [ngValue]="3">{{ 'accounting.financialStatements.ui.upToLevel3' | translate }}</option>
                   </select>
                 </div>
 
                 <div class="checkbox-box">
                   <label class="toggle-control">
                     <input type="checkbox" [(ngModel)]="settings()!.defaultHideZeroBalances" />
-                    <span>{{ langService.currentLang() === 'ar' ? 'إخفاء الحسابات الصفرية تلقائياً عند فتح القوائم' : 'Hide zero-balance accounts by default' }}</span>
+                    <span>{{ 'accounting.financialStatements.ui.hideZerobalanceAccountsByDefault' | translate }}</span>
                   </label>
                 </div>
               </div>
@@ -1859,27 +2036,27 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="setting-box">
               <div class="box-head">
                 <i class="pi pi-print text-amber"></i>
-                <h4>{{ langService.currentLang() === 'ar' ? 'الاعتمادات والمقارنات والطباعة' : 'Auditing & Printing' }}</h4>
+                <h4>{{ 'accounting.financialStatements.ui.auditingPrinting' | translate }}</h4>
               </div>
               <div class="box-body">
                 <div class="checkbox-box">
                   <label class="toggle-control">
                     <input type="checkbox" [(ngModel)]="settings()!.showSignaturesBlock" />
-                    <span>{{ langService.currentLang() === 'ar' ? 'إظهار مربعات التواقيع الثلاثية (المحاسب، رئيس الحسابات، المدير المالي)' : 'Show tripartite signatures block' }}</span>
+                    <span>{{ 'accounting.financialStatements.ui.showTripartiteSignaturesBlock' | translate }}</span>
                   </label>
                 </div>
 
                 <div class="checkbox-box">
                   <label class="toggle-control">
                     <input type="checkbox" [(ngModel)]="settings()!.showComparativePeriod" />
-                    <span>{{ langService.currentLang() === 'ar' ? 'تفعيل عامود المقارنة مع الفترة السابقة (Year-over-Year)' : 'Enable comparative prior period' }}</span>
+                    <span>{{ 'accounting.financialStatements.ui.enableComparativePriorPeriod' | translate }}</span>
                   </label>
                 </div>
 
                 <div class="checkbox-box">
                   <label class="toggle-control">
                     <input type="checkbox" [(ngModel)]="settings()!.allowDraftSimulation" />
-                    <span>{{ langService.currentLang() === 'ar' ? 'السماح بتضمين مسودات القيود في التحليل التقديري (What-if Simulation)' : 'Allow draft simulation entries' }}</span>
+                    <span>{{ 'accounting.financialStatements.ui.allowDraftSimulationEntries' | translate }}</span>
                   </label>
                 </div>
               </div>
@@ -1889,21 +2066,21 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <div class="setting-box">
               <div class="box-head">
                 <i class="pi pi-money-bill text-emerald"></i>
-                <h4>{{ langService.currentLang() === 'ar' ? 'سياسات قائمة التدفقات النقدية (IAS 7)' : 'Cash Flow Policies (IAS 7)' }}</h4>
+                <h4>{{ 'accounting.financialStatements.ui.cashFlowPoliciesIas7' | translate }}</h4>
               </div>
               <div class="box-body">
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'طريقة احتساب التدفقات النقدية:' : 'Cash Flow Calculation Method:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.cashFlowCalculationMethod' | translate }}</label>
                   <select class="form-control" [(ngModel)]="settings()!.cashFlowMethod">
-                    <option value="indirect">{{ langService.currentLang() === 'ar' ? 'الطريقة غير المباشرة (Indirect Method) - المعيار الدولي IAS 7' : 'Indirect Method (IAS 7 - Standard)' }}</option>
-                    <option value="direct">{{ langService.currentLang() === 'ar' ? 'الطريقة المباشرة (Direct Method) - المقبوضات والمدفوعات' : 'Direct Method' }}</option>
+                    <option value="indirect">{{ 'accounting.financialStatements.ui.indirectMethodIas7Standard' | translate }}</option>
+                    <option value="direct">{{ 'accounting.financialStatements.ui.directMethod' | translate }}</option>
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label>{{ langService.currentLang() === 'ar' ? 'بادئة كود حسابات النقدية وما في حكمها:' : 'Cash Accounts Prefix in COA:' }}</label>
+                  <label>{{ 'accounting.financialStatements.ui.cashAccountsPrefixInCoa' | translate }}</label>
                   <input type="text" class="form-control font-mono" [(ngModel)]="settings()!.cashAccountPrefix" placeholder="111" />
-                  <small class="hint-text">{{ langService.currentLang() === 'ar' ? 'بادئة الحسابات المعتمدة للصناديق والبنوك للمطابقة والتسوية (الافتراضي 111)' : 'Account prefix for Cash & Bank reconciliation (default: 111)' }}</small>
+                  <small class="hint-text">{{ 'accounting.financialStatements.ui.accountPrefixForCashBank' | translate }}</small>
                 </div>
               </div>
             </div>
@@ -1913,7 +2090,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <!-- Success Alert -->
           <div class="save-success-alert" *ngIf="settingsSavedAlert()">
             <i class="pi pi-check-circle"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'تم حفظ وتحديث سياسات ومحددات القوائم المالية للشركة بنجاح!' : 'Policies saved successfully!' }}</span>
+            <span>{{ 'accounting.financialStatements.ui.policiesSavedSuccessfully' | translate }}</span>
           </div>
 
         </section>
@@ -1927,16 +2104,16 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
           <div class="print-toolbar">
             <div class="toolbar-info">
               <i class="pi pi-file-pdf text-emerald"></i>
-              <strong>{{ langService.currentLang() === 'ar' ? 'معاينة القائمة المالية الرسمية للطباعة (A4)' : 'Official Financial Statement Print Preview' }}</strong>
+              <strong>{{ 'accounting.financialStatements.ui.officialFinancialStatementPrintPreview' | translate }}</strong>
             </div>
             <div class="toolbar-actions">
               <button class="primary-btn" (click)="triggerBrowserPrint()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة المستند الآن' : 'Print Document' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.printDocument' | translate }}</span>
               </button>
               <button class="secondary-btn" (click)="closePrintModal()">
                 <i class="pi pi-times"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إغلاق' : 'Close' }}</span>
+                <span>{{ 'accounting.financialStatements.ui.close' | translate }}</span>
               </button>
             </div>
           </div>
@@ -1946,20 +2123,20 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             <!-- Letterhead -->
             <div class="paper-header">
               <div class="corp-brand">
-                <h2 class="corp-name-ar">شركة المحيط الذكي لتقنية المعلومات</h2>
+                <h2 class="corp-name-ar">{{ 'ui.financialStatements.2c0d0c' | translate }}</h2>
                 <h4 class="corp-name-en">Smart Ocean Information Technology Co.</h4>
-                <div class="corp-meta">س.ت: 1010789456 | الرقم الضريبي: 310245678900003</div>
+                <div class="corp-meta">{{ 'ui.financialStatements.09b677' | translate }}</div>
               </div>
               <div class="doc-badge-box">
                 <span class="report-main-title">
-                  {{ printModalType === 'income-statement' ? 'قائمة الدخل (الأرباح والخسائر)' : (printModalType === 'cash-flow' ? 'قائمة التدفقات النقدية (IAS 7)' : 'قائمة المركز المالي (الميزانية العمومية)') }}
+                  {{ printModalType === 'income-statement' ? ('accounting.accountCreate.incomeStatement' | translate) : (printModalType === 'cash-flow' ? ('accounting.financialStatements.cashFlowTab' | translate) : ('accounting.financialStatements.balanceSheetTab' | translate)) }}
                 </span>
                 <span class="report-subtitle">
                   {{ printModalType === 'income-statement' || printModalType === 'cash-flow' 
-                    ? ('عن الفترة من ' + (fromDate | date:'yyyy-MM-dd') + ' إلى ' + (toDate | date:'yyyy-MM-dd')) 
-                    : ('كما في ' + (asOfDate | date:'yyyy-MM-dd')) }}
+                    ? (('ui.financialStatements.e36fef' | translate) + (fromDate | date:'yyyy-MM-dd') + ('accounting.financialStatements.ui.to1' | translate) + (toDate | date:'yyyy-MM-dd')) 
+                    : (('ui.financialStatements.51ea43' | translate) + (asOfDate | date:'yyyy-MM-dd')) }}
                 </span>
-                <span class="socpa-tag">معتمدة وفق معايير المحاسبة السعودية والدولية SOCPA / IFRS</span>
+                <span class="socpa-tag">{{ 'ui.financialStatements.09afb3' | translate }}</span>
               </div>
             </div>
 
@@ -1968,14 +2145,14 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               <table class="print-data-table" *ngIf="printModalType === 'income-statement' && incomeStatement()">
                 <thead>
                   <tr>
-                    <th>رمز الحساب</th>
-                    <th>البيان المحاسبي</th>
-                    <th style="text-align: end;">المبلغ (ريال سعودي)</th>
+                    <th>{{ 'accounting.coa.table.code' | translate }}</th>
+                    <th>{{ 'ui.financialStatements.e545e3' | translate }}</th>
+                    <th style="text-align: end;">{{ 'ui.financialStatements.8b8473' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>1. إيرادات النشاط التشغيلي الرئيسي</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.6c84da' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ incomeStatement()!.operatingRevenues.totalAmount | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr *ngFor="let it of incomeStatement()!.operatingRevenues.items">
@@ -1984,28 +2161,28 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                     <td style="text-align: end;" class="font-mono">{{ it.amount | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>2. تكلفة المبيعات والإيرادات (COGS)</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.69b0fa' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>({{ incomeStatement()!.costOfSales.totalAmount | number:'1.2-2' }})</strong></td>
                   </tr>
                   <tr class="highlight-p-row">
-                    <td colspan="2"><strong>مجمل الربح / الخسارة (Gross Profit)</strong></td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.grossProfit1' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono font-bold">{{ incomeStatement()!.grossProfit | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>3. المصروفات التشغيلية (بيعية وإدارية وعمومية)</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.045ce5' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>({{ incomeStatement()!.totalOperatingExpenses | number:'1.2-2' }})</strong></td>
                   </tr>
                   <tr class="highlight-p-row">
-                    <td colspan="2"><strong>الربح التشغيلي قبل التمويل والزكاة (EBIT)</strong></td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.operatingProfitEbit' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono font-bold">{{ incomeStatement()!.operatingProfit | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="th-p-sub" *ngIf="incomeStatement()!.financeAndZakatCosts.items.length > 0">
-                    <td colspan="2"><strong>4. تكاليف التمويل ومصروف الزكاة التقديرية</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.122a3b' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>({{ incomeStatement()!.financeAndZakatCosts.totalAmount | number:'1.2-2' }})</strong></td>
                   </tr>
                   <tr class="grand-p-row">
-                    <td colspan="2"><strong>صافي نتيجة الفترة (أرباح / خسائر)</strong></td>
-                    <td style="text-align: end;" class="font-mono font-bold">{{ incomeStatement()!.netProfitOrLoss | number:'1.2-2' }} ريال</td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.a75d49' | translate }}</strong></td>
+                    <td style="text-align: end;" class="font-mono font-bold">{{ incomeStatement()!.netProfitOrLoss | number:'1.2-2' }} {{ 'ui.financialStatements.a2623a' | translate }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -2013,43 +2190,43 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               <table class="print-data-table" *ngIf="printModalType === 'balance-sheet' && balanceSheet()">
                 <thead>
                   <tr>
-                    <th>رمز الحساب</th>
-                    <th>البيان المحاسبي</th>
-                    <th style="text-align: end;">المبلغ (ريال سعودي)</th>
+                    <th>{{ 'accounting.coa.table.code' | translate }}</th>
+                    <th>{{ 'ui.financialStatements.e545e3' | translate }}</th>
+                    <th style="text-align: end;">{{ 'ui.financialStatements.8b8473' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>الأصول المتداولة</strong></td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.balanceSheet.currentAssets' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ balanceSheet()!.currentAssets.totalAmount | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>الأصول غير المتداولة</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.7c151f' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ balanceSheet()!.nonCurrentAssets.totalAmount | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr class="highlight-p-row">
-                    <td colspan="2"><strong>إجمالي الأصول والموجودات (Total Assets)</strong></td>
-                    <td style="text-align: end;" class="font-mono font-bold">{{ balanceSheet()!.totalAssets | number:'1.2-2' }} ريال</td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.totalAssets1' | translate }}</strong></td>
+                    <td style="text-align: end;" class="font-mono font-bold">{{ balanceSheet()!.totalAssets | number:'1.2-2' }} {{ 'ui.financialStatements.a2623a' | translate }}</td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>الالتزامات والخصوم المتداولة</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.a64485' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ balanceSheet()!.currentLiabilities.totalAmount | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>الالتزامات غير المتداولة</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.c8f2fa' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ balanceSheet()!.nonCurrentLiabilities.totalAmount | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr class="highlight-p-row">
-                    <td colspan="2"><strong>إجمالي الالتزامات (Total Liabilities)</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.158cf7' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono font-bold">{{ balanceSheet()!.totalLiabilities | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>حقوق الملكية ورأس المال</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.85a5b3' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ balanceSheet()!.totalEquity | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr class="grand-p-row">
-                    <td colspan="2"><strong>إجمالي الالتزامات وحقوق الملكية</strong></td>
-                    <td style="text-align: end;" class="font-mono font-bold">{{ balanceSheet()!.totalLiabilitiesAndEquity | number:'1.2-2' }} ريال</td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.balanceSheet.totalLiabilitiesAndEquity' | translate }}</strong></td>
+                    <td style="text-align: end;" class="font-mono font-bold">{{ balanceSheet()!.totalLiabilitiesAndEquity | number:'1.2-2' }} {{ 'ui.financialStatements.a2623a' | translate }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -2057,19 +2234,19 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
               <table class="print-data-table" *ngIf="printModalType === 'cash-flow' && cashFlow()">
                 <thead>
                   <tr>
-                    <th>الرمز</th>
-                    <th>البيان المحاسبي (معيار المحاسبة الدولي IAS 7)</th>
-                    <th style="text-align: end;">المبلغ (ريال سعودي)</th>
+                    <th>{{ 'ui.financialStatements.9c6433' | translate }}</th>
+                    <th>{{ 'ui.financialStatements.69b111' | translate }}</th>
+                    <th style="text-align: end;">{{ 'ui.financialStatements.8b8473' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>أولاً: التدفقات النقدية من الأنشطة التشغيلية (Operating Activities)</strong></td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.iCashFlowsFromOperating' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ cashFlow()!.netCashFromOperatingActivities | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr>
                     <td class="font-mono">-</td>
-                    <td>صافي أرباح / (خسائر) الفترة من قائمة الدخل</td>
+                    <td>{{ 'ui.financialStatements.8f3707' | translate }}</td>
                     <td style="text-align: end;" class="font-mono">{{ cashFlow()!.startingNetProfitOrLoss | number:'1.2-2' }}</td>
                   </tr>
                   <tr *ngFor="let it of cashFlow()!.nonCashAdjustments.items">
@@ -2078,7 +2255,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                     <td style="text-align: end;" class="font-mono">{{ it.amount | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="highlight-p-row">
-                    <td colspan="2"><strong>الربح التشغيلي قبل التغيرات في رأس المال العامل</strong></td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.operatingProfitBeforeWorkingCapital' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono font-bold">{{ cashFlow()!.operatingProfitBeforeWorkingCapitalChanges | number:'1.2-2' }}</td>
                   </tr>
                   <tr *ngFor="let it of cashFlow()!.workingCapitalChanges.items">
@@ -2087,7 +2264,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                     <td style="text-align: end;" class="font-mono">{{ it.amount | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>ثانياً: التدفقات النقدية من الأنشطة الاستثمارية (Investing Activities)</strong></td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.603e3f' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ cashFlow()!.netCashFromInvestingActivities | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr *ngFor="let it of cashFlow()!.investingActivities.items">
@@ -2096,7 +2273,7 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                     <td style="text-align: end;" class="font-mono">{{ it.amount | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="th-p-sub">
-                    <td colspan="2"><strong>ثالثاً: التدفقات النقدية من الأنشطة التمويلية (Financing Activities)</strong></td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.iiiCashFlowsFromFinancing' | translate }}</strong></td>
                     <td style="text-align: end;" class="font-mono"><strong>{{ cashFlow()!.netCashFromFinancingActivities | number:'1.2-2' }}</strong></td>
                   </tr>
                   <tr *ngFor="let it of cashFlow()!.financingActivities.items">
@@ -2105,44 +2282,44 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                     <td style="text-align: end;" class="font-mono">{{ it.amount | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="grand-p-row">
-                    <td colspan="2"><strong>صافي التغير في النقدية وما في حكمها خلال الفترة</strong></td>
-                    <td style="text-align: end;" class="font-mono font-bold">{{ cashFlow()!.netChangeInCashAndEquivalents | number:'1.2-2' }} ريال</td>
+                    <td colspan="2"><strong>{{ 'accounting.financialStatements.ui.netChangeInCashAnd' | translate }}</strong></td>
+                    <td style="text-align: end;" class="font-mono font-bold">{{ cashFlow()!.netChangeInCashAndEquivalents | number:'1.2-2' }} {{ 'ui.financialStatements.a2623a' | translate }}</td>
                   </tr>
                   <tr>
-                    <td colspan="2">رصيد النقدية وما في حكمها في بداية الفترة</td>
+                    <td colspan="2">{{ 'accounting.financialStatements.ui.cashAtBeginningOfPeriod' | translate }}</td>
                     <td style="text-align: end;" class="font-mono">{{ cashFlow()!.cashAtBeginningOfPeriod | number:'1.2-2' }}</td>
                   </tr>
                   <tr class="highlight-p-row">
-                    <td colspan="2"><strong>رصيد النقدية وما في حكمها في نهاية الفترة (المطابق للخزينة والبنوك)</strong></td>
-                    <td style="text-align: end;" class="font-mono font-bold">{{ cashFlow()!.cashAtEndOfPeriod | number:'1.2-2' }} ريال</td>
+                    <td colspan="2"><strong>{{ 'ui.financialStatements.88d995' | translate }}</strong></td>
+                    <td style="text-align: end;" class="font-mono font-bold">{{ cashFlow()!.cashAtEndOfPeriod | number:'1.2-2' }} {{ 'ui.financialStatements.a2623a' | translate }}</td>
                   </tr>
                 </tbody>
               </table>
 
               <!-- Tafqeet -->
               <div class="print-tafqeet">
-                <span>المبلغ كتابة: </span>
+                <span>{{ 'invoices.create.amountInWords' | translate }} </span>
                 <strong>{{ printModalType === 'income-statement' ? incomeStatement()?.netProfitTafqeetAr : (printModalType === 'cash-flow' ? cashFlow()?.netCashTafqeetAr : balanceSheet()?.totalAssetsTafqeetAr) }}</strong>
               </div>
 
               <!-- Signatures -->
               <div class="print-signatures">
                 <div class="sig-col">
-                  <span class="sig-title">المحاسب المالي المسؤول</span>
-                  <div class="sig-line">التوقيع: ............................</div>
+                  <span class="sig-title">{{ 'ui.financialStatements.f6a2a7' | translate }}</span>
+                  <div class="sig-line">{{ 'ui.financialStatements.297f65' | translate }}</div>
                 </div>
                 <div class="sig-col">
-                  <span class="sig-title">رئيس قسم الحسابات والمراجعة</span>
-                  <div class="sig-line">التوقيع: ............................</div>
+                  <span class="sig-title">{{ 'ui.financialStatements.b20743' | translate }}</span>
+                  <div class="sig-line">{{ 'ui.financialStatements.297f65' | translate }}</div>
                 </div>
                 <div class="sig-col">
-                  <span class="sig-title">المدير المالي التنفيذي (CFO)</span>
-                  <div class="sig-line">التوقيع والختم: ............................</div>
+                  <span class="sig-title">{{ 'hr.payroll.cfoTitle' | translate }}</span>
+                  <div class="sig-line">{{ 'ui.financialStatements.e7da75' | translate }}</div>
                 </div>
               </div>
 
               <div class="print-legal-footer">
-                نظام الربان المحاسبي المتكامل | تم استخراج هذه القائمة المالية آلياً من واقع القيود المحاسبية المرحلة ودفتر الأستاذ العام المعتمد.
+                {{ 'ui.financialStatements.b6f16c' | translate }}
               </div>
             </div>
 
@@ -2954,6 +3131,14 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
     .text-muted { color: #94a3b8 !important; }
     .font-mono { font-family: var(--font-latin), monospace !important; }
     .font-bold { font-weight: 800 !important; }
+
+    .badge-sales { background: #dcfce7 !important; color: #15803d !important; }
+    .badge-treasury { background: #f3e8ff !important; color: #7e22ce !important; }
+    .badge-gl { background: #e0f2fe !important; color: #0369a1 !important; }
+    .badge-inventory { background: #fef3c7 !important; color: #b45309 !important; }
+    .badge-success { background: #dcfce7 !important; color: #166534 !important; }
+    .badge-warning { background: #fef9c3 !important; color: #854d0e !important; }
+    .badge-info { background: #f1f5f9 !important; color: #475569 !important; }
   `]
 })
 export class FinancialStatementsComponent implements OnInit {
@@ -2967,9 +3152,17 @@ export class FinancialStatementsComponent implements OnInit {
   activeTab: ActiveTab = 'income-statement';
   loading = signal(false);
   savingSettings = signal(false);
+  closingVatPeriod = signal(false);
   settingsSavedAlert = signal(false);
   showPrintModal = signal(false);
   printModalType: 'income-statement' | 'balance-sheet' | 'cash-flow' = 'income-statement';
+
+  private dashboardService = inject(DashboardService);
+  auditLogs = signal<EnterpriseAuditLogDto[]>([]);
+  loadingAudit = signal(false);
+  auditSearch = '';
+  auditModule = '';
+  auditTake = 50;
 
   incomeStatement = signal<IncomeStatementReport | null>(null);
   balanceSheet = signal<BalanceSheetReport | null>(null);
@@ -3009,6 +3202,9 @@ export class FinancialStatementsComponent implements OnInit {
       } else if (params['tab'] === 'vat-return') {
         this.activeTab = 'vat-return';
         this.loadZatcaVatReturn();
+      } else if (params['tab'] === 'audit-trail') {
+        this.activeTab = 'audit-trail';
+        this.loadAuditLogs();
       } else if (params['tab'] === 'settings') {
         this.activeTab = 'settings';
       } else {
@@ -3094,9 +3290,36 @@ export class FinancialStatementsComponent implements OnInit {
       this.loadEquityStatement();
     } else if (tab === 'vat-return') {
       this.loadZatcaVatReturn();
+    } else if (tab === 'audit-trail') {
+      this.loadAuditLogs();
     } else if (tab === 'settings') {
       this.loadSettings();
     }
+  }
+
+  loadAuditLogs() {
+    this.loadingAudit.set(true);
+    this.dashboardService.getAuditLogs(this.auditModule, this.auditSearch, this.auditTake).subscribe({
+      next: (logs) => {
+        this.auditLogs.set(logs || []);
+        this.loadingAudit.set(false);
+      },
+      error: () => {
+        this.loadingAudit.set(false);
+      }
+    });
+  }
+
+  getAuditCategoryCount(category: string): number {
+    return this.auditLogs().filter(l => l.moduleAr.includes(category)).length;
+  }
+
+  getModuleBadgeClass(moduleAr: string): string {
+    if (moduleAr.includes('المبيعات')) return 'badge-sales';
+    if (moduleAr.includes('الخزينة')) return 'badge-treasury';
+    if (moduleAr.includes('الأستاذ')) return 'badge-gl';
+    if (moduleAr.includes('المستودعات')) return 'badge-inventory';
+    return 'badge-info';
   }
 
   loadEquityStatement() {
@@ -3132,6 +3355,73 @@ export class FinancialStatementsComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
+      }
+    });
+  }
+
+  closeVatPeriod() {
+    const vr = this.vatReturn();
+    if (!vr) return;
+
+    Swal.fire({
+      title: this.langService.t('accounting.financialStatements.vatClosing.closeConfirmTitle'),
+      text: this.langService.t('accounting.financialStatements.vatClosing.closeConfirmText').replace('{period}', vr.taxPeriod),
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: this.langService.t('accounting.financialStatements.vatClosing.closeConfirmBtn'),
+      cancelButtonText: this.langService.t('common.cancel'),
+      confirmButtonColor: '#059669',
+      cancelButtonColor: '#64748b'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.closingVatPeriod.set(true);
+        const companyId = this.companyContext.activeCompany().id;
+        this.fsService.closeVatPeriod({
+          companyId,
+          fromDate: this.fromDate,
+          toDate: this.toDate,
+          periodNameAr: vr.taxPeriod,
+          periodNameEn: `VAT Return Closing ${vr.taxPeriod}`
+        }).subscribe({
+          next: (res) => {
+            this.closingVatPeriod.set(false);
+            const isAr = this.langService.currentLang() === 'ar';
+            const netLabel = res.isRefundable
+              ? this.langService.t('accounting.financialStatements.vatClosing.netRefundable')
+              : this.langService.t('accounting.financialStatements.vatClosing.netPayable');
+            const netColor = res.isRefundable ? '#059669' : '#d97706';
+            const htmlContent = `
+              <div style="text-align: ${isAr ? 'right' : 'left'}; direction: ${isAr ? 'rtl' : 'ltr'}; font-size: 0.95rem; line-height: 1.8;">
+                <p>${this.langService.t('accounting.financialStatements.vatClosing.settlementDesc')}</p>
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin: 10px 0;">
+                  <div><strong>${this.langService.t('accounting.financialStatements.vatClosing.journalEntryNo')}</strong> <span style="font-family: monospace; color: #047857;">${res.journalEntryNumber}</span></div>
+                  <div><strong>${this.langService.t('accounting.financialStatements.vatClosing.totalOutputVat')}</strong> ${res.totalOutputVat.toLocaleString()} SAR</div>
+                  <div><strong>${this.langService.t('accounting.financialStatements.vatClosing.totalInputVat')}</strong> ${res.totalInputVat.toLocaleString()} SAR</div>
+                  <div><strong>${netLabel}</strong> <span style="font-weight: bold; color: ${netColor};">${Math.abs(res.netVatPayableOrRefundable).toLocaleString()} SAR</span></div>
+                </div>
+              </div>`;
+
+            Swal.fire({
+              title: this.langService.t('accounting.financialStatements.vatClosing.closeSuccessTitle'),
+              html: htmlContent,
+              icon: 'success',
+              confirmButtonText: this.langService.t('common.ok'),
+              confirmButtonColor: '#059669'
+            });
+            this.loadZatcaVatReturn();
+          },
+          error: (err) => {
+            this.closingVatPeriod.set(false);
+            const msg = err?.error?.description || err?.error?.message || this.langService.t('accounting.financialStatements.vatClosing.closeErrorDefault');
+            Swal.fire({
+              title: this.langService.t('accounting.financialStatements.vatClosing.closeErrorTitle'),
+              text: msg,
+              icon: 'error',
+              confirmButtonText: this.langService.t('common.ok'),
+              confirmButtonColor: '#e11d48'
+            });
+          }
+        });
       }
     });
   }

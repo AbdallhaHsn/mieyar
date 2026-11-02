@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DocumentAttachmentsModalComponent } from '../../../shared/components/document-attachments-modal.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { 
   JournalEntryService, 
   JournalEntrySummary, 
@@ -30,9 +32,9 @@ interface EditLine {
 @Component({
   selector: 'app-journal-entries',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DocumentAttachmentsModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, DocumentAttachmentsModalComponent, PaginationComponent, TranslatePipe],
   template: `
-    <div class="journal-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+    <div class="journal-page" [class.is-printing-active]="!!printingEntry()" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
       <!-- Top Header Strip -->
       <header class="page-header">
@@ -42,12 +44,10 @@ interface EditLine {
           </div>
           <div>
             <h1 class="page-title">
-              {{ langService.currentLang() === 'ar' ? 'دفتر قيود اليومية العامة' : 'General Journal Entries' }}
+              {{ 'accounting.journal.ui.generalJournalEntries' | translate }}
             </h1>
             <p class="page-subtitle">
-              {{ langService.currentLang() === 'ar' 
-                ? 'تسجيل وترحيل وعكس القيود المحاسبية المزدوجة وفق معايير IAS 1 و SOCPA' 
-                : 'Double-entry bookkeeping, posting controls, and reversal management' }}
+              {{ 'accounting.journal.ui.journalSubtitle' | translate }}
             </p>
           </div>
         </div>
@@ -55,11 +55,11 @@ interface EditLine {
         <div class="header-actions">
           <button *ngIf="activeViewTab === 'regular'" class="btn-primary" (click)="openCreateModal()">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إنشاء قيد يومية جديد' : 'New Journal Entry' }}</span>
+            <span>{{ 'accounting.journal.ui.newJournalEntry' | translate }}</span>
           </button>
           <button *ngIf="activeViewTab === 'recurring'" class="btn-primary" (click)="openCreateRecurringModal()">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إضافة قالب قيد دوري' : 'Add Recurring Schedule' }}</span>
+            <span>{{ 'accounting.journal.ui.addRecurringSchedule' | translate }}</span>
           </button>
         </div>
       </header>
@@ -71,14 +71,14 @@ interface EditLine {
           [class.active]="activeViewTab === 'regular'" 
           (click)="switchViewTab('regular')">
           <i class="pi pi-book"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'دفتر قيود اليومية العامة' : 'General Journal' }}</span>
+          <span>{{ 'accounting.journal.ui.generalJournal' | translate }}</span>
         </button>
         <button 
           class="subnav-pill" 
           [class.active]="activeViewTab === 'recurring'" 
           (click)="switchViewTab('recurring')">
           <i class="pi pi-sync"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'القيود الدورية المتكررة' : 'Recurring Entries' }}</span>
+          <span>{{ 'accounting.journal.ui.recurringEntries' | translate }}</span>
           <span class="badge-count" *ngIf="recurringEntries().length">{{ recurringEntries().length }}</span>
         </button>
       </div>
@@ -91,7 +91,7 @@ interface EditLine {
         <div class="kpi-card">
           <div class="kpi-icon total"><i class="pi pi-file"></i></div>
           <div class="kpi-info">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'إجمالي القيود' : 'Total Entries' }}</span>
+            <span class="kpi-label">{{ 'accounting.journal.ui.totalEntries' | translate }}</span>
             <strong class="kpi-val">{{ kpi()?.totalEntries }}</strong>
           </div>
         </div>
@@ -99,7 +99,7 @@ interface EditLine {
         <div class="kpi-card">
           <div class="kpi-icon posted"><i class="pi pi-check-circle"></i></div>
           <div class="kpi-info">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'قيود مرحّلة' : 'Posted Entries' }}</span>
+            <span class="kpi-label">{{ 'accounting.journal.ui.postedEntries' | translate }}</span>
             <strong class="kpi-val text-emerald">{{ kpi()?.postedEntries }}</strong>
           </div>
         </div>
@@ -107,7 +107,7 @@ interface EditLine {
         <div class="kpi-card">
           <div class="kpi-icon draft"><i class="pi pi-file-edit"></i></div>
           <div class="kpi-info">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'قيود مسودة' : 'Draft Entries' }}</span>
+            <span class="kpi-label">{{ 'accounting.journal.ui.draftEntries' | translate }}</span>
             <strong class="kpi-val text-amber">{{ kpi()?.draftEntries }}</strong>
           </div>
         </div>
@@ -115,7 +115,7 @@ interface EditLine {
         <div class="kpi-card">
           <div class="kpi-icon volume"><i class="pi pi-chart-line"></i></div>
           <div class="kpi-info">
-            <span class="kpi-label">{{ langService.currentLang() === 'ar' ? 'إجمالي الحركات المالية' : 'Total Volume (SAR)' }}</span>
+            <span class="kpi-label">{{ 'accounting.journal.ui.totalVolumeSar' | translate }}</span>
             <strong class="kpi-val text-cyan">{{ kpi()?.totalDebitVolume | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
         </div>
@@ -129,7 +129,7 @@ interface EditLine {
             type="text" 
             [(ngModel)]="searchTerm" 
             (ngModelChange)="onFilterChange()"
-            [placeholder]="langService.currentLang() === 'ar' ? 'بحث برقم القيد، البيان، المرجع...' : 'Search by entry no, desc, reference...'" 
+            [placeholder]="'accounting.journal.ui.searchByEntryNoDesc' | translate" 
           />
         </div>
 
@@ -139,32 +139,32 @@ interface EditLine {
             class="filter-pill" 
             [class.active]="selectedStatus() === null" 
             (click)="setStatusFilter(null)">
-            {{ langService.currentLang() === 'ar' ? 'الكل' : 'All' }}
+            {{ 'accounting.journal.ui.all' | translate }}
           </button>
           <button 
             class="filter-pill" 
             [class.active]="selectedStatus() === 2" 
             (click)="setStatusFilter(2)">
             <span class="dot posted"></span>
-            {{ langService.currentLang() === 'ar' ? 'مرحّل' : 'Posted' }}
+            {{ 'accounting.journal.ui.posted' | translate }}
           </button>
           <button 
             class="filter-pill" 
             [class.active]="selectedStatus() === 1" 
             (click)="setStatusFilter(1)">
             <span class="dot draft"></span>
-            {{ langService.currentLang() === 'ar' ? 'مسودة' : 'Draft' }}
+            {{ 'accounting.journal.ui.draft' | translate }}
           </button>
           <button 
             class="filter-pill" 
             [class.active]="selectedStatus() === 3" 
             (click)="setStatusFilter(3)">
             <span class="dot reversed"></span>
-            {{ langService.currentLang() === 'ar' ? 'معكوس' : 'Reversed' }}
+            {{ 'accounting.journal.ui.reversed' | translate }}
           </button>
         </div>
 
-        <button class="btn-refresh" (click)="loadEntries()" [title]="langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh'">
+        <button class="btn-refresh" (click)="loadEntries()" [title]="'accounting.journal.ui.refresh' | translate">
           <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
         </button>
       </section>
@@ -173,34 +173,34 @@ interface EditLine {
       <main class="table-container">
         <div *ngIf="loading()" class="loading-state">
           <i class="pi pi-spin pi-spinner text-emerald text-3xl"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'جارٍ تحميل قيود اليومية...' : 'Loading journal entries...' }}</span>
+          <span>{{ 'accounting.journal.ui.loadingJournalEntries' | translate }}</span>
         </div>
 
         <div *ngIf="!loading() && !entries().length" class="empty-state">
           <div class="empty-icon">
             <i class="pi pi-folder-open"></i>
           </div>
-          <h3>{{ langService.currentLang() === 'ar' ? 'لا توجد قيود يومية مسجلة' : 'No journal entries found' }}</h3>
-          <p>{{ langService.currentLang() === 'ar' ? 'قم بإنشاء أول قيد يومية أو قيد افتتاحي عبر النقر على الزر أعلاه' : 'Start by creating your first journal entry' }}</p>
+          <h3>{{ 'accounting.journal.ui.noJournalEntriesFound' | translate }}</h3>
+          <p>{{ 'accounting.journal.ui.startByCreatingYourFirst' | translate }}</p>
           <button class="btn-primary mt-3" (click)="openCreateModal()">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إنشاء قيد الآن' : 'Create Entry' }}</span>
+            <span>{{ 'accounting.journal.ui.createEntry' | translate }}</span>
           </button>
         </div>
 
         <table *ngIf="!loading() && entries().length" class="entries-table">
           <thead>
             <tr>
-              <th>{{ langService.currentLang() === 'ar' ? 'رقم القيد' : 'Entry No' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'التاريخ' : 'Date' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'الفترة المحاسبية' : 'Period' }}</th>
-              <th class="col-desc-head">{{ langService.currentLang() === 'ar' ? 'البيان العام' : 'Description' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'المرجع' : 'Reference' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'إجمالي المدين' : 'Debit' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'إجمالي الدائن' : 'Credit' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'الأسطر' : 'Lines' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
-              <th>{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+              <th>{{ 'accounting.journal.ui.entryNo' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.date' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.period' | translate }}</th>
+              <th class="col-desc-head">{{ 'accounting.journal.ui.description' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.reference' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.debit' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.credit' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.lines' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.status' | translate }}</th>
+              <th>{{ 'accounting.journal.ui.actions' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -230,17 +230,17 @@ interface EditLine {
               <td class="col-actions">
                 <div class="action-buttons">
                   <!-- View Details -->
-                  <button class="btn-icon view" (click)="viewEntry(item)" [title]="langService.currentLang() === 'ar' ? 'عرض تفاصيل القيد' : 'View Details'">
+                  <button class="btn-icon view" (click)="viewEntry(item)" [title]="'accounting.journal.ui.viewDetails' | translate">
                     <i class="pi pi-eye"></i>
                   </button>
 
                   <!-- Attachments -->
-                  <button class="btn-icon" style="color: #0284c7;" (click)="openAttachments(item.id, item.entryNumber)" [title]="langService.currentLang() === 'ar' ? 'المستندات والمرفقات المؤيدة' : 'Attachments'">
+                  <button class="btn-icon" style="color: #0284c7;" (click)="openAttachments(item.id, item.entryNumber)" [title]="'accounting.journal.ui.attachments' | translate">
                     <i class="pi pi-paperclip"></i>
                   </button>
 
                   <!-- Print Voucher PDF -->
-                  <button class="btn-icon print" (click)="openPrintVoucher(item)" [title]="langService.currentLang() === 'ar' ? 'طباعة سند القيد (PDF)' : 'Print Voucher (PDF)'">
+                  <button class="btn-icon print" (click)="openPrintVoucher(item)" [title]="'accounting.journal.ui.printVoucherPdf' | translate">
                     <i class="pi pi-print"></i>
                   </button>
 
@@ -249,7 +249,7 @@ interface EditLine {
                     *ngIf="item.status === 1" 
                     class="btn-icon post" 
                     (click)="postEntry(item)" 
-                    [title]="langService.currentLang() === 'ar' ? 'ترحيل القيد' : 'Post Entry'">
+                    [title]="'accounting.journal.ui.postEntry' | translate">
                     <i class="pi pi-check"></i>
                   </button>
 
@@ -258,7 +258,7 @@ interface EditLine {
                     *ngIf="item.status === 2" 
                     class="btn-icon reverse" 
                     (click)="reverseEntry(item)" 
-                    [title]="langService.currentLang() === 'ar' ? 'عكس القيد (إلغاء)' : 'Reverse Entry'">
+                    [title]="'accounting.journal.ui.reverseEntry' | translate">
                     <i class="pi pi-undo"></i>
                   </button>
                 </div>
@@ -266,6 +266,19 @@ interface EditLine {
             </tr>
           </tbody>
         </table>
+
+        <!-- Table Pagination Bar -->
+        <app-pagination
+          *ngIf="!loading() && entries().length > 0"
+          [totalItems]="totalEntriesCount()"
+          [pageSize]="pageSize()"
+          [currentPage]="currentPage()"
+          [pageSizeOptions]="[5, 10, 20, 50, 100]"
+          [itemLabelAr]="('ui.journalEntries.d4d0ec' | translate)"
+          [itemLabelEn]="'journal entries'"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)">
+        </app-pagination>
       </main>
       </ng-container>
 
@@ -273,47 +286,47 @@ interface EditLine {
       <ng-container *ngIf="activeViewTab === 'recurring'">
         <section class="recurring-header-strip">
           <div class="rec-intro">
-            <h3>{{ langService.currentLang() === 'ar' ? 'جدول وقوالب القيود الدورية المتكررة (Recurring Journal Entries)' : 'Recurring Journal Entry Schedules' }}</h3>
-            <p>{{ langService.currentLang() === 'ar' ? 'إدارة القوالب المتكررة شهرياً أو دورياً (مثل الإيجارات المستحقة، رواتب الموظفين، إطفاء المصاريف) وتوليد قيود اليومية بنقرة زر واحدة' : 'Manage recurring entries and generate them into General Ledger on demand' }}</p>
+            <h3>{{ 'accounting.journal.ui.recurringJournalEntrySchedules' | translate }}</h3>
+            <p>{{ 'accounting.journal.ui.manageRecurringEntriesAndGenerate' | translate }}</p>
           </div>
           <button class="btn-primary" (click)="openCreateRecurringModal()">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إضافة قالب قيد دوري' : 'New Recurring Schedule' }}</span>
+            <span>{{ 'accounting.journal.ui.newRecurringSchedule' | translate }}</span>
           </button>
         </section>
 
         <main class="table-container">
           <div *ngIf="loadingRecurring()" class="loading-state">
             <i class="pi pi-spin pi-spinner text-emerald text-3xl"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'جارٍ تحميل قوالب القيود الدورية...' : 'Loading recurring schedules...' }}</span>
+            <span>{{ 'accounting.journal.ui.loadingRecurringSchedules' | translate }}</span>
           </div>
 
           <div *ngIf="!loadingRecurring() && !recurringEntries().length" class="empty-state">
             <div class="empty-icon"><i class="pi pi-sync"></i></div>
-            <h3>{{ langService.currentLang() === 'ar' ? 'لا توجد قوالب قيود دورية حتى الآن' : 'No recurring templates yet' }}</h3>
-            <p>{{ langService.currentLang() === 'ar' ? 'أنشئ أول قالب قيد دوري شهري مثل الإيجارات أو الرواتب لتوليد القيود بنقرة زر واحدة' : 'Create recurring templates to generate periodic entries with ease' }}</p>
+            <h3>{{ 'accounting.journal.ui.noRecurringTemplatesYet' | translate }}</h3>
+            <p>{{ 'accounting.journal.ui.createRecurringTemplatesToGenerate' | translate }}</p>
             <button class="btn-primary mt-3" (click)="openCreateRecurringModal()">
               <i class="pi pi-plus"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إنشاء قالب قيد دوري الآن' : 'Create Schedule' }}</span>
+              <span>{{ 'accounting.journal.ui.createSchedule' | translate }}</span>
             </button>
           </div>
 
           <table *ngIf="!loadingRecurring() && recurringEntries().length" class="entries-table">
             <thead>
               <tr>
-                <th>{{ langService.currentLang() === 'ar' ? 'عنوان القالب' : 'Template Title' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'دورية التكرار' : 'Frequency' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'تاريخ البدء' : 'Start Date' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'تاريخ التشغيل القادم' : 'Next Run' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'مرات التنفيذ' : 'Executions' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'إجمالي المدين' : 'Total (SAR)' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الأسطر' : 'Lines' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+                <th>{{ 'accounting.journal.ui.templateTitle' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.frequency' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.startDate' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.nextRun' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.executions' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.totalSar' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.lines' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.status' | translate }}</th>
+                <th>{{ 'accounting.journal.ui.actions' | translate }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let rec of recurringEntries()">
+              <tr *ngFor="let rec of paginatedRecurringEntries()">
                 <td class="col-desc">
                   <strong>{{ rec.title }}</strong>
                   <div class="text-xs text-muted">{{ rec.descriptionAr }}</div>
@@ -328,16 +341,16 @@ interface EditLine {
                 <td><span class="line-pill">{{ rec.lines?.length || 0 }}</span></td>
                 <td>
                   <span class="status-badge" [class.posted]="rec.isActive" [class.draft]="!rec.isActive">
-                    {{ rec.isActive ? (langService.currentLang() === 'ar' ? 'نشط' : 'Active') : (langService.currentLang() === 'ar' ? 'متوقف' : 'Inactive') }}
+                    {{ rec.isActive ? ('accounting.journal.ui.active' | translate) : ('accounting.journal.ui.inactive' | translate) }}
                   </span>
                 </td>
                 <td class="col-actions">
                   <div class="action-buttons">
-                    <button class="btn-icon post" style="background: rgba(16, 185, 129, 0.15); color: #059669; width: auto; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: bold; gap: 4px; display: inline-flex; align-items: center;" (click)="executeRecurringEntry(rec)" [title]="langService.currentLang() === 'ar' ? 'توليد وترحيل قيد اليومية الآن' : 'Execute Now'">
+                    <button class="btn-icon post" style="background: rgba(16, 185, 129, 0.15); color: #059669; width: auto; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: bold; gap: 4px; display: inline-flex; align-items: center;" (click)="executeRecurringEntry(rec)" [title]="'accounting.journal.ui.executeNow' | translate">
                       <i class="pi pi-bolt"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'توليد القيد الآن' : 'Execute Now' }}</span>
+                      <span>{{ 'accounting.journal.ui.executeNow1' | translate }}</span>
                     </button>
-                    <button class="btn-icon" style="color: #0284c7;" (click)="openAttachments(rec.id, rec.title)" [title]="langService.currentLang() === 'ar' ? 'المستندات والمرفقات' : 'Attachments'">
+                    <button class="btn-icon" style="color: #0284c7;" (click)="openAttachments(rec.id, rec.title)" [title]="'accounting.journal.ui.attachments1' | translate">
                       <i class="pi pi-paperclip"></i>
                     </button>
                   </div>
@@ -345,115 +358,226 @@ interface EditLine {
               </tr>
             </tbody>
           </table>
+
+          <!-- Recurring Table Pagination Bar -->
+          <app-pagination
+            *ngIf="!loadingRecurring() && recurringEntries().length > 0"
+            [totalItems]="recurringEntries().length"
+            [pageSize]="recurringPageSize()"
+            [currentPage]="currentRecurringPage()"
+            [pageSizeOptions]="[5, 10, 20, 50]"
+            [itemLabelAr]="('ui.journalEntries.ed6006' | translate)"
+            [itemLabelEn]="'schedules'"
+            (pageChange)="currentRecurringPage.set($event)"
+            (pageSizeChange)="recurringPageSize.set($event)">
+          </app-pagination>
         </main>
       </ng-container>
 
-      <!-- Create Recurring Entry Modal -->
+      <!-- Create Recurring Entry Modal (Upgraded to Project ERP Identity) -->
       <div class="modal-backdrop" *ngIf="showCreateRecurringModal()" (click)="closeCreateRecurringModal()">
-        <div class="modal-card" style="max-width: 850px;" (click)="$event.stopPropagation()">
+        <div class="modal-card recurring-modal" (click)="$event.stopPropagation()">
           <header class="modal-header">
             <div class="modal-title-box">
-              <i class="pi pi-sync text-emerald"></i>
-              <h3>{{ langService.currentLang() === 'ar' ? 'إنشاء قالب قيد دوري متكرر جديد' : 'New Recurring Entry Schedule' }}</h3>
+              <div class="modal-icon-badge">
+                <i class="pi pi-sync"></i>
+              </div>
+              <div>
+                <h3>{{ 'accounting.journal.ui.newRecurringEntrySchedule' | translate }}</h3>
+                <p class="modal-subtitle">{{ 'accounting.journal.ui.scheduleAutomatedRecurringJournalEntries' | translate }}</p>
+              </div>
             </div>
             <button class="btn-close" (click)="closeCreateRecurringModal()"><i class="pi pi-times"></i></button>
           </header>
 
           <section class="modal-body">
-            <div class="form-grid">
-              <div class="form-field full">
-                <label>{{ langService.currentLang() === 'ar' ? 'اسم القالب / الغرض *' : 'Template Title *' }}</label>
-                <input type="text" [(ngModel)]="newRecurringModel.title" placeholder="مثال: استحقاق إيجار المقر الشهري، رواتب الموظفين" />
+            <!-- Header Inputs Grid matching Project ERP standards -->
+            <div class="form-header-grid">
+              <div class="form-field col-span-2">
+                <label class="required">{{ 'accounting.journal.ui.templateTitlePurpose' | translate }}</label>
+                <input 
+                  type="text" 
+                  class="form-input font-bold" 
+                  [(ngModel)]="newRecurringModel.title" 
+                  [placeholder]="'accounting.journal.ui.egMonthlyHeadquartersRentAccrual' | translate" 
+                  required />
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'دورية التكرار *' : 'Frequency *' }}</label>
-                <select [(ngModel)]="newRecurringModel.frequency">
-                  <option [value]="1">{{ langService.currentLang() === 'ar' ? 'شهرياً (Monthly)' : 'Monthly' }}</option>
-                  <option [value]="2">{{ langService.currentLang() === 'ar' ? 'ربع سنوي (Quarterly)' : 'Quarterly' }}</option>
-                  <option [value]="3">{{ langService.currentLang() === 'ar' ? 'نصف سنوي (Semi-Annually)' : 'Semi-Annually' }}</option>
-                  <option [value]="4">{{ langService.currentLang() === 'ar' ? 'سنوياً (Annually)' : 'Annually' }}</option>
-                  <option [value]="5">{{ langService.currentLang() === 'ar' ? 'أسبوعياً (Weekly)' : 'Weekly' }}</option>
+                <label class="required">{{ 'accounting.journal.ui.frequency' | translate }}</label>
+                <select class="form-select font-bold" [(ngModel)]="newRecurringModel.frequency">
+                  <option [value]="1">{{ 'accounting.journal.ui.monthly' | translate }}</option>
+                  <option [value]="2">{{ 'accounting.journal.ui.quarterly' | translate }}</option>
+                  <option [value]="3">{{ 'accounting.journal.ui.semiannually' | translate }}</option>
+                  <option [value]="4">{{ 'accounting.journal.ui.annually' | translate }}</option>
+                  <option [value]="5">{{ 'accounting.journal.ui.weekly' | translate }}</option>
                 </select>
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'تاريخ بدء السريان *' : 'Start Date *' }}</label>
-                <input type="date" [(ngModel)]="newRecurringModel.startDate" />
+                <label class="required">{{ 'accounting.journal.ui.startDate1' | translate }}</label>
+                <input type="date" class="form-input font-mono" [(ngModel)]="newRecurringModel.startDate" required />
               </div>
 
-              <div class="form-field full">
-                <label>{{ langService.currentLang() === 'ar' ? 'البيان المحاسبي العربي *' : 'Arabic Description *' }}</label>
-                <input type="text" [(ngModel)]="newRecurringModel.descriptionAr" placeholder="إثبات استحقاق مصروف الإيجار الشهري" />
+              <div class="form-field">
+                <label>{{ 'accounting.journal.ui.endDateOptional' | translate }}</label>
+                <input type="date" class="form-input font-mono" [(ngModel)]="newRecurringModel.endDate" [placeholder]="'ui.journalEntries.6d06fe' | translate" />
+              </div>
+
+              <div class="form-field">
+                <label>{{ 'accounting.journal.ui.englishDescription' | translate }}</label>
+                <input 
+                  type="text" 
+                  class="form-input font-latin" 
+                  [(ngModel)]="newRecurringModel.descriptionEn" 
+                  placeholder="e.g. Monthly rent expense accrual" />
+              </div>
+
+              <div class="form-field col-span-3">
+                <label class="required">{{ 'accounting.journal.ui.arabicAccountingDescription' | translate }}</label>
+                <input 
+                  type="text" 
+                  class="form-input" 
+                  [(ngModel)]="newRecurringModel.descriptionAr" 
+                  [placeholder]="'accounting.journal.ui.arabicAccountingDescription1' | translate" 
+                  required />
               </div>
             </div>
 
             <!-- Lines Section -->
-            <div class="lines-editor mt-4">
+            <div class="lines-section">
               <div class="lines-header">
-                <h4>{{ langService.currentLang() === 'ar' ? 'أسطر القيد المتكرر (القيد المزدوج المتوازن)' : 'Recurring Accounting Lines' }}</h4>
+                <div class="lines-title-cluster">
+                  <i class="pi pi-list text-emerald"></i>
+                  <h4>{{ 'accounting.journal.ui.recurringAccountingLines' | translate }}</h4>
+                  <span class="lines-counter-badge">{{ recurringEditLines.length }} {{ 'ui.journalEntries.78fa68' | translate }}</span>
+                </div>
                 <button type="button" class="btn-add-line" (click)="addRecurringLine()">
-                  <i class="pi pi-plus"></i> {{ langService.currentLang() === 'ar' ? 'إضافة سطر' : 'Add Line' }}
+                  <i class="pi pi-plus"></i>
+                  <span>{{ 'accounting.journal.ui.addLine' | translate }}</span>
                 </button>
               </div>
 
-              <table class="editor-table">
-                <thead>
-                  <tr>
-                    <th>{{ langService.currentLang() === 'ar' ? 'الحساب' : 'Account' }}</th>
-                    <th>{{ langService.currentLang() === 'ar' ? 'البيان' : 'Narration' }}</th>
-                    <th style="width: 140px;">{{ langService.currentLang() === 'ar' ? 'مدين' : 'Debit' }}</th>
-                    <th style="width: 140px;">{{ langService.currentLang() === 'ar' ? 'دائن' : 'Credit' }}</th>
-                    <th style="width: 50px;"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let line of recurringEditLines; let idx = index">
-                    <td>
-                      <select [(ngModel)]="line.accountId" class="table-select">
-                        <option value="" disabled>{{ langService.currentLang() === 'ar' ? '— اختر الحساب —' : 'Select Account' }}</option>
-                        <option *ngFor="let acc of postableAccounts" [value]="acc.id">
-                          {{ acc.accountCode }} - {{ acc.nameAr }}
-                        </option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" [(ngModel)]="line.description" class="table-input" [placeholder]="newRecurringModel.descriptionAr || 'بيان السطر'" />
-                    </td>
-                    <td>
-                      <input type="number" step="0.01" [(ngModel)]="line.debit" (ngModelChange)="line.credit = 0" class="table-input amount" />
-                    </td>
-                    <td>
-                      <input type="number" step="0.01" [(ngModel)]="line.credit" (ngModelChange)="line.debit = 0" class="table-input amount" />
-                    </td>
-                    <td>
-                      <button *ngIf="recurringEditLines.length > 2" (click)="removeRecurringLine(idx)" class="btn-del-line"><i class="pi pi-trash"></i></button>
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr class="totals-foot">
-                    <td colspan="2"><strong>{{ langService.currentLang() === 'ar' ? 'الإجمالي:' : 'Total:' }}</strong></td>
-                    <td class="font-mono text-emerald"><strong>{{ totalRecurringDebit() | number:'1.2-2' }}</strong></td>
-                    <td class="font-mono text-cyan"><strong>{{ totalRecurringCredit() | number:'1.2-2' }}</strong></td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+              <div class="lines-table-wrapper">
+                <table class="lines-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 42px;" class="text-center">#</th>
+                      <th style="width: 30%;">{{ 'accounting.journal.ui.account' | translate }}</th>
+                      <th style="width: 22%;">{{ 'accounting.journal.ui.costCenter' | translate }}</th>
+                      <th>{{ 'accounting.journal.ui.lineDescription' | translate }}</th>
+                      <th style="width: 140px;" class="text-end">{{ 'accounting.journal.ui.debit1' | translate }}</th>
+                      <th style="width: 140px;" class="text-end">{{ 'accounting.journal.ui.credit1' | translate }}</th>
+                      <th style="width: 44px;" class="text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let line of recurringEditLines; let idx = index">
+                      <td class="line-index text-center">{{ idx + 1 }}</td>
+                      <td>
+                        <select class="line-select" [(ngModel)]="line.accountId" (ngModelChange)="triggerLinesUpdate()">
+                          <option value="" disabled>{{ 'accounting.journal.ui.selectAccount' | translate }}</option>
+                          <option *ngFor="let acc of postableAccounts" [value]="acc.id">
+                            {{ acc.accountCode }} - {{ langService.currentLang() === 'ar' ? acc.nameAr : acc.nameEn }}
+                          </option>
+                        </select>
+                      </td>
+                      <td>
+                        <select class="line-select" [(ngModel)]="line.costCenterId">
+                          <option [ngValue]="undefined">{{ 'accounting.journal.ui.none' | translate }}</option>
+                          <option *ngFor="let cc of costCenters" [value]="cc.id">
+                            {{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : cc.nameEn }}
+                          </option>
+                        </select>
+                      </td>
+                      <td>
+                        <input 
+                          type="text" 
+                          class="line-input" 
+                          [(ngModel)]="line.description" 
+                          [placeholder]="newRecurringModel.descriptionAr || ('accounting.journal.ui.lineDescription1' | translate)" />
+                      </td>
+                      <td>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0" 
+                          class="line-input text-end font-mono" 
+                          [(ngModel)]="line.debit" 
+                          (ngModelChange)="onRecurringDebitChange(line)" 
+                          (input)="onRecurringDebitChange(line)" 
+                          placeholder="0.00" />
+                      </td>
+                      <td>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0" 
+                          class="line-input text-end font-mono" 
+                          [(ngModel)]="line.credit" 
+                          (ngModelChange)="onRecurringCreditChange(line)" 
+                          (input)="onRecurringCreditChange(line)" 
+                          placeholder="0.00" />
+                      </td>
+                      <td class="text-center">
+                        <button 
+                          type="button" 
+                          class="btn-remove-line" 
+                          (click)="removeRecurringLine(idx)" 
+                          [disabled]="recurringEditLines.length <= 2" 
+                          [title]="'accounting.journal.ui.removeLine' | translate">
+                          <i class="pi pi-times"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-              <div *ngIf="!isRecurringBalanced()" class="balance-warning mt-2" style="color: #e11d48; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-                <i class="pi pi-exclamation-triangle"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'القيد غير متوازن، يجب أن يتساوى المدين والدائن مع إجمالي أكبر من صفر' : 'Entry must be balanced with debit equal to credit.' }}</span>
+              <!-- Luxury Live Balance Bar (Aligned with Al-Roban Brand Standards) -->
+              <div class="balance-summary-bar mt-3" [class.balanced]="isRecurringBalanced()" [class.unbalanced]="!isRecurringBalanced()">
+                <div class="balance-stats">
+                  <div class="stat-item">
+                    <span>{{ 'accounting.journal.ui.totalDebit' | translate }}</span>
+                    <strong class="font-mono text-emerald">{{ totalRecurringDebit() | number:'1.2-2' }} SAR</strong>
+                  </div>
+                  <div class="stat-divider"></div>
+                  <div class="stat-item">
+                    <span>{{ 'accounting.journal.ui.totalCredit' | translate }}</span>
+                    <strong class="font-mono text-indigo">{{ totalRecurringCredit() | number:'1.2-2' }} SAR</strong>
+                  </div>
+                  <div class="stat-divider"></div>
+                  <div class="stat-item">
+                    <span>{{ 'accounting.journal.ui.difference' | translate }}</span>
+                    <strong class="font-mono" [class.text-danger]="!isRecurringBalanced()">{{ recurringDifference() | number:'1.2-2' }} SAR</strong>
+                  </div>
+                </div>
+
+                <div class="balance-badge">
+                  <i class="pi" [ngClass]="isRecurringBalanced() ? 'pi-check-circle' : 'pi-exclamation-triangle'"></i>
+                  <span>{{ isRecurringBalanced() 
+                    ? ('accounting.journal.ui.balancedReadyToSchedule' | translate) 
+                    : ('accounting.journal.ui.unbalancedEntry' | translate) }}</span>
+                </div>
               </div>
             </div>
           </section>
 
           <footer class="modal-footer">
-            <button class="btn-secondary" (click)="closeCreateRecurringModal()">{{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}</button>
-            <button class="btn-primary" [disabled]="!isRecurringBalanced()" (click)="saveRecurringEntry()">
-              <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'حفظ قالب القيد الدوري' : 'Save Schedule' }}</span>
+            <button type="button" class="btn-secondary" (click)="closeCreateRecurringModal()">
+              {{ 'accounting.journal.ui.cancel' | translate }}
             </button>
+            <div class="footer-actions">
+              <button 
+                type="button" 
+                class="btn-post-now" 
+                [disabled]="!isRecurringBalanced() || savingRecurring()" 
+                (click)="saveRecurringEntry()">
+                <i class="pi pi-check" *ngIf="!savingRecurring()"></i>
+                <i class="pi pi-spin pi-spinner" *ngIf="savingRecurring()"></i>
+                <span>{{ 'accounting.journal.ui.saveSchedule' | translate }}</span>
+              </button>
+            </div>
           </footer>
         </div>
       </div>
@@ -464,7 +588,7 @@ interface EditLine {
           <header class="modal-header">
             <div class="modal-title-box">
               <i class="pi pi-book text-emerald"></i>
-              <h3>{{ langService.currentLang() === 'ar' ? 'إنشاء قيد يومية عامة جديد' : 'Create Journal Entry' }}</h3>
+              <h3>{{ 'accounting.journal.ui.createJournalEntry' | translate }}</h3>
             </div>
             <button class="btn-close" (click)="closeCreateModal()"><i class="pi pi-times"></i></button>
           </header>
@@ -473,32 +597,32 @@ interface EditLine {
             <!-- Header Inputs Grid -->
             <div class="form-header-grid">
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'تاريخ القيد:' : 'Entry Date:' }}</label>
+                <label>{{ 'accounting.journal.ui.entryDate' | translate }}</label>
                 <input type="date" class="form-input" [(ngModel)]="newEntryModel.entryDate" />
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'نوع القيد:' : 'Entry Type:' }}</label>
+                <label>{{ 'accounting.journal.ui.entryType' | translate }}</label>
                 <select class="form-select" [(ngModel)]="newEntryModel.entryType">
-                  <option [value]="1">{{ langService.currentLang() === 'ar' ? 'قيد يومية عادي (Daily)' : 'Daily' }}</option>
-                  <option [value]="2">{{ langService.currentLang() === 'ar' ? 'قيد افتتاحي (Opening)' : 'Opening' }}</option>
-                  <option [value]="3">{{ langService.currentLang() === 'ar' ? 'قيد تسوية جردية (Adjustment)' : 'Adjustment' }}</option>
-                  <option [value]="4">{{ langService.currentLang() === 'ar' ? 'قيد إقفال سنوي (Closing)' : 'Closing' }}</option>
+                  <option [value]="1">{{ 'accounting.journal.ui.daily' | translate }}</option>
+                  <option [value]="2">{{ 'accounting.journal.ui.opening' | translate }}</option>
+                  <option [value]="3">{{ 'accounting.journal.ui.adjustment' | translate }}</option>
+                  <option [value]="4">{{ 'accounting.journal.ui.closing' | translate }}</option>
                 </select>
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'رقم المرجع / السند:' : 'Reference No:' }}</label>
+                <label>{{ 'accounting.journal.ui.referenceNo' | translate }}</label>
                 <input type="text" class="form-input" [(ngModel)]="newEntryModel.referenceNumber" placeholder="REF-001" />
               </div>
 
               <div class="form-field col-span-2">
-                <label>{{ langService.currentLang() === 'ar' ? 'البيان العام للقيد (عربي):' : 'General Description (Ar):' }}</label>
-                <input type="text" class="form-input" [(ngModel)]="newEntryModel.descriptionAr" placeholder="مثال: سداد مصروف إيجار المقر لشهر أكتوبر" />
+                <label>{{ 'accounting.journal.ui.generalDescriptionAr' | translate }}</label>
+                <input type="text" class="form-input" [(ngModel)]="newEntryModel.descriptionAr" [placeholder]="'ui.journalEntries.078897' | translate" />
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'البيان بالإنجليزية:' : 'Description (En):' }}</label>
+                <label>{{ 'accounting.journal.ui.descriptionEn' | translate }}</label>
                 <input type="text" class="form-input" [(ngModel)]="newEntryModel.descriptionEn" placeholder="e.g. October Rent Payment" />
               </div>
             </div>
@@ -506,10 +630,10 @@ interface EditLine {
             <!-- Lines Section -->
             <div class="lines-section">
               <div class="lines-header">
-                <h4>{{ langService.currentLang() === 'ar' ? 'أسطر وأطراف القيد المحاسبي' : 'Journal Entry Lines' }}</h4>
+                <h4>{{ 'accounting.journal.ui.journalEntryLines' | translate }}</h4>
                 <button type="button" class="btn-add-line" (click)="addLine()">
                   <i class="pi pi-plus"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'إضافة سطر' : 'Add Line' }}</span>
+                  <span>{{ 'accounting.journal.ui.addLine' | translate }}</span>
                 </button>
               </div>
 
@@ -518,11 +642,11 @@ interface EditLine {
                   <thead>
                     <tr>
                       <th style="width: 40px;">#</th>
-                      <th style="width: 32%;">{{ langService.currentLang() === 'ar' ? 'الحساب المحاسبي' : 'Account' }}</th>
-                      <th style="width: 22%;">{{ langService.currentLang() === 'ar' ? 'مركز التكلفة' : 'Cost Center' }}</th>
-                      <th>{{ langService.currentLang() === 'ar' ? 'البيان' : 'Line Description' }}</th>
-                      <th style="width: 14%;">{{ langService.currentLang() === 'ar' ? 'مدين (Debit)' : 'Debit' }}</th>
-                      <th style="width: 14%;">{{ langService.currentLang() === 'ar' ? 'دائن (Credit)' : 'Credit' }}</th>
+                      <th style="width: 32%;">{{ 'accounting.journal.ui.account1' | translate }}</th>
+                      <th style="width: 22%;">{{ 'accounting.journal.ui.costCenter' | translate }}</th>
+                      <th>{{ 'accounting.journal.ui.lineDescription' | translate }}</th>
+                      <th style="width: 14%;">{{ 'accounting.journal.ui.debit1' | translate }}</th>
+                      <th style="width: 14%;">{{ 'accounting.journal.ui.credit1' | translate }}</th>
                       <th style="width: 38px;"></th>
                     </tr>
                   </thead>
@@ -531,7 +655,7 @@ interface EditLine {
                       <td class="line-index">{{ i + 1 }}</td>
                       <td>
                         <select class="line-select" [(ngModel)]="line.accountId">
-                          <option value="">{{ langService.currentLang() === 'ar' ? '— اختر الحساب —' : '— Select Account —' }}</option>
+                          <option value="">{{ 'accounting.journal.ui.selectAccount1' | translate }}</option>
                           <option *ngFor="let acc of postableAccounts" [value]="acc.id">
                             {{ acc.accountCode }} - {{ langService.currentLang() === 'ar' ? acc.nameAr : acc.nameEn }}
                           </option>
@@ -539,14 +663,14 @@ interface EditLine {
                       </td>
                       <td>
                         <select class="line-select" [(ngModel)]="line.costCenterId">
-                          <option [ngValue]="undefined">{{ langService.currentLang() === 'ar' ? '— بدون مركز تكلفة —' : '— None —' }}</option>
+                          <option [ngValue]="undefined">{{ 'accounting.journal.ui.none' | translate }}</option>
                           <option *ngFor="let cc of costCenters" [value]="cc.id">
                             {{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : cc.nameEn }}
                           </option>
                         </select>
                       </td>
                       <td>
-                        <input type="text" class="line-input" [(ngModel)]="line.description" placeholder="بيان السطر" />
+                        <input type="text" class="line-input" [(ngModel)]="line.description" [placeholder]="'accounting.journal.ui.description1' | translate" />
                       </td>
                       <td>
                         <input 
@@ -554,6 +678,7 @@ interface EditLine {
                           class="line-input text-end font-mono" 
                           [(ngModel)]="line.debit" 
                           (ngModelChange)="onDebitChange(line)"
+                          (input)="onDebitChange(line)"
                           min="0" 
                           step="0.01" 
                           placeholder="0.00" 
@@ -565,6 +690,7 @@ interface EditLine {
                           class="line-input text-end font-mono" 
                           [(ngModel)]="line.credit" 
                           (ngModelChange)="onCreditChange(line)"
+                          (input)="onCreditChange(line)"
                           min="0" 
                           step="0.01" 
                           placeholder="0.00" 
@@ -584,17 +710,17 @@ interface EditLine {
               <div class="balance-summary-bar" [class.balanced]="isBalanced()" [class.unbalanced]="!isBalanced()">
                 <div class="balance-stats">
                   <div class="stat-item">
-                    <span>{{ langService.currentLang() === 'ar' ? 'إجمالي المدين:' : 'Total Debit:' }}</span>
+                    <span>{{ 'accounting.journal.ui.totalDebit' | translate }}</span>
                     <strong class="font-mono">{{ totalDebit() | number:'1.2-2' }} SAR</strong>
                   </div>
                   <div class="stat-divider"></div>
                   <div class="stat-item">
-                    <span>{{ langService.currentLang() === 'ar' ? 'إجمالي الدائن:' : 'Total Credit:' }}</span>
+                    <span>{{ 'accounting.journal.ui.totalCredit' | translate }}</span>
                     <strong class="font-mono">{{ totalCredit() | number:'1.2-2' }} SAR</strong>
                   </div>
                   <div class="stat-divider"></div>
                   <div class="stat-item">
-                    <span>{{ langService.currentLang() === 'ar' ? 'الفرق (التباين):' : 'Difference:' }}</span>
+                    <span>{{ 'accounting.journal.ui.difference' | translate }}</span>
                     <strong class="font-mono" [class.text-danger]="!isBalanced()">{{ balanceDifference() | number:'1.2-2' }} SAR</strong>
                   </div>
                 </div>
@@ -602,8 +728,8 @@ interface EditLine {
                 <div class="balance-badge">
                   <i class="pi" [ngClass]="isBalanced() ? 'pi-check-circle' : 'pi-exclamation-triangle'"></i>
                   <span>{{ isBalanced() 
-                    ? (langService.currentLang() === 'ar' ? 'القيد متوازن 100% وجاهز للترحيل' : 'Balanced & Ready') 
-                    : (langService.currentLang() === 'ar' ? 'القيد غير متوازن' : 'Unbalanced') }}</span>
+                    ? ('accounting.journal.ui.balancedReady' | translate) 
+                    : ('accounting.journal.ui.unbalanced' | translate) }}</span>
                 </div>
               </div>
             </div>
@@ -611,7 +737,7 @@ interface EditLine {
 
           <footer class="modal-footer">
             <button type="button" class="btn-secondary" (click)="closeCreateModal()">
-              {{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+              {{ 'accounting.journal.ui.cancel' | translate }}
             </button>
 
             <div class="footer-actions">
@@ -621,7 +747,7 @@ interface EditLine {
                 (click)="saveEntry(false)" 
                 [disabled]="submitting()">
                 <i class="pi pi-save"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'حفظ كمسودة' : 'Save Draft' }}</span>
+                <span>{{ 'accounting.journal.ui.saveDraft' | translate }}</span>
               </button>
 
               <button 
@@ -631,7 +757,7 @@ interface EditLine {
                 [disabled]="!isBalanced() || submitting()">
                 <i class="pi pi-check" *ngIf="!submitting()"></i>
                 <i class="pi pi-spin pi-spinner" *ngIf="submitting()"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'ترحيل القيد فوراً' : 'Post Entry' }}</span>
+                <span>{{ 'accounting.journal.ui.postEntry1' | translate }}</span>
               </button>
             </div>
           </footer>
@@ -654,23 +780,23 @@ interface EditLine {
           <div class="modal-body" *ngIf="viewingEntry()">
             <div class="view-meta-grid">
               <div>
-                <span class="meta-label">{{ langService.currentLang() === 'ar' ? 'تاريخ القيد:' : 'Date:' }}</span>
+                <span class="meta-label">{{ 'accounting.journal.ui.date1' | translate }}</span>
                 <strong>{{ viewingEntry()?.entryDate | date:'yyyy-MM-dd' }}</strong>
               </div>
               <div>
-                <span class="meta-label">{{ langService.currentLang() === 'ar' ? 'الفترة المحاسبية:' : 'Period:' }}</span>
+                <span class="meta-label">{{ 'accounting.journal.ui.period1' | translate }}</span>
                 <strong>{{ viewingEntry()?.fiscalPeriodNameAr }}</strong>
               </div>
               <div>
-                <span class="meta-label">{{ langService.currentLang() === 'ar' ? 'المرجع:' : 'Reference:' }}</span>
+                <span class="meta-label">{{ 'accounting.journal.ui.reference1' | translate }}</span>
                 <strong>{{ viewingEntry()?.referenceNumber || '—' }}</strong>
               </div>
               <div>
-                <span class="meta-label">{{ langService.currentLang() === 'ar' ? 'المستخدم:' : 'Created By:' }}</span>
-                <strong>{{ viewingEntry()?.createdBy || 'النظام' }}</strong>
+                <span class="meta-label">{{ 'accounting.journal.ui.createdBy' | translate }}</span>
+                <strong>{{ viewingEntry()?.createdBy || ('ui.journalEntries.1a543a' | translate) }}</strong>
               </div>
               <div class="col-span-full general-desc-box">
-                <span class="meta-label">{{ langService.currentLang() === 'ar' ? 'البيان العام للقيد المحاسبي:' : 'General Description:' }}</span>
+                <span class="meta-label">{{ 'accounting.journal.ui.generalDescription' | translate }}</span>
                 <strong class="desc-text">{{ langService.currentLang() === 'ar' ? viewingEntry()?.descriptionAr : viewingEntry()?.descriptionEn }}</strong>
               </div>
             </div>
@@ -680,12 +806,12 @@ interface EditLine {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'رقم الحساب' : 'Code' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'اسم الحساب' : 'Account' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'مركز التكلفة' : 'Cost Center' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'بيان السطر' : 'Description' }}</th>
-                  <th class="text-end">{{ langService.currentLang() === 'ar' ? 'مدين (SAR)' : 'Debit' }}</th>
-                  <th class="text-end">{{ langService.currentLang() === 'ar' ? 'دائن (SAR)' : 'Credit' }}</th>
+                  <th>{{ 'accounting.journal.ui.code' | translate }}</th>
+                  <th>{{ 'accounting.journal.ui.account2' | translate }}</th>
+                  <th>{{ 'accounting.journal.ui.costCenter' | translate }}</th>
+                  <th>{{ 'accounting.journal.ui.description1' | translate }}</th>
+                  <th class="text-end">{{ 'accounting.journal.ui.debit2' | translate }}</th>
+                  <th class="text-end">{{ 'accounting.journal.ui.credit2' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -701,7 +827,7 @@ interface EditLine {
               </tbody>
               <tfoot>
                 <tr class="totals-row">
-                  <td colspan="5" class="text-end font-bold">{{ langService.currentLang() === 'ar' ? 'الإجمالي المتوازن:' : 'Balanced Total:' }}</td>
+                  <td colspan="5" class="text-end font-bold">{{ 'accounting.journal.ui.balancedTotal' | translate }}</td>
                   <td class="text-end font-mono font-bold">{{ viewingEntry()?.totalDebit | number:'1.2-2' }}</td>
                   <td class="text-end font-mono font-bold">{{ viewingEntry()?.totalCredit | number:'1.2-2' }}</td>
                 </tr>
@@ -712,7 +838,7 @@ interface EditLine {
             <div *ngIf="viewingEntry()?.status === 3" class="reversal-alert">
               <i class="pi pi-info-circle"></i>
               <div>
-                <strong>{{ langService.currentLang() === 'ar' ? 'تم إلغاء هذا القيد بقيد عكسي معتمد:' : 'This entry was reversed:' }}</strong>
+                <strong>{{ 'accounting.journal.ui.thisEntryWasReversed' | translate }}</strong>
                 <span>{{ viewingEntry()?.reversalReason }}</span>
               </div>
             </div>
@@ -720,13 +846,13 @@ interface EditLine {
 
           <footer class="modal-footer">
             <button type="button" class="btn-secondary" (click)="viewingEntry.set(null)">
-              {{ langService.currentLang() === 'ar' ? 'إغلاق' : 'Close' }}
+              {{ 'accounting.journal.ui.close' | translate }}
             </button>
 
             <!-- Print Voucher PDF Button -->
             <button type="button" class="btn-print-action" (click)="openPrintVoucher(viewingEntry()!)">
               <i class="pi pi-print"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'طباعة سند القيد (PDF)' : 'Print Voucher (PDF)' }}</span>
+              <span>{{ 'accounting.journal.ui.printVoucherPdf' | translate }}</span>
             </button>
 
             <button 
@@ -735,7 +861,7 @@ interface EditLine {
               class="btn-danger" 
               (click)="reverseEntry(viewingEntry()!)">
               <i class="pi pi-undo"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'عكس هذا القيد (إلغاء رسمي)' : 'Reverse Entry' }}</span>
+              <span>{{ 'accounting.journal.ui.reverseEntry1' | translate }}</span>
             </button>
           </footer>
         </div>
@@ -752,12 +878,12 @@ interface EditLine {
                 <i class="pi pi-print"></i>
               </div>
               <div class="toolbar-titles">
-                <strong>{{ langService.currentLang() === 'ar' ? 'معاينة سند قيد اليومية الرسمي (طباعة / حفظ PDF)' : 'Official Journal Voucher Preview (Print / PDF)' }}</strong>
+                <strong>{{ 'accounting.journal.ui.officialJournalVoucherPreviewPrint' | translate }}</strong>
                 <div class="toolbar-sub-line">
                   <span class="jv-tag">{{ printingEntry()?.entryNumber }}</span>
                   <span class="pages-badge">
                     <i class="pi pi-file"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? ('عدد الصفحات المقدر: ' + getEstimatedPages() + ' صفحة') : ('Estimated Pages: ' + getEstimatedPages()) }}</span>
+                    <span>{{ langService.currentLang() === 'ar' ? (('ui.journalEntries.d65a34' | translate) + getEstimatedPages() + ('accounting.journal.ui.page' | translate)) : ('Estimated Pages: ' + getEstimatedPages()) }}</span>
                   </span>
                 </div>
               </div>
@@ -766,12 +892,12 @@ interface EditLine {
             <div class="toolbar-actions">
               <button type="button" class="btn-print-main" (click)="printCurrentVoucher()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة السند / حفظ كـ PDF' : 'Print / Save as PDF' }}</span>
+                <span>{{ 'accounting.journal.ui.printSaveAsPdf' | translate }}</span>
               </button>
 
               <button type="button" class="btn-toolbar-close" (click)="closePrintVoucher()">
                 <i class="pi pi-times"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إغلاق' : 'Close' }}</span>
+                <span>{{ 'accounting.journal.ui.close' | translate }}</span>
               </button>
             </div>
           </div>
@@ -782,16 +908,29 @@ interface EditLine {
               
               <!-- 1. Official Corporate Header Strip -->
               <header class="voucher-header">
-                <!-- Right: Company Info -->
+                <!-- Right: Company Info & Logo -->
                 <div class="header-org-info">
-                  <div class="org-names">
-                    <h2 class="org-ar">{{ companyContext.activeCompany().nameAr || 'شركة الربان للحلول الذكية' }}</h2>
-                    <span class="org-en">{{ companyContext.activeCompany().nameEn || 'Al-Roban Smart Solutions Co.' }}</span>
+                  <div class="org-brand-row">
+                    <ng-container *ngIf="companyContext.activeCompany().logoUrl; else defaultVoucherLogo">
+                      <img [src]="companyContext.activeCompany().logoUrl" alt="Logo" class="voucher-company-logo" />
+                    </ng-container>
+                    <ng-template #defaultVoucherLogo>
+                      <div class="voucher-ship-emblem">
+                        <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                        </svg>
+                      </div>
+                    </ng-template>
+                    <div class="org-names">
+                      <h2 class="org-ar">{{ companyContext.activeCompany().nameAr || ('ui.vouchers.eae355' | translate) }}</h2>
+                      <span class="org-en">{{ companyContext.activeCompany().nameEn || 'Al-Roban Smart Solutions Co.' }}</span>
+                    </div>
                   </div>
                   <div class="org-meta-line">
-                    <span>{{ langService.currentLang() === 'ar' ? 'الرقم الضريبي:' : 'VAT No:' }} <strong class="font-mono">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
+                    <span>{{ 'accounting.journal.ui.vatNo' | translate }} <strong class="font-mono">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
                     <span class="dot">&bull;</span>
-                    <span>{{ langService.currentLang() === 'ar' ? 'س.ت:' : 'CR:' }} <strong class="font-mono">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
+                    <span>{{ 'accounting.journal.ui.cr' | translate }} <strong class="font-mono">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
                   </div>
                 </div>
 
@@ -806,9 +945,9 @@ interface EditLine {
                     </svg>
                   </div>
                   <h1 class="voucher-title-main">
-                    {{ langService.currentLang() === 'ar' ? 'سَنَد قَيْد يَوْمِيَّة عَامَّة' : 'GENERAL JOURNAL VOUCHER' }}
+                    {{ 'accounting.journal.ui.generalJournalVoucher' | translate }}
                   </h1>
-                  <span class="voucher-title-sub">طبقاً لمعايير الهيئة السعودية للمحاسبين (SOCPA) والمعايير الدولية (IFRS)</span>
+                  <span class="voucher-title-sub">{{ 'ui.journalEntries.ac5cc3' | translate }}</span>
                 </div>
 
                 <!-- Left: Verification QR & System Seal -->
@@ -856,7 +995,7 @@ interface EditLine {
                       <rect x="66" y="88" width="6" height="6" fill="#0f172a" />
                       <rect x="80" y="88" width="6" height="6" fill="#0f172a" />
                     </svg>
-                    <span class="qr-text">توثيق مالي معتمد</span>
+                    <span class="qr-text">{{ 'ui.journalEntries.a25961' | translate }}</span>
                   </div>
                 </div>
               </header>
@@ -864,32 +1003,32 @@ interface EditLine {
               <!-- 2. Meta Information Grid (Ultra Compact) -->
               <section class="voucher-meta-section">
                 <div class="meta-item jv-number-box">
-                  <span class="lbl">{{ langService.currentLang() === 'ar' ? 'رقم السند:' : 'Voucher No:' }}</span>
+                  <span class="lbl">{{ 'accounting.journal.ui.voucherNo' | translate }}</span>
                   <strong class="val font-mono text-emerald">{{ printingEntry()?.entryNumber }}</strong>
                 </div>
 
                 <div class="meta-item">
-                  <span class="lbl">{{ langService.currentLang() === 'ar' ? 'تاريخ القيد:' : 'Date:' }}</span>
+                  <span class="lbl">{{ 'accounting.journal.ui.date1' | translate }}</span>
                   <strong class="val font-mono">{{ printingEntry()?.entryDate | date:'yyyy-MM-dd' }}</strong>
                 </div>
 
                 <div class="meta-item">
-                  <span class="lbl">{{ langService.currentLang() === 'ar' ? 'الفترة المحاسبية:' : 'Period:' }}</span>
+                  <span class="lbl">{{ 'accounting.journal.ui.period1' | translate }}</span>
                   <strong class="val">{{ printingEntry()?.fiscalPeriodNameAr }}</strong>
                 </div>
 
                 <div class="meta-item">
-                  <span class="lbl">{{ langService.currentLang() === 'ar' ? 'رقم المرجع:' : 'Ref No:' }}</span>
+                  <span class="lbl">{{ 'accounting.journal.ui.refNo' | translate }}</span>
                   <strong class="val font-mono">{{ printingEntry()?.referenceNumber || '—' }}</strong>
                 </div>
 
                 <div class="meta-item">
-                  <span class="lbl">{{ langService.currentLang() === 'ar' ? 'نوع الحركة:' : 'Category:' }}</span>
+                  <span class="lbl">{{ 'accounting.journal.ui.category' | translate }}</span>
                   <strong class="val">{{ getEntryTypeText(printingEntry()?.entryType) }}</strong>
                 </div>
 
                 <div class="meta-item status-meta">
-                  <span class="lbl">{{ langService.currentLang() === 'ar' ? 'حالة الاعتماد:' : 'Status:' }}</span>
+                  <span class="lbl">{{ 'accounting.journal.ui.status1' | translate }}</span>
                   <span class="status-stamp-inline" [class.posted]="printingEntry()?.status === 2" [class.draft]="printingEntry()?.status === 1" [class.reversed]="printingEntry()?.status === 3">
                     <i class="pi" [ngClass]="printingEntry()?.status === 2 ? 'pi-verified' : (printingEntry()?.status === 3 ? 'pi-ban' : 'pi-file-edit')"></i>
                     {{ getStatusText(printingEntry()!.status) }}
@@ -902,7 +1041,7 @@ interface EditLine {
                 <div class="narration-inline">
                   <span class="narration-lbl">
                     <i class="pi pi-align-right text-emerald"></i>
-                    {{ langService.currentLang() === 'ar' ? 'البيان العام للقيد:' : 'General Narration:' }}
+                    {{ 'accounting.journal.ui.generalNarration' | translate }}
                   </span>
                   <strong class="narration-val">{{ printingEntry()?.descriptionAr }}</strong>
                   <span class="narration-en-sub font-mono" *ngIf="printingEntry()?.descriptionEn && printingEntry()?.descriptionEn !== printingEntry()?.descriptionAr">
@@ -917,12 +1056,12 @@ interface EditLine {
                   <thead>
                     <tr>
                       <th class="th-num">#</th>
-                      <th class="th-code">{{ langService.currentLang() === 'ar' ? 'رقم الحساب' : 'Account Code' }}</th>
-                      <th class="th-name">{{ langService.currentLang() === 'ar' ? 'اسم الحساب المحاسبي' : 'Account Title' }}</th>
-                      <th class="th-cost-center">{{ langService.currentLang() === 'ar' ? 'مركز التكلفة' : 'Cost Center' }}</th>
-                      <th class="th-desc">{{ langService.currentLang() === 'ar' ? 'بيان السطر المحاسبي' : 'Line Narration' }}</th>
-                      <th class="th-amount debit-head">{{ langService.currentLang() === 'ar' ? 'مدين (SAR)' : 'Debit (SAR)' }}</th>
-                      <th class="th-amount credit-head">{{ langService.currentLang() === 'ar' ? 'دائن (SAR)' : 'Credit (SAR)' }}</th>
+                      <th class="th-code">{{ 'accounting.journal.ui.accountCode' | translate }}</th>
+                      <th class="th-name">{{ 'accounting.journal.ui.accountTitle' | translate }}</th>
+                      <th class="th-cost-center">{{ 'accounting.journal.ui.costCenter' | translate }}</th>
+                      <th class="th-desc">{{ 'accounting.journal.ui.lineNarration' | translate }}</th>
+                      <th class="th-amount debit-head">{{ 'accounting.journal.ui.debitSar' | translate }}</th>
+                      <th class="th-amount credit-head">{{ 'accounting.journal.ui.creditSar' | translate }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -930,8 +1069,9 @@ interface EditLine {
                       <td class="td-num">{{ l.lineNumber || (lIdx + 1) }}</td>
                       <td class="td-code font-mono text-emerald"><strong>{{ l.accountCode }}</strong></td>
                       <td class="td-name">
-                        <strong class="name-ar">{{ l.accountNameAr }}</strong>
-                        <small class="name-en" *ngIf="l.accountNameEn">{{ l.accountNameEn }}</small>
+                        <strong class="item-name-text" [title]="langService.currentLang() === 'ar' ? l.accountNameAr : (l.accountNameEn || l.accountNameAr)">
+                          {{ langService.currentLang() === 'ar' ? l.accountNameAr : (l.accountNameEn || l.accountNameAr) }}
+                        </strong>
                       </td>
                       <td class="td-cost-center">{{ l.costCenterName || '—' }}</td>
                       <td class="td-desc">{{ l.description }}</td>
@@ -947,7 +1087,7 @@ interface EditLine {
                     <tr class="totals-row">
                       <td colspan="5" class="total-title">
                         <i class="pi pi-check-circle text-emerald"></i>
-                        <span>{{ langService.currentLang() === 'ar' ? 'إجمالي حركة القيد المتوازنة (Total):' : 'Balanced Movement Total:' }}</span>
+                        <span>{{ 'accounting.journal.ui.balancedMovementTotal' | translate }}</span>
                       </td>
                       <td class="total-debit font-mono">
                         {{ printingEntry()?.totalDebit | number:'1.2-2' }}
@@ -965,7 +1105,7 @@ interface EditLine {
                 <div class="tafqeet-card">
                   <div class="tafqeet-label">
                     <i class="pi pi-pencil text-emerald"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? 'المبلغ كتابةً وفقط:' : 'Amount in Words:' }}</span>
+                    <span>{{ 'accounting.journal.ui.amountInWords' | translate }}</span>
                   </div>
                   <div class="tafqeet-words">
                     <strong class="ar-words">{{ tafqeet.toArabicCurrency(printingEntry()?.totalDebit || 0) }}</strong>
@@ -978,59 +1118,55 @@ interface EditLine {
               <section *ngIf="printingEntry()?.status === 3" class="voucher-reversal-alert">
                 <i class="pi pi-exclamation-triangle"></i>
                 <div>
-                  <strong>تنبيه إلغاء رسمي:</strong> تم عكس هذا القيد بموجب حركة تصحيحية معتمدة.
-                  <span *ngIf="printingEntry()?.reversalReason">سبب الإلغاء: {{ printingEntry()?.reversalReason }}</span>
+                  <strong>{{ 'ui.journalEntries.28bccb' | translate }}</strong> {{ 'ui.journalEntries.d97ff9' | translate }}
+                  <span *ngIf="printingEntry()?.reversalReason">{{ 'ui.journalEntries.1055cd' | translate }} {{ printingEntry()?.reversalReason }}</span>
                 </div>
               </section>
 
               <!-- 6. Official Approval & Signatures Matrix -->
               <section class="voucher-signatures-section">
                 <div class="signature-box">
-                  <span class="sig-header">{{ langService.currentLang() === 'ar' ? 'المحاسب المسؤول (المُعِد)' : 'Prepared By' }}</span>
+                  <span class="sig-header">{{ 'accounting.journal.ui.preparedBy' | translate }}</span>
                   <div class="sig-content">
-                    <span class="person-name">{{ printingEntry()?.createdBy || 'المحاسب المالي' }}</span>
-                    <div class="sig-line">التوقيع: .................................</div>
-                    <span class="sig-date">التاريخ: {{ (printingEntry()?.createdAtUtc || printingEntry()?.entryDate) | date:'yyyy-MM-dd' }}</span>
+                    <span class="person-name">{{ printingEntry()?.createdBy || ('ui.vouchers.19cb0c' | translate) }}</span>
+                    <div class="sig-line">{{ 'ui.journalEntries.9067ee' | translate }}</div>
+                    <span class="sig-date">{{ 'hr.payroll.date' | translate }} {{ (printingEntry()?.createdAtUtc || printingEntry()?.entryDate) | date:'yyyy-MM-dd' }}</span>
                   </div>
                 </div>
 
                 <div class="signature-box">
-                  <span class="sig-header">{{ langService.currentLang() === 'ar' ? 'المراجعة والتدقيق الداخلي' : 'Audited By' }}</span>
+                  <span class="sig-header">{{ 'accounting.journal.ui.auditedBy' | translate }}</span>
                   <div class="sig-content">
-                    <span class="person-name">{{ langService.currentLang() === 'ar' ? 'قسم المراجعة الداخلية' : 'Internal Audit Dept.' }}</span>
-                    <div class="sig-line">التوقيع: .................................</div>
-                    <span class="sig-date">التاريخ: ... / ... / 2026</span>
+                    <span class="person-name">{{ 'accounting.journal.ui.internalAuditDept' | translate }}</span>
+                    <div class="sig-line">{{ 'ui.journalEntries.9067ee' | translate }}</div>
+                    <span class="sig-date">{{ 'ui.journalEntries.108619' | translate }}</span>
                   </div>
                 </div>
 
                 <div class="signature-box approved">
-                  <span class="sig-header">{{ langService.currentLang() === 'ar' ? 'الاعتماد النهائي / المدير المالي' : 'Approved By / CFO' }}</span>
+                  <span class="sig-header">{{ 'accounting.journal.ui.approvedByCfo' | translate }}</span>
                   <div class="sig-content">
-                    <span class="person-name">{{ langService.currentLang() === 'ar' ? 'الإدارة المالية العليا' : 'Chief Financial Officer' }}</span>
-                    <div class="sig-line">التوقيع والختم: .................................</div>
-                    <span class="sig-date">التاريخ: {{ (printingEntry()?.postedAtUtc || printingEntry()?.entryDate) | date:'yyyy-MM-dd' }}</span>
+                    <span class="person-name">{{ 'accounting.journal.ui.chiefFinancialOfficer' | translate }}</span>
+                    <div class="sig-line">{{ 'ui.journalEntries.0e591e' | translate }}</div>
+                    <span class="sig-date">{{ 'hr.payroll.date' | translate }} {{ (printingEntry()?.postedAtUtc || printingEntry()?.entryDate) | date:'yyyy-MM-dd' }}</span>
                   </div>
                 </div>
               </section>
 
-              <!-- 7. Document Footer & Compliance Line with Page Tracking -->
+              <!-- 7. Document Footer with Page Tracking -->
               <footer class="voucher-compliance-footer">
-                <div class="compliance-left">
-                  <span>تم الإصدار آلياً عبر نظام الربان المحاسبي المتكامل Al-Roban ERP & E-Invoicing</span>
-                  <span class="dot">&bull;</span>
-                  <span>معتمد طبقاً لمعايير SOCPA و IFRS</span>
-                </div>
+                <div class="compliance-left"></div>
                 <div class="compliance-center">
                   <span class="page-number-box">
                     <i class="pi pi-file"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? 'صفحة' : 'Page' }}</span>
+                    <span>{{ 'accounting.journal.ui.page' | translate }}</span>
                     <span class="page-current font-mono">1</span>
                     <span class="page-sep">/</span>
                     <span class="page-total font-mono">{{ getEstimatedPages() }}</span>
                   </span>
                 </div>
                 <div class="compliance-right font-mono">
-                  <span>{{ langService.currentLang() === 'ar' ? 'تاريخ الطباعة:' : 'Print Date:' }} {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+                  <span>{{ 'accounting.journal.ui.printDate' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
                 </div>
               </footer>
 
@@ -1055,7 +1191,7 @@ interface EditLine {
     :host {
       display: block;
       font-family: var(--font-arabic) !important;
-      padding: 1.5rem;
+      padding: 0.75rem 1rem;
       background: #F8FAFC;
       min-height: calc(100vh - 60px);
     }
@@ -1073,31 +1209,31 @@ interface EditLine {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.55rem;
+      margin-bottom: 0.45rem;
       background: #FFFFFF;
-      padding: 0.55rem 0.85rem;
-      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      border-radius: 7px;
       border: 1px solid #E2E8F0;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     }
 
     .tabs-subnav {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
+      gap: 0.35rem;
+      margin-bottom: 0.45rem;
       border-bottom: 1px solid #E2E8F0;
-      padding-bottom: 0.5rem;
+      padding-bottom: 0.35rem;
     }
     .subnav-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.45rem 1rem;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
       border-radius: 6px;
       border: 1px solid #E2E8F0;
       background: #FFFFFF;
       color: #64748B;
-      font-size: 0.875rem;
+      font-size: 0.76rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
@@ -1113,60 +1249,60 @@ interface EditLine {
     }
     .subnav-pill .badge-count {
       background: rgba(0, 0, 0, 0.15);
-      padding: 2px 7px;
-      border-radius: 12px;
-      font-size: 0.75rem;
+      padding: 1px 5px;
+      border-radius: 10px;
+      font-size: 0.68rem;
     }
     .recurring-header-strip {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #FFFFFF;
-      padding: 0.85rem 1.25rem;
-      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      border-radius: 7px;
       border: 1px solid #E2E8F0;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.55rem;
     }
     .recurring-header-strip h3 {
-      margin: 0 0 0.25rem 0;
-      font-size: 1.05rem;
+      margin: 0 0 0.15rem 0;
+      font-size: 0.95rem;
       color: #0F172A;
       font-weight: 700;
     }
     .recurring-header-strip p {
       margin: 0;
-      font-size: 0.825rem;
+      font-size: 0.74rem;
       color: #64748B;
     }
 
     .header-titles {
       display: flex;
       align-items: center;
-      gap: 0.65rem;
+      gap: 0.5rem;
     }
 
     .badge-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
       background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
       color: #059669;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.05rem;
+      font-size: 0.9rem;
       border: 1px solid rgba(16, 185, 129, 0.2);
     }
 
     .page-title {
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: #0F172A;
       margin: 0;
     }
 
     .page-subtitle {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
       color: #64748B;
       margin: 0;
     }
@@ -1175,16 +1311,16 @@ interface EditLine {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      height: 32px;
-      padding: 0 0.85rem;
+      height: 30px;
+      padding: 0 0.75rem;
       border-radius: 6px;
       border: none;
       background: linear-gradient(135deg, #10B981 0%, #059669 100%);
       color: #FFFFFF;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.22);
+      box-shadow: 0 1px 4px rgba(16, 185, 129, 0.22);
       transition: all 0.2s ease;
     }
 
@@ -1196,30 +1332,30 @@ interface EditLine {
     /* Compact KPI Strip */
     .kpi-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 0.5rem;
-      margin-bottom: 0.55rem;
+      margin-bottom: 0.45rem;
     }
 
     .kpi-card {
       background: #FFFFFF;
-      border-radius: 8px;
+      border-radius: 7px;
       border: 1px solid #E2E8F0;
-      padding: 0.45rem 0.75rem;
+      padding: 0.4rem 0.65rem;
       display: flex;
       align-items: center;
-      gap: 0.65rem;
+      gap: 0.5rem;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     }
 
     .kpi-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       flex-shrink: 0;
     }
 
@@ -1234,14 +1370,14 @@ interface EditLine {
     }
 
     .kpi-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: #64748B;
       font-weight: 600;
-      margin-bottom: 0.05rem;
+      margin-bottom: 0.03rem;
     }
 
     .kpi-val {
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 800;
       color: #0F172A;
       font-family: var(--font-latin) !important;
@@ -1259,35 +1395,35 @@ interface EditLine {
       align-items: center;
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      border-radius: 8px;
-      padding: 0.45rem 0.75rem;
-      margin-bottom: 0.55rem;
-      gap: 0.65rem;
+      border-radius: 7px;
+      padding: 0.35rem 0.65rem;
+      margin-bottom: 0.45rem;
+      gap: 0.5rem;
     }
 
     .search-box {
       position: relative;
       flex: 1;
-      max-width: 320px;
+      max-width: 300px;
       display: flex;
       align-items: center;
     }
 
     .search-box i {
       position: absolute;
-      inset-inline-start: 0.75rem;
+      inset-inline-start: 0.65rem;
       color: #94A3B8;
-      font-size: 0.82rem;
+      font-size: 0.75rem;
     }
 
     .search-box input {
       width: 100%;
-      height: 32px;
-      padding-inline-start: 2rem;
-      padding-inline-end: 0.65rem;
+      height: 28px;
+      padding-inline-start: 1.85rem;
+      padding-inline-end: 0.55rem;
       border: 1px solid #CBD5E1;
-      border-radius: 6px;
-      font-size: 0.8rem;
+      border-radius: 5px;
+      font-size: 0.76rem;
       color: #0F172A;
       outline: none;
       transition: border-color 0.15s ease;
@@ -1301,7 +1437,7 @@ interface EditLine {
       display: flex;
       background: #F1F5F9;
       padding: 2px;
-      border-radius: 6px;
+      border-radius: 5px;
       gap: 2px;
     }
 
@@ -1309,11 +1445,11 @@ interface EditLine {
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.2rem 0.65rem;
+      padding: 0.18rem 0.55rem;
       border: none;
       background: transparent;
       border-radius: 4px;
-      font-size: 0.76rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: #64748B;
       cursor: pointer;
@@ -1337,9 +1473,9 @@ interface EditLine {
     .dot.reversed { background: #EF4444; }
 
     .btn-refresh {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
       border: 1px solid #CBD5E1;
       background: #FFFFFF;
       color: #475569;
@@ -1537,18 +1673,72 @@ interface EditLine {
       border-radius: 16px;
       width: 100%;
       max-width: 960px;
-      max-height: 90vh;
+      max-height: 92vh;
       display: flex;
       flex-direction: column;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       overflow: hidden;
+      position: relative;
     }
 
     .view-modal {
       max-width: 820px;
     }
 
+    .recurring-modal {
+      max-width: 1080px;
+      width: 96%;
+    }
+
+    .modal-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .modal-subtitle {
+      font-size: 0.8rem;
+      color: #64748B;
+      margin: 0.2rem 0 0 0;
+    }
+
+    .lines-title-cluster {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .lines-counter-badge {
+      padding: 0.2rem 0.65rem;
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .required::after {
+      content: ' *';
+      color: #EF4444;
+    }
+
+    .col-span-3 {
+      grid-column: span 3;
+    }
+
+    .text-indigo { color: #4F46E5 !important; }
+
     .modal-header {
+      flex-shrink: 0;
       padding: 1.25rem 1.75rem;
       border-bottom: 1px solid #E2E8F0;
       display: flex;
@@ -1590,7 +1780,8 @@ interface EditLine {
     .modal-body {
       padding: 1.5rem 1.75rem;
       overflow-y: auto;
-      flex: 1;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .form-header-grid {
@@ -1795,12 +1986,17 @@ interface EditLine {
 
     /* Modal Footer */
     .modal-footer {
+      flex-shrink: 0;
       padding: 1rem 1.75rem;
       border-top: 1px solid #E2E8F0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #FFFFFF;
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
     }
 
     .footer-actions {
@@ -2155,6 +2351,35 @@ interface EditLine {
     .header-org-info {
       flex: 1;
       text-align: start;
+    }
+
+    .org-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .voucher-company-logo {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 1px solid #E2E8F0;
+      flex-shrink: 0;
+    }
+
+    .voucher-ship-emblem {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+      color: #047857;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(4, 120, 87, 0.25);
+      flex-shrink: 0;
     }
 
     .org-names .org-ar {
@@ -2649,64 +2874,113 @@ interface EditLine {
     /* Print Media Queries */
     @page {
       size: A4 portrait;
-      margin: 8mm 10mm 12mm 10mm;
-      @bottom-center {
-        content: "صفحة " counter(page) " من " counter(pages);
-        font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-        font-size: 7.5pt;
-        font-weight: 700;
-        color: #475569;
-      }
+      margin: 8mm 10mm;
     }
 
     @media print {
-      body * {
-        visibility: hidden !important;
-      }
-
-      .print-modal-backdrop, 
-      .print-modal-backdrop * {
-        visibility: visible !important;
-      }
-
-      .no-print {
+      .no-print,
+      .page-header,
+      .tabs-subnav,
+      .kpi-strip,
+      .filter-bar,
+      .table-container,
+      .recurring-header-strip,
+      .recurring-table-container,
+      app-pagination {
         display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      :host {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #FFFFFF !important;
+        min-height: auto !important;
+      }
+
+      .journal-page {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #FFFFFF !important;
       }
 
       .print-modal-backdrop {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
+        position: static !important;
+        display: block !important;
+        visibility: visible !important;
         width: 100% !important;
-        min-height: 100% !important;
+        min-height: auto !important;
         padding: 0 !important;
         margin: 0 !important;
         background: #FFFFFF !important;
         overflow: visible !important;
-        z-index: 999999 !important;
+        box-shadow: none !important;
+        border: none !important;
       }
 
       .print-preview-dialog {
+        position: static !important;
+        display: block !important;
+        visibility: visible !important;
         max-width: 100% !important;
         width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
+        background: #FFFFFF !important;
+        box-shadow: none !important;
+        border: none !important;
       }
 
       .print-paper-container {
+        position: static !important;
+        display: block !important;
+        visibility: visible !important;
         padding: 0 !important;
         margin: 0 !important;
+        background: #FFFFFF !important;
         box-shadow: none !important;
       }
 
       .official-voucher-sheet {
+        position: static !important;
+        display: flex !important;
+        flex-direction: column !important;
+        visibility: visible !important;
         width: 100% !important;
+        max-width: 100% !important;
         min-height: auto !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
-        padding: 0 !important;
+        padding: 5mm 8mm !important;
         margin: 0 !important;
+        background: #FFFFFF !important;
+      }
+
+      .voucher-header {
+        display: flex !important;
+        visibility: visible !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        padding-bottom: 0.85rem !important;
+        border-bottom: 2px solid #047857 !important;
+        margin-bottom: 0.85rem !important;
+      }
+
+      .header-org-info,
+      .header-center-title,
+      .header-left-seal,
+      .org-brand-row,
+      .voucher-ship-emblem,
+      .voucher-company-logo,
+      .brand-emblem-box,
+      .qr-box {
+        display: flex !important;
+        visibility: visible !important;
       }
 
       /* Multi-page table handling & headers repetition */
@@ -2753,12 +3027,30 @@ export class JournalEntriesComponent implements OnInit {
   entries = signal<JournalEntrySummary[]>([]);
   kpi = signal<JournalEntryKpi | null>(null);
 
+  // Pagination for General Journal
+  currentPage = signal<number>(1);
+  pageSize = signal<number>(10);
+  totalEntriesCount = signal<number>(0);
+
+  // Pagination for Recurring Journal Entries
+  currentRecurringPage = signal<number>(1);
+  recurringPageSize = signal<number>(10);
+
   searchTerm = '';
   selectedStatus = signal<number | null>(null);
 
   // Sub-tab Navigation
   activeViewTab: 'regular' | 'recurring' = 'regular';
   recurringEntries = signal<any[]>([]);
+
+  paginatedRecurringEntries = computed(() => {
+    const list = this.recurringEntries();
+    const page = this.currentRecurringPage();
+    const size = this.recurringPageSize();
+    const start = (page - 1) * size;
+    return list.slice(start, start + size);
+  });
+
   loadingRecurring = signal<boolean>(false);
   showCreateRecurringModal = signal<boolean>(false);
 
@@ -2771,24 +3063,55 @@ export class JournalEntriesComponent implements OnInit {
     endDate: ''
   };
 
+  linesChangeTrigger = signal<number>(0);
+
+  triggerLinesUpdate() {
+    this.linesChangeTrigger.update(v => v + 1);
+  }
+
   recurringEditLines: EditLine[] = [
     { accountId: '', description: '', debit: 0, credit: 0 },
     { accountId: '', description: '', debit: 0, credit: 0 }
   ];
 
   totalRecurringDebit = computed(() => {
+    this.linesChangeTrigger();
     return Math.round(this.recurringEditLines.reduce((acc, curr) => acc + (Number(curr.debit) || 0), 0) * 100) / 100;
   });
 
   totalRecurringCredit = computed(() => {
+    this.linesChangeTrigger();
     return Math.round(this.recurringEditLines.reduce((acc, curr) => acc + (Number(curr.credit) || 0), 0) * 100) / 100;
   });
 
   isRecurringBalanced = computed(() => {
-    return this.recurringEditLines.length >= 2 &&
+    this.linesChangeTrigger();
+    const validLines = this.recurringEditLines.filter(l => l.accountId && ((Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0));
+    return validLines.length >= 2 &&
            this.totalRecurringDebit() === this.totalRecurringCredit() &&
            this.totalRecurringDebit() > 0;
   });
+
+  recurringDifference = computed(() => {
+    this.linesChangeTrigger();
+    return Math.abs(Math.round((this.totalRecurringDebit() - this.totalRecurringCredit()) * 100) / 100);
+  });
+
+  savingRecurring = signal<boolean>(false);
+
+  onRecurringDebitChange(line: EditLine) {
+    if (line.debit && line.debit > 0) {
+      line.credit = 0;
+    }
+    this.triggerLinesUpdate();
+  }
+
+  onRecurringCreditChange(line: EditLine) {
+    if (line.credit && line.credit > 0) {
+      line.debit = 0;
+    }
+    this.triggerLinesUpdate();
+  }
 
   // Universal Document Attachments Modal
   showAttachmentsModal = false;
@@ -2824,19 +3147,24 @@ export class JournalEntriesComponent implements OnInit {
   editLines: EditLine[] = [];
 
   totalDebit = computed(() => {
+    this.linesChangeTrigger();
     return Math.round(this.editLines.reduce((acc, curr) => acc + (Number(curr.debit) || 0), 0) * 100) / 100;
   });
 
   totalCredit = computed(() => {
+    this.linesChangeTrigger();
     return Math.round(this.editLines.reduce((acc, curr) => acc + (Number(curr.credit) || 0), 0) * 100) / 100;
   });
 
   balanceDifference = computed(() => {
+    this.linesChangeTrigger();
     return Math.round(Math.abs(this.totalDebit() - this.totalCredit()) * 100) / 100;
   });
 
   isBalanced = computed(() => {
-    return this.editLines.length >= 2 && 
+    this.linesChangeTrigger();
+    const validLines = this.editLines.filter(l => l.accountId && ((Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0));
+    return validLines.length >= 2 && 
            this.balanceDifference() === 0 && 
            this.totalDebit() > 0;
   });
@@ -2857,6 +3185,10 @@ export class JournalEntriesComponent implements OnInit {
 
   ngOnInit() {
     this.activeRoute.queryParamMap.subscribe(params => {
+      const search = params.get('search');
+      if (search) {
+        this.searchTerm = search.replace(/^#/, '').trim();
+      }
       const tab = params.get('tab');
       if (tab === 'recurring') {
         this.activeViewTab = 'recurring';
@@ -2881,7 +3213,7 @@ export class JournalEntriesComponent implements OnInit {
   loadRecurringEntries() {
     this.loadingRecurring.set(true);
     const companyId = this.companyContext.activeCompany()?.id;
-    this.http.get<any[]>(`/api/journal-entries/recurring${companyId ? '?companyId=' + companyId : ''}`).subscribe({
+    this.journalService.getRecurringEntries(companyId).subscribe({
       next: (res) => {
         this.recurringEntries.set(res || []);
         this.loadingRecurring.set(false);
@@ -2892,27 +3224,35 @@ export class JournalEntriesComponent implements OnInit {
 
   executeRecurringEntry(item: any) {
     Swal.fire({
-      title: 'تأكيد تشغيل القيد الدوري',
-      text: `هل تريد تشغيل القيد الدوري "${item.title}" وتوليد قيد يومية فعلي في دفتر الأستاذ العام بتاريخ اليوم؟`,
+      title: this.langService.t('accounting.journalEntries.alerts.executeRecurringTitle'),
+      text: this.langService.t('accounting.journalEntries.alerts.executeRecurringText', { title: item.title }),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، تشغيل وتوليد القيد',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: this.langService.t('accounting.journalEntries.alerts.executeRecurringConfirm'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#059669'
     }).then(res => {
       if (res.isConfirmed) {
-        this.http.post<any>(`/api/journal-entries/recurring/${item.id}/execute`, {}).subscribe({
+        this.journalService.executeRecurringEntry(item.id).subscribe({
           next: (r) => {
             Swal.fire({
-              title: 'تم توليد القيد بنجاح! 🚀',
-              html: `تم إنشاء قيد اليومية رقم <strong>${r.journalEntryNumber}</strong> بنجاح وترحيله للأستاذ العام.<br><small class="text-muted">موعد التشغيل القادم: ${new Date(r.nextRunDate).toLocaleDateString('ar-SA')}</small>`,
-              icon: 'success'
+              title: this.langService.t('accounting.journalEntries.alerts.executeRecurringSuccessTitle'),
+              html: this.langService.t('accounting.journalEntries.alerts.executeRecurringSuccessHtml', {
+                number: r.journalEntryNumber,
+                date: new Date(r.nextRunDate).toLocaleDateString(this.langService.currentLang() === 'ar' ? 'ar-SA' : 'en-US')
+              }),
+              icon: 'success',
+              confirmButtonColor: '#10B981'
             });
             this.loadRecurringEntries();
             this.loadEntries();
           },
           error: (err) => {
-            Swal.fire('خطأ في تشغيل القيد', err.error?.description || err.message, 'error');
+            Swal.fire(
+              this.langService.t('accounting.journalEntries.alerts.executeRecurringFailed'),
+              err.error?.description || err.message,
+              'error'
+            );
           }
         });
       }
@@ -2932,6 +3272,7 @@ export class JournalEntriesComponent implements OnInit {
       { accountId: '', description: '', debit: 0, credit: 0 },
       { accountId: '', description: '', debit: 0, credit: 0 }
     ];
+    this.triggerLinesUpdate();
     this.showCreateRecurringModal.set(true);
   }
 
@@ -2941,49 +3282,106 @@ export class JournalEntriesComponent implements OnInit {
 
   addRecurringLine() {
     this.recurringEditLines.push({ accountId: '', description: '', debit: 0, credit: 0 });
+    this.triggerLinesUpdate();
   }
 
   removeRecurringLine(index: number) {
     if (this.recurringEditLines.length > 2) {
       this.recurringEditLines.splice(index, 1);
+      this.triggerLinesUpdate();
     }
   }
 
   saveRecurringEntry() {
     if (!this.newRecurringModel.title || !this.newRecurringModel.descriptionAr) {
-      Swal.fire('بيانات ناقصة', 'يرجى إدخال عنوان وبيان القيد الدوري', 'warning');
-      return;
-    }
-    if (!this.isRecurringBalanced()) {
-      Swal.fire('القيد غير متوازن', 'يجب أن يتطابق إجمالي المدين والدائن مع إضافة سطرين محاسبيين على الأقل', 'warning');
+      Swal.fire(
+        this.langService.t('accounting.journalEntries.alerts.missingDataTitle'),
+        this.langService.t('accounting.journalEntries.alerts.enterTitleAndDesc'),
+        'warning'
+      );
       return;
     }
 
+    // Filter out completely untouched/empty lines
+    const activeLines = this.recurringEditLines.filter(l => l.accountId || (Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0 || (l.description && l.description.trim().length > 0));
+
+    if (activeLines.length < 2) {
+      Swal.fire(
+        this.langService.t('accounting.journalEntries.alerts.missingDataTitle'),
+        this.langService.t('accounting.journalEntries.alerts.minTwoLinesRecurring'),
+        'warning'
+      );
+      return;
+    }
+
+    for (let i = 0; i < activeLines.length; i++) {
+      const line = activeLines[i];
+      if (!line.accountId) {
+        Swal.fire(
+          this.langService.t('accounting.journalEntries.alerts.missingDataTitle'),
+          this.langService.t('accounting.journalEntries.alerts.selectAccountRow', { row: i + 1 }),
+          'warning'
+        );
+        return;
+      }
+      if ((Number(line.debit) || 0) === 0 && (Number(line.credit) || 0) === 0) {
+        Swal.fire(
+          this.langService.t('accounting.journalEntries.alerts.missingDataTitle'),
+          this.langService.t('accounting.journalEntries.alerts.enterDebitOrCreditRow', { row: i + 1 }),
+          'warning'
+        );
+        return;
+      }
+    }
+
+    if (!this.isRecurringBalanced()) {
+      Swal.fire(
+        this.langService.t('accounting.journalEntries.alerts.unbalancedRecurringTitle'),
+        this.langService.t('accounting.journalEntries.alerts.unbalancedRecurringText'),
+        'warning'
+      );
+      return;
+    }
+
+    const companyId = this.companyContext.activeCompany()?.id || '11111111-2222-3333-4444-555555555555';
     const payload = {
-      companyId: this.companyContext.activeCompany()?.id,
-      title: this.newRecurringModel.title,
-      descriptionAr: this.newRecurringModel.descriptionAr,
-      descriptionEn: this.newRecurringModel.descriptionEn || this.newRecurringModel.descriptionAr,
-      frequency: Number(this.newRecurringModel.frequency),
-      startDate: this.newRecurringModel.startDate,
-      endDate: this.newRecurringModel.endDate || null,
-      lines: this.recurringEditLines.map(l => ({
+      companyId,
+      title: this.newRecurringModel.title.trim(),
+      descriptionAr: this.newRecurringModel.descriptionAr.trim(),
+      descriptionEn: (this.newRecurringModel.descriptionEn || this.newRecurringModel.descriptionAr).trim(),
+      frequency: Number(this.newRecurringModel.frequency) || 1,
+      startDate: this.newRecurringModel.startDate ? new Date(this.newRecurringModel.startDate).toISOString() : new Date().toISOString(),
+      endDate: (this.newRecurringModel.endDate && this.newRecurringModel.endDate.trim().length > 0) ? new Date(this.newRecurringModel.endDate).toISOString() : null,
+      lines: activeLines.map(l => ({
         accountId: l.accountId,
         debit: Number(l.debit) || 0,
         credit: Number(l.credit) || 0,
-        description: l.description || this.newRecurringModel.descriptionAr,
-        costCenterId: l.costCenterId || null
+        description: (l.description && l.description.trim().length > 0) ? l.description.trim() : this.newRecurringModel.descriptionAr.trim(),
+        costCenterId: (l.costCenterId && l.costCenterId !== 'undefined' && l.costCenterId !== 'null') ? l.costCenterId : null
       }))
     };
 
-    this.http.post('/api/journal-entries/recurring', payload).subscribe({
+    this.savingRecurring.set(true);
+    this.journalService.createRecurringEntry(payload).subscribe({
       next: () => {
-        Swal.fire('تم الحفظ', 'تم حفظ قالب القيد الدوري بنجاح', 'success');
+        this.savingRecurring.set(false);
+        Swal.fire({
+          icon: 'success',
+          title: this.langService.t('accounting.journalEntries.alerts.recurringSavedTitle'),
+          text: this.langService.t('accounting.journalEntries.alerts.recurringSavedText', { title: payload.title }),
+          confirmButtonColor: '#10B981'
+        });
         this.closeCreateRecurringModal();
         this.loadRecurringEntries();
       },
       error: (err) => {
-        Swal.fire('خطأ في الحفظ', err.error?.description || err.message, 'error');
+        this.savingRecurring.set(false);
+        Swal.fire({
+          icon: 'error',
+          title: this.langService.t('accounting.journalEntries.alerts.recurringSaveErrorTitle'),
+          text: err.error?.description || err.error?.title || err.message || this.langService.t('accounting.journalEntries.alerts.recurringSaveErrorDefault'),
+          confirmButtonColor: '#0F172A'
+        });
       }
     });
   }
@@ -2991,14 +3389,19 @@ export class JournalEntriesComponent implements OnInit {
   loadEntries() {
     this.loading.set(true);
     const companyId = this.companyContext.activeCompany()?.id;
+    const page = this.currentPage();
+    const size = this.pageSize();
 
     this.journalService.getList({
       companyId,
       status: this.selectedStatus() ?? undefined,
-      searchTerm: this.searchTerm || undefined
+      searchTerm: this.searchTerm || undefined,
+      skip: (page - 1) * size,
+      take: size
     }).subscribe({
       next: (res) => {
         this.entries.set(res.items);
+        this.totalEntriesCount.set(res.totalCount || res.items.length);
         this.kpi.set(res.kpi);
         this.loading.set(false);
       },
@@ -3006,6 +3409,17 @@ export class JournalEntriesComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  onPageChange(page: number) {
+    this.currentPage.set(page);
+    this.loadEntries();
+  }
+
+  onPageSizeChange(size: number) {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+    this.loadEntries();
   }
 
   loadReferenceData() {
@@ -3039,11 +3453,13 @@ export class JournalEntriesComponent implements OnInit {
   }
 
   onFilterChange() {
+    this.currentPage.set(1);
     this.loadEntries();
   }
 
   setStatusFilter(status: number | null) {
     this.selectedStatus.set(status);
+    this.currentPage.set(1);
     this.loadEntries();
   }
 
@@ -3090,11 +3506,13 @@ export class JournalEntriesComponent implements OnInit {
       debit: 0,
       credit: 0
     });
+    this.triggerLinesUpdate();
   }
 
   removeLine(index: number) {
     if (this.editLines.length > 2) {
       this.editLines.splice(index, 1);
+      this.triggerLinesUpdate();
     }
   }
 
@@ -3102,36 +3520,64 @@ export class JournalEntriesComponent implements OnInit {
     if (line.debit > 0) {
       line.credit = 0;
     }
+    this.triggerLinesUpdate();
   }
 
   onCreditChange(line: EditLine) {
     if (line.credit > 0) {
       line.debit = 0;
     }
+    this.triggerLinesUpdate();
   }
 
   saveEntry(postImmediately: boolean) {
-    const isAr = this.langService.currentLang() === 'ar';
-
     if (!this.newEntryModel.descriptionAr) {
-      Swal.fire(isAr ? 'تنبيه' : 'Warning', isAr ? 'يرجى إدخال البيان العام للقيد' : 'Please provide description', 'warning');
+      Swal.fire(
+        this.langService.t('common.warning'),
+        this.langService.t('accounting.journalEntries.alerts.provideDescription'),
+        'warning'
+      );
       return;
     }
 
-    for (let i = 0; i < this.editLines.length; i++) {
-      const line = this.editLines[i];
+    // Filter out completely untouched/empty lines (e.g. if a user added a row by mistake or didn't need it)
+    const activeLines = this.editLines.filter(l => l.accountId || (Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0 || (l.description && l.description.trim().length > 0));
+
+    if (activeLines.length < 2) {
+      Swal.fire(
+        this.langService.t('accounting.journalEntries.alerts.accountingWarning'),
+        this.langService.t('accounting.journalEntries.alerts.minTwoLinesComplete'),
+        'warning'
+      );
+      return;
+    }
+
+    for (let i = 0; i < activeLines.length; i++) {
+      const line = activeLines[i];
       if (!line.accountId) {
-        Swal.fire(isAr ? 'تنبيه' : 'Warning', isAr ? `يرجى تحديد الحساب للسطر رقم ${i + 1}` : `Select account for line ${i + 1}`, 'warning');
+        Swal.fire(
+          this.langService.t('common.warning'),
+          this.langService.t('accounting.journalEntries.alerts.selectAccountLine', { row: i + 1 }),
+          'warning'
+        );
         return;
       }
-      if (line.debit === 0 && line.credit === 0) {
-        Swal.fire(isAr ? 'تنبيه' : 'Warning', isAr ? `يجب إدخال قيمة مدين أو دائن للسطر رقم ${i + 1}` : `Enter debit or credit for line ${i + 1}`, 'warning');
+      if ((Number(line.debit) || 0) === 0 && (Number(line.credit) || 0) === 0) {
+        Swal.fire(
+          this.langService.t('common.warning'),
+          this.langService.t('accounting.journalEntries.alerts.enterDebitCreditLine', { row: i + 1 }),
+          'warning'
+        );
         return;
       }
     }
 
     if (postImmediately && !this.isBalanced()) {
-      Swal.fire(isAr ? 'خطأ محاسبي' : 'Accounting Error', isAr ? 'لا يمكن ترحيل قيد غير متوازن' : 'Cannot post unbalanced entry', 'error');
+      Swal.fire(
+        this.langService.t('accounting.journalEntries.alerts.accountingError'),
+        this.langService.t('accounting.journalEntries.alerts.cannotPostUnbalanced'),
+        'error'
+      );
       return;
     }
 
@@ -3146,7 +3592,7 @@ export class JournalEntriesComponent implements OnInit {
       descriptionEn: this.newEntryModel.descriptionEn || this.newEntryModel.descriptionAr,
       referenceNumber: this.newEntryModel.referenceNumber || undefined,
       postImmediately,
-      lines: this.editLines.map(l => ({
+      lines: activeLines.map(l => ({
         accountId: l.accountId,
         costCenterId: l.costCenterId || undefined,
         description: l.description || this.newEntryModel.descriptionAr,
@@ -3162,17 +3608,17 @@ export class JournalEntriesComponent implements OnInit {
         Swal.fire({
           icon: 'success',
           title: postImmediately 
-            ? (isAr ? 'تم ترحيل القيد بنجاح' : 'Entry Posted Successfully')
-            : (isAr ? 'تم حفظ القيد كمسودة' : 'Draft Saved Successfully'),
-          text: isAr ? `رقم القيد: ${res.entryNumber}` : `Entry No: ${res.entryNumber}`
+            ? this.langService.t('accounting.journalEntries.alerts.entryPostedSuccess')
+            : this.langService.t('accounting.journalEntries.alerts.draftSavedSuccess'),
+          text: this.langService.t('accounting.journalEntries.alerts.entryNumber', { number: res.entryNumber })
         });
         this.loadEntries();
       },
       error: (err) => {
         this.submitting.set(false);
         Swal.fire(
-          isAr ? 'خطأ في القيد' : 'Entry Error', 
-          err?.error?.description || (isAr ? 'تعذر حفظ أو ترحيل القيد' : 'Failed to save entry'), 
+          this.langService.t('accounting.journalEntries.alerts.entryError'), 
+          err?.error?.description || this.langService.t('accounting.journalEntries.alerts.saveEntryFailed'), 
           'error'
         );
       }
@@ -3188,17 +3634,13 @@ export class JournalEntriesComponent implements OnInit {
   }
 
   postEntry(item: JournalEntrySummary) {
-    const isAr = this.langService.currentLang() === 'ar';
-
     Swal.fire({
-      title: isAr ? 'تأكيد ترحيل القيد' : 'Confirm Posting',
-      text: isAr 
-        ? `هل أنت متأكد من ترحيل القيد (${item.entryNumber})؟ بعد الترحيل لا يمكن تعديل القيد وسينعكس فوراً على أرصدة شجرة الحسابات.`
-        : `Are you sure you want to post entry (${item.entryNumber})?`,
+      title: this.langService.t('accounting.journalEntries.alerts.confirmPostTitle'),
+      text: this.langService.t('accounting.journalEntries.alerts.confirmPostText', { number: item.entryNumber }),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: isAr ? 'نعم، ترحيل القيد' : 'Yes, Post',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.journalEntries.alerts.yesPost'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#10B981'
     }).then((res) => {
       if (res.isConfirmed) {
@@ -3208,14 +3650,18 @@ export class JournalEntriesComponent implements OnInit {
               toast: true,
               position: 'top-end',
               icon: 'success',
-              title: isAr ? 'تم ترحيل القيد بنجاح' : 'Entry posted successfully',
+              title: this.langService.t('accounting.journalEntries.alerts.toastPostedSuccess'),
               showConfirmButton: false,
               timer: 2500
             });
             this.loadEntries();
           },
           error: (err) => {
-            Swal.fire(isAr ? 'تعذر الترحيل' : 'Failed', err?.error?.description || (isAr ? 'خطأ في الترحيل' : 'Error'), 'error');
+            Swal.fire(
+              this.langService.t('accounting.journalEntries.alerts.postFailed'),
+              err?.error?.description || this.langService.t('common.errorOccurred'),
+              'error'
+            );
           }
         });
       }
@@ -3223,20 +3669,18 @@ export class JournalEntriesComponent implements OnInit {
   }
 
   reverseEntry(entry: JournalEntrySummary | JournalEntry) {
-    const isAr = this.langService.currentLang() === 'ar';
-
     Swal.fire({
-      title: isAr ? 'عكس القيد (إلغاء رسمي)' : 'Reverse Journal Entry',
-      text: isAr ? `سيتم إلغاء أثر القيد (${entry.entryNumber}) عبر إنشاء قيد عكسي مطابق ومرحّل. يرجى كتابة سبب الإلغاء:` : `Provide reason for reversing entry (${entry.entryNumber}):`,
+      title: this.langService.t('accounting.journalEntries.alerts.reverseEntryTitle'),
+      text: this.langService.t('accounting.journalEntries.alerts.reverseEntryText', { number: entry.entryNumber }),
       input: 'text',
-      inputPlaceholder: isAr ? 'مثال: خطأ في توجيه الحساب أو قيمة الفاتورة' : 'Reason for reversal',
+      inputPlaceholder: this.langService.t('accounting.journalEntries.alerts.reversePlaceholder'),
       showCancelButton: true,
-      confirmButtonText: isAr ? 'تأكيد إنشاء القيد العكسي' : 'Confirm Reversal',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.journalEntries.alerts.reverseConfirmBtn'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#DC2626',
       inputValidator: (val) => {
         if (!val) {
-          return isAr ? 'يرجى كتابة سبب الإلغاء لتوثيقه في سجل التدقيق' : 'Reason is required';
+          return this.langService.t('accounting.journalEntries.alerts.reverseReasonRequired');
         }
         return null;
       }
@@ -3247,13 +3691,17 @@ export class JournalEntriesComponent implements OnInit {
             this.viewingEntry.set(null);
             Swal.fire({
               icon: 'success',
-              title: isAr ? 'تم عكس القيد بنجاح' : 'Entry Reversed',
-              text: isAr ? `تم إنشاء القيد العكسي رقم: ${rev.entryNumber}` : `Reversal JV created: ${rev.entryNumber}`
+              title: this.langService.t('accounting.journalEntries.alerts.reverseSuccessTitle'),
+              text: this.langService.t('accounting.journalEntries.alerts.reverseSuccessText', { number: rev.entryNumber })
             });
             this.loadEntries();
           },
           error: (err) => {
-            Swal.fire(isAr ? 'خطأ' : 'Error', err?.error?.description || (isAr ? 'تعذر عكس القيد' : 'Failed to reverse entry'), 'error');
+            Swal.fire(
+              this.langService.t('common.error'),
+              err?.error?.description || this.langService.t('accounting.journalEntries.alerts.reverseFailed'),
+              'error'
+            );
           }
         });
       }
@@ -3291,13 +3739,12 @@ export class JournalEntriesComponent implements OnInit {
   }
 
   getEntryTypeText(type?: number): string {
-    const isAr = this.langService.currentLang() === 'ar';
     switch (type) {
-      case 1: return isAr ? 'قيد يومية عام' : 'General Journal';
-      case 2: return isAr ? 'قيد افتتاحي' : 'Opening Entry';
-      case 3: return isAr ? 'قيد تسوية' : 'Adjustment Entry';
-      case 4: return isAr ? 'قيد إقفال' : 'Closing Entry';
-      default: return isAr ? 'قيد محاسبي' : 'Journal Entry';
+      case 1: return this.langService.t('accounting.journalEntries.types.general');
+      case 2: return this.langService.t('accounting.journalEntries.types.opening');
+      case 3: return this.langService.t('accounting.journalEntries.types.adjustment');
+      case 4: return this.langService.t('accounting.journalEntries.types.closing');
+      default: return this.langService.t('accounting.journalEntries.types.default');
     }
   }
 }

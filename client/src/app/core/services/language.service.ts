@@ -43,6 +43,9 @@ export const APP_TRANSLATIONS: Translations = {
 })
 export class LanguageService {
   currentLang = signal<Language>('ar');
+  isArabic = signal<boolean>(true);
+  jsonTranslations = signal<Record<string, any>>({});
+  private loadedLang = '';
 
   constructor(private primeng: PrimeNG) {
     const saved = (localStorage.getItem('alrobban_lang') as Language) || 'ar';
@@ -51,11 +54,14 @@ export class LanguageService {
 
   setLanguage(lang: Language) {
     this.currentLang.set(lang);
+    this.isArabic.set(lang === 'ar');
     localStorage.setItem('alrobban_lang', lang);
 
     const isArabic = lang === 'ar';
     document.documentElement.lang = lang;
     document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
+
+    this.loadJsonTranslations(lang);
 
     if (isArabic) {
       this.primeng.setTranslation({
@@ -118,13 +124,78 @@ export class LanguageService {
     }
   }
 
+  private loadJsonTranslations(lang: Language): void {
+    if (this.loadedLang === lang && Object.keys(this.jsonTranslations()).length > 0) return;
+    this.loadedLang = lang;
+
+    fetch(`/i18n/${lang}.json`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          this.jsonTranslations.set(data);
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to in-memory dictionaries if fetch is interrupted
+      });
+  }
+
   toggleLanguage() {
     this.setLanguage(this.currentLang() === 'ar' ? 'en' : 'ar');
   }
 
-  t(key: string): string {
+  /**
+   * Resolves translation key from JSON files (with dot notation support) or fallback dictionary.
+   */
+  t(key: string, params?: Record<string, string | number>): string {
+    const json = this.jsonTranslations();
+    let val: any = json;
+
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      for (const p of parts) {
+        if (val && typeof val === 'object' && p in val) {
+          val = val[p];
+        } else {
+          val = undefined;
+          break;
+        }
+      }
+    } else if (json && key in json) {
+      val = json[key];
+    } else {
+      val = undefined;
+    }
+
+    if (typeof val === 'string') {
+      if (params) {
+        for (const [paramKey, paramVal] of Object.entries(params)) {
+          val = val.replace(new RegExp(`\\{+\\s*${paramKey}\\s*\\}+`, 'g'), String(paramVal));
+        }
+      }
+      return val;
+    }
+
+    // Fallback to in-memory dictionary
     const item = APP_TRANSLATIONS[key];
-    if (!item) return key;
-    return item[this.currentLang()];
+    if (item && item[this.currentLang()]) {
+      return item[this.currentLang()];
+    }
+
+    return key;
+  }
+
+  translate(key: string, params?: Record<string, string | number>): string {
+    return this.t(key, params);
+  }
+
+  /**
+   * Inline bilingual translation helper:
+   * Returns Arabic string if current language is 'ar', else English string.
+   */
+  tr(ar: string, en: string): string {
+    return this.currentLang() === 'ar' ? ar : en;
   }
 }
+
+

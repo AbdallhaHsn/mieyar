@@ -11,13 +11,25 @@ public interface INotificationClient
 
 public class NotificationHub : Hub<INotificationClient>
 {
+    private string? CallerTenantId() => Context.User?.FindFirst("tenant_id")?.Value;
+
+    private bool IsSuperAdmin() => Context.User?.IsInRole("SuperAdmin") == true;
+
+    // The requested tenant is honoured only for the platform owner; everyone else is pinned to their own tenant.
+    private string? ResolveTenant(string requestedTenantId) =>
+        IsSuperAdmin() && Guid.TryParse(requestedTenantId, out _) ? requestedTenantId : CallerTenantId();
+
     public async Task JoinTenantGroup(string tenantId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant-{tenantId}");
+        var tenant = ResolveTenant(tenantId);
+        if (string.IsNullOrEmpty(tenant)) return;
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant-{tenant}");
     }
 
     public async Task LeaveTenantGroup(string tenantId)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"tenant-{tenantId}");
+        var tenant = ResolveTenant(tenantId);
+        if (string.IsNullOrEmpty(tenant)) return;
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"tenant-{tenant}");
     }
 }

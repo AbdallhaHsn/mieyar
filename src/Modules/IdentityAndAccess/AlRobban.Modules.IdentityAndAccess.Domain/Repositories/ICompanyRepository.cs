@@ -9,6 +9,9 @@ public interface ICompanyRepository
     Task<bool> ExistsWithCodeAsync(string code, CancellationToken cancellationToken = default);
     Task<bool> ExistsWithVatNumberAsync(string vatNumber, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Company>> GetAllActiveAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken cancellationToken = default);
     Task AddAsync(Company company, CancellationToken cancellationToken = default);
+    Task AddBranchAsync(Branch branch, CancellationToken cancellationToken = default);
+    Task RemoveBranchAsync(Branch branch, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

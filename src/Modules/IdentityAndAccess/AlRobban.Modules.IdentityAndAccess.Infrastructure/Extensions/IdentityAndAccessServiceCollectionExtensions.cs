@@ -44,6 +44,7 @@ public static class IdentityAndAccessServiceCollectionExtensions
         // Repositories & Security Services
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ICompanyRoleRepository, CompanyRoleRepository>();
         services.AddSingleton<IPasswordHasher, AlRobban.Modules.IdentityAndAccess.Infrastructure.Security.PasswordHasher>();
         services.AddSingleton<IJwtTokenService, AlRobban.Modules.IdentityAndAccess.Infrastructure.Security.JwtTokenService>();
 

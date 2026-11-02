@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface JournalEntryLine {
   id?: string;
@@ -95,7 +96,7 @@ export interface CreateJournalEntryRequest {
 })
 export class JournalEntryService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api/journal-entries';
+  private apiUrl = `${environment.apiUrl}/api/journal-entries`;
 
   getList(params?: {
     companyId?: string;
@@ -133,5 +134,21 @@ export class JournalEntryService {
 
   reverse(id: string, reason: string, reversedBy?: string): Observable<JournalEntry> {
     return this.http.post<JournalEntry>(`${this.apiUrl}/${id}/reverse`, { reason, reversedBy });
+  }
+
+  getRecurringEntries(companyId?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (companyId) params = params.set('companyId', companyId);
+    return this.http.get<any[]>(`${this.apiUrl}/recurring`, { params });
+  }
+
+  createRecurringEntry(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/recurring`, payload);
+  }
+
+  executeRecurringEntry(id: string, executionDate?: string): Observable<any> {
+    let params = new HttpParams();
+    if (executionDate) params = params.set('executionDate', executionDate);
+    return this.http.post<any>(`${this.apiUrl}/recurring/${id}/execute`, {}, { params });
   }
 }

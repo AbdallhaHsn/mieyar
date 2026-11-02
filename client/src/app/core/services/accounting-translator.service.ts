@@ -1,4 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom, of } from 'rxjs';
+import { timeout, catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface TranslationPhrase {
   ar: string;
@@ -9,6 +13,9 @@ export interface TranslationPhrase {
   providedIn: 'root'
 })
 export class AccountingTranslatorService {
+  private http = inject(HttpClient, { optional: true });
+  private onlineCache = new Map<string, string>();
+  private globalDebounceTimer: any;
 
   // Dictionary of specialized financial, banking, and accounting phrases (Ar <-> En)
   // Ordered from longest to shortest during search
@@ -270,7 +277,86 @@ export class AccountingTranslatorService {
     { ar: 'لشهر يونيو', en: 'for June' },
     { ar: 'لشهر يوليو', en: 'for July' },
     { ar: 'لشهر أغسطس', en: 'for August' },
-    { ar: 'لشهر سبتمبر', en: 'for September' }
+    { ar: 'لشهر سبتمبر', en: 'for September' },
+
+    // Commercial, Inventory & IT Products
+    { ar: 'حاسب آلي محمول', en: 'Laptop Computer' },
+    { ar: 'كمبيوتر محمول', en: 'Laptop' },
+    { ar: 'حاسب آلي مكتبي', en: 'Desktop Computer' },
+    { ar: 'كمبيوتر مكتبي', en: 'Desktop PC' },
+    { ar: 'شاشة عرض', en: 'Display Monitor' },
+    { ar: 'شاشة كمبيوتر', en: 'Computer Monitor' },
+    { ar: 'لوحة مفاتيح', en: 'Keyboard' },
+    { ar: 'فأرة لاسلكية', en: 'Wireless Mouse' },
+    { ar: 'ماوس لاسلكي', en: 'Wireless Mouse' },
+    { ar: 'طابعة ليزر ملونة', en: 'Color Laser Printer' },
+    { ar: 'طابعة ليزر', en: 'Laser Printer' },
+    { ar: 'طابعة حرارية', en: 'Thermal Printer' },
+    { ar: 'طابعة فواتير', en: 'Receipt Printer' },
+    { ar: 'طابعة باركود', en: 'Barcode Printer' },
+    { ar: 'قارئ باركود', en: 'Barcode Scanner' },
+    { ar: 'درج نقدية', en: 'Cash Drawer' },
+    { ar: 'شاشة لمس', en: 'Touch Screen' },
+    { ar: 'نقطة بيع', en: 'POS Terminal' },
+    { ar: 'جهاز بصمة', en: 'Biometric Attendance Device' },
+    { ar: 'كاميرا مراقبة', en: 'CCTV Security Camera' },
+    { ar: 'كاميرات مراقبة', en: 'CCTV Cameras' },
+    { ar: 'جهاز تسجيل رقمي', en: 'Digital Video Recorder (DVR)' },
+    { ar: 'ورق تصوير', en: 'Copy Paper' },
+    { ar: 'ورق فواتير', en: 'Thermal Receipt Rolls' },
+    { ar: 'حبر طابعة', en: 'Printer Cartridge' },
+    { ar: 'قرص صلب خارجي', en: 'External Hard Drive' },
+    { ar: 'قرص صلب', en: 'Hard Disk Drive' },
+    { ar: 'وحدة تخزين سريعة', en: 'SSD Storage' },
+    { ar: 'ذاكرة عشوائية', en: 'RAM Memory' },
+    { ar: 'كابل شبكة', en: 'Network Cable' },
+    { ar: 'كيبل شبكة', en: 'Network Cable' },
+    { ar: 'محول طاقة', en: 'Power Adapter' },
+    { ar: 'موزع شبكة', en: 'Network Switch' },
+    { ar: 'موجه شبكة', en: 'Network Router' },
+    { ar: 'مكيف سبليت', en: 'Split Air Conditioner' },
+    { ar: 'مكيف دولابي', en: 'Floor Standing AC' },
+    { ar: 'مكتب موظف', en: 'Office Desk' },
+    { ar: 'كرسي مكتب', en: 'Office Chair' },
+    { ar: 'طاولة اجتماعات', en: 'Conference Table' },
+    { ar: 'خزانة ملفات', en: 'Filing Cabinet' },
+    { ar: 'قطع غيار أصلية', en: 'Genuine Spare Parts' },
+    { ar: 'قطع غيار', en: 'Spare Parts' },
+    { ar: 'فلتر زيت', en: 'Oil Filter' },
+    { ar: 'فلتر هواء', en: 'Air Filter' },
+    { ar: 'زيت محرك', en: 'Engine Oil' },
+    { ar: 'إطار سيارة', en: 'Car Tire' },
+    { ar: 'إطارات سيارات', en: 'Car Tires' },
+    { ar: 'صيانة وقائية', en: 'Preventive Maintenance' },
+    { ar: 'صيانة تصحيحية', en: 'Corrective Maintenance' },
+    { ar: 'صيانة دورية', en: 'Periodic Maintenance' },
+    { ar: 'خدمات استشارية', en: 'Consulting Services' },
+    { ar: 'استشارات تقنية', en: 'IT Consulting Services' },
+    { ar: 'استشارات مالية', en: 'Financial Advisory' },
+    { ar: 'دعم فني', en: 'Technical Support' },
+    { ar: 'تطوير برمجيات', en: 'Software Development' },
+    { ar: 'تصميم مواقع', en: 'Web Design' },
+    { ar: 'اشتراك سنوي', en: 'Annual Subscription' },
+    { ar: 'اشتراك شهري', en: 'Monthly Subscription' },
+    { ar: 'ترخيص برامج', en: 'Software License' },
+    { ar: 'ترخيص سنوي', en: 'Annual License' },
+    { ar: 'أعمال مقاولات', en: 'Contracting Works' },
+    { ar: 'أعمال كهربائية', en: 'Electrical Works' },
+    { ar: 'أعمال سباكة', en: 'Plumbing Works' },
+    { ar: 'مواد بناء', en: 'Building Materials' },
+    { ar: 'مياه شرب', en: 'Drinking Water' },
+    { ar: 'أدوات نظافة', en: 'Cleaning Supplies' },
+    { ar: 'شحن وتوصيل', en: 'Shipping & Delivery' },
+    { ar: 'خدمات نقل', en: 'Transportation Services' },
+    { ar: 'تأجير معدات', en: 'Equipment Rental' },
+    { ar: 'شركة مساهمة مقفلة', en: 'Closed Joint Stock Co.' },
+    { ar: 'شركة ذات مسؤولية محدودة', en: 'Limited Liability Co. (LLC)' },
+    { ar: 'شركة الشخص الواحد', en: 'Single Person Co.' },
+    { ar: 'مؤسسة فردية', en: 'Sole Proprietorship' },
+    { ar: 'الفرع الرئيسي', en: 'Main Branch' },
+    { ar: 'فرع الرياض', en: 'Riyadh Branch' },
+    { ar: 'فرع جدة', en: 'Jeddah Branch' },
+    { ar: 'فرع الدمام', en: 'Dammam Branch' }
   ];
 
   // Single word dictionary
@@ -509,7 +595,220 @@ export class AccountingTranslatorService {
     'شريك': 'Partner',
     'شركاء': 'Partners',
     'شركة': 'Company',
-    'مؤسسة': 'Establishment'
+    'مؤسسة': 'Establishment',
+
+    // Tech Brands
+    'ديل': 'Dell',
+    'اتش بي': 'HP',
+    'إتش بي': 'HP',
+    'لينوفو': 'Lenovo',
+    'ابل': 'Apple',
+    'آبل': 'Apple',
+    'سامسونج': 'Samsung',
+    'اسوس': 'Asus',
+    'أسوس': 'Asus',
+    'ايسر': 'Acer',
+    'إيسر': 'Acer',
+    'ال جي': 'LG',
+    'إل جي': 'LG',
+    'سيسكو': 'Cisco',
+    'سوني': 'Sony',
+    'كانون': 'Canon',
+    'ابسون': 'Epson',
+    'إبسون': 'Epson',
+    'زيروكس': 'Xerox',
+    'مايكروسوفت': 'Microsoft',
+    'هواوي': 'Huawei',
+    'شاومي': 'Xiaomi',
+    'تويوتا': 'Toyota',
+    'هيونداي': 'Hyundai',
+    'شنايدر': 'Schneider',
+    'سيمنز': 'Siemens',
+    'بوش': 'Bosch',
+
+    // Hardware, IT & Electronics
+    'لابتوب': 'Laptop',
+    'حاسوب': 'Computer',
+    'سيرفر': 'Server',
+    'خادم': 'Server',
+    'شاشة': 'Monitor',
+    'شاشات': 'Monitors',
+    'كيبورد': 'Keyboard',
+    'ماوس': 'Mouse',
+    'طابعة': 'Printer',
+    'طابعات': 'Printers',
+    'حبر': 'Ink',
+    'احبار': 'Inks',
+    'أحبار': 'Inks',
+    'تونر': 'Toner',
+    'سكنر': 'Scanner',
+    'ماسح': 'Scanner',
+    'راوتر': 'Router',
+    'سويتش': 'Switch',
+    'كيبل': 'Cable',
+    'كابل': 'Cable',
+    'اسلاك': 'Wires',
+    'سلك': 'Wire',
+    'موبايل': 'Mobile',
+    'تابلت': 'Tablet',
+    'سماعة': 'Headset',
+    'سماعات': 'Headsets',
+    'كاميرا': 'Camera',
+    'كاميرات': 'Cameras',
+    'ذاكرة': 'Memory',
+    'رام': 'RAM',
+    'فلاشة': 'USB Drive',
+    'هارد': 'Hard Disk',
+    'شاحن': 'Charger',
+    'شواحن': 'Chargers',
+    'بطارية': 'Battery',
+    'بطاريات': 'Batteries',
+    'برنامج': 'Software',
+    'تطبيق': 'App',
+    'تطبيقات': 'Apps',
+    'ترخيص': 'License',
+    'تراخيص': 'Licenses',
+    'اشتراك': 'Subscription',
+    'اشتراكات': 'Subscriptions',
+    'استضافة': 'Hosting',
+    'سحابي': 'Cloud',
+    'سحابية': 'Cloud',
+
+    // Stationery & Office
+    'ورق': 'Paper',
+    'اوراق': 'Papers',
+    'أوراق': 'Papers',
+    'ملف': 'Folder',
+    'ملفات': 'Folders',
+    'قلم': 'Pen',
+    'اقلام': 'Pens',
+    'أقلام': 'Pens',
+    'دفتر': 'Notebook',
+    'دفاتر': 'Notebooks',
+    'دباسة': 'Stapler',
+    'خرامة': 'Puncher',
+    'مقص': 'Scissors',
+    'لاصق': 'Tape',
+    'غراء': 'Glue',
+    'سبورة': 'Whiteboard',
+    'طاولة': 'Table',
+    'كرسي': 'Chair',
+    'كراسي': 'Chairs',
+    'خزانة': 'Cabinet',
+    'دولاب': 'Cupboard',
+    'رف': 'Shelf',
+    'ارفف': 'Shelves',
+    'أرفف': 'Shelves',
+    'ستارة': 'Curtain',
+    'ستائر': 'Curtains',
+    'مكيف': 'AC',
+    'مكيفات': 'ACs',
+
+    // Industrial & Spare Parts
+    'غيار': 'Spare Parts',
+    'قطع': 'Parts',
+    'قطعة': 'Piece',
+    'زيت': 'Oil',
+    'زيوت': 'Oils',
+    'فلتر': 'Filter',
+    'فلاتر': 'Filters',
+    'اطار': 'Tire',
+    'إطار': 'Tire',
+    'اطارات': 'Tires',
+    'كفر': 'Tire',
+    'كفرات': 'Tires',
+    'سير': 'Belt',
+    'حزام': 'Belt',
+    'مضخة': 'Pump',
+    'طلمبة': 'Pump',
+    'صمام': 'Valve',
+    'محبس': 'Valve',
+    'محرك': 'Motor',
+    'ماكينة': 'Machine',
+    'انبوب': 'Pipe',
+    'أنبوب': 'Pipe',
+    'مواسير': 'Pipes',
+    'حديد': 'Steel',
+    'صلب': 'Steel',
+    'المنيوم': 'Aluminum',
+    'ألمنيوم': 'Aluminum',
+    'نحاس': 'Copper',
+    'بلاستيك': 'Plastic',
+    'كرتون': 'Carton',
+    'كرتونة': 'Carton',
+    'كراتين': 'Cartons',
+    'علبة': 'Box',
+    'علب': 'Boxes',
+    'كيس': 'Bag',
+    'اكياس': 'Bags',
+    'أكياس': 'Bags',
+    'طرد': 'Package',
+    'برميل': 'Barrel',
+    'جالون': 'Gallon',
+    'رول': 'Roll',
+
+    // Units & Measures
+    'حبة': 'Piece',
+    'حبات': 'Pieces',
+    'درزن': 'Dozen',
+    'طقم': 'Set',
+    'متر': 'Meter',
+    'كيلو': 'Kg',
+    'كيلوجرام': 'Kg',
+    'جرام': 'Gram',
+    'طن': 'Ton',
+    'لتر': 'Liter',
+    'ساعة': 'Hour',
+    'ساعات': 'Hours',
+    'يوم': 'Day',
+    'ايام': 'Days',
+    'أيام': 'Days',
+    'اسبوع': 'Week',
+    'أسبوع': 'Week',
+    'سنة': 'Year',
+
+    // Commercial & Attributes
+    'تجارة': 'Trading',
+    'مقاولات': 'Contracting',
+    'خدمات': 'Services',
+    'خدمة': 'Service',
+    'استيراد': 'Import',
+    'تصدير': 'Export',
+    'صناعة': 'Industry',
+    'صناعات': 'Industries',
+    'توزيع': 'Distribution',
+    'تقنية': 'Technology',
+    'تكنولوجيا': 'Technology',
+    'حلول': 'Solutions',
+    'نقل': 'Transport',
+    'لوجستيات': 'Logistics',
+    'عقارات': 'Real Estate',
+    'تطوير': 'Development',
+    'قابضة': 'Holding',
+    'محدودة': 'Limited',
+    'مساهمة': 'Joint Stock',
+    'جديد': 'New',
+    'مستعمل': 'Used',
+    'اصلي': 'Original',
+    'أصلي': 'Original',
+    'صناعي': 'Industrial',
+    'منزلي': 'Domestic',
+    'صغير': 'Small',
+    'وسط': 'Medium',
+    'كبير': 'Large',
+    'ابيض': 'White',
+    'أبيض': 'White',
+    'اسود': 'Black',
+    'أسود': 'Black',
+    'ازرق': 'Blue',
+    'أزرق': 'Blue',
+    'احمر': 'Red',
+    'أحمر': 'Red',
+    'اخضر': 'Green',
+    'أخضر': 'Green',
+    'رمادي': 'Gray',
+    'فضي': 'Silver',
+    'ذهبي': 'Gold'
   };
 
   // Phonetic Arabic to Latin table for proper transliteration of names
@@ -791,12 +1090,23 @@ export class AccountingTranslatorService {
     return prefix + latin;
   }
 
-  private containsArabic(str: string): boolean {
+  public containsArabic(str: string): boolean {
+    if (!str) return false;
     return /[\u0600-\u06FF]/.test(str);
   }
 
-  private containsLatin(str: string): boolean {
+  public containsLatin(str: string): boolean {
+    if (!str) return false;
     return /[a-zA-Z]/.test(str);
+  }
+
+  /**
+   * Helper method to translate between Arabic and English automatically based on detected language
+   */
+  autoTranslate(input: string, sourceLang?: 'ar' | 'en'): string {
+    if (!input || !input.trim()) return '';
+    const src = sourceLang || (this.containsArabic(input) ? 'ar' : 'en');
+    return src === 'ar' ? this.translateArabicToEnglish(input) : this.translateEnglishToArabic(input);
   }
 
   private cleanEnglishOutput(str: string): string {
@@ -817,7 +1127,108 @@ export class AccountingTranslatorService {
       .trim();
   }
 
+  /**
+   * Online accurate translation method with local fallback & caching
+   * Communicates with public translation service for accurate natural language translation
+   * @param text Text to translate
+   * @param from Source language ('ar' or 'en', auto-detected if empty)
+   * @param to Target language ('en' or 'ar')
+   */
+  async translateOnline(text: string, from?: 'ar' | 'en', to?: 'ar' | 'en'): Promise<string> {
+    if (!text || !text.trim()) return '';
+    const trimmed = text.trim();
+
+    const sourceLang = from || (this.containsArabic(trimmed) ? 'ar' : 'en');
+    const targetLang = to || (sourceLang === 'ar' ? 'en' : 'ar');
+
+    // 1. Check in-memory cache
+    const cacheKey = `${sourceLang}->${targetLang}:${trimmed}`;
+    if (this.onlineCache.has(cacheKey)) {
+      return this.onlineCache.get(cacheKey)!;
+    }
+
+    // 2. Fallback if no HttpClient is injected
+    if (!this.http) {
+      return sourceLang === 'ar'
+        ? this.translateArabicToEnglish(trimmed)
+        : this.translateEnglishToArabic(trimmed);
+    }
+
+    // 3. Online translation via WebAPI backend proxy (CORS-free server-to-server request)
+    try {
+      const apiUrl = `${environment.apiUrl}/api/translation/translate?text=${encodeURIComponent(trimmed)}&from=${sourceLang}&to=${targetLang}`;
+      const response: any = await firstValueFrom(
+        this.http.get(apiUrl).pipe(
+          timeout(5000),
+          catchError(() => of(null))
+        )
+      );
+
+      if (response && response.translatedText) {
+        const translated = response.translatedText.trim();
+        if (translated) {
+          const finalResult = targetLang === 'en'
+            ? this.cleanEnglishOutput(translated)
+            : this.cleanArabicOutput(translated);
+
+          this.onlineCache.set(cacheKey, finalResult);
+          return finalResult;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend translation proxy failed, using local dictionary fallback:', err);
+    }
+
+    // 4. Fallback to local dictionary & transliteration
+    const fallback = sourceLang === 'ar'
+      ? this.translateArabicToEnglish(trimmed)
+      : this.translateEnglishToArabic(trimmed);
+
+    return fallback;
+  }
+
+  /**
+   * Universal Real-Time Translation with Instant Local Preview and Google Web API Online Refinement:
+   * 1. Returns instant local translation immediately (0ms).
+   * 2. After debounce (default 450ms), contacts Google Public Web API (via backend proxy)
+   *    and calls onRefined with the grammatically & contextually accurate translation.
+   */
+  translateWithOnlineRefinement(
+    text: string,
+    onInitial: (initialVal: string) => void,
+    onRefined?: (refinedVal: string) => void,
+    debounceMs: number = 450
+  ): void {
+    if (!text || !text.trim()) {
+      onInitial('');
+      if (onRefined) onRefined('');
+      return;
+    }
+
+    const trimmed = text.trim();
+    // 1. Instant local dictionary translation for zero UI latency
+    const initial = this.autoTranslate(trimmed);
+    onInitial(initial);
+
+    if (!onRefined) return;
+
+    // 2. Debounced online call for accurate translation
+    clearTimeout(this.globalDebounceTimer);
+    this.globalDebounceTimer = setTimeout(async () => {
+      try {
+        const refined = await this.translateOnline(trimmed);
+        if (refined) {
+          onRefined(refined);
+        }
+      } catch {
+        // preserve initial
+      }
+    }, debounceMs);
+  }
+
   private escapeRegex(string: string): string {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }
+
+export { AccountingTranslatorService as TranslationService };

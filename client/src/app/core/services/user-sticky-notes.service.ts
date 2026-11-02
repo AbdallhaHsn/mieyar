@@ -44,32 +44,13 @@ export class UserStickyNotesService {
       const key = this.getStorageKey(userId);
       const data = localStorage.getItem(key);
       if (data) {
-        const parsed = JSON.parse(data) as StickyNote[];
+        const parsed = (JSON.parse(data) as StickyNote[])
+          // Drop untouched sample notes that were auto-seeded by earlier versions
+          .filter(n => !(n.id.startsWith('note_def_') && n.createdAt === n.updatedAt));
         this.notes.set(this.sortNotes(parsed));
+        this.saveToStorage(userId, parsed);
       } else {
-        // First time initialization for this specific user
-        const defaults: StickyNote[] = [
-          {
-            id: 'note_def_1',
-            title: '📌 تذكيرات المحاسب المالي',
-            content: '• مراجعة قيود التسوية للشهر الحالي وتدقيق مراكز التكلفة.\n• مطابقة حسابات البنوك مع كشوفات الحساب الإلكترونية.\n• التأكد من اعتماد القيود المعلقة قبل الإقفال.',
-            color: 'yellow',
-            isPinned: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          },
-          {
-            id: 'note_def_2',
-            title: '💡 متطلبات الفوترة الضريبية (ZATCA)',
-            content: '• التحقق من صحة الرقم الضريبي للموردين الجدد.\n• مطابقة مجموع الضريبة مع إقرار هيئة الزكاة والضريبة والجمارك.',
-            color: 'emerald',
-            isPinned: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
-        ];
-        this.notes.set(defaults);
-        this.saveToStorage(userId, defaults);
+        this.notes.set([]);
       }
     } catch {
       this.notes.set([]);

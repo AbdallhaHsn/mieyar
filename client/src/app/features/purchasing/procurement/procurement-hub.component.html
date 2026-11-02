@@ -1,0 +1,1482 @@
+<div class="procurement-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="breadcrumbs">
+        <span>{{ 'purchasing.procurement.breadcrumbMain' | translate }}</span>
+        <i class="pi pi-angle-left"></i>
+        <strong>{{ 'purchasing.procurement.breadcrumbCurrent' | translate }}</strong>
+      </div>
+      <h1>{{ 'purchasing.procurement.title' | translate }} ({{ 'purchasing.procurement.titleEnBadge' | translate }})</h1>
+      <p class="subtitle">
+        {{ 'purchasing.procurement.subtitle' | translate }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadAllData()">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        {{ 'purchasing.procurement.refreshData' | translate }}</button>
+      <button class="btn btn-emerald" (click)="navigateToDirectInvoice()">
+        <i class="pi pi-bolt"></i>
+        {{ 'purchasing.procurement.directInvoice' | translate }}
+      </button>
+      <button class="btn btn-primary" (click)="openCreatePo()">
+        <i class="pi pi-plus"></i>
+        {{ 'purchasing.procurement.newPo' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation Tab Bar -->
+  <nav class="procurement-tabs">
+    <button class="tab-btn" [class.active]="activeTab() === 'overview'" (click)="setTab('overview')">
+      <i class="pi pi-compass"></i>
+      <span>{{ 'purchasing.procurement.tabs.overview' | translate }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab() === 'requisitions'" (click)="setTab('requisitions')">
+      <i class="pi pi-file-edit"></i>
+      <span>{{ 'purchasing.procurement.tabs.requisitions' | translate }}</span>
+      <span class="tab-badge" *ngIf="requisitions().length">{{ requisitions().length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab() === 'orders'" (click)="setTab('orders')">
+      <i class="pi pi-shopping-bag"></i>
+      <span>{{ 'purchasing.procurement.tabs.orders' | translate }}</span>
+      <span class="tab-badge" *ngIf="orders().length">{{ orders().length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab() === 'receipts'" (click)="setTab('receipts')">
+      <i class="pi pi-truck"></i>
+      <span>{{ 'purchasing.procurement.tabs.receipts' | translate }}</span>
+      <span class="tab-badge" *ngIf="receipts().length">{{ receipts().length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab() === 'invoices'" (click)="setTab('invoices')">
+      <i class="pi pi-shield"></i>
+      <span>{{ 'purchasing.procurement.tabs.invoices' | translate }}</span>
+      <span class="tab-badge bg-emerald" *ngIf="invoices().length">{{ invoices().length }}</span>
+    </button>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!-- TAB 1: OVERVIEW & PIPELINE TRACKER -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'overview'">
+    <!-- KPI Summary Grid -->
+    <section class="kpi-grid">
+      <div class="kpi-card" (click)="setTab('requisitions')">
+        <div class="kpi-icon-box bg-purple">
+          <i class="pi pi-file-edit"></i>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ 'ui.procurementHub.f7c525' | translate }}</span>
+          <strong class="kpi-value">{{ pendingRequisitionsCount() }}</strong>
+          <span class="kpi-subtext">{{ 'ui.procurementHub.067f51' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" (click)="setTab('orders')">
+        <div class="kpi-icon-box bg-blue">
+          <i class="pi pi-shopping-bag"></i>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ 'ui.procurementHub.bcd6d4' | translate }}</span>
+          <strong class="kpi-value text-blue">{{ openOrdersCount() }}</strong>
+          <span class="kpi-subtext">{{ 'ui.procurementHub.07d45e' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" (click)="setTab('receipts')">
+        <div class="kpi-icon-box bg-amber">
+          <i class="pi pi-truck"></i>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ 'ui.procurementHub.556d8e' | translate }}</span>
+          <strong class="kpi-value text-amber">{{ unbilledReceiptsCount() }}</strong>
+          <span class="kpi-subtext">{{ 'ui.procurementHub.27ea04' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" (click)="setTab('invoices')">
+        <div class="kpi-icon-box bg-emerald">
+          <i class="pi pi-verified"></i>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ 'ui.procurementHub.b3ca9f' | translate }}</span>
+          <strong class="kpi-value text-emerald">{{ threeWayMatchedCount() }} {{ 'ui.procurementHub.21da4e' | translate }}</strong>
+          <span class="kpi-subtext">{{ 'ui.procurementHub.4045ab' | translate }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Procurement Pipeline Card -->
+    <section class="pipeline-card">
+      <div class="card-header">
+        <div class="title-side">
+          <i class="pi pi-sitemap text-emerald"></i>
+          <h3>{{ 'ui.procurementHub.ac156d' | translate }}</h3>
+        </div>
+        <span class="badge badge-emerald">{{ 'ui.procurementHub.002e11' | translate }}</span>
+      </div>
+
+      <div class="pipeline-steps">
+        <div class="step-item active">
+          <div class="step-circle">1</div>
+          <div class="step-body">
+            <strong>{{ 'purchasing.procurement.pipeline.step1Title' | translate }}</strong>
+            <span>{{ 'ui.procurementHub.7d9023' | translate }}</span>
+          </div>
+          <i class="pi pi-angle-left step-arrow"></i>
+        </div>
+
+        <div class="step-item active">
+          <div class="step-circle">2</div>
+          <div class="step-body">
+            <strong>{{ 'purchasing.procurement.pipeline.step2Title' | translate }}</strong>
+            <span>{{ 'ui.procurementHub.1aed3f' | translate }}</span>
+          </div>
+          <i class="pi pi-angle-left step-arrow"></i>
+        </div>
+
+        <div class="step-item active">
+          <div class="step-circle">3</div>
+          <div class="step-body">
+            <strong>{{ 'ui.procurementHub.966f9b' | translate }}</strong>
+            <span>{{ 'ui.procurementHub.db1061' | translate }}</span>
+          </div>
+          <i class="pi pi-angle-left step-arrow"></i>
+        </div>
+
+        <div class="step-item active">
+          <div class="step-circle">4</div>
+          <div class="step-body">
+            <strong>{{ 'ui.procurementHub.6e66cc' | translate }}</strong>
+            <span>{{ 'ui.procurementHub.758950' | translate }}</span>
+          </div>
+          <i class="pi pi-angle-left step-arrow"></i>
+        </div>
+
+        <div class="step-item active">
+          <div class="step-circle">5</div>
+          <div class="step-body">
+            <strong>{{ 'ui.procurementHub.c297c5' | translate }}</strong>
+            <span>{{ 'ui.procurementHub.c648e8' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="options-box">
+        <div class="option-card direct-option">
+          <div class="opt-badge">{{ 'ui.procurementHub.155fd2' | translate }}</div>
+          <h4>{{ 'ui.procurementHub.b61256' | translate }}</h4>
+          <p>{{ 'ui.procurementHub.8668ef' | translate }}</p>
+          <button class="btn btn-outline-emerald" (click)="navigateToDirectInvoice()">
+            <i class="pi pi-bolt"></i>
+            {{ 'ui.procurementHub.0abebb' | translate }}
+          </button>
+        </div>
+
+        <div class="option-card full-option">
+          <div class="opt-badge opt-purple">{{ 'ui.procurementHub.cdc988' | translate }}</div>
+          <h4>{{ 'ui.procurementHub.653744' | translate }}</h4>
+          <p>{{ 'ui.procurementHub.46dddd' | translate }}</p>
+          <div class="opt-actions">
+            <button class="btn btn-outline-purple" (click)="openCreatePr()">
+              <i class="pi pi-plus"></i> {{ 'ui.procurementHub.29e5ec' | translate }}
+            </button>
+            <button class="btn btn-primary" (click)="openCreatePo()">
+              <i class="pi pi-shopping-bag"></i> {{ 'ui.procurementHub.ce5dc6' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Activity Tables in Dual Column -->
+    <div class="recent-grid">
+      <!-- Pending PRs -->
+      <div class="sub-card">
+        <div class="sub-card-header">
+          <h4>{{ 'ui.procurementHub.7b987f' | translate }}</h4>
+          <button class="btn btn-xs btn-link" (click)="setTab('requisitions')">{{ 'dashboard.viewAll' | translate }}</button>
+        </div>
+        <div class="table-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>{{ 'ui.procurementHub.d4630f' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.address' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.department' | translate }}</th>
+                <th>{{ 'hr.custody.colValue' | translate }}</th>
+                <th>{{ 'projects.hub.workspace.projectBillings.thAction' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pr of requisitions().slice(0, 5)">
+                <td><strong class="code-pill">{{ pr.requisitionNumber }}</strong></td>
+                <td>{{ pr.title }}</td>
+                <td>{{ pr.departmentName }}</td>
+                <td>{{ pr.totalEstimatedAmount | number:'1.2-2' }} {{ 'common.sar' | translate }}</td>
+                <td>
+                  <button class="btn-icon text-emerald" [title]="'ui.procurementHub.57edbd' | translate" *ngIf="pr.status !== 3 && pr.status !== 5" (click)="approvePr(pr)">
+                    <i class="pi pi-check"></i>
+                  </button>
+                  <button class="btn-icon text-blue" [title]="'purchasing.procurement.table.createPo' | translate" *ngIf="pr.status === 3" (click)="convertPrToPo(pr)">
+                    <i class="pi pi-arrow-left"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="requisitions().length === 0">
+                <td colspan="5" class="empty-cell">{{ 'ui.procurementHub.6bd3ea' | translate }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Open POs with Progress -->
+      <div class="sub-card">
+        <div class="sub-card-header">
+          <h4>{{ 'ui.procurementHub.c196b5' | translate }}</h4>
+          <button class="btn btn-xs btn-link" (click)="setTab('orders')">{{ 'dashboard.viewAll' | translate }}</button>
+        </div>
+        <div class="table-container">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>{{ 'ui.procurementHub.103814' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.vendor' | translate }}</th>
+                <th>{{ 'ui.procurementHub.909d0a' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.total' | translate }}</th>
+                <th>{{ 'projects.hub.workspace.projectBillings.thAction' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let po of orders().slice(0, 5)">
+                <td><strong class="code-pill">{{ po.orderNumber }}</strong></td>
+                <td>{{ po.vendorName }}</td>
+                <td>
+                  <div class="progress-wrapper">
+                    <div class="progress-bar">
+                      <div class="progress-fill" [style.width.%]="po.receivedProgressPercent"></div>
+                    </div>
+                    <span class="progress-text">{{ po.receivedProgressPercent }}%</span>
+                  </div>
+                </td>
+                <td><strong>{{ po.totalAmount | number:'1.2-2' }}</strong> {{ 'purchasing.procurementHub.sar' | translate }}</td>
+                <td>
+                  <button class="btn-icon text-emerald" [title]="'ui.procurementHub.2d096c' | translate" (click)="receiveGoodsFromPo(po)">
+                    <i class="pi pi-truck"></i>
+                  </button>
+                  <button class="btn-icon text-blue" [title]="'purchasing.procurement.table.createInvoice' | translate" (click)="createBillFromPo(po)">
+                    <i class="pi pi-file-edit"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="orders().length === 0">
+                <td colspan="5" class="empty-cell">{{ 'ui.procurementHub.437588' | translate }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 2: PURCHASE REQUISITIONS (PR) -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'requisitions'">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="searchRequisitions" [placeholder]="'ui.procurementHub.402717' | translate" />
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" (click)="openCreatePr()">
+          <i class="pi pi-plus"></i> {{ 'purchasing.procurement.newPr' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card-table">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'ui.procurementHub.d4630f' | translate }}</th>
+            <th>{{ 'ui.procurementHub.302e18' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.department' | translate }}</th>
+            <th>{{ 'ui.procurementHub.686f6a' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.date' | translate }}</th>
+            <th>{{ 'ui.procurementHub.303856' | translate }}</th>
+            <th>{{ 'hr.custody.colValue' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.status' | translate }}</th>
+            <th>{{ 'ui.procurementHub.14f97c' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of requisitions()">
+            <td><strong class="code-pill">{{ r.requisitionNumber }}</strong></td>
+            <td>
+              <div class="title-cell">
+                <strong>{{ r.title }}</strong>
+                <small *ngIf="r.reason" class="text-muted">{{ r.reason }}</small>
+              </div>
+            </td>
+            <td>{{ r.departmentName }}</td>
+            <td>{{ r.requesterName }}</td>
+            <td>{{ r.requestDate | date:'yyyy/MM/dd' }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-gray': r.priority === 1,
+                'badge-blue': r.priority === 2,
+                'badge-amber': r.priority === 3,
+                'badge-rose': r.priority === 4
+              }">{{ r.priorityAr }}</span>
+            </td>
+            <td><strong>{{ r.totalEstimatedAmount | number:'1.2-2' }}</strong> <small>{{ 'purchasing.procurementHub.sar' | translate }}</small></td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-gray': r.status === 1,
+                'badge-amber': r.status === 2,
+                'badge-blue': r.status === 3,
+                'badge-rose': r.status === 4,
+                'badge-emerald': r.status === 5
+              }">{{ r.statusAr }}</span>
+            </td>
+            <td>
+              <div class="actions-cluster">
+                <button class="btn-action" [title]="'ui.procurementHub.932d8a' | translate" (click)="viewPrDetails(r)">
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button class="btn-action text-emerald" [title]="'ui.procurementHub.875b99' | translate" *ngIf="r.status === 1 || r.status === 2" (click)="approvePr(r)">
+                  <i class="pi pi-check-circle"></i> {{ 'purchasing.procurementHub.approve' | translate }}</button>
+                <button class="btn-action text-blue font-bold" [title]="'ui.procurementHub.850ca4' | translate" *ngIf="r.status === 3" (click)="convertPrToPo(r)">
+                  <i class="pi pi-shopping-bag"></i> {{ 'purchasing.procurement.table.createPo' | translate }}
+                </button>
+                <button class="btn-action text-rose" [title]="'ui.procurementHub.6cc5c2' | translate" *ngIf="r.status === 1 || r.status === 2" (click)="rejectPr(r)">
+                  <i class="pi pi-times-circle"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="requisitions().length === 0">
+            <td colspan="9" class="empty-state-cell">
+              <i class="pi pi-inbox"></i>
+              <p>{{ 'ui.procurementHub.bf8a1a' | translate }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 3: PURCHASE ORDERS (PO) -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'orders'">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="searchOrders" [placeholder]="'ui.procurementHub.ed85b5' | translate" />
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" (click)="openCreatePo()">
+          <i class="pi pi-plus"></i> {{ 'purchasing.procurement.newPo' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card-table">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'ui.procurementHub.9fdc25' | translate }}</th>
+            <th>{{ 'ui.procurementHub.7d2ffb' | translate }}</th>
+            <th>{{ 'ui.procurementHub.7f3935' | translate }}</th>
+            <th>{{ 'ui.procurementHub.76bf8c' | translate }}</th>
+            <th>{{ 'ui.procurementHub.319275' | translate }}</th>
+            <th>{{ 'ui.procurementHub.7c7f41' | translate }}</th>
+            <th>{{ 'invoices.table.total' | translate }}</th>
+            <th>{{ 'ui.procurementHub.a8cbab' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.status' | translate }}</th>
+            <th>{{ 'ui.procurementHub.467cd4' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let po of orders()">
+            <td><strong class="code-pill">{{ po.orderNumber }}</strong></td>
+            <td>
+              <span *ngIf="po.requisitionNumber" class="code-pill bg-purple">{{ po.requisitionNumber }}</span>
+              <span *ngIf="!po.requisitionNumber" class="text-muted">{{ 'ui.procurementHub.359c37' | translate }}</span>
+            </td>
+            <td>
+              <strong>{{ po.vendorName }}</strong>
+              <div *ngIf="po.vendorVatNumber" class="text-muted"><small>{{ 'branchesWarehouses.vatPrefix' | translate }} {{ po.vendorVatNumber }}</small></div>
+            </td>
+            <td>{{ po.orderDate | date:'yyyy/MM/dd' }}</td>
+            <td>{{ po.expectedDeliveryDate ? (po.expectedDeliveryDate | date:'yyyy/MM/dd') : ('ui.procurementHub.298df6' | translate) }}</td>
+            <td>{{ po.paymentTerms }}</td>
+            <td><strong class="text-emerald">{{ po.totalAmount | number:'1.2-2' }}</strong> <small>{{ po.currency }}</small></td>
+            <td>
+              <div class="progress-cell">
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="po.receivedProgressPercent"></div>
+                </div>
+                <span class="progress-num">{{ po.receivedProgressPercent }}%</span>
+              </div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-gray': po.status === 1,
+                'badge-blue': po.status === 2,
+                'badge-amber': po.status === 3,
+                'badge-emerald': po.status === 4,
+                'badge-purple': po.status === 5,
+                'badge-rose': po.status === 6
+              }">{{ po.statusAr }}</span>
+            </td>
+            <td>
+              <div class="actions-cluster">
+                <button class="btn-action" [title]="'ui.procurementHub.dd1f9c' | translate" (click)="viewPoDetails(po)">
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button class="btn-action text-blue" [title]="'ui.procurementHub.596b66' | translate" *ngIf="po.status === 1" (click)="confirmPo(po)">
+                  <i class="pi pi-check"></i> {{ 'purchasing.procurementHub.confirm' | translate }}</button>
+                <button class="btn-action text-emerald font-bold" [title]="'ui.procurementHub.b9a892' | translate" *ngIf="po.status >= 2 && po.status !== 4 && po.status !== 6" (click)="receiveGoodsFromPo(po)">
+                  <i class="pi pi-truck"></i> {{ 'ui.procurementHub.239933' | translate }}
+                </button>
+                <button class="btn-action text-purple font-bold" [title]="'ui.procurementHub.f36ef3' | translate" *ngIf="po.status >= 2 && po.status !== 6" (click)="createBillFromPo(po)">
+                  <i class="pi pi-file-edit"></i> {{ 'purchasing.procurement.table.createInvoice' | translate }}
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="orders().length === 0">
+            <td colspan="10" class="empty-state-cell">
+              <i class="pi pi-shopping-bag"></i>
+              <p>{{ 'ui.procurementHub.07862f' | translate }} {{ 'purchasing.procurement.newPo' | translate }}{{ 'ui.procurementHub.f0faea' | translate }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 4: GOODS RECEIPT NOTES (GRN) -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'receipts'">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="searchReceipts" [placeholder]="'ui.procurementHub.2186c9' | translate" />
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" (click)="openCreateGrn()">
+          <i class="pi pi-plus"></i> {{ 'ui.procurementHub.d9ce65' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card-table">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'ui.procurementHub.c7dd6e' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.linkedPurchaseOrder' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.vendor' | translate }}</th>
+            <th>{{ 'ui.procurementHub.dfcba0' | translate }}</th>
+            <th>{{ 'ui.procurementHub.6faba3' | translate }}</th>
+            <th>{{ 'ui.procurementHub.aee6bb' | translate }}</th>
+            <th>{{ 'ui.procurementHub.04e6c4' | translate }}</th>
+            <th>{{ 'ui.procurementHub.8ecb51' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.status' | translate }}</th>
+            <th>{{ 'ui.procurementHub.2d0926' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let grn of receipts()">
+            <td><strong class="code-pill">{{ grn.receiptNumber }}</strong></td>
+            <td>
+              <span *ngIf="grn.purchaseOrderNumber" class="code-pill bg-blue">{{ grn.purchaseOrderNumber }}</span>
+              <span *ngIf="!grn.purchaseOrderNumber" class="text-muted">{{ 'ui.procurementHub.f48af9' | translate }}</span>
+            </td>
+            <td><strong>{{ grn.vendorName }}</strong></td>
+            <td>{{ grn.receiptDate | date:'yyyy/MM/dd' }}</td>
+            <td>{{ grn.deliveryNoteNumber || ('ui.procurementHub.3bf074' | translate) }}</td>
+            <td>
+              <strong>{{ grn.warehouseCode }}</strong>
+              <div class="text-muted"><small>{{ 'ui.procurementHub.737ef0' | translate }} {{ grn.receiverName }}</small></div>
+            </td>
+            <td>
+              <span class="badge badge-emerald">{{ grn.totalQuantityAccepted }} {{ 'ui.procurementHub.2355d8' | translate }}</span>
+              <span class="badge badge-rose" *ngIf="grn.totalQuantityRejected > 0">{{ grn.totalQuantityRejected }} {{ 'purchasing.procurement.status.rejected' | translate }}</span>
+            </td>
+            <td><strong>{{ grn.totalReceivedValue | number:'1.2-2' }}</strong> <small>{{ 'purchasing.procurementHub.sar' | translate }}</small></td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-gray': grn.status === 1,
+                'badge-emerald': grn.status === 2,
+                'badge-amber': grn.status === 3,
+                'badge-rose': grn.status === 4
+              }">{{ grn.statusAr }}</span>
+            </td>
+            <td>
+              <div class="actions-cluster">
+                <button class="btn-action" [title]="'ui.procurementHub.1dca45' | translate" (click)="viewGrnDetails(grn)">
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button class="btn-action text-emerald font-bold" [title]="'ui.procurementHub.7a930a' | translate" (click)="createBillFromGrn(grn)">
+                  <i class="pi pi-receipt"></i> {{ 'ui.procurementHub.99efb8' | translate }}
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="receipts().length === 0">
+            <td colspan="10" class="empty-state-cell">
+              <i class="pi pi-truck"></i>
+              <p>{{ 'ui.procurementHub.b4ef91' | translate }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- TAB 5: BILLS & 3-WAY MATCHING -->
+  <!-- ======================================================== -->
+  <div class="tab-content" *ngIf="activeTab() === 'invoices'">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input type="text" [(ngModel)]="searchInvoices" [placeholder]="'ui.procurementHub.2d65ed' | translate" />
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn btn-emerald" (click)="navigateToDirectInvoice()">
+          <i class="pi pi-bolt"></i> {{ 'purchasing.procurement.directInvoice' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card-table">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'purchasing.procurementHub.invoice' | translate }}</th>
+            <th>{{ 'purchasing.invoices.table.vendorInvoiceNo' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.vendor' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.linkedPurchaseOrder' | translate }}</th>
+            <th>{{ 'ui.procurementHub.2415ca' | translate }}</th>
+            <th>{{ 'ui.procurementHub.fcb94d' | translate }}</th>
+            <th>{{ 'ui.procurementHub.96e22e' | translate }}</th>
+            <th>{{ 'invoices.table.paymentStatus' | translate }}</th>
+            <th>{{ 'invoices.view.journalEntryLabel' | translate }}</th>
+            <th>{{ 'purchasing.procurementHub.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inv of invoices()">
+            <td><strong class="code-pill">{{ inv.invoiceNumber }}</strong></td>
+            <td>{{ inv.vendorInvoiceNumber || '—' }}</td>
+            <td>
+              <strong>{{ inv.vendorName }}</strong>
+              <div *ngIf="inv.vendorVatNumber" class="text-muted"><small>{{ 'branchesWarehouses.vatPrefix' | translate }} {{ inv.vendorVatNumber }}</small></div>
+            </td>
+            <td>
+              <span *ngIf="inv.purchaseOrderNumber" class="code-pill bg-blue">{{ inv.purchaseOrderNumber }}</span>
+              <span *ngIf="!inv.purchaseOrderNumber" class="badge badge-gray">{{ 'ui.procurementHub.359c37' | translate }}</span>
+            </td>
+            <td>
+              <span *ngIf="inv.goodsReceiptNoteNumber" class="code-pill bg-purple">{{ inv.goodsReceiptNoteNumber }}</span>
+              <span *ngIf="!inv.goodsReceiptNoteNumber" class="text-muted">—</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-emerald': inv.matchingStatus === 1,
+                'badge-amber': inv.matchingStatus === 2,
+                'badge-rose': inv.matchingStatus === 3,
+                'badge-blue': inv.matchingStatus === 4,
+                'badge-gray': inv.matchingStatus === 0
+              }">
+                <i class="pi pi-shield"></i> {{ inv.matchingStatusAr }}
+              </span>
+            </td>
+            <td><strong class="text-emerald">{{ inv.totalAmount | number:'1.2-2' }}</strong> <small>{{ inv.currency }}</small></td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-emerald': inv.paymentStatus === 3,
+                'badge-amber': inv.paymentStatus === 2,
+                'badge-rose': inv.paymentStatus === 1
+              }">{{ inv.paymentStatusAr }}</span>
+            </td>
+            <td>
+              <span *ngIf="inv.associatedJournalEntryNumber" class="code-pill bg-gray">{{ inv.associatedJournalEntryNumber }}</span>
+              <span *ngIf="!inv.associatedJournalEntryNumber" class="text-muted">{{ 'purchasing.procurementHub.draft' | translate }}</span>
+            </td>
+            <td>
+              <div class="actions-cluster">
+                <button class="btn-action" [title]="'ui.procurementHub.02ecf1' | translate" (click)="viewInvoiceDetails(inv)">
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button class="btn-action text-emerald" [title]="'ui.procurementHub.574e80' | translate" *ngIf="inv.paymentStatus !== 3 && inv.status === 3" (click)="openPaymentModal(inv)">
+                  <i class="pi pi-dollar"></i> {{ 'ui.procurementHub.a8436c' | translate }}
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="invoices().length === 0">
+            <td colspan="10" class="empty-state-cell">
+              <i class="pi pi-receipt"></i>
+              <p>{{ 'ui.procurementHub.122877' | translate }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- ======================================================== -->
+  <!-- MODAL: CREATE PURCHASE REQUISITION (PR) -->
+  <!-- ======================================================== -->
+  <div class="modal-backdrop" *ngIf="showCreatePrModal()">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge bg-purple-subtle">
+            <i class="pi pi-file-edit text-purple"></i>
+          </div>
+          <div>
+            <h3>{{ 'ui.procurementHub.c11251' | translate }}</h3>
+            <span class="modal-subtitle">New Purchase Requisition (PR) & Budget Verification</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="showCreatePrModal.set(false)" [title]="('purchasing.procurementHub.close' | translate)"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Compact 4-Column Metadata Grid -->
+        <div class="compact-form-grid">
+          <div class="compact-form-group col-span-2">
+            <label class="field-label required">
+              <i class="pi pi-bookmark text-purple"></i>
+              {{ 'ui.procurementHub.e6952e' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input
+                type="text"
+                class="compact-input"
+                [(ngModel)]="prForm.title"
+                [placeholder]="'ui.procurementHub.cb283e' | translate"
+              />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-sitemap text-purple"></i>
+              {{ 'hr.employees.modal.department' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="prForm.departmentName" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-user text-purple"></i>
+              {{ 'ui.procurementHub.deebca' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="prForm.requesterName" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-calendar text-purple"></i>
+              {{ 'hr.advances.table.requestDate' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="date" class="compact-input" [(ngModel)]="prForm.requestDate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-clock text-purple"></i>
+              {{ 'ui.procurementHub.fc38e7' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="date" class="compact-input" [(ngModel)]="prForm.requiredByDate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-flag text-purple"></i>
+              {{ 'ui.procurementHub.ae65a2' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <select class="compact-input" [(ngModel)]="prForm.priority">
+                <option [ngValue]="1">{{ 'ui.procurementHub.f0328f' | translate }}</option>
+                <option [ngValue]="2">{{ 'ui.procurementHub.60bd56' | translate }}</option>
+                <option [ngValue]="3">{{ 'ui.procurementHub.adcaa5' | translate }}</option>
+                <option [ngValue]="4">{{ 'ui.procurementHub.cc49c3' | translate }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-comment text-purple"></i>
+              {{ 'ui.procurementHub.77ed48' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="prForm.reason" [placeholder]="'ui.procurementHub.7171ce' | translate" />
+            </div>
+          </div>
+        </div>
+
+        <!-- PR Lines Table -->
+        <div class="lines-section-card">
+          <div class="lines-section-header">
+            <div class="lines-title">
+              <i class="pi pi-list text-purple"></i>
+              <strong>{{ 'ui.procurementHub.15c2d3' | translate }}</strong>
+              <span class="counter-chip">{{ prForm.lines.length }} {{ 'ui.procurementHub.3201a3' | translate }}</span>
+            </div>
+            <button class="btn btn-xs btn-purple-soft" (click)="addPrLine()">
+              <i class="pi pi-plus"></i> {{ 'ui.procurementHub.48fcc2' | translate }}
+            </button>
+          </div>
+
+          <div class="table-scroll-wrapper">
+            <table class="compact-table-inputs">
+              <thead>
+                <tr>
+                  <th style="width: 32%">{{ 'ui.procurementHub.dbfe69' | translate }}</th>
+                  <th style="width: 30%">{{ 'ui.procurementHub.4d9418' | translate }}</th>
+                  <th style="width: 8%">{{ 'purchasing.procurementHub.unit' | translate }}</th>
+                  <th style="width: 8%">{{ 'ui.procurementHub.697ece' | translate }}</th>
+                  <th style="width: 10%">{{ 'ui.procurementHub.a30081' | translate }}</th>
+                  <th style="width: 9%">{{ 'purchasing.procurementHub.total' | translate }}</th>
+                  <th style="width: 3%"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let l of prForm.lines; let idx = index">
+                  <td>
+                    <select class="table-input" [(ngModel)]="l.itemId" (ngModelChange)="onPrItemSelect(l)">
+                      <option value="">{{ 'ui.procurementHub.d9ce61' | translate }}</option>
+                      <option *ngFor="let item of itemsMaster()" [value]="item.id">
+                        {{ item.itemCode }} - {{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      class="table-input"
+                      [ngModel]="l.itemNameAr || l.itemNameEn"
+                      (ngModelChange)="onPrLineNameChange(l, $event)"
+                      [placeholder]="('purchasing.procurementHub.itemDescriptionArEn' | translate)"
+                      [title]="l.itemNameEn ? ('English: ' + l.itemNameEn) : (l.itemNameAr ? ('Arabic: ' + l.itemNameAr) : '')"
+                    />
+                  </td>
+                  <td>
+                    <input type="text" class="table-input text-center" [(ngModel)]="l.unitOfMeasure" />
+                  </td>
+                  <td>
+                    <input type="number" class="table-input text-center" [(ngModel)]="l.quantityRequested" min="1" />
+                  </td>
+                  <td>
+                    <input type="number" class="table-input text-end" [(ngModel)]="l.estimatedUnitPrice" min="0" step="0.01" />
+                  </td>
+                  <td>
+                    <span class="live-calc-badge">{{ calculatePrLineTotal(l) | number:'1.2-2' }}</span>
+                  </td>
+                  <td class="text-center">
+                    <button class="btn-icon-trash" (click)="removePrLine(idx)" [title]="'ui.procurementHub.3d3245' | translate">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PR Live Summary Strip -->
+          <div class="summary-metric-strip">
+            <div class="metric-item">
+              <span class="metric-lbl">{{ 'ui.procurementHub.f303d6' | translate }}</span>
+              <strong class="metric-val">{{ prForm.lines.length }}</strong>
+            </div>
+            <div class="metric-item highlight-purple">
+              <span class="metric-lbl">{{ 'ui.procurementHub.dc3f68' | translate }}</span>
+              <strong class="metric-val">{{ prGrandTotal | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-summary-hint">
+          <span>{{ 'ui.procurementHub.b560d9' | translate }} </span>
+          <strong class="text-purple">{{ prGrandTotal | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+        </div>
+        <div class="footer-actions">
+          <button class="btn btn-secondary btn-sm" (click)="showCreatePrModal.set(false)">
+            <i class="pi pi-times"></i> {{ 'purchasing.procurementHub.cancel' | translate }}</button>
+          <button class="btn btn-purple btn-sm" (click)="submitCreatePr()">
+            <i class="pi pi-check"></i> {{ 'ui.procurementHub.e810be' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CREATE PURCHASE ORDER (PO) -->
+  <!-- ======================================================== -->
+  <div class="modal-backdrop" *ngIf="showCreatePoModal()">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge bg-blue-subtle">
+            <i class="pi pi-shopping-bag text-blue"></i>
+          </div>
+          <div>
+            <h3>{{ 'ui.procurementHub.8f1a8c' | translate }}</h3>
+            <span class="modal-subtitle">Issue Official Purchase Order (PO) to Authorized Vendor</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="showCreatePoModal.set(false)" [title]="('purchasing.procurementHub.close' | translate)"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Compact 4-Column Metadata Grid -->
+        <div class="compact-form-grid">
+          <div class="compact-form-group col-span-2">
+            <label class="field-label required">
+              <i class="pi pi-building text-blue"></i>
+              {{ 'ui.procurementHub.7f3935' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <select class="compact-input" [(ngModel)]="poForm.vendorId">
+                <option value="" disabled>{{ 'ui.procurementHub.84db4d' | translate }}</option>
+                <option *ngFor="let v of vendors()" [value]="v.id">
+                  {{ v.code }} - {{ v.nameAr }} ({{ v.taxNumber || ('ui.procurementHub.a049a2' | translate) }})
+                </option>
+              </select>
+            </div>
+            <!-- Vendor Micro Info Badge -->
+            <div class="vendor-micro-info" *ngIf="selectedVendorObj">
+              <span><i class="pi pi-tag"></i> {{ 'ui.procurementHub.1d7661' | translate }} {{ selectedVendorObj.code }}</span>
+              <span *ngIf="selectedVendorObj.taxNumber"><i class="pi pi-shield"></i> {{ 'branchesWarehouses.vatPrefix' | translate }} {{ selectedVendorObj.taxNumber }}</span>
+              <span *ngIf="selectedVendorObj.commercialRegistration"><i class="pi pi-id-card"></i> {{ 'accounting.journal.ui.cr' | translate }} {{ selectedVendorObj.commercialRegistration }}</span>
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-calendar text-blue"></i>
+              {{ 'ui.procurementHub.07c0a0' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="date" class="compact-input" [(ngModel)]="poForm.orderDate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-truck text-blue"></i>
+              {{ 'ui.procurementHub.81eb47' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="date" class="compact-input" [(ngModel)]="poForm.expectedDeliveryDate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-credit-card text-blue"></i>
+              {{ 'ui.procurementHub.7c7f41' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="poForm.paymentTerms" [placeholder]="'ui.procurementHub.457c21' | translate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-building text-blue"></i>
+              {{ 'purchasing.procurementHub.receivingWarehouse' | translate }}</label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input font-mono" [(ngModel)]="poForm.warehouseCode" placeholder="WH-01" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-2">
+            <label class="field-label">
+              <i class="pi pi-comment text-blue"></i>
+              {{ 'ui.procurementHub.3fb505' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="poForm.notes" [placeholder]="'ui.procurementHub.1f357d' | translate" />
+            </div>
+          </div>
+        </div>
+
+        <!-- PO Lines Table -->
+        <div class="lines-section-card">
+          <div class="lines-section-header">
+            <div class="lines-title">
+              <i class="pi pi-list text-blue"></i>
+              <strong>{{ 'ui.procurementHub.15646f' | translate }}</strong>
+              <span class="counter-chip">{{ poForm.lines.length }} {{ 'ui.procurementHub.3201a3' | translate }}</span>
+            </div>
+            <button class="btn btn-xs btn-blue-soft" (click)="addPoLine()">
+              <i class="pi pi-plus"></i> {{ 'ui.procurementHub.48fcc2' | translate }}
+            </button>
+          </div>
+
+          <div class="table-scroll-wrapper">
+            <table class="compact-table-inputs">
+              <thead>
+                <tr>
+                  <th style="width: 30%">{{ 'ui.procurementHub.dbfe69' | translate }}</th>
+                  <th style="width: 30%">{{ 'ui.procurementHub.4d9418' | translate }}</th>
+                  <th style="width: 8%">{{ 'ui.procurementHub.697ece' | translate }}</th>
+                  <th style="width: 11%">{{ 'ui.procurementHub.4104d9' | translate }}</th>
+                  <th style="width: 8%">{{ 'purchasing.procurementHub.vat' | translate }}</th>
+                  <th style="width: 10%">{{ 'ui.procurementHub.4d0fe2' | translate }}</th>
+                  <th style="width: 3%"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let l of poForm.lines; let idx = index">
+                  <td>
+                    <select class="table-input" [(ngModel)]="l.itemId" (ngModelChange)="onPoItemSelect(l)">
+                      <option value="">{{ 'ui.procurementHub.d33ce1' | translate }}</option>
+                      <option *ngFor="let item of itemsMaster()" [value]="item.id">
+                        {{ item.itemCode }} - {{ langService.currentLang() === 'ar' ? item.nameAr : (item.nameEn || item.nameAr) }}
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      class="table-input"
+                      [ngModel]="l.itemNameAr || l.itemNameEn"
+                      (ngModelChange)="onPoLineNameChange(l, $event)"
+                      [placeholder]="('purchasing.procurementHub.itemNameSpecificationArEn' | translate)"
+                      [title]="l.itemNameEn ? ('English: ' + l.itemNameEn) : (l.itemNameAr ? ('Arabic: ' + l.itemNameAr) : '')"
+                    />
+                  </td>
+                  <td>
+                    <input type="number" class="table-input text-center" [(ngModel)]="l.quantityOrdered" min="1" />
+                  </td>
+                  <td>
+                    <input type="number" class="table-input text-end" [(ngModel)]="l.unitPrice" min="0" step="0.01" />
+                  </td>
+                  <td>
+                    <div class="vat-percent-badge">
+                      <input type="number" class="table-input text-center vat-input" [(ngModel)]="l.vatRate" min="0" max="100" />
+                      <span>%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="live-calc-badge">{{ calculatePoLineTotal(l) | number:'1.2-2' }}</span>
+                  </td>
+                  <td class="text-center">
+                    <button class="btn-icon-trash" (click)="removePoLine(idx)" [title]="'ui.procurementHub.3d3245' | translate">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PO Live Summary Strip -->
+          <div class="summary-metric-strip">
+            <div class="metric-item">
+              <span class="metric-lbl">{{ 'ui.procurementHub.ef4873' | translate }}</span>
+              <strong class="metric-val">{{ poForm.lines.length }} {{ 'pos.itemsCount' | translate }}</strong>
+            </div>
+            <div class="metric-item">
+              <span class="metric-lbl">{{ 'invoices.view.thermalSubtotal' | translate }}</span>
+              <strong class="metric-val">{{ poSubtotal | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+            <div class="metric-item">
+              <span class="metric-lbl">{{ 'pos.vatZatca' | translate }}</span>
+              <strong class="metric-val text-amber">{{ poVatTotal | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+            <div class="metric-item highlight-emerald">
+              <span class="metric-lbl">{{ 'ui.procurementHub.373435' | translate }}</span>
+              <strong class="metric-val">{{ poGrandTotal | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-summary-hint">
+          <span>{{ 'ui.procurementHub.cb79cc' | translate }} </span>
+          <strong class="text-emerald">{{ poGrandTotal | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+        </div>
+        <div class="footer-actions">
+          <button class="btn btn-secondary btn-sm" (click)="showCreatePoModal.set(false)">
+            <i class="pi pi-times"></i> {{ 'purchasing.procurementHub.cancel' | translate }}</button>
+          <button class="btn btn-primary btn-sm" (click)="submitCreatePo()">
+            <i class="pi pi-check"></i> {{ 'ui.procurementHub.8a48bb' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CREATE GOODS RECEIPT NOTE (GRN) -->
+  <!-- ======================================================== -->
+  <div class="modal-backdrop" *ngIf="showCreateGrnModal()">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge bg-emerald-subtle">
+            <i class="pi pi-truck text-emerald"></i>
+          </div>
+          <div>
+            <h3>{{ 'ui.procurementHub.f61498' | translate }}</h3>
+            <span class="modal-subtitle">Goods Receipt Note (GRN) & Warehouse Quality Inspection</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="showCreateGrnModal.set(false)" [title]="('purchasing.procurementHub.close' | translate)"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Compact 4-Column Metadata Grid -->
+        <div class="compact-form-grid">
+          <div class="compact-form-group col-span-1" *ngIf="grnForm.purchaseOrderNumber">
+            <label class="field-label">
+              <i class="pi pi-link text-blue"></i>
+              {{ 'purchasing.procurementHub.linkedPurchaseOrder' | translate }}</label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input bg-muted font-mono" [ngModel]="grnForm.purchaseOrderNumber" disabled />
+            </div>
+          </div>
+
+          <div class="compact-form-group" [ngClass]="grnForm.purchaseOrderNumber ? 'col-span-1' : 'col-span-2'">
+            <label class="field-label required">
+              <i class="pi pi-building text-emerald"></i>
+              {{ 'purchasing.procurementHub.vendor' | translate }}</label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="grnForm.vendorName" [disabled]="!!grnForm.purchaseOrderId" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-file text-emerald"></i>
+              {{ 'ui.procurementHub.a24a28' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="grnForm.deliveryNoteNumber" [placeholder]="'ui.procurementHub.f701b2' | translate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-calendar text-emerald"></i>
+              {{ 'ui.procurementHub.3ce7e9' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="date" class="compact-input" [(ngModel)]="grnForm.receiptDate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-box text-emerald"></i>
+              {{ 'purchasing.procurementHub.receivingWarehouse' | translate }}</label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="grnForm.warehouseCode" placeholder="WH-01" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-user-check text-emerald"></i>
+              {{ 'ui.procurementHub.eb2409' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="grnForm.receiverName" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-verified text-emerald"></i>
+              {{ 'ui.procurementHub.c0cf58' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="grnForm.inspectorName" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-comment text-emerald"></i>
+              {{ 'ui.procurementHub.da3b57' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="grnForm.notes" [placeholder]="'ui.procurementHub.88bb7d' | translate" />
+            </div>
+          </div>
+        </div>
+
+        <!-- GRN Lines Inspection Table -->
+        <div class="lines-section-card">
+          <div class="lines-section-header">
+            <div class="lines-title">
+              <i class="pi pi-verified text-emerald"></i>
+              <strong>{{ 'ui.procurementHub.8fce8f' | translate }}</strong>
+            </div>
+          </div>
+
+          <div class="table-scroll-wrapper">
+            <table class="compact-table-inputs">
+              <thead>
+                <tr>
+                  <th style="width: 28%">{{ 'purchasing.procurementHub.receivedItem' | translate }}</th>
+                  <th style="width: 10%">{{ 'purchasing.procurementHub.requestedQty' | translate }}</th>
+                  <th style="width: 12%">{{ 'ui.procurementHub.b04d40' | translate }}</th>
+                  <th style="width: 14%">{{ 'ui.procurementHub.13b311' | translate }}</th>
+                  <th style="width: 12%">{{ 'ui.procurementHub.293e8a' | translate }}</th>
+                  <th style="width: 24%">{{ 'ui.procurementHub.b72d9b' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let l of grnForm.lines">
+                  <td>
+                    <strong>{{ langService.currentLang() === 'ar' ? l.itemNameAr : (l.itemNameEn || l.itemNameAr) }}</strong>
+                    <div *ngIf="l.itemCode" class="text-muted"><small>{{ 'ui.procurementHub.1d7661' | translate }} {{ l.itemCode }}</small></div>
+                  </td>
+                  <td><span class="badge badge-gray">{{ l.quantityOrdered }} {{ l.unitOfMeasure }}</span></td>
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-center"
+                      [(ngModel)]="l.quantityReceived"
+                      (ngModelChange)="onGrnQtyChange(l)"
+                      min="0"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-center input-accepted"
+                      [(ngModel)]="l.quantityAccepted"
+                      (ngModelChange)="onGrnQtyChange(l)"
+                      min="0"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-center input-rejected"
+                      [(ngModel)]="l.quantityRejected"
+                      min="0"
+                    />
+                  </td>
+                  <td>
+                    <input type="text" class="table-input" [(ngModel)]="l.rejectionReason" [placeholder]="'ui.procurementHub.9cd656' | translate" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- GRN Metric Strip -->
+          <div class="summary-metric-strip">
+            <div class="metric-item">
+              <span class="metric-lbl">{{ 'ui.procurementHub.6aa951' | translate }}</span>
+              <strong class="metric-val">{{ grnTotalReceived }} {{ 'ui.procurementHub.95eeae' | translate }}</strong>
+            </div>
+            <div class="metric-item highlight-emerald">
+              <span class="metric-lbl">{{ 'ui.procurementHub.e80899' | translate }}</span>
+              <strong class="metric-val text-emerald">{{ grnTotalAccepted }} {{ 'ui.procurementHub.95eeae' | translate }}</strong>
+            </div>
+            <div class="metric-item highlight-rose" *ngIf="grnTotalRejected > 0">
+              <span class="metric-lbl">{{ 'ui.procurementHub.3d5e8b' | translate }}</span>
+              <strong class="metric-val text-rose">{{ grnTotalRejected }} {{ 'ui.procurementHub.95eeae' | translate }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-summary-hint">
+          <span>{{ 'ui.procurementHub.5fa51c' | translate }} </span>
+          <strong class="text-emerald">{{ grnTotalAccepted }} {{ 'ui.procurementHub.95eeae' | translate }}</strong>
+        </div>
+        <div class="footer-actions">
+          <button class="btn btn-secondary btn-sm" (click)="showCreateGrnModal.set(false)">
+            <i class="pi pi-times"></i> {{ 'purchasing.procurementHub.cancel' | translate }}</button>
+          <button class="btn btn-emerald btn-sm" (click)="submitCreateGrn()">
+            <i class="pi pi-check"></i> {{ 'ui.procurementHub.b2096c' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: QUICK PAYMENT -->
+  <!-- ======================================================== -->
+  <div class="modal-backdrop" *ngIf="showPaymentModal()">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge bg-emerald-subtle">
+            <i class="pi pi-dollar text-emerald"></i>
+          </div>
+          <div>
+            <h3>{{ 'ui.procurementHub.c19439' | translate }}</h3>
+            <span class="modal-subtitle">Register Vendor Bill Payment & Voucher</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="showPaymentModal.set(false)" [title]="('purchasing.procurementHub.close' | translate)"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedInvoice">
+        <!-- Invoice Summary Compact Box -->
+        <div class="compact-invoice-summary">
+          <div class="summary-col">
+            <span class="summary-title"><i class="pi pi-file text-blue"></i> {{ 'purchasing.procurementHub.invoice1' | translate }}</span>
+            <strong class="code-pill">{{ selectedInvoice.invoiceNumber }}</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-title"><i class="pi pi-building text-blue"></i> {{ 'ui.procurementHub.57d22c' | translate }}</span>
+            <strong>{{ selectedInvoice.vendorName }}</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-title">{{ 'ui.procurementHub.d0880b' | translate }}</span>
+            <strong>{{ selectedInvoice.totalAmount | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-title">{{ 'ui.procurementHub.c48b2a' | translate }}</span>
+            <strong class="text-rose font-bold">{{ selectedInvoice.remainingAmount | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+          </div>
+        </div>
+
+        <div class="compact-form-grid mt-3">
+          <div class="compact-form-group col-span-2">
+            <label class="field-label required">
+              <i class="pi pi-dollar text-emerald"></i>
+              {{ 'ui.procurementHub.35ef15' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="number" class="compact-input text-end font-bold" [(ngModel)]="paymentForm.amount" min="1" step="0.01" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-calendar text-emerald"></i>
+              {{ 'ui.procurementHub.a33312' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="date" class="compact-input" [(ngModel)]="paymentForm.paymentDate" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label required">
+              <i class="pi pi-wallet text-emerald"></i>
+              {{ 'purchasing.procurementHub.paymentMethod' | translate }}</label>
+            <div class="compact-input-wrap">
+              <select class="compact-input" [(ngModel)]="paymentForm.paymentMethod">
+                <option value="BankTransfer">{{ 'ui.procurementHub.219ccd' | translate }}</option>
+                <option value="Check">{{ 'ui.procurementHub.694f70' | translate }}</option>
+                <option value="Cash">{{ 'ui.procurementHub.fbbf10' | translate }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-hashtag text-emerald"></i>
+              {{ 'ui.procurementHub.27d8bc' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="paymentForm.referenceNumber" placeholder="REF-984210" />
+            </div>
+          </div>
+
+          <div class="compact-form-group col-span-1">
+            <label class="field-label">
+              <i class="pi pi-comment text-emerald"></i>
+              {{ 'ui.procurementHub.d7acab' | translate }}
+            </label>
+            <div class="compact-input-wrap">
+              <input type="text" class="compact-input" [(ngModel)]="paymentForm.notes" [placeholder]="'ui.procurementHub.3e3bac' | translate" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-actions">
+          <button class="btn btn-secondary btn-sm" (click)="showPaymentModal.set(false)">
+            <i class="pi pi-times"></i> {{ 'purchasing.procurementHub.cancel' | translate }}</button>
+          <button class="btn btn-emerald btn-sm" (click)="submitPayment()">
+            <i class="pi pi-check"></i> {{ 'ui.procurementHub.cea9ea' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: DETAILS INSPECTION -->
+  <!-- ======================================================== -->
+  <div class="modal-backdrop" *ngIf="showDetailsModal()">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-info-circle text-blue"></i>
+          <h3 *ngIf="selectedDetailsType === 'pr'">{{ 'ui.procurementHub.cc51b8' | translate }} {{ selectedPr?.requisitionNumber }}</h3>
+          <h3 *ngIf="selectedDetailsType === 'po'">{{ 'ui.procurementHub.6b175c' | translate }} {{ selectedPo?.orderNumber }}</h3>
+          <h3 *ngIf="selectedDetailsType === 'grn'">{{ 'ui.procurementHub.247a6e' | translate }} {{ selectedGrn?.receiptNumber }}</h3>
+          <h3 *ngIf="selectedDetailsType === 'invoice'">{{ 'ui.procurementHub.11b71d' | translate }} {{ selectedInvoice?.invoiceNumber }}</h3>
+        </div>
+        <button class="modal-close-btn" (click)="closeDetailsModal()"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- PR Lines -->
+        <div *ngIf="selectedDetailsType === 'pr' && selectedPr">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{{ 'purchasing.procurementHub.itemDescription' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.unit' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.quantity' | translate }}</th>
+                <th>{{ 'ui.procurementHub.356bd8' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.total' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of selectedPr.lines; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><strong>{{ langService.currentLang() === 'ar' ? l.itemNameAr : (l.itemNameEn || l.itemNameAr) }}</strong></td>
+                <td>{{ l.unitOfMeasure }}</td>
+                <td>{{ l.quantityRequested }}</td>
+                <td>{{ l.estimatedUnitPrice | number:'1.2-2' }}</td>
+                <td><strong>{{ l.estimatedTotal | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PO Lines -->
+        <div *ngIf="selectedDetailsType === 'po' && selectedPo">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{{ 'purchasing.procurementHub.itemDescription' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.requestedQty' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.recipient' | translate }}</th>
+                <th>{{ 'ui.procurementHub.dc102b' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.price' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.vat' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.total' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of selectedPo.lines; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><strong>{{ langService.currentLang() === 'ar' ? l.itemNameAr : (l.itemNameEn || l.itemNameAr) }}</strong></td>
+                <td>{{ l.quantityOrdered }}</td>
+                <td><strong class="text-emerald">{{ l.quantityReceived }}</strong></td>
+                <td><strong class="text-blue">{{ l.quantityBilled }}</strong></td>
+                <td>{{ l.unitPrice | number:'1.2-2' }}</td>
+                <td>{{ l.vatAmount | number:'1.2-2' }}</td>
+                <td><strong>{{ l.totalAmount | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- GRN Lines -->
+        <div *ngIf="selectedDetailsType === 'grn' && selectedGrn">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{{ 'purchasing.procurementHub.receivedItem' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.requestedQty' | translate }}</th>
+                <th>{{ 'ui.procurementHub.09cc6a' | translate }}</th>
+                <th>{{ 'ui.procurementHub.57a306' | translate }}</th>
+                <th>{{ 'ui.procurementHub.293e8a' | translate }}</th>
+                <th>{{ 'ui.procurementHub.c40311' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of selectedGrn.lines; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><strong>{{ langService.currentLang() === 'ar' ? l.itemNameAr : (l.itemNameEn || l.itemNameAr) }}</strong></td>
+                <td>{{ l.quantityOrdered }}</td>
+                <td>{{ l.quantityReceived }}</td>
+                <td><strong class="text-emerald">{{ l.quantityAccepted }}</strong></td>
+                <td><strong class="text-rose">{{ l.quantityRejected }}</strong></td>
+                <td>{{ l.rejectionReason || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Invoice Lines -->
+        <div *ngIf="selectedDetailsType === 'invoice' && selectedInvoice">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{{ 'purchasing.procurementHub.itemDescription' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.quantity' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.price' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.discount' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.taxableAmount' | translate }}</th>
+                <th>{{ 'invoices.table.vatAmount' | translate }}</th>
+                <th>{{ 'purchasing.procurementHub.total' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of selectedInvoice.lines; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><strong>{{ langService.currentLang() === 'ar' ? l.itemNameAr : (l.itemNameEn || l.itemNameAr) }}</strong></td>
+                <td>{{ l.quantity }}</td>
+                <td>{{ l.unitPrice | number:'1.2-2' }}</td>
+                <td>{{ l.discountAmount | number:'1.2-2' }}</td>
+                <td>{{ l.taxableAmount | number:'1.2-2' }}</td>
+                <td>{{ l.vatAmount | number:'1.2-2' }}</td>
+                <td><strong>{{ l.totalAmount | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="closeDetailsModal()">{{ 'purchasing.procurementHub.close' | translate }}</button>
+      </div>
+    </div>
+  </div>
+</div>

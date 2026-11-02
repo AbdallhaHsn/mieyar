@@ -1,0 +1,684 @@
+<div class="users-roles-container animate-fade-in" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Top Navigation & Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="breadcrumbs">
+          <span>{{ 'usersAndRoles.settingsSecurity' | translate }}</span>
+          <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-angle-left' : 'pi-angle-right'"></i>
+          <span>{{ 'usersAndRoles.companyUsersRoleMatrix' | translate }}</span>
+        </div>
+        <div class="title-with-badge">
+          <h1>{{ 'usersAndRoles.companyUsersRolePermissionsMat' | translate }}</h1>
+          <span class="badge-role-matrix">
+            <i class="pi pi-shield"></i>
+            {{ 'usersAndRoles.enterpriseSecurityPermissions' | translate }}
+          </span>
+        </div>
+        <p class="subtitle">
+          {{ 'usersAndRoles.addCompanyUsersAssignBranches' | translate }}
+        </p>
+      </div>
+
+      <div class="header-actions">
+        @if (activeTab() === 'users') {
+          <button class="btn btn-primary" (click)="openCreateUserModal()">
+            <i class="pi pi-user-plus"></i>
+            <span>{{ 'usersAndRoles.newUser' | translate }}</span>
+          </button>
+        } @else {
+          <button class="btn btn-primary" (click)="openCreateRoleModal()">
+            <i class="pi pi-plus-circle"></i>
+            <span>{{ 'usersAndRoles.newCustomRole' | translate }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Tab Selector -->
+    <div class="tabs-nav">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'users'"
+        (click)="activeTab.set('users')"
+      >
+        <i class="pi pi-users"></i>
+        <span>{{ 'usersAndRoles.companyUsersAccounts' | translate }}</span>
+        <span class="tab-count-badge">{{ totalUsersCount() }}</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'roles'"
+        (click)="activeTab.set('roles')"
+      >
+        <i class="pi pi-id-card"></i>
+        <span>{{ 'usersAndRoles.rolesPermissionMatrix' | translate }}</span>
+        <span class="tab-count-badge">{{ rolesCount() }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: USERS MANAGEMENT -->
+  @if (activeTab() === 'users') {
+    <div class="tab-content animate-fade-in">
+      <!-- Summary Metric Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon icon-blue">
+            <i class="pi pi-users"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">{{ 'usersAndRoles.totalUsers' | translate }}</span>
+            <span class="stat-value">{{ totalUsersCount() }}</span>
+            <span class="stat-meta">{{ 'usersAndRoles.registeredCompanyUsers' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-green">
+            <i class="pi pi-check-circle"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">{{ 'usersAndRoles.activeUsers' | translate }}</span>
+            <span class="stat-value">{{ activeUsersCount() }}</span>
+            <span class="stat-meta">{{ 'usersAndRoles.permittedToLogin' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-amber">
+            <i class="pi pi-ban"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">{{ 'usersAndRoles.disabledAccounts' | translate }}</span>
+            <span class="stat-value">{{ inactiveUsersCount() }}</span>
+            <span class="stat-meta">{{ 'usersAndRoles.accessSuspended' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-purple">
+            <i class="pi pi-shield"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">{{ 'usersAndRoles.configuredRoles' | translate }}</span>
+            <span class="stat-value">{{ rolesCount() }}</span>
+            <span class="stat-meta">{{ 'usersAndRoles.systemCustom' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Search Toolbar -->
+      <div class="filter-toolbar">
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [placeholder]="('usersAndRoles.searchByNameUsernameOr' | translate)"
+            [ngModel]="userSearchTerm()"
+            (ngModelChange)="userSearchTerm.set($event); currentUserPage.set(1)"
+          />
+          @if (userSearchTerm()) {
+            <button class="clear-search" (click)="userSearchTerm.set(''); currentUserPage.set(1)">
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </div>
+
+        <div class="filter-actions">
+          <select
+            class="filter-select"
+            [ngModel]="userRoleFilter()"
+            (ngModelChange)="userRoleFilter.set($event); currentUserPage.set(1)"
+          >
+            <option value="ALL">{{ 'usersAndRoles.allRolesFunctions' | translate }}</option>
+            @for (role of roles(); track role.id) {
+              <option [value]="role.code">
+                {{ langService.currentLang() === 'ar' ? role.nameAr : (role.nameEn || role.nameAr) }} ({{ role.code }})
+              </option>
+            }
+          </select>
+
+          <button class="btn btn-secondary btn-icon" (click)="loadUsers()" [title]="('usersAndRoles.refreshList' | translate)">
+            <i class="pi pi-refresh" [class.pi-spin]="isLoadingUsers()"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Users Table Card -->
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ 'usersAndRoles.userEmployee' | translate }}</th>
+                <th>{{ 'usersAndRoles.username' | translate }}</th>
+                <th>{{ 'usersAndRoles.email' | translate }}</th>
+                <th>{{ 'usersAndRoles.phone' | translate }}</th>
+                <th>{{ 'usersAndRoles.rolePermissions' | translate }}</th>
+                <th>{{ 'usersAndRoles.assignedBranch' | translate }}</th>
+                <th>{{ 'usersAndRoles.status' | translate }}</th>
+                <th>{{ 'usersAndRoles.lastLogin' | translate }}</th>
+                <th class="actions-col">{{ 'usersAndRoles.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (isLoadingUsers()) {
+                <tr>
+                  <td colspan="9" class="text-center py-5">
+                    <div class="loading-state">
+                      <i class="pi pi-spin pi-spinner text-primary fs-3"></i>
+                      <span>{{ 'usersAndRoles.loadingUsersData' | translate }}</span>
+                    </div>
+                  </td>
+                </tr>
+              } @else if (filteredUsers().length === 0) {
+                <tr>
+                  <td colspan="9" class="text-center py-5">
+                    <div class="empty-state">
+                      <i class="pi pi-users text-muted fs-1 mb-2"></i>
+                      <p>{{ 'usersAndRoles.noUsersMatchingSearchCriteria' | translate }}</p>
+                      <button class="btn btn-sm btn-outline-primary" (click)="openCreateUserModal()">
+                        <i class="pi pi-user-plus"></i>
+                        <span>{{ 'usersAndRoles.addFirstCompanyUser' | translate }}</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @else {
+                @for (user of paginatedUsers(); track user.id) {
+                  <tr>
+                    <td>
+                      <div class="user-cell">
+                        <div class="user-avatar" [class.avatar-inactive]="!user.isActive">
+                          {{ user.fullNameAr.charAt(0) || ('hr.payroll.tblNum' | translate) }}
+                        </div>
+                        <div class="user-names">
+                          <span class="user-name-ar">{{ langService.currentLang() === 'ar' ? user.fullNameAr : (user.fullNameEn || user.fullNameAr) }}</span>
+                          <span class="user-name-en">{{ langService.currentLang() === 'ar' ? user.fullNameEn : user.fullNameAr }}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <code class="username-badge">&#64;{{ user.userName }}</code>
+                    </td>
+
+                    <td>
+                      <span class="email-text">{{ user.email }}</span>
+                    </td>
+
+                    <td>
+                      <span class="phone-text">{{ user.phoneNumber || '—' }}</span>
+                    </td>
+
+                    <td>
+                      <div class="role-badge-cell">
+                        @if (user.companyRoleNameAr) {
+                          <span class="role-pill pill-custom">
+                            <i class="pi pi-id-card"></i>
+                            {{ langService.currentLang() === 'ar' ? user.companyRoleNameAr : (user.companyRoleNameEn || user.companyRoleNameAr) }}
+                          </span>
+                        } @else {
+                          <span class="role-pill pill-system">
+                            <i class="pi pi-shield"></i>
+                            {{ langService.currentLang() === 'ar' ? user.roleNameAr : (user.roleNameEn || user.roleNameAr) }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <td>
+                      @if (user.branchNameAr) {
+                        <span class="branch-pill">
+                          <i class="pi pi-building"></i>
+                          {{ langService.currentLang() === 'ar' ? user.branchNameAr : (user.branchNameEn || user.branchNameAr) }}
+                        </span>
+                      } @else {
+                        <span class="branch-pill-all">
+                          <i class="pi pi-globe"></i>
+                          {{ 'usersAndRoles.allBranches' | translate }}
+                        </span>
+                      }
+                    </td>
+
+                    <td>
+                      <button
+                        class="status-toggle-btn"
+                        [class.active]="user.isActive"
+                        [class.inactive]="!user.isActive"
+                        (click)="toggleUserStatus(user)"
+                        [title]="user.isActive 
+                          ? ('usersAndRoles.clickToDisableAccount' | translate) 
+                          : ('usersAndRoles.clickToEnableAccount' | translate)"
+                      >
+                        <i class="pi" [class.pi-check]="user.isActive" [class.pi-times]="!user.isActive"></i>
+                        <span>{{ user.isActive 
+                          ? ('usersAndRoles.active' | translate) 
+                          : ('usersAndRoles.disabled' | translate) }}</span>
+                      </button>
+                    </td>
+
+                    <td>
+                      <span class="date-text">
+                        {{ user.lastLoginUtc ? (user.lastLoginUtc | date:'short') : ('usersAndRoles.neverLoggedIn' | translate) }}
+                      </span>
+                    </td>
+
+                    <td class="actions-col">
+                      <div class="action-buttons">
+                        <button
+                          class="action-btn edit-btn"
+                          (click)="openEditUserModal(user)"
+                          [title]="('usersAndRoles.editUserRole' | translate)"
+                        >
+                          <i class="pi pi-user-edit"></i>
+                        </button>
+
+                        <button
+                          class="action-btn key-btn"
+                          (click)="openResetPasswordModal(user)"
+                          [title]="('usersAndRoles.resetPassword' | translate)"
+                        >
+                          <i class="pi pi-key"></i>
+                        </button>
+
+                        <button
+                          class="action-btn status-btn"
+                          [class.btn-ban]="user.isActive"
+                          [class.btn-unban]="!user.isActive"
+                          (click)="toggleUserStatus(user)"
+                          [title]="user.isActive 
+                            ? ('usersAndRoles.disableAccount' | translate) 
+                            : ('usersAndRoles.activateAccount' | translate)"
+                        >
+                          <i class="pi" [class.pi-ban]="user.isActive" [class.pi-check-circle]="!user.isActive"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination
+          [totalItems]="filteredUsers().length"
+          [(currentPage)]="currentUserPage"
+          [(pageSize)]="userPageSize"
+          [pageSizeOptions]="[5, 10, 20, 50]"
+          [itemLabelAr]="'ui.usersAndRoles.4b9ba4' | translate"
+          itemLabelEn="Users"
+        ></app-pagination>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: ROLES & PERMISSIONS MATRIX -->
+  @if (activeTab() === 'roles') {
+    <div class="tab-content animate-fade-in">
+      <!-- Roles Toolbar -->
+      <div class="filter-toolbar">
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [placeholder]="('usersAndRoles.searchRolesTitles' | translate)"
+            [ngModel]="roleSearchTerm()"
+            (ngModelChange)="roleSearchTerm.set($event); currentRolePage.set(1)"
+          />
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-secondary btn-icon" (click)="loadRoles()" [title]="('usersAndRoles.refreshRoles' | translate)">
+            <i class="pi pi-refresh" [class.pi-spin]="isLoadingRoles()"></i>
+          </button>
+          <button class="btn btn-primary" (click)="openCreateRoleModal()">
+            <i class="pi pi-plus"></i>
+            <span>{{ 'usersAndRoles.newCustomRole' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Roles Grid -->
+      <div class="roles-grid">
+        @if (isLoadingRoles()) {
+          <div class="loading-state w-100 text-center py-5">
+            <i class="pi pi-spin pi-spinner text-primary fs-3"></i>
+            <span>{{ 'usersAndRoles.loadingSystemRoles' | translate }}</span>
+          </div>
+        } @else if (filteredRoles().length === 0) {
+          <div class="empty-state w-100 text-center py-5">
+            <i class="pi pi-id-card text-muted fs-1 mb-2"></i>
+            <p>{{ 'usersAndRoles.noRolesMatchingSearchCriteria' | translate }}</p>
+          </div>
+        } @else {
+          @for (role of paginatedRoles(); track role.id) {
+            <div class="role-card" [class.system-role]="role.isSystemRole">
+              <div class="role-card-header">
+                <div class="role-identity">
+                  <div class="role-icon-box">
+                    <i class="pi" [class.pi-shield]="role.isSystemRole" [class.pi-id-card]="!role.isSystemRole"></i>
+                  </div>
+                  <div>
+                    <h3 class="role-title">{{ langService.currentLang() === 'ar' ? role.nameAr : (role.nameEn || role.nameAr) }}</h3>
+                    <span class="role-subtitle">{{ langService.currentLang() === 'ar' ? role.nameEn : role.nameAr }}</span>
+                  </div>
+                </div>
+
+                <div class="role-badges">
+                  @if (role.isSystemRole) {
+                    <span class="badge badge-system">{{ 'usersAndRoles.systemRole' | translate }}</span>
+                  } @else {
+                    <span class="badge badge-custom">{{ 'usersAndRoles.customRole' | translate }}</span>
+                  }
+                  <span class="badge-code">{{ role.code }}</span>
+                </div>
+              </div>
+
+              <p class="role-description">
+                {{ langService.currentLang() === 'ar' 
+                  ? (role.descriptionAr || ('ui.usersAndRoles.39cc49' | translate)) 
+                  : (role.descriptionEn || role.descriptionAr || 'No description provided for this role.') }}
+              </p>
+
+              <div class="role-metrics">
+                <div class="metric-item">
+                  <i class="pi pi-key"></i>
+                  <span class="metric-text">
+                    <strong>{{ role.permissions.includes('*') ? ('usersAndRoles.allPermissions' | translate) : role.permissions.length }}</strong>
+                    {{ 'usersAndRoles.activePermissions' | translate }}
+                  </span>
+                </div>
+
+                <div class="metric-item">
+                  <i class="pi pi-users"></i>
+                  <span class="metric-text">
+                    <strong>{{ role.assignedUsersCount }}</strong>
+                    {{ 'usersAndRoles.assignedUsers' | translate }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="role-card-footer">
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="openEditRoleModal(role)"
+                >
+                  <i class="pi pi-sliders-h"></i>
+                  <span>{{ 'usersAndRoles.editPermissions' | translate }}</span>
+                </button>
+
+                @if (!role.isSystemRole) {
+                  <button
+                    class="btn btn-outline-danger btn-sm"
+                    (click)="deleteRole(role)"
+                    [disabled]="role.assignedUsersCount > 0"
+                    [title]="('usersAndRoles.deleteRole' | translate)"
+                  >
+                    <i class="pi pi-trash"></i>
+                    <span>{{ 'usersAndRoles.delete' | translate }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <app-pagination
+        [totalItems]="filteredRoles().length"
+        [(currentPage)]="currentRolePage"
+        [(pageSize)]="rolePageSize"
+        [pageSizeOptions]="[4, 8, 16, 32]"
+        [itemLabelAr]="'ui.usersAndRoles.691b30' | translate"
+        itemLabelEn="Roles"
+      ></app-pagination>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: ADD / EDIT COMPANY USER -->
+  <!-- ========================================================================= -->
+  @if (showUserModal()) {
+    <div class="modal-backdrop animate-fade-in">
+      <div class="modal-dialog modal-user animate-slide-up">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <i class="pi" [class.pi-user-plus]="!isEditingUser()" [class.pi-user-edit]="isEditingUser()"></i>
+            <div>
+              <h3>{{ isEditingUser() 
+                ? ('usersAndRoles.editUserAssignedRole' | translate) 
+                : ('usersAndRoles.addNewCompanyUser' | translate) }}</h3>
+              <p class="modal-sub">
+                {{ isEditingUser() 
+                  ? ('usersAndRoles.updateNameAssignedBranchAnd' | translate) 
+                  : ('usersAndRoles.createNewEmployeeLoginWith' | translate) }}
+              </p>
+            </div>
+          </div>
+          <button class="btn-close" (click)="closeUserModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <!-- Single Unified Full Name with Background Auto-Translation -->
+            <div class="form-group col-12 col-md-12">
+              <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label class="form-label required" style="margin-bottom: 0;">
+                  <span>{{ 'usersAndRoles.fullName' | translate }}</span>
+                  <span style="font-size: 0.72rem; color: #64748b; font-weight: normal; margin-right: 0.5rem; margin-left: 0.5rem;">
+                    {{ 'usersAndRoles.arabicOrEnglishAutotranslated' | translate }}
+                  </span>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span *ngIf="userBackgroundTranslation()" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                    {{ userBackgroundTranslation() }}
+                  </span>
+                  <button
+                    type="button"
+                    class="btn-inline-translate"
+                    (click)="forceRetranslateUser()"
+                    [title]="('usersAndRoles.instantTranslation' | translate)"
+                  >
+                    <i class="pi pi-globe"></i>
+                    {{ 'usersAndRoles.autoTranslate' | translate }}
+                  </button>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <i class="pi pi-user"></i>
+                <input
+                  type="text"
+                  class="form-control"
+                  [placeholder]="('usersAndRoles.egFaisalSaadAlmutairi' | translate)"
+                  [ngModel]="unifiedUserFullName()"
+                  (ngModelChange)="onUnifiedUserFullNameChange($event)"
+                />
+              </div>
+            </div>
+
+            <!-- Username -->
+            <div class="form-group col-12 col-md-6">
+              <label class="form-label required">{{ 'usersAndRoles.loginUsername' | translate }}</label>
+              <div class="input-with-icon">
+                <i class="pi pi-at"></i>
+                <input
+                  type="text"
+                  class="form-control ltr-input"
+                  placeholder="e.g. f.almutairi"
+                  [disabled]="isEditingUser()"
+                  [ngModel]="userFormUserName()"
+                  (ngModelChange)="userFormUserName.set($event)"
+                />
+              </div>
+              @if (isEditingUser()) {
+                <span class="field-hint">{{ 'usersAndRoles.usernameIsFixedAndCannot' | translate }}</span>
+              }
+            </div>
+
+            <!-- Email -->
+            <div class="form-group col-12 col-md-6">
+              <label class="form-label required">{{ 'usersAndRoles.workEmailAddress' | translate }}</label>
+              <div class="input-with-icon">
+                <i class="pi pi-envelope"></i>
+                <input
+                  type="email"
+                  class="form-control ltr-input"
+                  placeholder="faisal@company.com"
+                  [ngModel]="userFormEmail()"
+                  (ngModelChange)="userFormEmail.set($event)"
+                />
+              </div>
+            </div>
+
+            <!-- Password (Create only) -->
+            @if (!isEditingUser()) {
+              <div class="form-group col-12 col-md-6">
+                <label class="form-label required">{{ 'usersAndRoles.initialPassword' | translate }}</label>
+                <div class="input-with-icon">
+                  <i class="pi pi-lock"></i>
+                  <input
+                    type="password"
+                    class="form-control ltr-input"
+                    [placeholder]="('usersAndRoles.atLeast6Characters' | translate)"
+                    [ngModel]="userFormPassword()"
+                    (ngModelChange)="userFormPassword.set($event)"
+                  />
+                </div>
+              </div>
+            }
+
+            <!-- Phone Number -->
+            <div class="form-group col-12 col-md-6">
+              <label class="form-label">{{ 'usersAndRoles.phoneMobileNumber' | translate }}</label>
+              <div class="input-with-icon">
+                <i class="pi pi-phone"></i>
+                <input
+                  type="tel"
+                  class="form-control ltr-input"
+                  placeholder="05XXXXXXXX"
+                  [ngModel]="userFormPhoneNumber()"
+                  (ngModelChange)="userFormPhoneNumber.set($event)"
+                />
+              </div>
+            </div>
+
+            <!-- Role Selector -->
+            <div class="form-group col-12 col-md-6">
+              <label class="form-label required">{{ 'usersAndRoles.assignedRoleMatrix' | translate }}</label>
+              <select
+                class="form-select"
+                [ngModel]="userFormCompanyRoleId()"
+                (ngModelChange)="onCompanyRoleChange($event)"
+              >
+                <option [ngValue]="null">{{ 'usersAndRoles.noCustomRoleBasicPermissions' | translate }}</option>
+                @for (role of roles(); track role.id) {
+                  <option [ngValue]="role.id">
+                    {{ langService.currentLang() === 'ar' ? role.nameAr : (role.nameEn || role.nameAr) }} - {{ role.isSystemRole ? ('usersAndRoles.system' | translate) : ('usersAndRoles.custom' | translate) }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Branch Assignment -->
+            <div class="form-group col-12 col-md-6">
+              <label class="form-label">{{ 'usersAndRoles.assignedBranch' | translate }}</label>
+              <select
+                class="form-select"
+                [ngModel]="userFormBranchId()"
+                (ngModelChange)="userFormBranchId.set($event)"
+              >
+                <option [ngValue]="null">{{ 'usersAndRoles.allCompanyBranchesFullAccess' | translate }}</option>
+                @for (branch of branches(); track branch.id) {
+                  <option [ngValue]="branch.id">{{ langService.currentLang() === 'ar' ? branch.nameAr : (branch.nameEn || branch.nameAr) }} ({{ branch.code }})</option>
+                }
+              </select>
+            </div>
+
+            <!-- Active Status Toggle -->
+            <div class="form-group col-12">
+              <label class="status-checkbox-label">
+                <input
+                  type="checkbox"
+                  [ngModel]="userFormIsActive()"
+                  (ngModelChange)="userFormIsActive.set($event)"
+                />
+                <span>{{ 'usersAndRoles.activateUserAccountImmediately' | translate }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeUserModal()">{{ 'usersAndRoles.cancel' | translate }}</button>
+          <button class="btn btn-primary" (click)="saveUser()" [disabled]="isSavingUser()">
+            <i class="pi" [class.pi-spin]="isSavingUser()" [class.pi-spinner]="isSavingUser()" [class.pi-check]="!isSavingUser()"></i>
+            <span>{{ isEditingUser() 
+              ? ('usersAndRoles.saveChanges' | translate) 
+              : ('usersAndRoles.saveActivateUser' | translate) }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: RESET PASSWORD -->
+  <!-- ========================================================================= -->
+  @if (showPasswordModal()) {
+    <div class="modal-backdrop animate-fade-in">
+      <div class="modal-dialog modal-sm animate-slide-up">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <i class="pi pi-key text-warning"></i>
+            <div>
+              <h3>{{ 'usersAndRoles.resetUserPassword' | translate }}</h3>
+              <p class="modal-sub">
+                {{ 'usersAndRoles.user' | translate }}
+                {{ langService.currentLang() === 'ar' ? passwordTargetUser()?.fullNameAr : (passwordTargetUser()?.fullNameEn || passwordTargetUser()?.fullNameAr) }} 
+                ({{ passwordTargetUser()?.userName }})
+              </p>
+            </div>
+          </div>
+          <button class="btn-close" (click)="closePasswordModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <label class="form-label required">{{ 'usersAndRoles.newPassword' | translate }}</label>
+            <input
+              type="password"
+              class="form-control ltr-input"
+              [placeholder]="('usersAndRoles.enterNewPassword6Chars' | translate)"
+              [ngModel]="newPassword()"
+              (ngModelChange)="newPassword.set($event)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">{{ 'usersAndRoles.confirmPassword' | translate }}</label>
+            <input
+              type="password"
+              class="form-control ltr-input"
+              [placeholder]="('usersAndRoles.reenterPasswordToConfirm' | translate)"
+              [ngModel]="confirmPassword()"
+              (ngModelChange)="confirmPassword.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closePasswordModal()">{{ 'usersAndRoles.cancel' | translate }}</button>
+          <button class="btn btn-warning" (click)="savePasswordReset()">
+            <i class="pi pi-check"></i>
+            <span>{{ 'usersAndRoles.setNewPassword' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+

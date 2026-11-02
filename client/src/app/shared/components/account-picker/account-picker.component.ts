@@ -2,11 +2,13 @@ import { Component, Input, Output, EventEmitter, forwardRef, signal, computed, H
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { AccountDto, AccountType } from '../../../core/models/account.model';
+import { LanguageService } from '../../../core/services/language.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 @Component({
   selector: 'app-account-picker',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './account-picker.component.html',
   styleUrls: ['./account-picker.component.scss'],
   providers: [
@@ -19,6 +21,7 @@ import { AccountDto, AccountType } from '../../../core/models/account.model';
 })
 export class AccountPickerComponent implements ControlValueAccessor {
   private elementRef = inject(ElementRef);
+  public langService = inject(LanguageService);
 
   private _accounts = signal<AccountDto[]>([]);
 
@@ -29,12 +32,24 @@ export class AccountPickerComponent implements ControlValueAccessor {
     return this._accounts();
   }
 
-  @Input() label: string = 'الحساب المحاسبي';
-  @Input() placeholder: string = 'اختر الحساب المحاسبي...';
+  @Input() label: string = '';
+  @Input() placeholder: string = '';
   @Input() allowRootOption: boolean = false;
-  @Input() rootOptionTitle: string = 'إنشاء كحساب رئيسي جذري (بدون حساب أب - مستوى 1)';
+  @Input() rootOptionTitle: string = '';
   @Input() disabled: boolean = false;
   @Input() compact: boolean = false;
+
+  get effectiveLabel(): string {
+    return this.label || this.langService.t('common.selectAccount');
+  }
+
+  get effectivePlaceholder(): string {
+    return this.placeholder || this.langService.t('common.selectAccount');
+  }
+
+  get effectiveRootOptionTitle(): string {
+    return this.rootOptionTitle || this.langService.t('common.accountPickerRootTitle');
+  }
 
   @Output() accountSelect = new EventEmitter<AccountDto | null>();
 

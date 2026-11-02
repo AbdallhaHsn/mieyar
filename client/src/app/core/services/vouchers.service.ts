@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export enum VoucherType {
   Receipt = 1,
@@ -45,10 +46,12 @@ export interface VoucherDto {
   fiscalPeriodNameAr: string;
   paymentMethod: PaymentMethod;
   paymentMethodNameAr: string;
+  paymentMethodNameEn?: string;
   referenceNumber?: string;
   cashOrBankAccountId: string;
   cashOrBankAccountCode: string;
   cashOrBankAccountNameAr: string;
+  cashOrBankAccountNameEn?: string;
   beneficiaryOrPayerName: string;
   description: string;
   amount: number;
@@ -57,6 +60,7 @@ export interface VoucherDto {
   journalEntryNumber?: string;
   status: VoucherStatus;
   statusNameAr: string;
+  statusNameEn?: string;
   linesCount: number;
   postedAtUtc?: string;
   postedBy?: string;
@@ -108,7 +112,7 @@ export interface CreateVoucherRequest {
   providedIn: 'root'
 })
 export class VouchersService {
-  private readonly apiUrl = 'http://localhost:5000/api/vouchers';
+  private readonly apiUrl = `${environment.apiUrl}/api/vouchers`;
 
   constructor(private http: HttpClient) {}
 

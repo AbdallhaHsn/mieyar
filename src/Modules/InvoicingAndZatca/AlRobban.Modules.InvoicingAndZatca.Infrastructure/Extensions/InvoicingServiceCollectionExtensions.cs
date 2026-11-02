@@ -43,7 +43,10 @@ public static class InvoicingServiceCollectionExtensions
 
         // Repositories & Services
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<ISalespersonRepository, SalespersonRepository>();
+        services.AddScoped<IPosShiftRepository, PosShiftRepository>();
         services.AddSingleton<IInvoiceCryptoService, InvoiceCryptoService>();
+        services.AddScoped<IZatcaOnboardingService, ZatcaOnboardingService>();
 
         // MediatR for Invoicing Application Assembly
         services.AddMediatR(cfg =>

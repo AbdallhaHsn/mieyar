@@ -4,11 +4,11 @@
   <header class="page-header">
     <div class="header-breadcrumb">
       <nav class="breadcrumb-nav">
-        <a routerLink="/dashboard" class="crumb-link">لوحة التحكم</a>
+        <a routerLink="/dashboard" class="crumb-link">{{ 'accounting.accountCreate.breadcrumbDashboard' | translate }}</a>
         <span class="crumb-sep">/</span>
-        <a routerLink="/accounting/chart-of-accounts" class="crumb-link">دليل الحسابات</a>
+        <a routerLink="/accounting/chart-of-accounts" class="crumb-link">{{ 'accounting.accountCreate.breadcrumbCoa' | translate }}</a>
         <span class="crumb-sep">/</span>
-        <span class="crumb-current">إضافة حساب جديد</span>
+        <span class="crumb-current">{{ 'accounting.accountCreate.breadcrumbCurrent' | translate }}</span>
       </nav>
 
       <div class="header-main-row">
@@ -19,9 +19,9 @@
             </svg>
           </div>
           <div>
-            <h1 class="page-title">تهيئة وإضافة حساب جديد</h1>
+            <h1 class="page-title">{{ 'accounting.accountCreate.pageTitle' | translate }}</h1>
             <p class="page-subtitle">
-              إدراج الحساب وفق معايير المحاسبة الدولية (IFRS) واللوائح الزكوية والضريبية (ZATCA)
+              {{ 'accounting.accountCreate.pageSubtitle' | translate }}
             </p>
           </div>
         </div>
@@ -31,7 +31,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-            <span>العودة لشجرة الحسابات</span>
+            <span>{{ 'accounting.accountCreate.backToCoa' | translate }}</span>
           </button>
         </div>
       </div>
@@ -65,8 +65,8 @@
           <div class="card-header">
             <div class="step-badge">1</div>
             <div>
-              <h2 class="card-title">التصنيف والموقع الهيكلي</h2>
-              <p class="card-subtitle">حدد نوع الحساب وموقعه في شجرة الحسابات</p>
+              <h2 class="card-title">{{ 'accounting.accountCreate.step1Title' | translate }}</h2>
+              <p class="card-subtitle">{{ 'accounting.accountCreate.step1Subtitle' | translate }}</p>
             </div>
           </div>
 
@@ -81,7 +81,7 @@
                 (click)="setAccountCategory(AccountType.Asset)"
               >
                 <span class="seg-num">1</span>
-                <span>الأصول</span>
+                <span>{{ 'accounting.accountCreate.asset' | translate }}</span>
               </button>
 
               <button 
@@ -91,7 +91,7 @@
                 (click)="setAccountCategory(AccountType.Liability)"
               >
                 <span class="seg-num">2</span>
-                <span>الالتزامات والخصوم</span>
+                <span>{{ 'accounting.accountCreate.liability' | translate }}</span>
               </button>
 
               <button 
@@ -101,7 +101,7 @@
                 (click)="setAccountCategory(AccountType.Equity)"
               >
                 <span class="seg-num">3</span>
-                <span>حقوق الملكية</span>
+                <span>{{ 'accounting.accountCreate.equity' | translate }}</span>
               </button>
 
               <button 
@@ -111,7 +111,7 @@
                 (click)="setAccountCategory(AccountType.Revenue)"
               >
                 <span class="seg-num">4</span>
-                <span>الإيرادات</span>
+                <span>{{ 'accounting.accountCreate.revenue' | translate }}</span>
               </button>
 
               <button 
@@ -121,52 +121,100 @@
                 (click)="setAccountCategory(AccountType.Expense)"
               >
                 <span class="seg-num">5</span>
-                <span>المصروفات</span>
+                <span>{{ 'accounting.accountCreate.expense' | translate }}</span>
               </button>
             </div>
 
             <!-- Parent Account & Level Row -->
             <div class="form-row-2 mt-4">
               <div class="form-group flex-2">
-                <label class="form-label">الحساب الأب (Parent Account):</label>
+                <label class="form-label">{{ 'accounting.accountCreate.parentAccount' | translate }}</label>
                 <app-account-picker 
                   formControlName="parentAccountId"
                   [accounts]="availableParents()"
                   [allowRootOption]="true"
-                  placeholder="بدون حساب أب (حساب جذري مستوى 1)"
+                  [placeholder]="'accounting.accountCreate.parentPlaceholder' | translate"
                   (accountSelect)="onParentAccountPicked($event)"
                 ></app-account-picker>
               </div>
 
               <!-- Level Display Badge -->
               <div class="form-group flex-1">
-                <label class="form-label">المستوى الهيكلي:</label>
+                <label class="form-label">{{ 'accounting.accountCreate.structuralLevel' | translate }}</label>
                 <div class="level-indicator-box">
-                  <span class="level-pill">المستوى {{ calculatedLevel() }}</span>
-                  <span class="level-desc">
-                    {{ calculatedLevel() === 1 ? 'جذري رئيسي' : calculatedLevel() === 2 ? 'مجموعة رئيسية' : 'حساب تحليلي' }}
+                  <span class="level-pill">{{ 'accounting.accountCreate.levelPrefix' | translate }} {{ calculatedLevel() }}</span>
+                  <span class="level-desc" [class.is-group]="!accountForm.get('isPostable')?.value" [class.is-analytical]="accountForm.get('isPostable')?.value">
+                    {{ calculatedLevel() === 1 ? ('accounting.accountCreate.rootAccount' | translate) : (!accountForm.get('isPostable')?.value ? ('accounting.accountCreate.groupAccount' | translate) : ('accounting.accountCreate.analyticalAccount' | translate)) }}
                   </span>
                 </div>
               </div>
             </div>
 
+            <!-- Account Role Selection (عام تجميعي VS تحليلي يقبل الترحيل) -->
+            @if (calculatedLevel() > 1) {
+              <div class="account-role-selector mt-3">
+                <label class="form-label">{{ 'accounting.accountCreate.accountRole' | translate }}</label>
+                <div class="role-options">
+                  <button 
+                    type="button" 
+                    class="role-btn" 
+                    [class.active]="!accountForm.get('isPostable')?.value"
+                    (click)="setAccountPosting(false)"
+                  >
+                    <div class="role-icon folder-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    </div>
+                    <div class="role-info">
+                      <div class="role-title">{{ 'accounting.accountCreate.roleGroupTitle' | translate }}</div>
+                      <div class="role-desc">{{ 'accounting.accountCreate.roleGroupDesc' | translate }}</div>
+                    </div>
+                    @if (!accountForm.get('isPostable')?.value) {
+                      <span class="role-check">{{ 'accounting.accountCreate.selectedCheck' | translate }}</span>
+                    }
+                  </button>
+
+                  <button 
+                    type="button" 
+                    class="role-btn" 
+                    [class.active]="accountForm.get('isPostable')?.value"
+                    (click)="setAccountPosting(true)"
+                  >
+                    <div class="role-icon file-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div class="role-info">
+                      <div class="role-title">{{ 'accounting.accountCreate.roleAnalyticalTitle' | translate }}</div>
+                      <div class="role-desc">{{ 'accounting.accountCreate.roleAnalyticalDesc' | translate }}</div>
+                    </div>
+                    @if (accountForm.get('isPostable')?.value) {
+                      <span class="role-check">{{ 'accounting.accountCreate.selectedCheck' | translate }}</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+
             <!-- Account Code Field -->
             <div class="form-group mt-3">
               <div class="label-cluster">
-                <label class="form-label required">رمز الحساب الدفتري (Account Code):</label>
-                <span class="code-tag-badge">اقتراح ترقيم آلي ذكي</span>
+                <label class="form-label required">{{ 'accounting.accountCreate.accountCode' | translate }}</label>
+                <span class="code-tag-badge">{{ 'accounting.accountCreate.codeSuggestion' | translate }}</span>
               </div>
               <div class="code-input-wrap">
                 <input 
                   type="text" 
                   formControlName="accountCode" 
                   class="form-control font-mono code-input" 
-                  placeholder="مثال: 11105" 
+                  [placeholder]="'accounting.accountCreate.codePlaceholder' | translate" 
                 />
-                <span class="code-check-pill">جاهز للحفظ</span>
+                <span class="code-check-pill">{{ 'accounting.accountCreate.codeReady' | translate }}</span>
               </div>
               @if (accountForm.get('accountCode')?.touched && accountForm.get('accountCode')?.invalid) {
-                <span class="error-text">رمز الحساب مطلوب ويجب أن يتكون من أرقام فقط دون مسافات.</span>
+                <span class="error-text">{{ 'accounting.accountCreate.codeError' | translate }}</span>
               }
             </div>
 
@@ -179,8 +227,8 @@
             <div class="step-badge">2</div>
             <div class="header-flex-between">
               <div>
-                <h2 class="card-title">مسميات الحساب والترجمة الآلية</h2>
-                <p class="card-subtitle">أدخل الاسم بلغة واحدة وسيقوم النظام بالترجمة الفورية للغة الأخرى تلقائياً</p>
+                <h2 class="card-title">{{ 'accounting.accountCreate.step2Title' | translate }}</h2>
+                <p class="card-subtitle">{{ 'accounting.accountCreate.step2Subtitle' | translate }}</p>
               </div>
               
               <!-- Translation Status Indicator Toggle -->
@@ -189,51 +237,63 @@
                 class="translate-toggle-btn"
                 [class.active]="isAutoTranslateEnabled()"
                 (click)="toggleAutoTranslate()"
-                [title]="isAutoTranslateEnabled() ? 'الترجمة الآلية المتبادلة مفعلة - انقر للتعطيل' : 'انقر لتفعيل الترجمة الآلية المتبادلة'"
+                [title]="isAutoTranslateEnabled() ? ('accounting.accountCreate.autoTranslateActive' | translate) : ('accounting.accountCreate.autoTranslateDisabled' | translate)"
               >
                 <span class="trans-dot"></span>
-                <span>الترجمة الآلية {{ isAutoTranslateEnabled() ? 'مفعلة' : 'معطلة' }}</span>
+                <span>{{ isAutoTranslateEnabled() ? ('accounting.accountCreate.autoTranslateActive' | translate) : ('accounting.accountCreate.autoTranslateDisabled' | translate) }}</span>
               </button>
             </div>
           </div>
 
           <div class="card-body">
+            <!-- Bilingual Name Fields (العربية والإنجليزية جنباً إلى جنب مع ترجمة فورية) -->
             <div class="form-row-2">
-              
-              <!-- Arabic Name -->
+              <!-- Arabic Name Field -->
               <div class="form-group flex-1">
                 <div class="label-cluster">
-                  <label class="form-label required">الاسم باللغة العربية:</label>
-                  <span class="lang-tag ar-tag">العربية</span>
+                  <label class="form-label required">{{ 'accounting.accountCreate.nameAr' | translate }}</label>
+                  <span class="lang-tag ar-tag">{{ 'accounting.accountCreate.nameArTag' | translate }}</span>
                 </div>
                 <input 
                   type="text" 
-                  formControlName="nameAr" 
+                  formControlName="nameAr"
                   class="form-control font-medium" 
-                  placeholder="مثال: مصرف الإنماء - حساب جاري" 
+                  [placeholder]="'accounting.accountCreate.nameArPlaceholder' | translate" 
                 />
                 @if (accountForm.get('nameAr')?.touched && accountForm.get('nameAr')?.invalid) {
-                  <span class="error-text">اسم الحساب بالعربية مطلوب (حرفين على الأقل).</span>
+                  <span class="error-text">{{ 'accounting.accountCreate.nameArError' | translate }}</span>
                 }
               </div>
 
-              <!-- English Name (Auto-Translated) -->
+              <!-- English Name Field -->
               <div class="form-group flex-1">
                 <div class="label-cluster">
-                  <label class="form-label required">الاسم باللغة الإنجليزية (English):</label>
-                  <span class="lang-tag en-tag">
-                    {{ isAutoTranslateEnabled() ? '⚡ مترجم آلياً' : 'English' }}
-                  </span>
+                  <label class="form-label required">{{ 'accounting.accountCreate.nameEn' | translate }}</label>
+                  <div class="label-actions" style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="lang-tag en-tag">{{ 'accounting.accountCreate.nameEnTag' | translate }}</span>
+                    <button 
+                      type="button" 
+                      class="btn-mini-translate" 
+                      (click)="forceRetranslateAccount()"
+                      [title]="'accounting.accountCreate.instantTranslateTitle' | translate">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                      <span>{{ 'accounting.accountCreate.instantTranslate' | translate }}</span>
+                    </button>
+                  </div>
                 </div>
                 <input 
                   type="text" 
-                  formControlName="nameEn" 
-                  class="form-control font-mono" 
-                  placeholder="e.g. Alinma Bank - Current Account"
-                  dir="ltr" 
+                  formControlName="nameEn"
+                  class="form-control font-medium" 
+                  dir="ltr"
+                  [placeholder]="'accounting.accountCreate.nameEnPlaceholder' | translate" 
                 />
                 @if (accountForm.get('nameEn')?.touched && accountForm.get('nameEn')?.invalid) {
-                  <span class="error-text">English Name is required (min 2 characters).</span>
+                  <span class="error-text">{{ 'accounting.accountCreate.nameEnError' | translate }}</span>
                 }
               </div>
             </div>
@@ -241,22 +301,22 @@
             <!-- Currency & Description Row -->
             <div class="form-row-2 mt-3">
               <div class="form-group flex-1">
-                <label class="form-label required">العملة الافتراضية:</label>
+                <label class="form-label required">{{ 'accounting.accountCreate.defaultCurrency' | translate }}</label>
                 <select formControlName="currencyCode" class="form-control">
-                  <option value="SAR">SAR - ريال سعودي (عملة الأساس)</option>
-                  <option value="USD">USD - دولار أمريكي</option>
-                  <option value="EUR">EUR - يورو</option>
-                  <option value="AED">AED - درهم إماراتي</option>
+                  <option value="SAR">{{ 'accounting.accountCreate.sarCurrency' | translate }}</option>
+                  <option value="USD">{{ 'accounting.accountCreate.usdCurrency' | translate }}</option>
+                  <option value="EUR">{{ 'accounting.accountCreate.eurCurrency' | translate }}</option>
+                  <option value="AED">{{ 'accounting.accountCreate.aedCurrency' | translate }}</option>
                 </select>
               </div>
 
               <div class="form-group flex-2">
-                <label class="form-label">الوصف والملاحظات:</label>
+                <label class="form-label">{{ 'accounting.accountCreate.description' | translate }}</label>
                 <input 
                   type="text" 
                   formControlName="description" 
                   class="form-control" 
-                  placeholder="ملاحظات اختيارية عن الغرض من الحساب" 
+                  [placeholder]="'accounting.accountCreate.descPlaceholder' | translate" 
                 />
               </div>
             </div>
@@ -268,8 +328,8 @@
           <div class="card-header">
             <div class="step-badge">3</div>
             <div>
-              <h2 class="card-title">السياسات المحاسبية والمعيار المعتمد</h2>
-              <p class="card-subtitle">طبيعة الحساب، القائمة المالية، والمعيار الدولي المرتبط</p>
+              <h2 class="card-title">{{ 'accounting.accountCreate.step3Title' | translate }}</h2>
+              <p class="card-subtitle">{{ 'accounting.accountCreate.step3Subtitle' | translate }}</p>
             </div>
           </div>
 
@@ -278,26 +338,26 @@
             <div class="form-row-2">
               <!-- Nature -->
               <div class="form-group flex-1">
-                <label class="form-label required">طبيعة الحساب:</label>
+                <label class="form-label required">{{ 'accounting.accountCreate.accountNature' | translate }}</label>
                 <select formControlName="accountNature" class="form-control">
-                  <option [value]="AccountNature.Debit">مدين (Debit) - يزيد بالمدين وينقص بالدائن</option>
-                  <option [value]="AccountNature.Credit">دائن (Credit) - يزيد بالدائن وينقص بالمدين</option>
+                  <option [value]="AccountNature.Debit">{{ 'accounting.accountCreate.debitNature' | translate }}</option>
+                  <option [value]="AccountNature.Credit">{{ 'accounting.accountCreate.creditNature' | translate }}</option>
                 </select>
               </div>
 
               <!-- Statement -->
               <div class="form-group flex-1">
-                <label class="form-label required">القائمة المالية المعنية:</label>
+                <label class="form-label required">{{ 'accounting.accountCreate.financialStatement' | translate }}</label>
                 <select formControlName="financialStatement" class="form-control">
-                  <option [value]="FinancialStatement.BalanceSheet">قائمة المركز المالي (الميزانية)</option>
-                  <option [value]="FinancialStatement.IncomeStatement">قائمة الدخل (الأرباح والخسائر)</option>
+                  <option [value]="FinancialStatement.BalanceSheet">{{ 'accounting.accountCreate.balanceSheet' | translate }}</option>
+                  <option [value]="FinancialStatement.IncomeStatement">{{ 'accounting.accountCreate.incomeStatement' | translate }}</option>
                 </select>
               </div>
             </div>
 
             <!-- Standard Selector -->
             <div class="form-group mt-3">
-              <label class="form-label required">المعيار المحاسبي المرجعي (IFRS / SOCPA / ZATCA):</label>
+              <label class="form-label required">{{ 'accounting.accountCreate.standard' | translate }}</label>
               <select formControlName="standardCode" class="form-control standard-select">
                 @for (std of coaService.standards(); track std.standardCode) {
                   <option [value]="std.standardCode">
@@ -316,8 +376,8 @@
                   <span class="slider round"></span>
                 </label>
                 <div class="toggle-meta">
-                  <strong class="toggle-title">حساب تحليلي يقبل التقييد المباشر</strong>
-                  <span class="toggle-hint">يقبل سندات الصرف والقبض وفواتير المبيعات والمشتريات</span>
+                  <strong class="toggle-title">{{ 'accounting.accountCreate.postableToggle' | translate }}</strong>
+                  <span class="toggle-hint">{{ 'accounting.accountCreate.postableHint' | translate }}</span>
                 </div>
               </div>
 
@@ -328,8 +388,8 @@
                   <span class="slider round"></span>
                 </label>
                 <div class="toggle-meta">
-                  <strong class="toggle-title">إلزامية مركز التكلفة</strong>
-                  <span class="toggle-hint">اشتراط تحديد مركز تكلفة عند القيد في هذا الحساب</span>
+                  <strong class="toggle-title">{{ 'accounting.accountCreate.costCenterToggle' | translate }}</strong>
+                  <span class="toggle-hint">{{ 'accounting.accountCreate.costCenterHint' | translate }}</span>
                 </div>
               </div>
             </div>
@@ -352,7 +412,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             }
-            <span>حفظ الحساب وإدراجه بالشجرة</span>
+            <span>{{ 'accounting.accountCreate.saveAccount' | translate }}</span>
           </button>
 
           <button 
@@ -361,11 +421,11 @@
             [disabled]="accountForm.invalid || isSaving()"
             (click)="onSubmit(true)"
           >
-            <span>حفظ وإضافة حساب آخر</span>
+            <span>{{ 'accounting.accountCreate.saveAndAdd' | translate }}</span>
           </button>
 
           <button type="button" class="btn-cancel" (click)="goBack()">
-            <span>إلغاء</span>
+            <span>{{ 'accounting.accountCreate.cancel' | translate }}</span>
           </button>
         </div>
 
@@ -374,16 +434,16 @@
 
     <!-- RIGHT COLUMN: Streamlined Side Guidance Panel (الجزء الجانبي الإرشادي النقي) -->
     <aside class="guidance-column">
-      <div class="guidance-container-sticky">
+      <div class="guidance-container-sticky" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
         
         <!-- Panel Header -->
         <div class="guidance-header">
           <div class="gh-badge">
             <span class="gh-dot"></span>
-            <span>المرشد المحاسبي والمعايير الدولية</span>
+            <span>{{ 'accounting.accountCreate.guidanceBadge' | translate }}</span>
           </div>
-          <h3 class="gh-title">دليل القيود والمعيار المرجعي</h3>
-          <p class="gh-subtitle">يتم تحديث الإرشادات والقيود تلقائياً وفق نوع الحساب والمعيار</p>
+          <h3 class="gh-title">{{ 'accounting.accountCreate.guidanceTitle' | translate }}</h3>
+          <p class="gh-subtitle">{{ 'accounting.accountCreate.guidanceSubtitle' | translate }}</p>
         </div>
 
         @if (selectedGuidance(); as guidance) {
@@ -393,7 +453,7 @@
             <div class="standard-hero">
               <div class="sh-top">
                 <span class="sh-code">{{ guidance.standardCode }}</span>
-                <span class="sh-badge">معتمد IFRS / SOCPA</span>
+                <span class="sh-badge">{{ 'accounting.accountCreate.ifrsSocpaVerified' | translate }}</span>
               </div>
               <h4 class="sh-title-ar">{{ guidance.standardTitleAr }}</h4>
               <p class="sh-title-en" dir="ltr">{{ guidance.standardTitleEn }}</p>
@@ -404,21 +464,21 @@
               <div class="info-card-header">
                 <div class="ic-icon bg-emerald">⚖️</div>
                 <div>
-                  <h4 class="ic-title">طبيعة الحساب وقواعد الزيادة والنقصان</h4>
-                  <span class="ic-sub">حركة رصيد الحساب دفترياً</span>
+                  <h4 class="ic-title">{{ 'accounting.accountCreate.natureRules' | translate }}</h4>
+                  <span class="ic-sub">{{ 'accounting.accountCreate.ledgerMovement' | translate }}</span>
                 </div>
               </div>
 
               <div class="rules-grid">
                 <div class="rule-box debit-box">
-                  <div class="rb-badge debit">حالة المدين (Debit)</div>
-                  <strong class="rb-heading">زيادة الأصول والمصروفات</strong>
+                  <div class="rb-badge debit">{{ 'accounting.accountCreate.debitBadge' | translate }}</div>
+                  <strong class="rb-heading">{{ 'accounting.accountCreate.debitHeading' | translate }}</strong>
                   <p class="rb-text">{{ guidance.debitRuleAr }}</p>
                 </div>
 
                 <div class="rule-box credit-box">
-                  <div class="rb-badge credit">حالة الدائن (Credit)</div>
-                  <strong class="rb-heading">زيادة الخصوم والإيرادات</strong>
+                  <div class="rb-badge credit">{{ 'accounting.accountCreate.creditBadge' | translate }}</div>
+                  <strong class="rb-heading">{{ 'accounting.accountCreate.creditHeading' | translate }}</strong>
                   <p class="rb-text">{{ guidance.creditRuleAr }}</p>
                 </div>
               </div>
@@ -429,7 +489,7 @@
               <div class="info-card-header">
                 <div class="ic-icon bg-cyan">📜</div>
                 <div>
-                  <h4 class="ic-title">شروط ومعايير الاعتراف المحاسبي</h4>
+                  <h4 class="ic-title">{{ 'accounting.accountCreate.recognitionCriteria' | translate }}</h4>
                   <span class="ic-sub">Recognition Criteria</span>
                 </div>
               </div>
@@ -441,8 +501,8 @@
               <div class="info-card-header">
                 <div class="ic-icon bg-amber">🏛️</div>
                 <div>
-                  <h4 class="ic-title">المعالجة الضريبية والزكوية (ZATCA)</h4>
-                  <span class="ic-sub">الإقرار الضريبي وضريبة القيمة المضافة 15%</span>
+                  <h4 class="ic-title">{{ 'accounting.accountCreate.zatcaSection' | translate }}</h4>
+                  <span class="ic-sub">{{ 'accounting.accountCreate.zatcaSub' | translate }}</span>
                 </div>
               </div>
               <p class="ic-text">{{ guidance.zatcaTaxImpactAr }}</p>
@@ -453,8 +513,8 @@
               <div class="info-card-header">
                 <div class="ic-icon bg-purple">💼</div>
                 <div>
-                  <h4 class="ic-title">القيود المحاسبية النموذجية المعتمدة</h4>
-                  <span class="ic-sub">نماذج قيود يومية مزدوجة مع التوجيه العملي</span>
+                  <h4 class="ic-title">{{ 'accounting.accountCreate.sampleEntries' | translate }}</h4>
+                  <span class="ic-sub">{{ 'accounting.accountCreate.sampleEntriesSub' | translate }}</span>
                 </div>
               </div>
 
@@ -468,16 +528,16 @@
 
                     <div class="vt-grid-table">
                       <div class="vtg-head">
-                        <span class="cell-side">الطرف</span>
-                        <span class="cell-acc">الحساب المقيد</span>
-                        <span class="cell-note">البيان والتوجيه</span>
+                        <span class="cell-side">{{ 'accounting.accountCreate.cellSide' | translate }}</span>
+                        <span class="cell-acc">{{ 'accounting.accountCreate.cellAcc' | translate }}</span>
+                        <span class="cell-note">{{ 'accounting.accountCreate.cellNote' | translate }}</span>
                       </div>
 
                       @for (leg of v.legs; track leg.accountNameAr) {
                         <div class="vtg-row" [class.is-dr]="leg.accountSide === 'Debit'" [class.is-cr]="leg.accountSide === 'Credit'">
                           <div class="cell-side">
                             <span class="side-pill" [class.dr]="leg.accountSide === 'Debit'" [class.cr]="leg.accountSide === 'Credit'">
-                              {{ leg.accountSide === 'Debit' ? 'مدين (Dr)' : 'دائن (Cr)' }}
+                              {{ leg.accountSide === 'Debit' ? ('accounting.accountCreate.debitPill' | translate) : ('accounting.accountCreate.creditPill' | translate) }}
                             </span>
                           </div>
                           <div class="cell-acc">
@@ -504,3 +564,4 @@
   </div>
 
 </div>
+

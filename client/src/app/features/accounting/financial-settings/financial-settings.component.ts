@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { 
@@ -15,12 +16,13 @@ import {
 } from '../../../core/services/financial-settings.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-financial-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <div class="settings-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -32,20 +34,18 @@ import Swal from 'sweetalert2';
           </div>
           <div>
             <h1 class="page-title">
-              {{ langService.currentLang() === 'ar' ? 'الإعدادات والسياسات المالية ومراكز التكلفة' : 'Financial Settings, Fiscal Periods & Cost Centers' }}
+              {{ 'accounting.financialSettings.ui.financialSettingsFiscalPeriodsCost' | translate }}
             </h1>
             <p class="page-subtitle">
-              {{ langService.currentLang() === 'ar' 
-                ? 'إدارة السنوات والفترات المحاسبية، ضبط سياسة مراكز التكلفة، والرقابة على القيود' 
-                : 'Manage accounting years & periods, cost center dimensions, and financial controls' }}
+              {{ 'accounting.financialSettings.ui.manageYearsSubtitle' | translate }}
             </p>
           </div>
         </div>
 
         <div class="header-actions">
-          <button class="btn-refresh" (click)="loadData()" [title]="langService.currentLang() === 'ar' ? 'تحديث البيانات' : 'Refresh'">
+          <button class="btn-refresh" (click)="loadData()" [title]="'accounting.financialSettings.ui.refresh' | translate">
             <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'تحديث' : 'Refresh' }}</span>
+            <span>{{ 'accounting.financialSettings.ui.refresh1' | translate }}</span>
           </button>
         </div>
       </header>
@@ -57,7 +57,7 @@ import Swal from 'sweetalert2';
           [class.active]="activeTab() === 'periods'" 
           (click)="activeTab.set('periods')">
           <i class="pi pi-calendar"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'السنوات والفترات المالية (Fiscal Periods)' : 'Fiscal Years & Periods' }}</span>
+          <span>{{ 'accounting.financialSettings.ui.fiscalYearsPeriods' | translate }}</span>
           <span class="tab-badge" *ngIf="overview()?.activeFiscalYear">
             {{ overview()?.activeFiscalYear?.yearNumber }}
           </span>
@@ -68,7 +68,7 @@ import Swal from 'sweetalert2';
           [class.active]="activeTab() === 'cost-centers'" 
           (click)="activeTab.set('cost-centers')">
           <i class="pi pi-tags"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'مراكز التكلفة (Cost Centers)' : 'Cost Centers' }}</span>
+          <span>{{ 'accounting.financialSettings.ui.costCenters' | translate }}</span>
           <span class="tab-badge" *ngIf="overview()?.costCenters">
             {{ overview()?.costCenters?.length }}
           </span>
@@ -79,7 +79,7 @@ import Swal from 'sweetalert2';
           [class.active]="activeTab() === 'policies'" 
           (click)="activeTab.set('policies')">
           <i class="pi pi-shield"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'سياسات الرقابة والإقفال' : 'Financial Controls & Policies' }}</span>
+          <span>{{ 'accounting.financialSettings.ui.financialControlsPolicies' | translate }}</span>
         </button>
 
         <button 
@@ -87,7 +87,7 @@ import Swal from 'sweetalert2';
           [class.active]="activeTab() === 'closing'" 
           (click)="openClosingTab()">
           <i class="pi pi-lock"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'إقفال نهاية السنة وترحيل الأرصدة' : 'Year-End Closing & Roll-Forward' }}</span>
+          <span>{{ 'accounting.financialSettings.ui.yearendClosingRollforward' | translate }}</span>
         </button>
 
         <button 
@@ -95,14 +95,14 @@ import Swal from 'sweetalert2';
           [class.active]="activeTab() === 'currencies'" 
           (click)="activeTab.set('currencies'); loadCurrencies()">
           <i class="pi pi-dollar"></i>
-          <span>{{ langService.currentLang() === 'ar' ? 'أسعار العملات وإعادة التقييم (IAS 21)' : 'Exchange Rates & IAS 21' }}</span>
+          <span>{{ 'accounting.financialSettings.ui.exchangeRatesIas21' | translate }}</span>
         </button>
       </nav>
 
       <!-- Loading State -->
       <div *ngIf="loading()" class="loading-state">
         <i class="pi pi-spin pi-spinner text-emerald text-3xl"></i>
-        <span>{{ langService.currentLang() === 'ar' ? 'جارٍ تحميل البيانات المالية...' : 'Loading financial settings...' }}</span>
+        <span>{{ 'accounting.financialSettings.ui.loadingFinancialSettings' | translate }}</span>
       </div>
 
       <!-- Tab 1: Fiscal Years & Periods -->
@@ -114,16 +114,16 @@ import Swal from 'sweetalert2';
               <span class="year-number">{{ selectedYear()?.yearNumber }}</span>
               <span class="year-state" [class.closed]="selectedYear()?.isClosed">
                 {{ selectedYear()?.isClosed 
-                  ? (langService.currentLang() === 'ar' ? 'سنة مقفلة' : 'Closed Year')
-                  : (langService.currentLang() === 'ar' ? 'سنة نشطة' : 'Active Year') }}
+                  ? ('accounting.financialSettings.ui.closedYear' | translate)
+                  : ('accounting.financialSettings.ui.activeYear' | translate) }}
               </span>
             </div>
             <div class="year-details">
               <h3>{{ langService.currentLang() === 'ar' ? selectedYear()?.nameAr : selectedYear()?.nameEn }}</h3>
               <div class="dates-meta">
-                <span><i class="pi pi-calendar-plus text-emerald"></i> {{ langService.currentLang() === 'ar' ? 'من: ' : 'From: ' }} {{ selectedYear()?.startDate | date:'yyyy-MM-dd' }}</span>
-                <span><i class="pi pi-calendar-times text-cyan"></i> {{ langService.currentLang() === 'ar' ? 'إلى: ' : 'To: ' }} {{ selectedYear()?.endDate | date:'yyyy-MM-dd' }}</span>
-                <span><i class="pi pi-list"></i> {{ selectedYear()?.periods?.length }} {{ langService.currentLang() === 'ar' ? 'فترات مالية' : 'periods' }}</span>
+                <span><i class="pi pi-calendar-plus text-emerald"></i> {{ 'accounting.financialSettings.ui.from' | translate }} {{ selectedYear()?.startDate | date:'yyyy-MM-dd' }}</span>
+                <span><i class="pi pi-calendar-times text-cyan"></i> {{ 'accounting.financialSettings.ui.to' | translate }} {{ selectedYear()?.endDate | date:'yyyy-MM-dd' }}</span>
+                <span><i class="pi pi-list"></i> {{ selectedYear()?.periods?.length }} {{ 'accounting.financialSettings.ui.periods' | translate }}</span>
               </div>
             </div>
           </div>
@@ -142,7 +142,7 @@ import Swal from 'sweetalert2';
 
             <button class="btn-primary" (click)="openCreateYearModal()">
               <i class="pi pi-plus"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إنشاء سنة مالية جديدة' : 'New Fiscal Year' }}</span>
+              <span>{{ 'accounting.financialSettings.ui.newFiscalYear' | translate }}</span>
             </button>
           </div>
         </div>
@@ -150,11 +150,11 @@ import Swal from 'sweetalert2';
         <!-- Periods Table -->
         <div class="periods-panel">
           <div class="panel-header">
-            <h4>{{ langService.currentLang() === 'ar' ? 'جدول الفترات وحالات الفتح والإقفال' : 'Accounting Periods & Lock Status' }}</h4>
+            <h4>{{ 'accounting.financialSettings.ui.accountingPeriodsLockStatus' | translate }}</h4>
             <div class="status-legend">
-              <span class="legend-pill open"><i class="pi pi-check-circle"></i> {{ langService.currentLang() === 'ar' ? 'مفتوحة (متاح الترحيل)' : 'Open' }}</span>
-              <span class="legend-pill locked"><i class="pi pi-lock"></i> {{ langService.currentLang() === 'ar' ? 'مقفلة مؤقتاً (مراجعة)' : 'Locked' }}</span>
-              <span class="legend-pill closed"><i class="pi pi-times-circle"></i> {{ langService.currentLang() === 'ar' ? 'مغلقة نهائياً' : 'Closed' }}</span>
+              <span class="legend-pill open"><i class="pi pi-check-circle"></i> {{ 'accounting.financialSettings.ui.open' | translate }}</span>
+              <span class="legend-pill locked"><i class="pi pi-lock"></i> {{ 'accounting.financialSettings.ui.locked' | translate }}</span>
+              <span class="legend-pill closed"><i class="pi pi-times-circle"></i> {{ 'accounting.financialSettings.ui.closed' | translate }}</span>
             </div>
           </div>
 
@@ -163,12 +163,12 @@ import Swal from 'sweetalert2';
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'اسم الفترة المحاسبية' : 'Period Name' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'تاريخ البدء' : 'Start Date' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'تاريخ الانتهاء' : 'End Date' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'نوع الفترة' : 'Type' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'حالة الترحيل' : 'Status' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'التحكم وتغيير الحالة' : 'Actions' }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.periodName' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.startDate' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.endDate' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.type' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.status' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.actions' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,10 +181,10 @@ import Swal from 'sweetalert2';
                   <td>{{ p.endDate | date:'yyyy-MM-dd' }}</td>
                   <td>
                     <span *ngIf="p.isClosingPeriod" class="badge-period-13">
-                      <i class="pi pi-star"></i> {{ langService.currentLang() === 'ar' ? 'فترة تسويات 13' : 'Period 13' }}
+                      <i class="pi pi-star"></i> {{ 'accounting.financialSettings.ui.period13' | translate }}
                     </span>
                     <span *ngIf="!p.isClosingPeriod" class="text-muted">
-                      {{ langService.currentLang() === 'ar' ? 'فترة تشغيلية شهرية' : 'Monthly' }}
+                      {{ 'accounting.financialSettings.ui.monthly' | translate }}
                     </span>
                   </td>
                   <td>
@@ -200,7 +200,7 @@ import Swal from 'sweetalert2';
                         [class.active]="p.status === 1" 
                         [disabled]="p.status === 1"
                         (click)="changePeriodStatus(p, 1)" 
-                        [title]="langService.currentLang() === 'ar' ? 'فتح الفترة' : 'Open'">
+                        [title]="'accounting.financialSettings.ui.open1' | translate">
                         <i class="pi pi-lock-open"></i>
                       </button>
                       <button 
@@ -208,7 +208,7 @@ import Swal from 'sweetalert2';
                         [class.active]="p.status === 2" 
                         [disabled]="p.status === 2"
                         (click)="changePeriodStatus(p, 2)" 
-                        [title]="langService.currentLang() === 'ar' ? 'قفل مؤقت' : 'Lock'">
+                        [title]="'accounting.financialSettings.ui.lock' | translate">
                         <i class="pi pi-lock"></i>
                       </button>
                       <button 
@@ -216,7 +216,7 @@ import Swal from 'sweetalert2';
                         [class.active]="p.status === 3" 
                         [disabled]="p.status === 3"
                         (click)="changePeriodStatus(p, 3)" 
-                        [title]="langService.currentLang() === 'ar' ? 'إقفال نهائي' : 'Close'">
+                        [title]="'accounting.financialSettings.ui.close' | translate">
                         <i class="pi pi-ban"></i>
                       </button>
                     </div>
@@ -235,7 +235,7 @@ import Swal from 'sweetalert2';
           <div class="policy-meta">
             <i class="pi pi-info-circle text-emerald text-xl"></i>
             <div>
-              <strong>{{ langService.currentLang() === 'ar' ? 'سياسة ربط مراكز التكلفة في القيود:' : 'Cost Center Entry Enforcement:' }}</strong>
+              <strong>{{ 'accounting.financialSettings.ui.costCenterEntryEnforcement' | translate }}</strong>
               <span>
                 {{ getCostCenterPolicyLabel() }}
               </span>
@@ -243,7 +243,7 @@ import Swal from 'sweetalert2';
           </div>
           <button class="btn-primary" (click)="openCreateCostCenterModal()">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'إضافة مركز تكلفة جديد' : 'New Cost Center' }}</span>
+            <span>{{ 'accounting.financialSettings.ui.newCostCenter' | translate }}</span>
           </button>
         </div>
 
@@ -252,12 +252,12 @@ import Swal from 'sweetalert2';
           <table class="cc-table">
             <thead>
               <tr>
-                <th>{{ langService.currentLang() === 'ar' ? 'كود المركز' : 'Code' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'اسم مركز التكلفة (عربي)' : 'Arabic Name' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'اسم مركز التكلفة (إنجليزي)' : 'English Name' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الوصف والغرض' : 'Description' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+                <th>{{ 'accounting.financialSettings.ui.code' | translate }}</th>
+                <th>{{ 'accounting.financialSettings.ui.arabicName' | translate }}</th>
+                <th>{{ 'accounting.financialSettings.ui.englishName' | translate }}</th>
+                <th>{{ 'accounting.financialSettings.ui.description' | translate }}</th>
+                <th>{{ 'accounting.financialSettings.ui.status1' | translate }}</th>
+                <th>{{ 'accounting.financialSettings.ui.actions1' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -271,18 +271,18 @@ import Swal from 'sweetalert2';
                 <td>
                   <span class="active-pill">
                     <span class="dot"></span>
-                    {{ langService.currentLang() === 'ar' ? 'نشط' : 'Active' }}
+                    {{ 'accounting.financialSettings.ui.active' | translate }}
                   </span>
                 </td>
                 <td>
-                  <button class="btn-del" (click)="deleteCostCenter(cc)" [title]="langService.currentLang() === 'ar' ? 'حذف المركز' : 'Delete'">
+                  <button class="btn-del" (click)="deleteCostCenter(cc)" [title]="'accounting.financialSettings.ui.delete' | translate">
                     <i class="pi pi-trash"></i>
                   </button>
                 </td>
               </tr>
               <tr *ngIf="!overview()?.costCenters?.length">
                 <td colspan="6" class="text-center py-6 text-muted">
-                  {{ langService.currentLang() === 'ar' ? 'لم يتم إضافة مراكز تكلفة بعد. انقر على إضافة مركز تكلفة جديد.' : 'No cost centers found.' }}
+                  {{ 'accounting.financialSettings.ui.noCostCentersFound' | translate }}
                 </td>
               </tr>
             </tbody>
@@ -298,25 +298,23 @@ import Swal from 'sweetalert2';
           <div class="policy-box">
             <div class="box-header">
               <i class="pi pi-tags text-emerald"></i>
-              <h4>{{ langService.currentLang() === 'ar' ? 'إلزامية مراكز التكلفة في القيود' : 'Cost Centers Policy' }}</h4>
+              <h4>{{ 'accounting.financialSettings.ui.costCentersPolicy' | translate }}</h4>
             </div>
             <p class="box-desc">
-              {{ langService.currentLang() === 'ar'
-                ? 'تحديد هل يُشترط ربط كل سطر قيد مصروفات أو إيرادات بمركز تكلفة محدد.'
-                : 'Define if cost centers are mandatory when posting income/expense journal lines.' }}
+              {{ 'accounting.financialSettings.ui.costCenterRuleDesc' | translate }}
             </p>
             <div class="radio-options">
               <label class="radio-item">
                 <input type="radio" name="ccPolicy" [value]="1" [(ngModel)]="policyModel.costCenterPolicy" />
-                <span>{{ langService.currentLang() === 'ar' ? 'إلزامية في حسابات المصروفات والإيرادات (موصى به وفق معايير المحاسبة)' : 'Mandatory for Revenue & Expense accounts (Recommended)' }}</span>
+                <span>{{ 'accounting.financialSettings.ui.mandatoryForRevenueExpenseAccounts' | translate }}</span>
               </label>
               <label class="radio-item">
                 <input type="radio" name="ccPolicy" [value]="2" [(ngModel)]="policyModel.costCenterPolicy" />
-                <span>{{ langService.currentLang() === 'ar' ? 'اختيارية في جميع الحسابات' : 'Optional for all accounts' }}</span>
+                <span>{{ 'accounting.financialSettings.ui.optionalForAllAccounts' | translate }}</span>
               </label>
               <label class="radio-item">
                 <input type="radio" name="ccPolicy" [value]="3" [(ngModel)]="policyModel.costCenterPolicy" />
-                <span>{{ langService.currentLang() === 'ar' ? 'تعطيل مراكز التكلفة' : 'Disabled' }}</span>
+                <span>{{ 'accounting.financialSettings.ui.disabled' | translate }}</span>
               </label>
             </div>
           </div>
@@ -325,24 +323,24 @@ import Swal from 'sweetalert2';
           <div class="policy-box">
             <div class="box-header">
               <i class="pi pi-globe text-cyan"></i>
-              <h4>{{ langService.currentLang() === 'ar' ? 'العملة الأساسية والتقويم' : 'Currency & Calendar' }}</h4>
+              <h4>{{ 'accounting.financialSettings.ui.currencyCalendar' | translate }}</h4>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'العملة الأساسية للنظام' : 'Base Currency' }}</label>
+                <label>{{ 'accounting.financialSettings.ui.baseCurrency' | translate }}</label>
                 <select class="form-select" [(ngModel)]="policyModel.defaultCurrency">
-                  <option value="SAR">SAR - ريال سعودي</option>
-                  <option value="USD">USD - دولار أمريكي</option>
-                  <option value="EUR">EUR - يورو</option>
-                  <option value="AED">AED - درهم إماراتي</option>
+                  <option value="SAR">{{ 'ui.financialSettings.49620d' | translate }}</option>
+                  <option value="USD">{{ 'accounting.accountCreate.usdCurrency' | translate }}</option>
+                  <option value="EUR">{{ 'accounting.accountCreate.eurCurrency' | translate }}</option>
+                  <option value="AED">{{ 'accounting.accountCreate.aedCurrency' | translate }}</option>
                 </select>
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'التقويم المالي المعتمد' : 'Calendar System' }}</label>
+                <label>{{ 'accounting.financialSettings.ui.calendarSystem' | translate }}</label>
                 <select class="form-select" [(ngModel)]="policyModel.calendarType">
-                  <option [value]="1">{{ langService.currentLang() === 'ar' ? 'التقويم الميلادي (Gregorian)' : 'Gregorian' }}</option>
-                  <option [value]="2">{{ langService.currentLang() === 'ar' ? 'التقويم الهجري (Hijri)' : 'Hijri' }}</option>
+                  <option [value]="1">{{ 'accounting.financialSettings.ui.gregorian' | translate }}</option>
+                  <option [value]="2">{{ 'accounting.financialSettings.ui.hijri' | translate }}</option>
                 </select>
               </div>
             </div>
@@ -352,23 +350,21 @@ import Swal from 'sweetalert2';
           <div class="policy-box">
             <div class="box-header">
               <i class="pi pi-shield text-danger"></i>
-              <h4>{{ langService.currentLang() === 'ar' ? 'الأمان ومنع القيود بأثر رجعي' : 'Backdated Entries & Audit Security' }}</h4>
+              <h4>{{ 'accounting.financialSettings.ui.backdatedEntriesAuditSecurity' | translate }}</h4>
             </div>
             <p class="box-desc">
-              {{ langService.currentLang() === 'ar'
-                ? 'وفقاً لمعايير التدقيق ومصلحة الزكاة والضريبة، يُمنع إدخال قيود بأثر رجعي إلا بإذن صريح من المدير المالي.'
-                : 'Prevent backdated entries according to auditing standards and tax authority compliance.' }}
+              {{ 'accounting.financialSettings.ui.backdatedRuleDesc' | translate }}
             </p>
             <div class="switch-row">
               <label class="switch-container">
                 <input type="checkbox" [(ngModel)]="policyModel.allowBackdatedEntries" />
                 <span class="slider"></span>
               </label>
-              <span>{{ langService.currentLang() === 'ar' ? 'السماح بإدخال قيود بتاريخ سابق لفترة محددة' : 'Allow backdated entries' }}</span>
+              <span>{{ 'accounting.financialSettings.ui.allowBackdatedEntries' | translate }}</span>
             </div>
 
             <div *ngIf="policyModel.allowBackdatedEntries" class="form-field mt-3">
-              <label>{{ langService.currentLang() === 'ar' ? 'الحد الأقصى للأيام المسموح بها بأثر رجعي' : 'Max Backdated Days' }}</label>
+              <label>{{ 'accounting.financialSettings.ui.maxBackdatedDays' | translate }}</label>
               <input type="number" class="form-input w-36" [(ngModel)]="policyModel.maxBackdatedDays" min="1" max="90" />
             </div>
           </div>
@@ -377,19 +373,17 @@ import Swal from 'sweetalert2';
           <div class="policy-box">
             <div class="box-header">
               <i class="pi pi-calendar-plus text-emerald"></i>
-              <h4>{{ langService.currentLang() === 'ar' ? 'فترة التسويات الختامية (الفترة 13)' : 'Closing Adjustments Period 13' }}</h4>
+              <h4>{{ 'accounting.financialSettings.ui.closingAdjustmentsPeriod13' | translate }}</h4>
             </div>
             <p class="box-desc">
-              {{ langService.currentLang() === 'ar'
-                ? 'إضافة فترة محاسبية رقم 13 خاصة بتسويات نهاية العام والجرد وإقفال الأرباح والخسائر.'
-                : 'Enable dedicated 13th adjustment period for year-end inventory and audit adjustments.' }}
+              {{ 'accounting.financialSettings.ui.period13Desc' | translate }}
             </p>
             <div class="switch-row">
               <label class="switch-container">
                 <input type="checkbox" [(ngModel)]="policyModel.include13thClosingPeriod" />
                 <span class="slider"></span>
               </label>
-              <span>{{ langService.currentLang() === 'ar' ? 'تفعيل فترة التسويات الختامية 13' : 'Enable 13th Adjustment Period' }}</span>
+              <span>{{ 'accounting.financialSettings.ui.enable13thAdjustmentPeriod' | translate }}</span>
             </div>
           </div>
 
@@ -399,7 +393,7 @@ import Swal from 'sweetalert2';
           <button class="btn-save-policies" (click)="savePolicies()" [disabled]="savingPolicies()">
             <i class="pi pi-check" *ngIf="!savingPolicies()"></i>
             <i class="pi pi-spin pi-spinner" *ngIf="savingPolicies()"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'حفظ السياسات والإعدادات المالية' : 'Save Financial Policies' }}</span>
+            <span>{{ 'accounting.financialSettings.ui.saveFinancialPolicies' | translate }}</span>
           </button>
         </div>
       </section>
@@ -415,16 +409,16 @@ import Swal from 'sweetalert2';
                 <i class="pi pi-book"></i>
               </div>
               <div>
-                <h3>{{ langService.currentLang() === 'ar' ? 'معالج إقفال نهاية السنة المالية وترحيل الأرصدة' : 'Year-End Closing & Opening Balances Roll-Forward' }}</h3>
-                <p>{{ langService.currentLang() === 'ar' ? 'إقفال الحسابات الاسمية (الإيرادات والمصروفات) إلى حساب الأرباح المبقاة وتوليد السنة المالية الجديدة' : 'Close nominal accounts to Retained Earnings and roll forward opening balances' }}</p>
+                <h3>{{ 'accounting.financialSettings.ui.yearendClosingOpeningBalancesRollforward' | translate }}</h3>
+                <p>{{ 'accounting.financialSettings.ui.closeNominalAccountsToRetained' | translate }}</p>
               </div>
             </div>
 
             <div class="closing-year-picker">
-              <label>{{ langService.currentLang() === 'ar' ? 'السنة المالية:' : 'Fiscal Year:' }}</label>
+              <label>{{ 'accounting.financialSettings.ui.fiscalYear' | translate }}</label>
               <select class="form-select font-mono" [ngModel]="selectedYear()?.id" (ngModelChange)="onYearChange($event); loadClosingPreview()">
                 @for (y of overview()?.allFiscalYears; track y.id) {
-                  <option [value]="y.id">{{ y.nameAr }} ({{ y.yearNumber }}) {{ y.isClosed ? '🔒 مغلقة' : '🟢 مفتوحة' }}</option>
+                  <option [value]="y.id">{{ y.nameAr }} ({{ y.yearNumber }}) {{ y.isClosed ? ('ui.financialSettings.54c96e' | translate) : ('ui.financialSettings.dabd00' | translate) }}</option>
                 }
               </select>
             </div>
@@ -433,7 +427,7 @@ import Swal from 'sweetalert2';
           <!-- Loading Preview Spinner -->
           <div *ngIf="loadingPreview()" class="loading-state py-8">
             <i class="pi pi-spin pi-spinner text-emerald text-3xl"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'جارٍ فحص القيود وتدقيق ميزان المراجعة للإقفال...' : 'Auditing balances for year-end closing...' }}</span>
+            <span>{{ 'accounting.financialSettings.ui.auditingBalancesForYearendClosing' | translate }}</span>
           </div>
 
           <!-- Preview Content -->
@@ -445,25 +439,25 @@ import Swal from 'sweetalert2';
               <div class="audit-card" [class.card-clean]="closingPreview()?.draftJournalEntriesCount === 0" [class.card-alert]="closingPreview()!.draftJournalEntriesCount > 0">
                 <div class="audit-icon">{{ closingPreview()?.draftJournalEntriesCount === 0 ? '✓' : '⚠' }}</div>
                 <div class="audit-data">
-                  <span class="audit-lbl">{{ langService.currentLang() === 'ar' ? 'قيود اليومية غير المرحلة (مسودات)' : 'Draft Journal Entries' }}</span>
+                  <span class="audit-lbl">{{ 'accounting.financialSettings.ui.draftJournalEntries' | translate }}</span>
                   <span class="audit-val font-mono">{{ closingPreview()?.draftJournalEntriesCount }}</span>
-                  <span class="audit-desc">{{ closingPreview()?.draftJournalEntriesCount === 0 ? (langService.currentLang() === 'ar' ? 'جميع القيود مرحّلة وجاهزة' : 'All entries posted') : (langService.currentLang() === 'ar' ? 'يجب ترحيلها قبل الإقفال' : 'Must post before closing') }}</span>
+                  <span class="audit-desc">{{ closingPreview()?.draftJournalEntriesCount === 0 ? ('accounting.financialSettings.ui.allEntriesPosted' | translate) : ('accounting.financialSettings.ui.mustPostBeforeClosing' | translate) }}</span>
                 </div>
               </div>
 
               <div class="audit-card card-info">
                 <div class="audit-icon">📅</div>
                 <div class="audit-data">
-                  <span class="audit-lbl">{{ langService.currentLang() === 'ar' ? 'الفترات الشهرية المفتوحة' : 'Open Fiscal Periods' }}</span>
+                  <span class="audit-lbl">{{ 'accounting.financialSettings.ui.openFiscalPeriods' | translate }}</span>
                   <span class="audit-val font-mono">{{ closingPreview()?.openPeriodsCount }}</span>
-                  <span class="audit-desc">{{ langService.currentLang() === 'ar' ? 'سيتم قفلها وإغلاقها تلقائياً' : 'Will be closed on year-end' }}</span>
+                  <span class="audit-desc">{{ 'accounting.financialSettings.ui.willBeClosedOnYearend' | translate }}</span>
                 </div>
               </div>
 
               <div class="audit-card card-equity">
                 <div class="audit-icon">🏛️</div>
                 <div class="audit-data">
-                  <span class="audit-lbl">{{ langService.currentLang() === 'ar' ? 'حساب الأرباح المبقاة المستهدف' : 'Target Retained Earnings' }}</span>
+                  <span class="audit-lbl">{{ 'accounting.financialSettings.ui.targetRetainedEarnings' | translate }}</span>
                   <span class="audit-val font-mono text-sm">{{ closingPreview()?.defaultRetainedEarningsAccountCode }}</span>
                   <span class="audit-desc">{{ closingPreview()?.defaultRetainedEarningsAccountNameAr }}</span>
                 </div>
@@ -472,8 +466,8 @@ import Swal from 'sweetalert2';
               <div class="audit-card" [class.card-profit]="closingPreview()!.projectedNetIncome >= 0" [class.card-loss]="closingPreview()!.projectedNetIncome < 0">
                 <div class="audit-icon">{{ closingPreview()!.projectedNetIncome >= 0 ? '📈' : '📉' }}</div>
                 <div class="audit-data">
-                  <span class="audit-lbl">{{ langService.currentLang() === 'ar' ? 'صافي دخل العام المقدر' : 'Projected Net Income' }}</span>
-                  <span class="audit-val font-mono font-bold">{{ closingPreview()?.projectedNetIncome | number:'1.2-2' }} <small>ر.س</small></span>
+                  <span class="audit-lbl">{{ 'accounting.financialSettings.ui.projectedNetIncome' | translate }}</span>
+                  <span class="audit-val font-mono font-bold">{{ closingPreview()?.projectedNetIncome | number:'1.2-2' }} <small>{{ 'common.sar' | translate }}</small></span>
                   <span class="audit-desc font-serif">{{ closingPreview()?.projectedNetIncomeTafqeetAr }}</span>
                 </div>
               </div>
@@ -484,7 +478,7 @@ import Swal from 'sweetalert2';
             <div *ngIf="closingPreview()?.blockingErrors?.length" class="alert-box alert-danger-box">
               <div class="alert-title">
                 <i class="pi pi-times-circle"></i>
-                <strong>{{ langService.currentLang() === 'ar' ? 'موانع الإقفال المالي النهائي (يجب معالجتها أولاً):' : 'Closing Blockers (Must resolve first):' }}</strong>
+                <strong>{{ 'accounting.financialSettings.ui.closingBlockersMustResolveFirst' | translate }}</strong>
               </div>
               <ul>
                 @for (err of closingPreview()?.blockingErrors; track err) {
@@ -496,7 +490,7 @@ import Swal from 'sweetalert2';
             <div *ngIf="closingPreview()?.warnings?.length" class="alert-box alert-warning-box">
               <div class="alert-title">
                 <i class="pi pi-exclamation-triangle"></i>
-                <strong>{{ langService.currentLang() === 'ar' ? 'تنبيهات تدقيقية وملاحظات نظامية:' : 'Audit Warnings:' }}</strong>
+                <strong>{{ 'accounting.financialSettings.ui.auditWarnings' | translate }}</strong>
               </div>
               <ul>
                 @for (warn of closingPreview()?.warnings; track warn) {
@@ -512,13 +506,13 @@ import Swal from 'sweetalert2';
                 <div class="closed-stamp">
                   <i class="pi pi-lock text-3xl"></i>
                   <div>
-                    <h4>{{ langService.currentLang() === 'ar' ? 'السنة المالية مقفلة نهائياً ومرحلة' : 'Fiscal Year is Fully Closed' }}</h4>
-                    <p>{{ langService.currentLang() === 'ar' ? 'تم ترحيل قيد إقفال الأرباح والخسائر وحسابات المركز المالي إلى السنة الجديدة.' : 'Closing entry and opening balances generated.' }}</p>
+                    <h4>{{ 'accounting.financialSettings.ui.fiscalYearIsFullyClosed' | translate }}</h4>
+                    <p>{{ 'accounting.financialSettings.ui.closingEntryAndOpeningBalances' | translate }}</p>
                   </div>
                 </div>
                 <button class="btn-reopen" (click)="confirmReopenYear()">
                   <i class="pi pi-unlock"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'إعادة فتح السنة المالية للتدقيق' : 'Reopen Fiscal Year' }}</span>
+                  <span>{{ 'accounting.financialSettings.ui.reopenFiscalYear' | translate }}</span>
                 </button>
               </div>
 
@@ -526,9 +520,9 @@ import Swal from 'sweetalert2';
                 <div class="roll-forward-option">
                   <label class="checkbox-row">
                     <input type="checkbox" [(ngModel)]="generateNextYearOpening" />
-                    <span><strong>{{ langService.currentLang() === 'ar' ? 'إنشاء السنة المالية التالية تلقائياً وترحيل الأرصدة الافتتاحية' : 'Create next fiscal year & roll forward opening balances' }}</strong></span>
+                    <span><strong>{{ 'accounting.financialSettings.ui.createNextFiscalYearRoll' | translate }}</strong></span>
                   </label>
-                  <p class="text-xs text-muted">{{ langService.currentLang() === 'ar' ? 'سيقوم النظام بإنشاء قيد افتتاحي متوازن يضم أرصدة الأصول والالتزامات وحقوق الملكية للعام الجديد.' : 'Generates opening balanced entry for balance sheet accounts.' }}</p>
+                  <p class="text-xs text-muted">{{ 'accounting.financialSettings.ui.generatesOpeningBalancedEntryFor' | translate }}</p>
                 </div>
 
                 <div class="action-footer">
@@ -538,7 +532,7 @@ import Swal from 'sweetalert2';
                     (click)="confirmCloseYear()">
                     <i class="pi pi-check-circle" *ngIf="!executingClose()"></i>
                     <i class="pi pi-spin pi-spinner" *ngIf="executingClose()"></i>
-                    <span>{{ executingClose() ? (langService.currentLang() === 'ar' ? 'جارٍ الإقفال وتوليد القيود...' : 'Executing closing...') : (langService.currentLang() === 'ar' ? 'تنفيذ الإقفال السنوي وترحيل القيود الختامية' : 'Execute Year-End Closing') }}</span>
+                    <span>{{ executingClose() ? ('accounting.financialSettings.ui.executingClosing' | translate) : ('accounting.financialSettings.ui.executeYearendClosing' | translate) }}</span>
                   </button>
                 </div>
               </div>
@@ -550,14 +544,14 @@ import Swal from 'sweetalert2';
               <div class="res-head">
                 <i class="pi pi-check-circle text-emerald text-2xl"></i>
                 <div>
-                  <h4>{{ langService.currentLang() === 'ar' ? 'تم إقفال السنة المالية بنجاح تام' : 'Year-End Closed Successfully' }}</h4>
-                  <p>{{ langService.currentLang() === 'ar' ? 'صدرت القيود المحاسبية الختامية وفق المعايير المهنية SOCPA / IFRS' : 'All nominal accounts zeroed out.' }}</p>
+                  <h4>{{ 'accounting.financialSettings.ui.yearendClosedSuccessfully' | translate }}</h4>
+                  <p>{{ 'accounting.financialSettings.ui.allNominalAccountsZeroedOut' | translate }}</p>
                 </div>
               </div>
               <div class="res-details-grid">
-                <div><strong>قيد إقفال الأرباح والخسائر:</strong> {{ closingResult()?.closingJournalEntryNumber }}</div>
-                <div><strong>صافي دخل العام المقفل:</strong> {{ closingResult()?.netProfitOrLoss | number:'1.2-2' }} ر.س</div>
-                <div><strong>قيد الأرصدة الافتتاحية للسنة الجديدة:</strong> {{ closingResult()?.openingJournalEntryNumber || '—' }}</div>
+                <div><strong>{{ 'ui.financialSettings.7222b1' | translate }}</strong> {{ closingResult()?.closingJournalEntryNumber }}</div>
+                <div><strong>{{ 'ui.financialSettings.5aa5cf' | translate }}</strong> {{ closingResult()?.netProfitOrLoss | number:'1.2-2' }} {{ 'common.sar' | translate }}</div>
+                <div><strong>{{ 'ui.financialSettings.0fdfeb' | translate }}</strong> {{ closingResult()?.openingJournalEntryNumber || '—' }}</div>
               </div>
             </div>
 
@@ -570,18 +564,18 @@ import Swal from 'sweetalert2';
         <div class="fiscal-summary-bar">
           <div class="year-info-strip">
             <span class="active-pill" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white;">IAS 21</span>
-            <h3>{{ langService.currentLang() === 'ar' ? 'أسعار صرف العملات الأجنبية وإعادة التقييم الدوري (IAS 21)' : 'Foreign Exchange Rates & IAS 21 Revaluation' }}</h3>
-            <span class="dates-range">{{ langService.currentLang() === 'ar' ? 'العملة الأساسية للنظام: الريال السعودي (SAR)' : 'Functional Currency: SAR' }}</span>
+            <h3>{{ 'accounting.financialSettings.ui.foreignExchangeRatesIas21' | translate }}</h3>
+            <span class="dates-range">{{ 'accounting.financialSettings.ui.functionalCurrencySar' | translate }}</span>
           </div>
 
           <div class="year-actions-strip">
             <button class="btn-primary" (click)="openCurrencyModal()">
               <i class="pi pi-plus"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إضافة / تحديث سعر عملة' : 'Add / Update Rate' }}</span>
+              <span>{{ 'accounting.financialSettings.ui.addUpdateRate' | translate }}</span>
             </button>
             <button class="btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);" (click)="runFxRevaluation()">
               <i class="pi pi-bolt"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إعادة تقييم الأرصدة (IAS 21 Revalue)' : 'Run IAS 21 Revaluation' }}</span>
+              <span>{{ 'accounting.financialSettings.ui.runIas21Revaluation' | translate }}</span>
             </button>
           </div>
         </div>
@@ -589,26 +583,26 @@ import Swal from 'sweetalert2';
         <!-- Currencies Table Card -->
         <div class="periods-card mt-3">
           <div class="card-header">
-            <h4><i class="pi pi-dollar text-emerald me-2"></i>{{ langService.currentLang() === 'ar' ? 'جدول أسعار صرف العملات المعتمدة مقابل الريال السعودي' : 'Approved Currency Exchange Rates (SAR)' }}</h4>
-            <span class="badge-total">{{ currencyRates().length }} {{ langService.currentLang() === 'ar' ? 'عملات مسجلة' : 'Currencies' }}</span>
+            <h4><i class="pi pi-dollar text-emerald me-2"></i>{{ 'accounting.financialSettings.ui.approvedCurrencyExchangeRatesSar' | translate }}</h4>
+            <span class="badge-total">{{ currencyRates().length }} {{ 'accounting.financialSettings.ui.currencies' | translate }}</span>
           </div>
 
           <div *ngIf="loadingCurrencies()" class="loading-state">
             <i class="pi pi-spin pi-spinner text-emerald text-3xl"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'جارٍ تحميل أسعار الصرف...' : 'Loading exchange rates...' }}</span>
+            <span>{{ 'accounting.financialSettings.ui.loadingExchangeRates' | translate }}</span>
           </div>
 
           <div class="table-responsive" *ngIf="!loadingCurrencies()">
             <table class="erp-dense-table">
               <thead>
                 <tr>
-                  <th style="width: 100px;">{{ langService.currentLang() === 'ar' ? 'رمز العملة' : 'Code' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'اسم العملة (عربي)' : 'Name (Arabic)' }}</th>
-                  <th>{{ langService.currentLang() === 'ar' ? 'اسم العملة (إنجليزي)' : 'Name (English)' }}</th>
-                  <th style="text-align: left; width: 180px;">{{ langService.currentLang() === 'ar' ? 'سعر الصرف (SAR)' : 'Rate to SAR' }}</th>
-                  <th style="width: 140px;">{{ langService.currentLang() === 'ar' ? 'تاريخ السريان' : 'Effective Date' }}</th>
-                  <th style="text-align: center; width: 100px;">{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
-                  <th style="text-align: center; width: 100px;">{{ langService.currentLang() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+                  <th style="width: 100px;">{{ 'accounting.financialSettings.ui.code1' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.nameArabic' | translate }}</th>
+                  <th>{{ 'accounting.financialSettings.ui.nameEnglish' | translate }}</th>
+                  <th style="text-align: left; width: 180px;">{{ 'accounting.financialSettings.ui.rateToSar' | translate }}</th>
+                  <th style="width: 140px;">{{ 'accounting.financialSettings.ui.effectiveDate' | translate }}</th>
+                  <th style="text-align: center; width: 100px;">{{ 'accounting.financialSettings.ui.status1' | translate }}</th>
+                  <th style="text-align: center; width: 100px;">{{ 'accounting.financialSettings.ui.actions1' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -621,10 +615,10 @@ import Swal from 'sweetalert2';
                   </td>
                   <td>{{ rate.effectiveDate | date:'yyyy-MM-dd' }}</td>
                   <td style="text-align: center;">
-                    <span class="status-pill status-posted">{{ langService.currentLang() === 'ar' ? 'معتمد ونشط' : 'Active' }}</span>
+                    <span class="status-pill status-posted">{{ 'accounting.financialSettings.ui.active1' | translate }}</span>
                   </td>
                   <td style="text-align: center;">
-                    <button class="btn-icon" (click)="openCurrencyModal(rate)" [title]="langService.currentLang() === 'ar' ? 'تعديل السعر' : 'Edit Rate'">
+                    <button class="btn-icon" (click)="openCurrencyModal(rate)" [title]="'accounting.financialSettings.ui.editRate' | translate">
                       <i class="pi pi-pencil"></i>
                     </button>
                   </td>
@@ -641,7 +635,7 @@ import Swal from 'sweetalert2';
           <header class="modal-header">
             <div class="modal-title-box">
               <i class="pi pi-dollar text-emerald"></i>
-              <h3>{{ langService.currentLang() === 'ar' ? 'تسجيل / تحديث سعر صرف عملة' : 'Update Exchange Rate' }}</h3>
+              <h3>{{ 'accounting.financialSettings.ui.updateExchangeRate' | translate }}</h3>
             </div>
             <button class="btn-close" (click)="showCurrencyModal.set(false)"><i class="pi pi-times"></i></button>
           </header>
@@ -649,37 +643,44 @@ import Swal from 'sweetalert2';
           <section class="modal-body">
             <div class="form-grid">
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'رمز العملة (ISO Code) *' : 'Currency Code *' }}</label>
+                <label>{{ 'accounting.financialSettings.ui.currencyCode' | translate }}</label>
                 <input type="text" [(ngModel)]="currencyForm.currencyCode" placeholder="USD, EUR, GBP..." />
               </div>
 
               <div class="form-field">
-                <label>{{ langService.currentLang() === 'ar' ? 'سعر الصرف مقابل الريال (SAR) *' : 'Exchange Rate to SAR *' }}</label>
+                <label>{{ 'accounting.financialSettings.ui.exchangeRateToSar' | translate }}</label>
                 <input type="number" step="0.0001" [(ngModel)]="currencyForm.exchangeRateToSar" placeholder="3.7500" />
               </div>
 
               <div class="form-field full">
-                <label>{{ langService.currentLang() === 'ar' ? 'اسم العملة بالعربية *' : 'Currency Name (Arabic) *' }}</label>
-                <input type="text" [(ngModel)]="currencyForm.currencyNameAr" placeholder="دولار أمريكي، يورو..." />
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                  <label style="margin-bottom: 0;">{{ 'accounting.financialSettings.ui.currencyName' | translate }}
+                    <small class="text-muted ms-1 me-1" style="font-weight: normal;">{{ 'common.arOrEn' | translate }}</small>
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span *ngIf="currencyBgTranslation" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                      {{ currencyBgTranslation }}
+                    </span>
+                    <button type="button" class="btn-micro-translate" (click)="forceRetranslateCurrency()" [title]="'projects.hub.workspace.wbs.retranslate' | translate" style="border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 0.72rem;">
+                      <i class="pi pi-globe"></i>
+                    </button>
+                  </div>
+                </div>
+                <input type="text" [ngModel]="unifiedCurrencyName || currencyForm.currencyNameAr || currencyForm.currencyNameEn" (ngModelChange)="onUnifiedCurrencyNameChange($event)" [placeholder]="'ui.financialSettings.83a983' | translate" required />
               </div>
 
               <div class="form-field full">
-                <label>{{ langService.currentLang() === 'ar' ? 'اسم العملة بالإنجليزية' : 'Currency Name (English)' }}</label>
-                <input type="text" [(ngModel)]="currencyForm.currencyNameEn" placeholder="US Dollar, Euro..." />
-              </div>
-
-              <div class="form-field full">
-                <label>{{ langService.currentLang() === 'ar' ? 'تاريخ السريان *' : 'Effective Date *' }}</label>
+                <label>{{ 'accounting.financialSettings.ui.effectiveDate1' | translate }}</label>
                 <input type="date" [(ngModel)]="currencyForm.effectiveDate" />
               </div>
             </div>
           </section>
 
           <footer class="modal-footer">
-            <button class="btn-secondary" (click)="showCurrencyModal.set(false)">{{ langService.currentLang() === 'ar' ? 'إلغاء' : 'Cancel' }}</button>
+            <button class="btn-secondary" (click)="showCurrencyModal.set(false)">{{ 'accounting.financialSettings.ui.cancel' | translate }}</button>
             <button class="btn-primary" (click)="saveCurrencyRate()">
               <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'حفظ سعر الصرف' : 'Save Rate' }}</span>
+              <span>{{ 'accounting.financialSettings.ui.saveRate' | translate }}</span>
             </button>
           </footer>
         </div>
@@ -1625,6 +1626,59 @@ export class FinancialSettingsComponent implements OnInit {
   private activeRoute = inject(ActivatedRoute);
   companyContext = inject(CompanyContextService);
   langService = inject(LanguageService);
+  translator = inject(AccountingTranslatorService);
+
+  unifiedCurrencyName: string = '';
+  currencyBgTranslation: string = '';
+
+  onUnifiedCurrencyNameChange(val: string) {
+    this.unifiedCurrencyName = val;
+    if (!val || !val.trim()) {
+      this.currencyForm.currencyNameAr = '';
+      this.currencyForm.currencyNameEn = '';
+      this.currencyBgTranslation = '';
+      return;
+    }
+    const isAr = this.translator.containsArabic(val);
+    if (isAr) {
+      this.currencyForm.currencyNameAr = val;
+      const instant = this.translator.translateArabicToEnglish(val);
+      this.currencyForm.currencyNameEn = instant;
+      this.currencyBgTranslation = `English: ${instant}`;
+      this.translator.translateWithOnlineRefinement(
+        val,
+        () => {},
+        (refined) => {
+          if (refined) {
+            this.currencyForm.currencyNameEn = refined;
+            this.currencyBgTranslation = `English: ${refined}`;
+          }
+        }
+      );
+    } else {
+      this.currencyForm.currencyNameEn = val;
+      const instant = this.translator.translateEnglishToArabic(val);
+      this.currencyForm.currencyNameAr = instant;
+      this.currencyBgTranslation = `عربي: ${instant}`;
+      this.translator.translateOnline(val, 'en', 'ar').then(refined => {
+        if (refined) {
+          this.currencyForm.currencyNameAr = refined;
+          this.currencyBgTranslation = `عربي: ${refined}`;
+        }
+      });
+    }
+  }
+
+  forceRetranslateCurrency() {
+    const val = this.unifiedCurrencyName || this.currencyForm.currencyNameAr || this.currencyForm.currencyNameEn;
+    if (val) {
+      this.onUnifiedCurrencyNameChange(val);
+    }
+  }
+
+  onCurrencyNameArChange(val: string) {
+    this.onUnifiedCurrencyNameChange(val);
+  }
 
   loading = signal<boolean>(true);
   savingPolicies = signal<boolean>(false);
@@ -1731,24 +1785,24 @@ export class FinancialSettingsComponent implements OnInit {
 
     this.http.post('/api/currencies/rates', payload).subscribe({
       next: () => {
-        Swal.fire('تم الحفظ', 'تم تحديث سعر صرف العملة بنجاح', 'success');
+        Swal.fire(this.langService.t('common.saved'), this.langService.t('accounting.financialSettings.alerts.currencyRateUpdated'), 'success');
         this.showCurrencyModal.set(false);
         this.loadCurrencies();
       },
       error: (err) => {
-        Swal.fire('خطأ في الحفظ', err.error?.description || err.message, 'error');
+        Swal.fire(this.langService.t('accounting.financialSettings.alerts.saveError'), err.error?.description || err.message, 'error');
       }
     });
   }
 
   runFxRevaluation() {
     Swal.fire({
-      title: 'إعادة تقييم العملات وفق معيار IAS 21',
-      text: 'سيتم احتساب فروق أسعار الصرف غير المحققة لجميع الحسابات النقدية بالعملات الأجنبية وتوليد قيد يومية آلي بأرباح أو خسائر فروق العملة. هل تريد المتابعة؟',
+      title: this.langService.t('accounting.financialSettings.alerts.revalTitle'),
+      text: this.langService.t('accounting.financialSettings.alerts.revalConfirmText'),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، تشغيل إعادة التقييم',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: this.langService.t('accounting.financialSettings.alerts.revalRunConfirm'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#059669'
     }).then(res => {
       if (res.isConfirmed) {
@@ -1756,17 +1810,17 @@ export class FinancialSettingsComponent implements OnInit {
         this.http.post<any>('/api/currencies/revalue', { companyId, revaluationDate: new Date().toISOString() }).subscribe({
           next: (r) => {
             Swal.fire({
-              title: 'اكتملت إعادة التقييم بنجاح! 💹',
+              title: this.langService.t('accounting.financialSettings.alerts.revalSuccessTitle'),
               html: `<strong>${r.message}</strong><br><br>
-                     الأرباح المحققة: <span class="text-emerald font-bold">${r.totalGain} SAR</span><br>
-                     الخسائر المحققة: <span class="text-rose font-bold">${r.totalLoss} SAR</span><br>
-                     صافي الأثر على قائمة الدخل: <strong>${r.netImpact} SAR</strong>`,
+                     ${this.langService.t('accounting.financialSettings.alerts.revalRealizedGain')} <span class="text-emerald font-bold">${r.totalGain} SAR</span><br>
+                     ${this.langService.t('accounting.financialSettings.alerts.revalRealizedLoss')} <span class="text-rose font-bold">${r.totalLoss} SAR</span><br>
+                     ${this.langService.t('accounting.financialSettings.alerts.revalNetIncomeImpact')} <strong>${r.netImpact} SAR</strong>`,
               icon: 'success'
             });
             this.loadCurrencies();
           },
           error: (err) => {
-            Swal.fire('فشلت العملية', err.error?.description || err.message, 'error');
+            Swal.fire(this.langService.t('common.error'), err.error?.description || err.message, 'error');
           }
         });
       }
@@ -1818,42 +1872,42 @@ export class FinancialSettingsComponent implements OnInit {
   }
 
   getStatusLabel(status: number): string {
-    const isAr = this.langService.currentLang() === 'ar';
     switch (status) {
-      case 1: return isAr ? 'مفتوحة (متاح الترحيل)' : 'Open';
-      case 2: return isAr ? 'مقفلة مؤقتاً (مراجعة)' : 'Locked';
-      case 3: return isAr ? 'مغلقة نهائياً' : 'Closed';
+      case 1: return this.langService.t('accounting.financialSettings.status.open');
+      case 2: return this.langService.t('accounting.financialSettings.status.locked');
+      case 3: return this.langService.t('accounting.financialSettings.status.closed');
       default: return '';
     }
   }
 
   getCostCenterPolicyLabel(): string {
-    const isAr = this.langService.currentLang() === 'ar';
     const policy = this.policyModel.costCenterPolicy;
     if (policy === 1) {
-      return isAr ? 'إلزامية في حسابات المصروفات والإيرادات (موصى به)' : 'Mandatory for P&L';
+      return this.langService.t('accounting.financialSettings.policy.mandatoryPL');
     } else if (policy === 2) {
-      return isAr ? 'اختيارية في جميع الحسابات' : 'Optional';
+      return this.langService.t('accounting.financialSettings.policy.optionalAll');
     } else {
-      return isAr ? 'معطلة بالكامل' : 'Disabled';
+      return this.langService.t('accounting.financialSettings.policy.disabled');
     }
   }
 
   changePeriodStatus(period: FiscalPeriod, newStatus: number) {
     const isAr = this.langService.currentLang() === 'ar';
-    const statusName = isAr 
-      ? (newStatus === 1 ? 'فتح الفترة' : newStatus === 2 ? 'قفل الفترة مؤقتاً' : 'إقفال الفترة نهائياً')
-      : (newStatus === 1 ? 'Open' : newStatus === 2 ? 'Lock' : 'Close');
+    const statusName = newStatus === 1 
+      ? this.langService.t('accounting.financialSettings.period.openPeriod')
+      : newStatus === 2 
+        ? this.langService.t('accounting.financialSettings.period.lockPeriod')
+        : this.langService.t('accounting.financialSettings.period.closePeriod');
+
+    const periodName = isAr ? period.periodNameAr : (period.periodNameEn || period.periodNameAr);
 
     Swal.fire({
-      title: isAr ? `تأكيد ${statusName}` : `Confirm ${statusName}`,
-      text: isAr 
-        ? `هل أنت متأكد من تغيير حالة (${period.periodNameAr}) إلى ${statusName}؟`
-        : `Are you sure you want to change status of (${period.periodNameEn}) to ${statusName}?`,
+      title: this.langService.t('accounting.financialSettings.alerts.confirmStatusChange', { status: statusName }),
+      text: this.langService.t('accounting.financialSettings.alerts.confirmStatusChangeText', { name: periodName, status: statusName }),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: isAr ? 'نعم، تغيير الحالة' : 'Yes, Change',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.financialSettings.alerts.yesChangeStatus'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: newStatus === 1 ? '#10B981' : newStatus === 2 ? '#D97706' : '#EF4444'
     }).then((res) => {
       if (res.isConfirmed) {
@@ -1864,13 +1918,13 @@ export class FinancialSettingsComponent implements OnInit {
               toast: true,
               position: 'top-end',
               icon: 'success',
-              title: isAr ? 'تم تحديث حالة الفترة بنجاح' : 'Period status updated',
+              title: this.langService.t('accounting.financialSettings.alerts.periodStatusUpdated'),
               showConfirmButton: false,
               timer: 2000
             });
           },
           error: () => {
-            Swal.fire(isAr ? 'خطأ' : 'Error', isAr ? 'تعذر تغيير حالة الفترة' : 'Failed to update period status', 'error');
+            Swal.fire(this.langService.t('common.error'), this.langService.t('accounting.financialSettings.alerts.periodStatusFailed'), 'error');
           }
         });
       }
@@ -1878,38 +1932,38 @@ export class FinancialSettingsComponent implements OnInit {
   }
 
   openCreateYearModal() {
-    const isAr = this.langService.currentLang() === 'ar';
     const nextYear = (this.selectedYear()?.yearNumber || new Date().getFullYear()) + 1;
+    const defaultYearName = this.langService.t('accounting.financialSettings.yearModal.defaultYearName', { year: nextYear });
 
     Swal.fire({
-      title: isAr ? 'إنشاء سنة مالية جديدة' : 'Create New Fiscal Year',
+      title: this.langService.t('accounting.financialSettings.yearModal.title'),
       html: `
         <div style="text-align: start; font-family: inherit; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.8rem;">
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'رقم السنة:' : 'Year Number:'}</label>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${this.langService.t('accounting.financialSettings.yearModal.yearNumber')}</label>
             <input id="swal-year" type="number" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" value="${nextYear}" />
           </div>
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'اسم السنة (عربي):' : 'Year Name (Ar):'}</label>
-            <input id="swal-nameAr" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" value="السنة المالية ${nextYear}" />
+            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${this.langService.t('accounting.financialSettings.yearModal.yearNameAr')}</label>
+            <input id="swal-nameAr" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" value="${defaultYearName}" />
           </div>
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'تاريخ البداية:' : 'Start Date:'}</label>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${this.langService.t('accounting.financialSettings.yearModal.startDate')}</label>
             <input id="swal-start" type="date" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" value="${nextYear}-01-01" />
           </div>
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'تاريخ الانتهاء:' : 'End Date:'}</label>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${this.langService.t('accounting.financialSettings.yearModal.endDate')}</label>
             <input id="swal-end" type="date" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" value="${nextYear}-12-31" />
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
             <input id="swal-13th" type="checkbox" checked style="width: 18px; height: 18px;" />
-            <label for="swal-13th">${isAr ? 'تضمين فترة التسويات الختامية 13' : 'Include 13th Adjustment Period'}</label>
+            <label for="swal-13th">${this.langService.t('accounting.financialSettings.yearModal.include13th')}</label>
           </div>
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: isAr ? 'إنشاء وتوليد الفترات' : 'Create & Generate',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.financialSettings.yearModal.createBtn'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#10B981',
       preConfirm: () => {
         const year = +(document.getElementById('swal-year') as HTMLInputElement).value;
@@ -1919,7 +1973,7 @@ export class FinancialSettingsComponent implements OnInit {
         const include13 = (document.getElementById('swal-13th') as HTMLInputElement).checked;
 
         if (!year || !start || !end) {
-          Swal.showValidationMessage(isAr ? 'يرجى إكمال جميع الحقول المطلوبة' : 'Please fill all required fields');
+          Swal.showValidationMessage(this.langService.t('common.fillRequiredFields'));
           return false;
         }
 
@@ -1940,13 +1994,13 @@ export class FinancialSettingsComponent implements OnInit {
           next: () => {
             Swal.fire({
               icon: 'success',
-              title: isAr ? 'تم إنشاء السنة المالية بنجاح' : 'Fiscal Year Created',
-              text: isAr ? 'تم توليد فترات الأشهر تلقائياً وجاهزة للاستخدام' : 'Periods generated successfully'
+              title: this.langService.t('accounting.financialSettings.yearModal.createdSuccess'),
+              text: this.langService.t('accounting.financialSettings.yearModal.createdSuccessText')
             });
             this.loadData();
           },
           error: (err) => {
-            Swal.fire(isAr ? 'خطأ' : 'Error', err?.error?.description || (isAr ? 'تعذر إنشاء السنة المالية' : 'Failed to create year'), 'error');
+            Swal.fire(this.langService.t('common.error'), err?.error?.description || this.langService.t('accounting.financialSettings.yearModal.createFailed'), 'error');
           }
         });
       }
@@ -1954,43 +2008,96 @@ export class FinancialSettingsComponent implements OnInit {
   }
 
   openCreateCostCenterModal() {
-    const isAr = this.langService.currentLang() === 'ar';
-
     Swal.fire({
-      title: isAr ? 'إضافة مركز تكلفة جديد' : 'Add Cost Center',
+      title: this.langService.t('accounting.financialSettings.ccModal.title'),
       html: `
         <div style="text-align: start; font-family: inherit; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.8rem;">
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'كود المركز:' : 'Code:'}</label>
-            <input id="swal-cc-code" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="مثال: 104" />
+            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${this.langService.t('accounting.financialSettings.ccModal.code')}</label>
+            <input id="swal-cc-code" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="${this.langService.t('accounting.financialSettings.ccModal.codePlaceholder')}" />
           </div>
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'الاسم بالعربية:' : 'Arabic Name:'}</label>
-            <input id="swal-cc-nameAr" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="مثال: فرع جدة الإقليمي" />
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+              <label style="font-weight: 600; margin: 0;">${this.langService.t('accounting.financialSettings.ccModal.name')} <small style="font-weight: normal; color: #64748b;">${this.langService.t('accounting.financialSettings.ccModal.nameHint')}</small></label>
+              <span id="swal-cc-preview" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600; display: none;"></span>
+            </div>
+            <input id="swal-cc-unifiedName" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="${this.langService.t('accounting.financialSettings.ccModal.namePlaceholder')}" />
+            <input id="swal-cc-nameAr" type="hidden" />
+            <input id="swal-cc-nameEn" type="hidden" />
           </div>
           <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'الاسم بالإنجليزية:' : 'English Name:'}</label>
-            <input id="swal-cc-nameEn" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="e.g. Jeddah Branch" />
-          </div>
-          <div>
-            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${isAr ? 'الوصف والغرض:' : 'Description:'}</label>
-            <input id="swal-cc-desc" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="وصف اختياري" />
+            <label style="font-weight: 600; display: block; margin-bottom: 0.3rem;">${this.langService.t('accounting.financialSettings.ccModal.desc')}</label>
+            <input id="swal-cc-desc" type="text" class="swal2-input" style="width: 100%; margin: 0; height: 38px;" placeholder="${this.langService.t('accounting.financialSettings.ccModal.descPlaceholder')}" />
           </div>
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: isAr ? 'إضافة المركز' : 'Add Center',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.financialSettings.ccModal.addBtn'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#10B981',
+      didOpen: () => {
+        const unifiedInput = document.getElementById('swal-cc-unifiedName') as HTMLInputElement;
+        const arHidden = document.getElementById('swal-cc-nameAr') as HTMLInputElement;
+        const enHidden = document.getElementById('swal-cc-nameEn') as HTMLInputElement;
+        const preview = document.getElementById('swal-cc-preview') as HTMLElement;
+        if (unifiedInput) {
+          unifiedInput.addEventListener('input', () => {
+            const val = unifiedInput.value.trim();
+            if (!val) {
+              if (arHidden) arHidden.value = '';
+              if (enHidden) enHidden.value = '';
+              if (preview) { preview.innerText = ''; preview.style.display = 'none'; }
+              return;
+            }
+            const isInputAr = this.translator.containsArabic(val);
+            if (isInputAr) {
+              if (arHidden) arHidden.value = val;
+              const instant = this.translator.translateArabicToEnglish(val);
+              if (enHidden) enHidden.value = instant;
+              if (preview) {
+                preview.innerText = `English: ${instant}`;
+                preview.style.display = 'inline-block';
+              }
+              this.translator.translateWithOnlineRefinement(val, () => {}, (refined) => {
+                if (enHidden && refined) enHidden.value = refined;
+                if (preview && refined) preview.innerText = `English: ${refined}`;
+              });
+            } else {
+              if (enHidden) enHidden.value = val;
+              const instant = this.translator.translateEnglishToArabic(val);
+              if (arHidden) arHidden.value = instant;
+              if (preview) {
+                preview.innerText = `عربي: ${instant}`;
+                preview.style.display = 'inline-block';
+              }
+              this.translator.translateOnline(val, 'en', 'ar').then(refined => {
+                if (arHidden && refined) arHidden.value = refined;
+                if (preview && refined) preview.innerText = `عربي: ${refined}`;
+              });
+            }
+          });
+        }
+      },
       preConfirm: () => {
         const code = (document.getElementById('swal-cc-code') as HTMLInputElement).value;
-        const nameAr = (document.getElementById('swal-cc-nameAr') as HTMLInputElement).value;
-        const nameEn = (document.getElementById('swal-cc-nameEn') as HTMLInputElement).value;
+        const unified = (document.getElementById('swal-cc-unifiedName') as HTMLInputElement).value.trim();
+        let nameAr = (document.getElementById('swal-cc-nameAr') as HTMLInputElement).value.trim();
+        let nameEn = (document.getElementById('swal-cc-nameEn') as HTMLInputElement).value.trim();
         const desc = (document.getElementById('swal-cc-desc') as HTMLInputElement).value;
 
-        if (!code || !nameAr) {
-          Swal.showValidationMessage(isAr ? 'يرجى إدخال الكود واسم المركز بالعربية' : 'Please provide code and name');
+        if (!code || (!nameAr && !unified)) {
+          Swal.showValidationMessage(this.langService.t('accounting.financialSettings.ccModal.validation'));
           return false;
+        }
+
+        if (!nameAr && unified) {
+          if (this.translator.containsArabic(unified)) {
+            nameAr = unified;
+            nameEn = this.translator.translateArabicToEnglish(unified);
+          } else {
+            nameEn = unified;
+            nameAr = this.translator.translateEnglishToArabic(unified);
+          }
         }
 
         return { code, nameAr, nameEn: nameEn || nameAr, desc };
@@ -2010,14 +2117,14 @@ export class FinancialSettingsComponent implements OnInit {
               toast: true,
               position: 'top-end',
               icon: 'success',
-              title: isAr ? 'تمت إضافة مركز التكلفة' : 'Cost center added',
+              title: this.langService.t('accounting.financialSettings.ccModal.addedSuccess'),
               showConfirmButton: false,
               timer: 2000
             });
             this.loadData();
           },
           error: (err) => {
-            Swal.fire(isAr ? 'خطأ' : 'Error', err?.error?.description || (isAr ? 'تعذر إضافة المركز' : 'Failed to add cost center'), 'error');
+            Swal.fire(this.langService.t('common.error'), err?.error?.description || this.langService.t('accounting.financialSettings.ccModal.addFailed'), 'error');
           }
         });
       }
@@ -2026,13 +2133,14 @@ export class FinancialSettingsComponent implements OnInit {
 
   deleteCostCenter(cc: CostCenter) {
     const isAr = this.langService.currentLang() === 'ar';
+    const ccName = isAr ? cc.nameAr : (cc.nameEn || cc.nameAr);
     Swal.fire({
-      title: isAr ? 'تأكيد الحذف' : 'Confirm Delete',
-      text: isAr ? `هل أنت متأكد من حذف مركز التكلفة (${cc.nameAr})؟` : `Delete cost center (${cc.nameEn})?`,
+      title: this.langService.t('common.confirmDelete'),
+      text: this.langService.t('accounting.financialSettings.ccModal.confirmDelete', { name: ccName }),
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: isAr ? 'نعم، حذف' : 'Yes, Delete',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('common.yesDelete'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#EF4444'
     }).then((res) => {
       if (res.isConfirmed) {
@@ -2042,14 +2150,14 @@ export class FinancialSettingsComponent implements OnInit {
               toast: true,
               position: 'top-end',
               icon: 'success',
-              title: isAr ? 'تم حذف مركز التكلفة' : 'Cost center deleted',
+              title: this.langService.t('accounting.financialSettings.ccModal.deletedSuccess'),
               showConfirmButton: false,
               timer: 2000
             });
             this.loadData();
           },
           error: () => {
-            Swal.fire(isAr ? 'خطأ' : 'Error', isAr ? 'تعذر حذف مركز التكلفة' : 'Failed to delete cost center', 'error');
+            Swal.fire(this.langService.t('common.error'), this.langService.t('accounting.financialSettings.ccModal.deleteFailed'), 'error');
           }
         });
       }
@@ -2059,7 +2167,6 @@ export class FinancialSettingsComponent implements OnInit {
   savePolicies() {
     this.savingPolicies.set(true);
     const companyId = this.companyContext.activeCompany()?.id;
-    const isAr = this.langService.currentLang() === 'ar';
 
     this.settingsService.updateSettings({
       ...this.policyModel,
@@ -2070,13 +2177,13 @@ export class FinancialSettingsComponent implements OnInit {
         this.savingPolicies.set(false);
         Swal.fire({
           icon: 'success',
-          title: isAr ? 'تم حفظ السياسات المالية بنجاح' : 'Policies Saved Successfully',
-          text: isAr ? 'تم تحديث سياسة مراكز التكلفة والعملة وإجراءات الرقابة' : 'Financial controls updated'
+          title: this.langService.t('accounting.financialSettings.policies.savedTitle'),
+          text: this.langService.t('accounting.financialSettings.policies.savedText')
         });
       },
       error: () => {
         this.savingPolicies.set(false);
-        Swal.fire(isAr ? 'خطأ' : 'Error', isAr ? 'تعذر حفظ السياسات المالية' : 'Failed to save policies', 'error');
+        Swal.fire(this.langService.t('common.error'), this.langService.t('accounting.financialSettings.policies.saveFailed'), 'error');
       }
     });
   }
@@ -2100,8 +2207,7 @@ export class FinancialSettingsComponent implements OnInit {
       },
       error: (err) => {
         this.loadingPreview.set(false);
-        const isAr = this.langService.currentLang() === 'ar';
-        Swal.fire(isAr ? 'تنبيه' : 'Alert', err?.error?.description || (isAr ? 'تعذر جلب بيانات التدقيق للإقفال' : 'Failed to fetch audit data'), 'warning');
+        Swal.fire(this.langService.t('common.warning'), err?.error?.description || this.langService.t('accounting.financialSettings.closing.fetchAuditFailed'), 'warning');
       }
     });
   }
@@ -2111,24 +2217,26 @@ export class FinancialSettingsComponent implements OnInit {
     if (!preview || !preview.canClose) return;
 
     const isAr = this.langService.currentLang() === 'ar';
+    const retainedAcc = preview.defaultRetainedEarningsAccountNameAr;
+    const formattedIncome = preview.projectedNetIncome.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
     Swal.fire({
-      title: isAr ? `تأكيد إقفال السنة المالية ${preview.yearNumber}` : `Close Fiscal Year ${preview.yearNumber}?`,
+      title: this.langService.t('accounting.financialSettings.closing.confirmTitle', { year: preview.yearNumber }),
       html: `
         <div style="text-align: start; font-size: 0.88rem; line-height: 1.6;">
-          <p>أنت على وشك تنفيذ الإقفال المحاسبي النهائي للسنة المالية <strong>${preview.yearNumber}</strong>.</p>
+          <p>${this.langService.t('accounting.financialSettings.closing.aboutToExecute', { year: preview.yearNumber })}</p>
           <ul style="padding-inline-start: 1.2rem; margin: 0.5rem 0;">
-            <li>تصفير وإقفال كافة حسابات الإيرادات والمصروفات.</li>
-            <li>ترحيل صافي الدخل (<strong>${preview.projectedNetIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.س</strong>) إلى حساب <strong>${preview.defaultRetainedEarningsAccountNameAr}</strong>.</li>
-            <li>توليد قيد إقفال ختامي معتمد وتوليد السنة المالية التالية وترحيل الأرصدة.</li>
+            <li>${this.langService.t('accounting.financialSettings.closing.bullet1')}</li>
+            <li>${this.langService.t('accounting.financialSettings.closing.bullet2', { netIncome: formattedIncome, retainedAccount: retainedAcc })}</li>
+            <li>${this.langService.t('accounting.financialSettings.closing.bullet3')}</li>
           </ul>
-          <p style="color: #B91C1C; font-weight: 700; margin-top: 0.5rem;">لا يمكن التراجع عن هذا الإجراء إلا بموافقة صريحة من المدير المالي.</p>
+          <p style="color: #B91C1C; font-weight: 700; margin-top: 0.5rem;">${this.langService.t('accounting.financialSettings.closing.warningIrreversible')}</p>
         </div>
       `,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: isAr ? 'نعم، نفذ الإقفال السنوي الآن' : 'Yes, Execute Closing',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.financialSettings.closing.executeNow'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#10B981',
       cancelButtonColor: '#64748B'
     }).then((res) => {
@@ -2144,15 +2252,15 @@ export class FinancialSettingsComponent implements OnInit {
             this.closingResult.set(closingRes);
             Swal.fire({
               icon: 'success',
-              title: isAr ? 'تم إقفال السنة المالية بنجاح' : 'Year Closed Successfully',
-              text: isAr ? `صدر قيد الإقفال رقم ${closingRes.closingJournalEntryNumber}` : 'Closing entry created'
+              title: this.langService.t('accounting.financialSettings.closing.successTitle'),
+              text: this.langService.t('accounting.financialSettings.closing.successText', { number: closingRes.closingJournalEntryNumber })
             });
             this.loadData();
             this.loadClosingPreview();
           },
           error: (err) => {
             this.executingClose.set(false);
-            Swal.fire(isAr ? 'خطأ في الإقفال' : 'Closing Error', err?.error?.description || (isAr ? 'فشل تنفيذ الإقفال' : 'Failed to execute closing'), 'error');
+            Swal.fire(this.langService.t('accounting.financialSettings.closing.closingError'), err?.error?.description || this.langService.t('accounting.financialSettings.closing.failed'), 'error');
           }
         });
       }
@@ -2163,20 +2271,18 @@ export class FinancialSettingsComponent implements OnInit {
     const yearId = this.selectedYear()?.id;
     if (!yearId) return;
 
-    const isAr = this.langService.currentLang() === 'ar';
-
     Swal.fire({
-      title: isAr ? 'إعادة فتح السنة المالية للتدقيق' : 'Reopen Fiscal Year',
+      title: this.langService.t('accounting.financialSettings.reopen.title'),
       input: 'textarea',
-      inputLabel: isAr ? 'يرجى كتابة سبب إعادة فتح السنة المالية:' : 'Reason for reopening year:',
-      inputPlaceholder: isAr ? 'مثال: إجراء تسويات تدقيقية إضافية بطلب من المحاسب القانوني...' : 'Audit adjustments...',
+      inputLabel: this.langService.t('accounting.financialSettings.reopen.reasonLabel'),
+      inputPlaceholder: this.langService.t('accounting.financialSettings.reopen.reasonPlaceholder'),
       showCancelButton: true,
-      confirmButtonText: isAr ? 'تأكيد إعادة الفتح' : 'Confirm Reopen',
-      cancelButtonText: isAr ? 'إلغاء' : 'Cancel',
+      confirmButtonText: this.langService.t('accounting.financialSettings.reopen.confirmBtn'),
+      cancelButtonText: this.langService.t('common.cancel'),
       confirmButtonColor: '#F59E0B',
       inputValidator: (val) => {
         if (!val || !val.trim()) {
-          return isAr ? 'يجب إدخال سبب إعادة الفتح للرقابة والتدقيق' : 'Reason is required';
+          return this.langService.t('accounting.financialSettings.reopen.reasonRequired');
         }
         return null;
       }
@@ -2186,14 +2292,14 @@ export class FinancialSettingsComponent implements OnInit {
           next: () => {
             Swal.fire({
               icon: 'success',
-              title: isAr ? 'تمت إعادة فتح السنة المالية بنجاح' : 'Fiscal Year Reopened',
-              text: isAr ? 'السنة المالية الآن مفتوحة لإجراء التسويات المطلوبة' : 'Year is now open for adjustments'
+              title: this.langService.t('accounting.financialSettings.reopen.successTitle'),
+              text: this.langService.t('accounting.financialSettings.reopen.successText')
             });
             this.loadData();
             this.loadClosingPreview();
           },
           error: (err) => {
-            Swal.fire(isAr ? 'خطأ' : 'Error', err?.error?.description || (isAr ? 'فشل إعادة فتح السنة' : 'Failed to reopen year'), 'error');
+            Swal.fire(this.langService.t('common.error'), err?.error?.description || this.langService.t('accounting.financialSettings.reopen.failed'), 'error');
           }
         });
       }

@@ -15,12 +15,12 @@
       @if (selectedAccount()) {
         <span class="acc-code font-mono">{{ selectedAccount()?.accountCode }}</span>
         <span class="acc-sep">-</span>
-        <span class="acc-name">{{ selectedAccount()?.nameAr }}</span>
+        <span class="acc-name">{{ langService.currentLang() === 'ar' ? selectedAccount()?.nameAr : (selectedAccount()?.nameEn || selectedAccount()?.nameAr) }}</span>
         @if (!compact && selectedAccount()?.level) {
-          <span class="acc-lvl">(مستوى {{ selectedAccount()?.level }})</span>
+          <span class="acc-lvl">{{ 'ui.accountPicker.98625e' | translate }} {{ selectedAccount()?.level }})</span>
         }
       } @else {
-        <span class="placeholder-text">{{ placeholder || 'اختر الحساب المحاسبي...' }}</span>
+        <span class="placeholder-text">{{ effectivePlaceholder }}</span>
       }
     </div>
 
@@ -30,7 +30,7 @@
           type="button" 
           class="btn-reset" 
           (click)="clearSelection($event)"
-          title="إلغاء التحديد"
+          [title]="'roles.clearAll' | translate"
         >
           ✕
         </button>
@@ -56,7 +56,7 @@
         <input 
           type="text" 
           class="menu-search-input" 
-          placeholder="ابحث برقم الحساب أو الاسم (اضغط Enter للاختيار)..." 
+          [placeholder]="'ui.accountPicker.b338b7' | translate" 
           [ngModel]="searchQuery()" 
           (ngModelChange)="onSearchChange($event)"
           (keydown)="onSearchKeydown($event)"
@@ -97,7 +97,7 @@
           >
             <div class="option-left">
               <span class="tree-bullet">🌱</span>
-              <span class="option-title">{{ rootOptionTitle }}</span>
+              <span class="option-title">{{ effectiveRootOptionTitle }}</span>
             </div>
             @if (!selectedValue()) {
               <span class="selected-tick">✓</span>
@@ -131,9 +131,9 @@
                 
                 <span class="code-span font-mono">{{ acc.accountCode }}</span>
                 <span class="dash-span">-</span>
-                <span class="name-span" [title]="acc.nameAr">{{ acc.nameAr }}</span>
+                <span class="name-span" [title]="langService.currentLang() === 'ar' ? acc.nameAr : (acc.nameEn || acc.nameAr)">{{ langService.currentLang() === 'ar' ? acc.nameAr : (acc.nameEn || acc.nameAr) }}</span>
                 @if (!compact && allowRootOption && acc.level) {
-                  <span class="level-span">(مستوى {{ acc.level }})</span>
+                  <span class="level-span">{{ 'ui.accountPicker.98625e' | translate }} {{ acc.level }})</span>
                 }
               </div>
 
@@ -145,7 +145,7 @@
         } @else {
           <!-- Empty Results -->
           <div class="no-options-found">
-            <span>لا توجد حسابات مطابقة لمعايير البحث والفلترة</span>
+            <span>{{ 'ui.accountPicker.cfe5c3' | translate }}</span>
           </div>
         }
       </div>
@@ -154,7 +154,7 @@
       @if (totalPages() > 1 || totalItems() > 6) {
         <div class="menu-pagination-bar">
           <div class="pag-count">
-            <span>صفحة {{ currentPage() }} من {{ totalPages() }} ({{ totalItems() }} حساب)</span>
+            <span>{{ 'accounting.journal.ui.page' | translate }} {{ currentPage() }} {{ 'common.of' | translate }} {{ totalPages() }} ({{ totalItems() }} {{ 'ui.accountPicker.a757b4' | translate }}</span>
           </div>
 
           @if (totalPages() > 1) {
@@ -165,7 +165,7 @@
                 [disabled]="currentPage() === 1"
                 (click)="prevPage()"
               >
-                السابق
+                {{ 'common.pagination.previous' | translate }}
               </button>
 
               @for (p of pagesArray(); track $index) {
@@ -189,7 +189,7 @@
                 [disabled]="currentPage() === totalPages()"
                 (click)="nextPage()"
               >
-                التالي
+                {{ 'common.pagination.next' | translate }}
               </button>
             </div>
           }

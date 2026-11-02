@@ -27,17 +27,20 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, AuthResponseDto
 {
     private readonly IUserRepository _userRepository;
     private readonly ICompanyRepository _companyRepository;
+    private readonly ICompanyRoleRepository _companyRoleRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
         ICompanyRepository companyRepository,
+        ICompanyRoleRepository companyRoleRepository,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService)
     {
         _userRepository = userRepository;
         _companyRepository = companyRepository;
+        _companyRoleRepository = companyRoleRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
     }
@@ -82,10 +85,16 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, AuthResponseDto
             }
         }
 
+        CompanyRole? companyRole = null;
+        if (user.CompanyRoleId.HasValue)
+        {
+            companyRole = await _companyRoleRepository.GetByIdAsync(user.CompanyRoleId.Value, cancellationToken);
+        }
+
         user.RecordLogin();
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        var authResponse = _jwtTokenService.GenerateToken(user, company);
+        var authResponse = _jwtTokenService.GenerateToken(user, company, companyRole);
         return Result.Success(authResponse);
     }
 }

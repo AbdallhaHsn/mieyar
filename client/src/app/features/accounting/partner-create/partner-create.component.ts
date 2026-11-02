@@ -1,14 +1,16 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { LanguageService } from '../../../core/services/language.service';
 import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
 import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts.service';
 import { AccountDto } from '../../../core/models/account.model';
 import { AccountPickerComponent } from '../../../shared/components/account-picker/account-picker.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import Swal from 'sweetalert2';
+import { environment } from '../../../../environments/environment';
 
 export enum PartnerType {
   Customer = 1, // عميل
@@ -27,13 +29,14 @@ export interface IdSchemeOption {
 @Component({
   selector: 'app-partner-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AccountPickerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, AccountPickerComponent, TranslatePipe],
   templateUrl: './partner-create.component.html',
   styleUrls: ['./partner-create.component.scss']
 })
 export class PartnerCreateComponent implements OnInit {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   public langService = inject(LanguageService);
   private translator = inject(AccountingTranslatorService);
   private coaService = inject(ChartOfAccountsService);
@@ -63,10 +66,27 @@ export class PartnerCreateComponent implements OnInit {
 
   // Common Saudi Cities
   saudiCities = [
-    'الرياض', 'جدة', 'الدمام', 'مكة المكرمة', 'المدينة المنورة',
-    'الخبر', 'الأحساء', 'الظهران', 'القصيم (بريدة)', 'عنيزة',
-    'تبوك', 'حائل', 'خميس مشيط', 'أبها', 'نجران', 'جازان',
-    'ينبع', 'الجبيل', 'الطائف', 'حفر الباطن', 'أخرى'
+    { ar: 'الرياض', en: 'Riyadh' },
+    { ar: 'جدة', en: 'Jeddah' },
+    { ar: 'الدمام', en: 'Dammam' },
+    { ar: 'مكة المكرمة', en: 'Makkah' },
+    { ar: 'المدينة المنورة', en: 'Madinah' },
+    { ar: 'الخبر', en: 'Khobar' },
+    { ar: 'الأحساء', en: 'Al-Ahsa' },
+    { ar: 'الظهران', en: 'Dhahran' },
+    { ar: 'القصيم (بريدة)', en: 'Al-Qassim (Buraidah)' },
+    { ar: 'عنيزة', en: 'Unaizah' },
+    { ar: 'تبوك', en: 'Tabuk' },
+    { ar: 'حائل', en: 'Hail' },
+    { ar: 'خميس مشيط', en: 'Khamis Mushait' },
+    { ar: 'أبها', en: 'Abha' },
+    { ar: 'نجران', en: 'Najran' },
+    { ar: 'جازان', en: 'Jazan' },
+    { ar: 'ينبع', en: 'Yanbu' },
+    { ar: 'الجبيل', en: 'Jubail' },
+    { ar: 'الطائف', en: 'Taif' },
+    { ar: 'حفر الباطن', en: 'Hafar Al-Batin' },
+    { ar: 'أخرى', en: 'Other' }
   ];
 
   // Step 1: Partner Model Signals
@@ -97,55 +117,64 @@ export class PartnerCreateComponent implements OnInit {
 
   // Computed: Effective City Name
   effectiveCity = computed(() => {
-    return this.cityName() === 'أخرى' ? (this.customCity().trim() || 'الرياض') : this.cityName();
+    const isOther = this.cityName() === 'أخرى' || this.cityName() === 'Other';
+    return isOther ? (this.customCity().trim() || 'الرياض') : this.cityName();
   });
 
   // Computed: VAT Validation
   vatValidation = computed(() => {
+    this.langService.currentLang();
     const raw = this.taxNumber().trim();
     if (!raw) {
-      return { isValid: false, isEmpty: true, message: 'اختياري للأفراد وغير المسجلين' };
+      return { isValid: false, isEmpty: true, message: this.langService.t('accounting.partnerCreate.validation.vatOptional') };
     }
     const is15Digits = /^\d{15}$/.test(raw);
     const startsWith3 = raw.startsWith('3');
     const endsWith3 = raw.endsWith('3');
 
     if (!is15Digits) {
-      return { isValid: false, isEmpty: false, message: `يجب أن يكون 15 رقماً (الحالي: ${raw.length})` };
+      return { isValid: false, isEmpty: false, message: this.langService.t('accounting.partnerCreate.validation.vatMustBe15', { len: raw.length }) };
     }
     if (!startsWith3 || !endsWith3) {
-      return { isValid: false, isEmpty: false, message: 'الرقم الضريبي السعودي يبدأ وينتهي بـ 3' };
+      return { isValid: false, isEmpty: false, message: this.langService.t('accounting.partnerCreate.validation.vatMustStartEnd3') };
     }
 
-    return { isValid: true, isEmpty: false, message: '✓ الرقم الضريبي سليم ومتوافق مع ZATCA' };
+    return { isValid: true, isEmpty: false, message: this.langService.t('accounting.partnerCreate.validation.vatValid') };
   });
 
   // Computed: Building Number Validation (4 digits)
   buildingValidation = computed(() => {
+    this.langService.currentLang();
     const val = this.buildingNumber().trim();
-    if (!val) return { isValid: false, isEmpty: true, message: 'مطلوب (4 أرقام)' };
+    if (!val) return { isValid: false, isEmpty: true, message: this.langService.t('accounting.partnerCreate.validation.buildingRequired') };
     const isValid = /^\d{4}$/.test(val);
     return {
       isValid,
       isEmpty: false,
-      message: isValid ? '✓ 4 أرقام' : 'يجب أن يتكون من 4 أرقام'
+      message: isValid
+        ? this.langService.t('accounting.partnerCreate.validation.buildingValid')
+        : this.langService.t('accounting.partnerCreate.validation.buildingInvalid')
     };
   });
 
   // Computed: Postal Zone Validation (5 digits)
   postalValidation = computed(() => {
+    this.langService.currentLang();
     const val = this.postalZone().trim();
-    if (!val) return { isValid: false, isEmpty: true, message: 'مطلوب (5 أرقام)' };
+    if (!val) return { isValid: false, isEmpty: true, message: this.langService.t('accounting.partnerCreate.validation.postalRequired') };
     const isValid = /^\d{5}$/.test(val);
     return {
       isValid,
       isEmpty: false,
-      message: isValid ? '✓ 5 أرقام' : 'يجب أن يتكون من 5 أرقام'
+      message: isValid
+        ? this.langService.t('accounting.partnerCreate.validation.postalValid')
+        : this.langService.t('accounting.partnerCreate.validation.postalInvalid')
     };
   });
 
   // Computed: ZATCA Compliance Score & Checklist
   complianceChecklist = computed(() => {
+    this.langService.currentLang();
     const hasNameAr = this.nameAr().trim().length > 2;
     const vatOk = this.vatValidation().isValid;
     const hasId = this.otherIdValue().trim().length > 3;
@@ -156,14 +185,14 @@ export class PartnerCreateComponent implements OnInit {
     const postOk = this.postalValidation().isValid;
 
     const items = [
-      { key: 'name', label: 'الاسم القانوني للمنشأة بالعربية', ok: hasNameAr, mandatory: true },
-      { key: 'vat', label: 'الرقم الضريبي السعودي (15 رقماً)', ok: vatOk, mandatory: false },
-      { key: 'id', label: 'معرف المنشأة (السجل التجاري أو 700)', ok: hasId, mandatory: true },
-      { key: 'street', label: 'اسم الشارع بالعنوان الوطني', ok: hasStreet, mandatory: true },
-      { key: 'building', label: 'رقم المبنى (4 أرقام)', ok: bldOk, mandatory: true },
-      { key: 'district', label: 'اسم الحي', ok: hasDistrict, mandatory: true },
-      { key: 'city', label: 'المدينة', ok: hasCity, mandatory: true },
-      { key: 'postal', label: 'الرمز البريدي (5 أرقام)', ok: postOk, mandatory: true }
+      { key: 'name', label: this.langService.t('accounting.partnerCreate.validation.chkName'), ok: hasNameAr, mandatory: true },
+      { key: 'vat', label: this.langService.t('accounting.partnerCreate.validation.chkVat'), ok: vatOk, mandatory: false },
+      { key: 'id', label: this.langService.t('accounting.partnerCreate.validation.chkId'), ok: hasId, mandatory: true },
+      { key: 'street', label: this.langService.t('accounting.partnerCreate.validation.chkStreet'), ok: hasStreet, mandatory: true },
+      { key: 'building', label: this.langService.t('accounting.partnerCreate.validation.chkBuilding'), ok: bldOk, mandatory: true },
+      { key: 'district', label: this.langService.t('accounting.partnerCreate.validation.chkDistrict'), ok: hasDistrict, mandatory: true },
+      { key: 'city', label: this.langService.t('accounting.partnerCreate.validation.chkCity'), ok: hasCity, mandatory: true },
+      { key: 'postal', label: this.langService.t('accounting.partnerCreate.validation.chkPostal'), ok: postOk, mandatory: true }
     ];
 
     const passedCount = items.filter(i => i.ok).length;
@@ -178,8 +207,48 @@ export class PartnerCreateComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.generateSmartCode(this.partnerType());
+    this.route.queryParams.subscribe(params => {
+      if (params['type'] === 'customer' || params['type'] === '1') {
+        this.setPartnerType(PartnerType.Customer);
+      } else if (params['type'] === 'supplier' || params['type'] === '2') {
+        this.setPartnerType(PartnerType.Supplier);
+      } else {
+        this.generateSmartCode(this.partnerType());
+      }
+    });
+
+    this.restoreDraftIfAny();
     this.loadAccounts();
+  }
+
+  private restoreDraftIfAny(): void {
+    try {
+      const draftStr = sessionStorage.getItem('alrobban_partner_draft');
+      if (draftStr) {
+        const d = JSON.parse(draftStr);
+        if (d.code) this.code.set(d.code);
+        if (d.partnerType) this.partnerType.set(d.partnerType);
+        if (d.nameAr) this.nameAr.set(d.nameAr);
+        if (d.nameEn) this.nameEn.set(d.nameEn);
+        if (d.phone) this.phone.set(d.phone);
+        if (d.email) this.email.set(d.email);
+        if (d.taxNumber) this.taxNumber.set(d.taxNumber);
+        if (d.otherIdType) this.otherIdType.set(d.otherIdType);
+        if (d.otherIdValue) this.otherIdValue.set(d.otherIdValue);
+        if (d.streetName) this.streetName.set(d.streetName);
+        if (d.buildingNumber) this.buildingNumber.set(d.buildingNumber);
+        if (d.plotIdentification) this.plotIdentification.set(d.plotIdentification);
+        if (d.citySubdivisionName) this.citySubdivisionName.set(d.citySubdivisionName);
+        if (d.cityName) this.cityName.set(d.cityName);
+        if (d.postalZone) this.postalZone.set(d.postalZone);
+        if (d.creditLimit) this.creditLimit.set(d.creditLimit);
+        if (d.paymentTermsDays) this.paymentTermsDays.set(d.paymentTermsDays);
+        if (d.glAccountId) this.glAccountId.set(d.glAccountId);
+        sessionStorage.removeItem('alrobban_partner_draft');
+      }
+    } catch {
+      // Ignore draft restore errors
+    }
   }
 
   loadAccounts(): void {
@@ -207,19 +276,63 @@ export class PartnerCreateComponent implements OnInit {
     this.code.set(`${prefix}-${randomNum}`);
   }
 
-  onNameArChange(val: string): void {
+  unifiedPartnerName = signal<string>('');
+  backgroundTranslation = signal<string>('');
+  nameEnManuallyEdited = signal<boolean>(false);
+
+  onNameArInput(val: string): void {
     this.nameAr.set(val);
-    if (!this.nameEn() || this.isAutoTranslating()) {
-      this.isAutoTranslating.set(true);
-      const translated = this.translator.translateArabicToEnglish(val);
-      this.nameEn.set(translated);
-      this.isAutoTranslating.set(false);
+    const text = (val || '').trim();
+    if (!text) {
+      if (!this.nameEnManuallyEdited()) {
+        this.nameEn.set('');
+      }
+      return;
+    }
+
+    if (!this.nameEnManuallyEdited()) {
+      const isAr = this.translator.containsArabic(text);
+      if (isAr) {
+        const instant = this.translator.translateArabicToEnglish(text);
+        this.nameEn.set(instant);
+        this.translator.translateWithOnlineRefinement(
+          text,
+          () => {},
+          (refined) => {
+            if (!this.nameEnManuallyEdited() && refined) {
+              this.nameEn.set(refined);
+            }
+          }
+        );
+      }
     }
   }
 
-  translateManually(): void {
-    if (!this.nameAr()) return;
-    this.nameEn.set(this.translator.translateArabicToEnglish(this.nameAr()));
+  onNameEnInput(val: string): void {
+    this.nameEn.set(val);
+    this.nameEnManuallyEdited.set(true);
+    const currentAr = (this.nameAr() || '').trim();
+    const text = (val || '').trim();
+    if (!currentAr && text) {
+      this.nameAr.set(this.translator.translateEnglishToArabic(text));
+    }
+  }
+
+  async translateManually(): Promise<void> {
+    const text = (this.nameAr() || '').trim();
+    if (!text) return;
+    this.nameEnManuallyEdited.set(false);
+    this.isAutoTranslating.set(true);
+    try {
+      const instant = this.translator.translateArabicToEnglish(text);
+      this.nameEn.set(instant);
+      const onlineEn = await this.translator.translateOnline(text, 'ar', 'en');
+      if (onlineEn) {
+        this.nameEn.set(onlineEn);
+      }
+    } finally {
+      this.isAutoTranslating.set(false);
+    }
   }
 
   onAccountPicked(acc: AccountDto | null): void {
@@ -265,11 +378,19 @@ export class PartnerCreateComponent implements OnInit {
 
   private validateStep1(): boolean {
     if (!this.code().trim()) {
-      Swal.fire({ icon: 'warning', title: 'كود الشريك مطلوب', text: 'يرجى إدخال أو توليد كود الشريك التجاري.' });
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('accounting.partnerCreate.alerts.codeRequiredTitle'),
+        text: this.langService.t('accounting.partnerCreate.alerts.codeRequiredText')
+      });
       return false;
     }
     if (!this.nameAr().trim()) {
-      Swal.fire({ icon: 'warning', title: 'اسم الشريك مطلوب', text: 'يرجى إدخال الاسم التجاري للعميل أو المنشأة بالعربية.' });
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('accounting.partnerCreate.alerts.nameRequiredTitle'),
+        text: this.langService.t('accounting.partnerCreate.alerts.nameRequiredText')
+      });
       return false;
     }
     return true;
@@ -288,22 +409,23 @@ export class PartnerCreateComponent implements OnInit {
 
     const readiness = this.complianceChecklist();
     if (!readiness.canIssueStandardTaxInvoice) {
+      const isAr = this.langService.isArabic();
       Swal.fire({
-        title: 'تنبيه: بيانات العنوان الوطني غير مكتملة',
+        title: this.langService.t('accounting.partnerCreate.alerts.incompleteAddressTitle'),
         html: `
-          <div style="text-align: right; font-size: 0.85rem; color: #475569; line-height: 1.6;">
+          <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.85rem; color: #475569; line-height: 1.6;">
             <p style="margin-bottom: 0.5rem; font-weight: 700; color: #b45309;">
-              ⚠️ وفق اشتراطات هيئة الزكاة والضريبة والجمارك (ZATCA)، لن تتمكن من إصدار فاتورة ضريبية قياسية (B2B) لهذا العميل قبل استكمال:
+              ${this.langService.t('accounting.partnerCreate.alerts.zatcaB2bWarning')}
             </p>
-            <ul style="padding-right: 1.2rem; margin: 0;">
-              ${!this.streetName() ? '<li>اسم الشارع</li>' : ''}
-              ${!this.buildingValidation().isValid ? '<li>رقم المبنى (4 أرقام)</li>' : ''}
-              ${!this.citySubdivisionName() ? '<li>اسم الحي</li>' : ''}
-              ${!this.postalValidation().isValid ? '<li>الرمز البريدي (5 أرقام)</li>' : ''}
-              ${!this.vatValidation().isValid && !this.otherIdValue() ? '<li>الرقم الضريبي أو السجل التجاري</li>' : ''}
+            <ul style="padding-${isAr ? 'right' : 'left'}: 1.2rem; margin: 0;">
+              ${!this.streetName() ? `<li>${this.langService.t('accounting.partnerCreate.alerts.missingStreet')}</li>` : ''}
+              ${!this.buildingValidation().isValid ? `<li>${this.langService.t('accounting.partnerCreate.alerts.missingBuilding')}</li>` : ''}
+              ${!this.citySubdivisionName() ? `<li>${this.langService.t('accounting.partnerCreate.alerts.missingDistrict')}</li>` : ''}
+              ${!this.postalValidation().isValid ? `<li>${this.langService.t('accounting.partnerCreate.alerts.missingPostal')}</li>` : ''}
+              ${!this.vatValidation().isValid && !this.otherIdValue() ? `<li>${this.langService.t('accounting.partnerCreate.alerts.missingVatOrCr')}</li>` : ''}
             </ul>
             <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">
-              هل ترغب في حفظ بطاقة العميل الآن ومتابعة الحفظ؟
+              ${this.langService.t('accounting.partnerCreate.alerts.confirmSavePrompt')}
             </p>
           </div>
         `,
@@ -311,8 +433,8 @@ export class PartnerCreateComponent implements OnInit {
         showCancelButton: true,
         confirmButtonColor: '#059669',
         cancelButtonColor: '#64748b',
-        confirmButtonText: 'نعم، حفظ ومتابعة',
-        cancelButtonText: 'إلغاء واستكمال العنوان'
+        confirmButtonText: this.langService.t('accounting.partnerCreate.alerts.confirmSaveBtn'),
+        cancelButtonText: this.langService.t('accounting.partnerCreate.alerts.cancelCompleteAddressBtn')
       }).then(res => {
         if (res.isConfirmed) {
           this.executeSave(addAnother);
@@ -351,25 +473,27 @@ export class PartnerCreateComponent implements OnInit {
       glAccountId: this.glAccountId() || null
     };
 
-    this.http.post('/api/partners', payload).subscribe({
+    this.http.post(`${environment.apiUrl}/api/partners`, payload).subscribe({
       next: (res: any) => {
         this.isSaving.set(false);
+        sessionStorage.removeItem('alrobban_partner_draft');
 
+        const displayName = this.langService.isArabic() ? payload.nameAr : (payload.nameEn || payload.nameAr);
         Swal.fire({
           icon: 'success',
-          title: 'تم تسجيل الشريك بنجاح',
+          title: this.langService.t('accounting.partnerCreate.alerts.partnerRegisteredSuccess'),
           html: `
             <div style="text-align: center; font-size: 0.9rem;">
               <strong style="color: #065f46; font-size: 1.1rem; display: block; margin-bottom: 0.25rem;">
-                ${payload.code} - ${payload.nameAr}
+                ${payload.code} - ${displayName}
               </strong>
-              <span style="color: #64748b;">تم حفظ بطاقة الشريك وبيانات العنوان الوطني والامتثال الضريبي.</span>
+              <span style="color: #64748b;">${this.langService.t('accounting.partnerCreate.alerts.partnerSavedSub')}</span>
             </div>
           `,
           timer: 2000,
           timerProgressBar: true,
           confirmButtonColor: '#059669',
-          confirmButtonText: 'حسناً'
+          confirmButtonText: this.langService.t('common.ok')
         });
 
         if (addAnother) {
@@ -381,10 +505,15 @@ export class PartnerCreateComponent implements OnInit {
       },
       error: (err) => {
         this.isSaving.set(false);
+        if (err.status === 401) {
+          // Preserve draft so user doesn't lose entered partner data
+          sessionStorage.setItem('alrobban_partner_draft', JSON.stringify(payload));
+          return;
+        }
         Swal.fire({
           icon: 'error',
-          title: 'تعذر الحفظ',
-          text: err?.error?.description || 'حدث خطأ أثناء حفظ بطاقة الشريك في قاعدة البيانات.'
+          title: this.langService.t('accounting.partnerCreate.alerts.saveFailedTitle'),
+          text: err?.error?.description || this.langService.t('accounting.partnerCreate.alerts.saveFailedDefault')
         });
       }
     });

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +14,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
 @Component({
   selector: 'app-general-ledger',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="gl-page" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
@@ -22,29 +23,27 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
         <div class="gl-breadcrumb">
           <a routerLink="/dashboard" class="bc-link">
             <i class="pi pi-home"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'الرئيسية' : 'Home' }}</span>
+            <span>{{ 'accounting.generalLedger.home' | translate }}</span>
           </a>
           <span class="bc-sep">/</span>
-          <span class="bc-link">{{ langService.currentLang() === 'ar' ? 'المحاسبة والمالية' : 'Accounting & Finance' }}</span>
+          <span class="bc-link">{{ 'accounting.generalLedger.accountingFinance' | translate }}</span>
           <span class="bc-sep">/</span>
-          <span class="bc-current">{{ langService.currentLang() === 'ar' ? 'دفتر الأستاذ العام وكشف الحساب' : 'General Ledger & Account Statement' }}</span>
+          <span class="bc-current">{{ 'accounting.generalLedger.generalLedgerAccountStatement' | translate }}</span>
         </div>
 
         <div class="header-main-row">
           <div class="header-titles">
             <div class="title-with-badge">
               <h1 class="page-title">
-                {{ langService.currentLang() === 'ar' ? 'دفتر الأستاذ العام وكشف الحسابات' : 'General Ledger & Statements' }}
+                {{ 'accounting.generalLedger.generalLedgerStatements' | translate }}
               </h1>
-              <span class="compliance-badge" title="معتمد وفق المعايير الدولية والمهنية">
+              <span class="compliance-badge" [title]="'ui.generalLedger.a12288' | translate">
                 <i class="pi pi-verified"></i>
                 <span>SOCPA & IFRS Compliant</span>
               </span>
             </div>
             <p class="page-subtitle">
-              {{ langService.currentLang() === 'ar' 
-                ? 'استعراض أثر قيود اليومية على الحسابات، الأرصدة الافتتاحية، حركات الفترة، كشوفات الحسابات التفصيلية والأرصدة الختامية' 
-                : 'Track the impact of journal entries on account balances, opening balances, period movements, and closing positions' }}
+              {{ 'accounting.generalLedger.trackTheImpactOfJournal' | translate }}
             </p>
           </div>
 
@@ -56,7 +55,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               [class.active]="activeView() === 'overview'" 
               (click)="switchView('overview')">
               <i class="pi pi-list"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'دفتر الأستاذ العام لجميع الحسابات' : 'General Ledger Book' }}</span>
+              <span>{{ 'accounting.generalLedger.generalLedgerBook' | translate }}</span>
             </button>
 
             <button 
@@ -65,7 +64,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               [class.active]="activeView() === 'statement'" 
               (click)="switchView('statement')">
               <i class="pi pi-file"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'كشف حساب تفصيلي' : 'Account Statement' }}</span>
+              <span>{{ 'accounting.generalLedger.accountStatement' | translate }}</span>
             </button>
           </div>
         </div>
@@ -79,7 +78,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="filter-field">
             <label class="filter-label">
               <i class="pi pi-calendar"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'من تاريخ:' : 'From Date:' }}</span>
+              <span>{{ 'accounting.generalLedger.fromDate' | translate }}</span>
             </label>
             <input type="date" class="filter-input font-mono" [(ngModel)]="fromDate" (change)="onFilterChanged()" />
           </div>
@@ -88,7 +87,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="filter-field">
             <label class="filter-label">
               <i class="pi pi-calendar"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'إلى تاريخ:' : 'To Date:' }}</span>
+              <span>{{ 'accounting.generalLedger.toDate' | translate }}</span>
             </label>
             <input type="date" class="filter-input font-mono" [(ngModel)]="toDate" (change)="onFilterChanged()" />
           </div>
@@ -97,10 +96,10 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="filter-field account-selector-col" *ngIf="activeView() === 'statement'">
             <label class="filter-label">
               <i class="pi pi-wallet"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'الحساب المحاسبي:' : 'Account:' }}</span>
+              <span>{{ 'accounting.generalLedger.account' | translate }}</span>
             </label>
             <select class="filter-select" [(ngModel)]="selectedAccountId" (change)="onAccountSelected()">
-              <option value="" disabled>{{ langService.currentLang() === 'ar' ? '-- اختر الحساب لاستعراض كشفه --' : '-- Select Account --' }}</option>
+              <option value="" disabled>{{ 'accounting.generalLedger.selectAccount' | translate }}</option>
               <option *ngFor="let acc of postableAccounts" [value]="acc.id">
                 {{ acc.accountCode }} - {{ langService.currentLang() === 'ar' ? acc.nameAr : acc.nameEn }}
               </option>
@@ -111,10 +110,10 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="filter-field">
             <label class="filter-label">
               <i class="pi pi-tags"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'مركز التكلفة (اختياري):' : 'Cost Center:' }}</span>
+              <span>{{ 'accounting.generalLedger.costCenter' | translate }}</span>
             </label>
             <select class="filter-select" [(ngModel)]="selectedCostCenterId" (change)="onFilterChanged()">
-              <option value="">{{ langService.currentLang() === 'ar' ? 'جميع مراكز التكلفة' : 'All Cost Centers' }}</option>
+              <option value="">{{ 'accounting.generalLedger.allCostCenters' | translate }}</option>
               <option *ngFor="let cc of costCenters" [value]="cc.id">
                 {{ cc.code }} - {{ cc.nameAr }}
               </option>
@@ -125,14 +124,14 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="filter-field" *ngIf="activeView() === 'overview'">
             <label class="filter-label">
               <i class="pi pi-search"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'بحث سريع:' : 'Search:' }}</span>
+              <span>{{ 'accounting.generalLedger.search' | translate }}</span>
             </label>
             <input 
               type="text" 
               class="filter-input" 
               [(ngModel)]="searchTerm" 
               (keyup.enter)="onFilterChanged()"
-              [placeholder]="langService.currentLang() === 'ar' ? 'رقم أو اسم الحساب...' : 'Code or name...'" 
+              [placeholder]="('accounting.generalLedger.codeOrName' | translate)" 
             />
           </div>
 
@@ -141,22 +140,22 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
         <!-- Filter Quick Actions & Date Presets -->
         <div class="filters-actions-bar">
           <div class="preset-buttons">
-            <span class="preset-label">{{ langService.currentLang() === 'ar' ? 'فترات سريعة:' : 'Quick Presets:' }}</span>
+            <span class="preset-label">{{ 'accounting.generalLedger.quickPresets' | translate }}</span>
             <button type="button" class="btn-preset" (click)="setPreset('thisMonth')">
-              {{ langService.currentLang() === 'ar' ? 'هذا الشهر' : 'This Month' }}
+              {{ 'accounting.generalLedger.thisMonth' | translate }}
             </button>
             <button type="button" class="btn-preset" (click)="setPreset('thisQuarter')">
-              {{ langService.currentLang() === 'ar' ? 'الربع الحالي' : 'This Quarter' }}
+              {{ 'accounting.generalLedger.thisQuarter' | translate }}
             </button>
             <button type="button" class="btn-preset" (click)="setPreset('thisYear')">
-              {{ langService.currentLang() === 'ar' ? 'السنة المالية الحالية' : 'Current Year' }}
+              {{ 'accounting.generalLedger.currentYear' | translate }}
             </button>
           </div>
 
           <div class="action-buttons-group">
             <button type="button" class="btn-refresh" (click)="onFilterChanged()" [disabled]="loading()">
               <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'تحديث البيانات' : 'Refresh' }}</span>
+              <span>{{ 'accounting.generalLedger.refresh' | translate }}</span>
             </button>
 
             <!-- Print Statement Button (in Statement mode) -->
@@ -166,7 +165,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               *ngIf="activeView() === 'statement' && currentStatement()" 
               (click)="openPrintStatementModal()">
               <i class="pi pi-print"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'طباعة كشف الحساب / حفظ PDF' : 'Print Statement' }}</span>
+              <span>{{ 'accounting.generalLedger.printStatement' | translate }}</span>
             </button>
 
             <!-- Export to CSV -->
@@ -174,9 +173,9 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               type="button" 
               class="btn-export-csv" 
               (click)="exportToCsv()" 
-              [title]="langService.currentLang() === 'ar' ? 'تصدير البيانات إلى ملف CSV / Excel' : 'Export to CSV'">
+              [title]="('accounting.generalLedger.exportToCsv' | translate)">
               <i class="pi pi-file-excel"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'تصدير' : 'Export' }}</span>
+              <span>{{ 'accounting.generalLedger.export' | translate }}</span>
             </button>
           </div>
         </div>
@@ -194,7 +193,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <i class="pi pi-history"></i>
             </div>
             <div class="kpi-content">
-              <span class="kpi-title">{{ langService.currentLang() === 'ar' ? 'إجمالي الأرصدة الافتتاحية' : 'Total Opening' }}</span>
+              <span class="kpi-title">{{ 'accounting.generalLedger.totalOpening' | translate }}</span>
               <strong class="kpi-val font-mono">{{ overviewReport()!.totalOpeningBalance | number:'1.2-2' }} <small>SAR</small></strong>
             </div>
           </div>
@@ -204,7 +203,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <i class="pi pi-arrow-down-left"></i>
             </div>
             <div class="kpi-content">
-              <span class="kpi-title">{{ langService.currentLang() === 'ar' ? 'إجمالي الحركات المدينة' : 'Total Period Debit' }}</span>
+              <span class="kpi-title">{{ 'accounting.generalLedger.totalPeriodDebit' | translate }}</span>
               <strong class="kpi-val font-mono text-emerald">{{ overviewReport()!.totalPeriodDebit | number:'1.2-2' }} <small>SAR</small></strong>
             </div>
           </div>
@@ -214,7 +213,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <i class="pi pi-arrow-up-right"></i>
             </div>
             <div class="kpi-content">
-              <span class="kpi-title">{{ langService.currentLang() === 'ar' ? 'إجمالي الحركات الدائنة' : 'Total Period Credit' }}</span>
+              <span class="kpi-title">{{ 'accounting.generalLedger.totalPeriodCredit' | translate }}</span>
               <strong class="kpi-val font-mono text-cyan">{{ overviewReport()!.totalPeriodCredit | number:'1.2-2' }} <small>SAR</small></strong>
             </div>
           </div>
@@ -224,7 +223,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <i class="pi pi-check-circle"></i>
             </div>
             <div class="kpi-content">
-              <span class="kpi-title">{{ langService.currentLang() === 'ar' ? 'توازن الدفاتر (مدين - دائن)' : 'Balance Status' }}</span>
+              <span class="kpi-title">{{ 'accounting.generalLedger.balanceStatus' | translate }}</span>
               <strong class="kpi-val font-mono" [class.text-emerald]="isLedgerBalanced()" [class.text-rose]="!isLedgerBalanced()">
                 {{ (overviewReport()!.totalPeriodDebit - overviewReport()!.totalPeriodCredit) | number:'1.2-2' }} <small>SAR</small>
               </strong>
@@ -236,7 +235,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <i class="pi pi-wallet"></i>
             </div>
             <div class="kpi-content">
-              <span class="kpi-title">{{ langService.currentLang() === 'ar' ? 'إجمالي الأرصدة الختامية' : 'Total Closing' }}</span>
+              <span class="kpi-title">{{ 'accounting.generalLedger.totalClosing' | translate }}</span>
               <strong class="kpi-val font-mono">{{ overviewReport()!.totalClosingBalance | number:'1.2-2' }} <small>SAR</small></strong>
             </div>
           </div>
@@ -247,10 +246,10 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="table-top-bar">
             <h3 class="table-title">
               <i class="pi pi-book text-emerald"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'سجل حركة وأرصدة حسابات الأستاذ العام' : 'General Ledger Accounts Movement & Balances' }}</span>
+              <span>{{ 'accounting.generalLedger.generalLedgerAccountsMovementB' | translate }}</span>
             </h3>
             <span class="accounts-count-tag" *ngIf="overviewReport()">
-              {{ overviewReport()!.accounts.length }} {{ langService.currentLang() === 'ar' ? 'حساب محاسبي' : 'accounts' }}
+              {{ overviewReport()!.accounts.length }} {{ 'accounting.generalLedger.accounts' | translate }}
             </span>
           </div>
 
@@ -258,29 +257,29 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
             <table class="gl-main-table">
               <thead>
                 <tr>
-                  <th class="th-code">{{ langService.currentLang() === 'ar' ? 'رقم الحساب' : 'Code' }}</th>
-                  <th class="th-name">{{ langService.currentLang() === 'ar' ? 'اسم الحساب المحاسبي' : 'Account Name' }}</th>
-                  <th class="th-type">{{ langService.currentLang() === 'ar' ? 'طبيعة الحساب' : 'Nature' }}</th>
-                  <th class="th-amount">{{ langService.currentLang() === 'ar' ? 'الرصيد الافتتاحي (SAR)' : 'Opening (SAR)' }}</th>
-                  <th class="th-amount text-emerald">{{ langService.currentLang() === 'ar' ? 'مدين الفترة (SAR)' : 'Debit (SAR)' }}</th>
-                  <th class="th-amount text-cyan">{{ langService.currentLang() === 'ar' ? 'دائن الفترة (SAR)' : 'Credit (SAR)' }}</th>
-                  <th class="th-amount">{{ langService.currentLang() === 'ar' ? 'صافي الحركة (SAR)' : 'Net Movement' }}</th>
-                  <th class="th-amount">{{ langService.currentLang() === 'ar' ? 'الرصيد الختامي (SAR)' : 'Closing (SAR)' }}</th>
-                  <th class="th-actions text-center">{{ langService.currentLang() === 'ar' ? 'كشف الحساب' : 'Statement' }}</th>
+                  <th class="th-code">{{ 'accounting.generalLedger.code' | translate }}</th>
+                  <th class="th-name">{{ 'accounting.generalLedger.accountName' | translate }}</th>
+                  <th class="th-type">{{ 'accounting.generalLedger.nature' | translate }}</th>
+                  <th class="th-amount">{{ 'accounting.generalLedger.openingSar' | translate }}</th>
+                  <th class="th-amount text-emerald">{{ 'accounting.generalLedger.debitSar' | translate }}</th>
+                  <th class="th-amount text-cyan">{{ 'accounting.generalLedger.creditSar' | translate }}</th>
+                  <th class="th-amount">{{ 'accounting.generalLedger.netMovement' | translate }}</th>
+                  <th class="th-amount">{{ 'accounting.generalLedger.closingSar' | translate }}</th>
+                  <th class="th-actions text-center">{{ 'accounting.generalLedger.statement' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngIf="loading()">
                   <td colspan="9" class="td-loading">
                     <i class="pi pi-spin pi-spinner"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? 'جاري تحميل وترحيل حسابات الأستاذ العام...' : 'Loading general ledger...' }}</span>
+                    <span>{{ 'accounting.generalLedger.loadingGeneralLedger' | translate }}</span>
                   </td>
                 </tr>
 
                 <tr *ngIf="!loading() && (!overviewReport() || overviewReport()!.accounts.length === 0)">
                   <td colspan="9" class="td-empty">
                     <i class="pi pi-inbox"></i>
-                    <p>{{ langService.currentLang() === 'ar' ? 'لا توجد حسابات أو حركات مسجلة للفترة المحددة' : 'No accounts found for selected period' }}</p>
+                    <p>{{ 'accounting.generalLedger.noAccountsFoundForSelected' | translate }}</p>
                   </td>
                 </tr>
 
@@ -294,7 +293,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                   </td>
                   <td class="td-type">
                     <span class="nature-pill" [class.nature-debit]="acc.accountNature === 1" [class.nature-credit]="acc.accountNature === 2">
-                      {{ acc.accountNature === 1 ? (langService.currentLang() === 'ar' ? 'مدين' : 'Debit') : (langService.currentLang() === 'ar' ? 'دائن' : 'Credit') }}
+                      {{ acc.accountNature === 1 ? ('accounting.generalLedger.debit' | translate) : ('accounting.generalLedger.credit' | translate) }}
                     </span>
                   </td>
                   <td class="td-amount font-mono">
@@ -313,9 +312,9 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                     {{ acc.closingBalance | number:'1.2-2' }}
                   </td>
                   <td class="td-actions text-center">
-                    <button type="button" class="btn-drilldown-statement" (click)="drilldownToStatement(acc.accountId)" title="فتح كشف الحساب التفصيلي">
+                    <button type="button" class="btn-drilldown-statement" (click)="drilldownToStatement(acc.accountId)" [title]="'ui.generalLedger.108b08' | translate">
                       <i class="pi pi-file-text"></i>
-                      <span>{{ langService.currentLang() === 'ar' ? 'كشف الحساب' : 'Statement' }}</span>
+                      <span>{{ 'accounting.generalLedger.statement' | translate }}</span>
                     </button>
                   </td>
                 </tr>
@@ -325,7 +324,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                 <tr class="ledger-footer-totals">
                   <td colspan="3" class="total-label">
                     <i class="pi pi-calculator text-emerald"></i>
-                    <strong>{{ langService.currentLang() === 'ar' ? 'الإجمالي العام لحركات وأرصدة الأستاذ (SAR):' : 'Grand Totals (SAR):' }}</strong>
+                    <strong>{{ 'accounting.generalLedger.grandTotalsSar' | translate }}</strong>
                   </td>
                   <td class="td-amount font-mono font-bold">{{ overviewReport()!.totalOpeningBalance | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono font-bold text-emerald">{{ overviewReport()!.totalPeriodDebit | number:'1.2-2' }}</td>
@@ -360,24 +359,24 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
 
           <div class="acc-meta-pills">
             <div class="meta-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'طبيعة الحساب:' : 'Nature:' }}</span>
+              <span class="lbl">{{ 'accounting.generalLedger.nature1' | translate }}</span>
               <strong class="val" [class.text-emerald]="currentStatement()!.account.accountNature === 1" [class.text-cyan]="currentStatement()!.account.accountNature === 2">
-                {{ currentStatement()!.account.accountNature === 1 ? (langService.currentLang() === 'ar' ? 'مدين (Debit)' : 'Debit') : (langService.currentLang() === 'ar' ? 'دائن (Credit)' : 'Credit') }}
+                {{ currentStatement()!.account.accountNature === 1 ? ('accounting.generalLedger.debit' | translate) : ('accounting.generalLedger.credit' | translate) }}
               </strong>
             </div>
 
             <div class="meta-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'عملة الحساب:' : 'Currency:' }}</span>
+              <span class="lbl">{{ 'accounting.generalLedger.currency' | translate }}</span>
               <strong class="val font-mono">{{ currentStatement()!.account.currencyCode || 'SAR' }}</strong>
             </div>
 
             <div class="meta-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'الحساب الرئيسي:' : 'Parent:' }}</span>
+              <span class="lbl">{{ 'accounting.generalLedger.parent' | translate }}</span>
               <strong class="val">{{ currentStatement()!.account.parentAccountNameAr || '—' }}</strong>
             </div>
 
             <div class="meta-pill">
-              <span class="lbl">{{ langService.currentLang() === 'ar' ? 'الفترة الزمنية:' : 'Period:' }}</span>
+              <span class="lbl">{{ 'accounting.generalLedger.period' | translate }}</span>
               <strong class="val font-mono">{{ fromDate }} ~ {{ toDate }}</strong>
             </div>
           </div>
@@ -386,27 +385,27 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
         <!-- Statement KPI Balances Strip -->
         <div class="statement-kpi-grid" *ngIf="currentStatement()">
           <div class="stmt-kpi-card bg-slate-subtle">
-            <span class="stmt-kpi-lbl">{{ langService.currentLang() === 'ar' ? 'الرصيد الافتتاحي قبل الفترة' : 'Opening Balance' }}</span>
+            <span class="stmt-kpi-lbl">{{ 'accounting.generalLedger.openingBalance' | translate }}</span>
             <strong class="stmt-kpi-val font-mono">{{ currentStatement()!.openingBalance | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
 
           <div class="stmt-kpi-card bg-emerald-subtle">
-            <span class="stmt-kpi-lbl text-emerald">{{ langService.currentLang() === 'ar' ? 'إجمالي الحركات المدينة' : 'Total Period Debit' }}</span>
+            <span class="stmt-kpi-lbl text-emerald">{{ 'accounting.generalLedger.totalPeriodDebit' | translate }}</span>
             <strong class="stmt-kpi-val font-mono text-emerald">+ {{ currentStatement()!.totalDebit | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
 
           <div class="stmt-kpi-card bg-cyan-subtle">
-            <span class="stmt-kpi-lbl text-cyan">{{ langService.currentLang() === 'ar' ? 'إجمالي الحركات الدائنة' : 'Total Period Credit' }}</span>
+            <span class="stmt-kpi-lbl text-cyan">{{ 'accounting.generalLedger.totalPeriodCredit' | translate }}</span>
             <strong class="stmt-kpi-val font-mono text-cyan">- {{ currentStatement()!.totalCredit | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
 
           <div class="stmt-kpi-card bg-amber-subtle">
-            <span class="stmt-kpi-lbl">{{ langService.currentLang() === 'ar' ? 'صافي حركة الفترة' : 'Net Movement' }}</span>
+            <span class="stmt-kpi-lbl">{{ 'accounting.generalLedger.netMovement' | translate }}</span>
             <strong class="stmt-kpi-val font-mono">{{ currentStatement()!.netMovement | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
 
           <div class="stmt-kpi-card bg-emerald-deep">
-            <span class="stmt-kpi-lbl text-white">{{ langService.currentLang() === 'ar' ? 'الرصيد الختامي الحالي' : 'Current Closing Balance' }}</span>
+            <span class="stmt-kpi-lbl text-white">{{ 'accounting.generalLedger.currentClosingBalance' | translate }}</span>
             <strong class="stmt-kpi-val font-mono text-white">{{ currentStatement()!.closingBalance | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
         </div>
@@ -416,10 +415,10 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
           <div class="table-top-bar">
             <h3 class="table-title">
               <i class="pi pi-align-justify text-emerald"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'الحركات المحاسبية التفصيلية والرصيد التراكمي المتحرك' : 'Detailed Transactions & Running Balance' }}</span>
+              <span>{{ 'accounting.generalLedger.detailedTransactionsRunningBal' | translate }}</span>
             </h3>
             <span class="accounts-count-tag" *ngIf="currentStatement()">
-              {{ currentStatement()!.transactionCount }} {{ langService.currentLang() === 'ar' ? 'حركة مسجلة' : 'movements' }}
+              {{ currentStatement()!.transactionCount }} {{ 'accounting.generalLedger.movements' | translate }}
             </span>
           </div>
 
@@ -428,29 +427,29 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <thead>
                 <tr>
                   <th class="th-num">#</th>
-                  <th class="th-date">{{ langService.currentLang() === 'ar' ? 'تاريخ الحركة' : 'Date' }}</th>
-                  <th class="th-jv">{{ langService.currentLang() === 'ar' ? 'رقم سند القيد' : 'Voucher No.' }}</th>
-                  <th class="th-type">{{ langService.currentLang() === 'ar' ? 'نوع القيد' : 'Entry Type' }}</th>
-                  <th class="th-desc">{{ langService.currentLang() === 'ar' ? 'البيان وتفاصيل الحركة المحاسبية' : 'Narration / Description' }}</th>
-                  <th class="th-cost-center">{{ langService.currentLang() === 'ar' ? 'مركز التكلفة' : 'Cost Center' }}</th>
-                  <th class="th-amount text-emerald">{{ langService.currentLang() === 'ar' ? 'مدين (SAR)' : 'Debit' }}</th>
-                  <th class="th-amount text-cyan">{{ langService.currentLang() === 'ar' ? 'دائن (SAR)' : 'Credit' }}</th>
-                  <th class="th-amount text-emerald-dark">{{ langService.currentLang() === 'ar' ? 'الرصيد المتحرك (SAR)' : 'Running Balance' }}</th>
+                  <th class="th-date">{{ 'accounting.generalLedger.date' | translate }}</th>
+                  <th class="th-jv">{{ 'accounting.generalLedger.voucherNo' | translate }}</th>
+                  <th class="th-type">{{ 'accounting.generalLedger.entryType' | translate }}</th>
+                  <th class="th-desc">{{ 'accounting.generalLedger.narrationDescription' | translate }}</th>
+                  <th class="th-cost-center">{{ 'accounting.generalLedger.costCenter1' | translate }}</th>
+                  <th class="th-amount text-emerald">{{ 'accounting.generalLedger.debit' | translate }}</th>
+                  <th class="th-amount text-cyan">{{ 'accounting.generalLedger.credit' | translate }}</th>
+                  <th class="th-amount text-emerald-dark">{{ 'accounting.generalLedger.runningBalance' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngIf="loading()">
                   <td colspan="9" class="td-loading">
                     <i class="pi pi-spin pi-spinner"></i>
-                    <span>{{ langService.currentLang() === 'ar' ? 'جاري استخراج كشف الحساب وتدقيق الرصيد التراكمي...' : 'Loading account statement...' }}</span>
+                    <span>{{ 'accounting.generalLedger.loadingAccountStatement' | translate }}</span>
                   </td>
                 </tr>
 
                 <tr *ngIf="!loading() && (!currentStatement() || currentStatement()!.lines.length === 0)">
                   <td colspan="9" class="td-empty">
                     <i class="pi pi-inbox"></i>
-                    <p>{{ langService.currentLang() === 'ar' ? 'لا توجد حركات محاسبية مسجلة لهذا الحساب خلال الفترة المحددة' : 'No transactions recorded for this account in selected period' }}</p>
-                    <small>{{ langService.currentLang() === 'ar' ? 'الرصيد الافتتاحي هو:' : 'Opening balance is:' }} {{ (currentStatement()?.openingBalance || 0) | number:'1.2-2' }} SAR</small>
+                    <p>{{ 'accounting.generalLedger.noTransactionsRecordedForThis' | translate }}</p>
+                    <small>{{ 'accounting.generalLedger.openingBalanceIs' | translate }} {{ (currentStatement()?.openingBalance || 0) | number:'1.2-2' }} SAR</small>
                   </td>
                 </tr>
 
@@ -459,9 +458,9 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                   <td class="text-center font-mono">0</td>
                   <td class="font-mono text-slate-500">{{ fromDate }}</td>
                   <td class="font-mono text-emerald"><strong>—</strong></td>
-                  <td><span class="opening-tag">{{ langService.currentLang() === 'ar' ? 'رصيد افتتاحي' : 'Opening' }}</span></td>
+                  <td><span class="opening-tag">{{ 'accounting.generalLedger.opening' | translate }}</span></td>
                   <td class="td-desc">
-                    <strong>{{ langService.currentLang() === 'ar' ? 'الرصيد الافتتاحي المنقول قبل تاريخ ' + fromDate : 'Opening balance brought forward before ' + fromDate }}</strong>
+                    <strong>{{ langService.currentLang() === 'ar' ? ('accounting.gl.openingBroughtForward' | translate) + fromDate : 'Opening balance brought forward before ' + fromDate }}</strong>
                   </td>
                   <td>—</td>
                   <td class="td-amount">—</td>
@@ -476,7 +475,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                   <td class="td-num font-mono text-center text-slate-400">{{ lIdx + 1 }}</td>
                   <td class="td-date font-mono">{{ l.entryDate | date:'yyyy-MM-dd' }}</td>
                   <td class="td-jv">
-                    <span class="jv-link-badge font-mono" (click)="openJournalVoucherPreview(l.journalEntryId)" title="عرض سند القيد">
+                    <span class="jv-link-badge font-mono" (click)="openJournalVoucherPreview(l.journalEntryId)" [title]="'ui.generalLedger.3959d1' | translate">
                       {{ l.entryNumber }}
                     </span>
                   </td>
@@ -485,7 +484,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                   </td>
                   <td class="td-desc">
                     <span class="desc-text">{{ l.description }}</span>
-                    <small class="ref-sub font-mono" *ngIf="l.referenceNumber">مرجع: {{ l.referenceNumber }}</small>
+                    <small class="ref-sub font-mono" *ngIf="l.referenceNumber">{{ 'ui.generalLedger.631575' | translate }} {{ l.referenceNumber }}</small>
                   </td>
                   <td class="td-cost-center">{{ l.costCenterName || '—' }}</td>
                   <td class="td-amount font-mono text-emerald" [class.font-bold]="l.debit > 0">
@@ -504,7 +503,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                 <tr class="ledger-footer-totals">
                   <td colspan="6" class="total-label">
                     <i class="pi pi-calculator text-emerald"></i>
-                    <strong>{{ langService.currentLang() === 'ar' ? 'إجمالي حركات الفترة والرصيد الختامي (SAR):' : 'Period Totals & Closing Balance (SAR):' }}</strong>
+                    <strong>{{ 'accounting.generalLedger.periodTotalsClosingBalanceSar' | translate }}</strong>
                   </td>
                   <td class="td-amount font-mono font-bold text-emerald">{{ currentStatement()!.totalDebit | number:'1.2-2' }}</td>
                   <td class="td-amount font-mono font-bold text-cyan">{{ currentStatement()!.totalCredit | number:'1.2-2' }}</td>
@@ -530,7 +529,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                 <i class="pi pi-print"></i>
               </div>
               <div class="toolbar-titles">
-                <strong>{{ langService.currentLang() === 'ar' ? 'معاينة كشف الحساب الرسمي المعتمد (طباعة / حفظ كـ PDF)' : 'Official Account Statement Preview' }}</strong>
+                <strong>{{ 'accounting.generalLedger.officialAccountStatementPrevie' | translate }}</strong>
                 <span class="sub-badge font-mono">{{ currentStatement()?.account?.accountCode }} - {{ currentStatement()?.account?.nameAr }}</span>
               </div>
             </div>
@@ -538,12 +537,12 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
             <div class="toolbar-actions">
               <button type="button" class="btn-print-main" (click)="triggerPrint()">
                 <i class="pi pi-print"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'طباعة كشف الحساب / حفظ PDF' : 'Print / Save PDF' }}</span>
+                <span>{{ 'accounting.generalLedger.printSavePdf' | translate }}</span>
               </button>
 
               <button type="button" class="btn-toolbar-close" (click)="closePrintModal()">
                 <i class="pi pi-times"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إغلاق' : 'Close' }}</span>
+                <span>{{ 'accounting.generalLedger.close' | translate }}</span>
               </button>
             </div>
           </div>
@@ -555,19 +554,19 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <!-- 1. Corporate Header -->
               <header class="statement-print-header">
                 <div class="org-info">
-                  <h2 class="org-name-ar">{{ companyContext.activeCompany().nameAr || 'شركة الربان للحلول الذكية' }}</h2>
+                  <h2 class="org-name-ar">{{ companyContext.activeCompany().nameAr || ('ui.vouchers.eae355' | translate) }}</h2>
                   <span class="org-name-en">{{ companyContext.activeCompany().nameEn || 'Al-Roban Smart Solutions Co.' }}</span>
                   <div class="org-tax-row">
-                    <span>الرقم الضريبي: <strong class="font-mono">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
+                    <span>{{ 'pos.receipt.vatLabel' | translate }} <strong class="font-mono">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
                     <span class="dot">&bull;</span>
-                    <span>س.ت: <strong class="font-mono">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
+                    <span>{{ 'accounting.journal.ui.cr' | translate }} <strong class="font-mono">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
                   </div>
                 </div>
 
                 <div class="center-title-box">
-                  <h1 class="statement-main-title">كَشْف حِسَاب أُسْتَاذ تَفْصِيلِي</h1>
+                  <h1 class="statement-main-title">{{ 'ui.generalLedger.7469b0' | translate }}</h1>
                   <span class="statement-sub-title">GENERAL LEDGER ACCOUNT STATEMENT</span>
-                  <span class="standard-cert-badge">معتمد طبقاً لمعايير الهيئة السعودية للمحاسبين (SOCPA) والمعايير الدولية (IFRS)</span>
+                  <span class="standard-cert-badge">{{ 'ui.generalLedger.977941' | translate }}</span>
                 </div>
 
                 <div class="left-seal-box">
@@ -576,8 +575,8 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                       <circle cx="30" cy="30" r="28" stroke="#047857" stroke-width="2" stroke-dasharray="4 2"/>
                       <circle cx="30" cy="30" r="23" stroke="#047857" stroke-width="1"/>
                       <path d="M30 14L34 23H26L30 14Z" fill="#047857"/>
-                      <text x="30" y="34" font-size="6.5" font-weight="bold" fill="#047857" text-anchor="middle">الربان ERP</text>
-                      <text x="30" y="42" font-size="5" fill="#64748B" text-anchor="middle">توثيق رسمي</text>
+                      <text x="30" y="34" font-size="6.5" font-weight="bold" fill="#047857" text-anchor="middle">{{ 'ui.generalLedger.148f39' | translate }}</text>
+                      <text x="30" y="42" font-size="5" fill="#64748B" text-anchor="middle">{{ 'hr.payroll.officialDocText' | translate }}</text>
                     </svg>
                   </div>
                 </div>
@@ -586,32 +585,32 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <!-- 2. Account & Period Meta Grid -->
               <section class="statement-meta-box">
                 <div class="meta-cell">
-                  <span class="m-lbl">رقم الحساب المحاسبي:</span>
+                  <span class="m-lbl">{{ 'ui.generalLedger.317c5e' | translate }}</span>
                   <strong class="m-val font-mono text-emerald">{{ currentStatement()?.account?.accountCode }}</strong>
                 </div>
 
                 <div class="meta-cell">
-                  <span class="m-lbl">اسم الحساب:</span>
+                  <span class="m-lbl">{{ 'ui.generalLedger.b4a36f' | translate }}</span>
                   <strong class="m-val">{{ currentStatement()?.account?.nameAr }}</strong>
                 </div>
 
                 <div class="meta-cell">
-                  <span class="m-lbl">طبيعة الحساب:</span>
-                  <strong class="m-val">{{ currentStatement()?.account?.accountNature === 1 ? 'مدين (Debit)' : 'دائن (Credit)' }}</strong>
+                  <span class="m-lbl">{{ 'accounting.accountCreate.accountNature' | translate }}</span>
+                  <strong class="m-val">{{ currentStatement()?.account?.accountNature === 1 ? ('accounting.journal.ui.debit1' | translate) : ('accounting.journal.ui.credit1' | translate) }}</strong>
                 </div>
 
                 <div class="meta-cell">
-                  <span class="m-lbl">عملة الكشف:</span>
+                  <span class="m-lbl">{{ 'ui.generalLedger.313c8f' | translate }}</span>
                   <strong class="m-val font-mono">{{ currentStatement()?.account?.currencyCode || 'SAR' }}</strong>
                 </div>
 
                 <div class="meta-cell">
-                  <span class="m-lbl">فترة الكشف:</span>
-                  <strong class="m-val font-mono">من {{ fromDate }} إلى {{ toDate }}</strong>
+                  <span class="m-lbl">{{ 'ui.generalLedger.c84d0f' | translate }}</span>
+                  <strong class="m-val font-mono">{{ 'common.of' | translate }} {{ fromDate }} {{ 'accounting.financialStatements.ui.to1' | translate }} {{ toDate }}</strong>
                 </div>
 
                 <div class="meta-cell">
-                  <span class="m-lbl">تاريخ الإصدار:</span>
+                  <span class="m-lbl">{{ 'ui.generalLedger.887efc' | translate }}</span>
                   <strong class="m-val font-mono">{{ currentPrintDate | date:'yyyy-MM-dd HH:mm' }}</strong>
                 </div>
               </section>
@@ -619,19 +618,19 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <!-- 3. Balances Summary Strip -->
               <section class="statement-balances-summary">
                 <div class="summary-box">
-                  <span class="s-lbl">الرصيد الافتتاحي</span>
+                  <span class="s-lbl">{{ 'invoices.statementModal.openingBalance' | translate }}</span>
                   <strong class="s-val font-mono">{{ currentStatement()?.openingBalance | number:'1.2-2' }}</strong>
                 </div>
                 <div class="summary-box">
-                  <span class="s-lbl text-emerald">إجمالي الحركات المدينة</span>
+                  <span class="s-lbl text-emerald">{{ 'accounting.generalLedger.totalPeriodDebit' | translate }}</span>
                   <strong class="s-val font-mono text-emerald">{{ currentStatement()?.totalDebit | number:'1.2-2' }}</strong>
                 </div>
                 <div class="summary-box">
-                  <span class="s-lbl text-cyan">إجمالي الحركات الدائنة</span>
+                  <span class="s-lbl text-cyan">{{ 'accounting.generalLedger.totalPeriodCredit' | translate }}</span>
                   <strong class="s-val font-mono text-cyan">{{ currentStatement()?.totalCredit | number:'1.2-2' }}</strong>
                 </div>
                 <div class="summary-box highlight-closing">
-                  <span class="s-lbl">الرصيد الختامي النهائي</span>
+                  <span class="s-lbl">{{ 'ui.generalLedger.207881' | translate }}</span>
                   <strong class="s-val font-mono text-emerald-dark">{{ currentStatement()?.closingBalance | number:'1.2-2' }}</strong>
                 </div>
               </section>
@@ -642,13 +641,13 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                   <thead>
                     <tr>
                       <th class="th-p-num">#</th>
-                      <th class="th-p-date">التاريخ</th>
-                      <th class="th-p-jv">رقم السند</th>
-                      <th class="th-p-desc">بيان وتفاصيل الحركة</th>
-                      <th class="th-p-cost">مركز التكلفة</th>
-                      <th class="th-p-amount">مدين (SAR)</th>
-                      <th class="th-p-amount">دائن (SAR)</th>
-                      <th class="th-p-amount">الرصيد المتحرك (SAR)</th>
+                      <th class="th-p-date">{{ 'accounting.journal.table.date' | translate }}</th>
+                      <th class="th-p-jv">{{ 'accounting.vouchers.table.number' | translate }}</th>
+                      <th class="th-p-desc">{{ 'ui.generalLedger.0a925c' | translate }}</th>
+                      <th class="th-p-cost">{{ 'accounting.journal.create.costCenter' | translate }}</th>
+                      <th class="th-p-amount">{{ 'accounting.journal.ui.debit2' | translate }}</th>
+                      <th class="th-p-amount">{{ 'accounting.journal.ui.credit2' | translate }}</th>
+                      <th class="th-p-amount">{{ 'accounting.gl.table.runningBalance' | translate }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -656,7 +655,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                       <td class="text-center font-mono">0</td>
                       <td class="font-mono">{{ fromDate }}</td>
                       <td class="font-mono text-center">—</td>
-                      <td><strong>رصيد افتتاحي مرحّل قبل {{ fromDate }}</strong></td>
+                      <td><strong>{{ 'ui.generalLedger.56c3a7' | translate }} {{ fromDate }}</strong></td>
                       <td class="text-center">—</td>
                       <td class="text-end">—</td>
                       <td class="text-end">—</td>
@@ -676,7 +675,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                   </tbody>
                   <tfoot>
                     <tr class="totals-row">
-                      <td colspan="5" class="text-end font-bold">الإجمالي العام وحركات الفترة (SAR):</td>
+                      <td colspan="5" class="text-end font-bold">{{ 'ui.generalLedger.33e3b8' | translate }}</td>
                       <td class="text-end font-mono font-bold">{{ currentStatement()?.totalDebit | number:'1.2-2' }}</td>
                       <td class="text-end font-mono font-bold">{{ currentStatement()?.totalCredit | number:'1.2-2' }}</td>
                       <td class="text-end font-mono font-bold">{{ currentStatement()?.closingBalance | number:'1.2-2' }}</td>
@@ -690,7 +689,7 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                 <div class="tafqeet-card">
                   <span class="tafqeet-label">
                     <i class="pi pi-align-right text-emerald"></i>
-                    <span>الرصيد الختامي كتابة:</span>
+                    <span>{{ 'ui.generalLedger.ae4493' | translate }}</span>
                   </span>
                   <span class="tafqeet-text font-bold">
                     {{ getTafqeetClosing() }}
@@ -701,29 +700,29 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <!-- 6. Tripartite Signatures Matrix -->
               <section class="statement-signatures-matrix">
                 <div class="signature-box">
-                  <span class="sig-header">إعداد المحاسب المسؤول</span>
+                  <span class="sig-header">{{ 'ui.generalLedger.dbf752' | translate }}</span>
                   <div class="sig-content">
-                    <span class="sig-name">إدارة الحسابات العامة</span>
-                    <div class="sig-line">التوقيع: ............................</div>
-                    <span class="sig-date font-mono">التاريخ: {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+                    <span class="sig-name">{{ 'ui.generalLedger.6f6cad' | translate }}</span>
+                    <div class="sig-line">{{ 'ui.generalLedger.297f65' | translate }}</div>
+                    <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
                   </div>
                 </div>
 
                 <div class="signature-box">
-                  <span class="sig-header">المراجعة والتدقيق الداخلي</span>
+                  <span class="sig-header">{{ 'accounting.journal.ui.auditedBy' | translate }}</span>
                   <div class="sig-content">
-                    <span class="sig-name">إدارة الرقابة المالية</span>
-                    <div class="sig-line">التوقيع: ............................</div>
-                    <span class="sig-date font-mono">التاريخ: {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+                    <span class="sig-name">{{ 'ui.generalLedger.c97f64' | translate }}</span>
+                    <div class="sig-line">{{ 'ui.generalLedger.297f65' | translate }}</div>
+                    <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
                   </div>
                 </div>
 
                 <div class="signature-box approved">
-                  <span class="sig-header">الاعتماد المالي / الإدارة العليا</span>
+                  <span class="sig-header">{{ 'ui.generalLedger.d5013b' | translate }}</span>
                   <div class="sig-content">
-                    <span class="sig-name">المدير المالي التنفيذي (CFO)</span>
-                    <div class="sig-line">التوقيع والختم: ............................</div>
-                    <span class="sig-date font-mono">التاريخ: {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+                    <span class="sig-name">{{ 'hr.payroll.cfoTitle' | translate }}</span>
+                    <div class="sig-line">{{ 'ui.generalLedger.e7da75' | translate }}</div>
+                    <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
                   </div>
                 </div>
               </section>
@@ -731,18 +730,18 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <!-- 7. Document Footer & Compliance Line -->
               <footer class="statement-compliance-footer">
                 <div class="compliance-left">
-                  <span>تم استخراج كشف الحساب آلياً عبر نظام الربان المحاسبي Al-Roban ERP</span>
+                  <span>{{ 'ui.generalLedger.b0a387' | translate }}</span>
                   <span class="dot">&bull;</span>
-                  <span>معتمد طبقاً لمعايير SOCPA و IFRS</span>
+                  <span>{{ 'ui.generalLedger.aa2a8a' | translate }}</span>
                 </div>
                 <div class="compliance-center">
                   <span class="page-number-box">
                     <i class="pi pi-file"></i>
-                    <span>صفحة 1 / 1</span>
+                    <span>{{ 'ui.generalLedger.d8d24b' | translate }}</span>
                   </span>
                 </div>
                 <div class="compliance-right font-mono">
-                  <span>تاريخ الطباعة: {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+                  <span>{{ 'accounting.journal.ui.printDate' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
                 </div>
               </footer>
 

@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +18,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendar-agenda-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <!-- Backdrop -->
     <div class="drawer-backdrop" (click)="close()">
@@ -33,20 +34,20 @@ interface CalendarDay {
             <div>
               <div class="header-title-row">
                 <h3 class="header-title">
-                  {{ langService.currentLang() === 'ar' ? 'التقويم وأجندة تنظيم العمل' : 'Calendar & Work Agenda' }}
+                  {{ 'layout.calendarAgenda.calendarWorkAgenda' | translate }}
                 </h3>
-                <span class="private-badge" title="مهام خاصة بك فقط">
+                <span class="private-badge" [title]="'ui.calendarAgendaDrawer.2b730c' | translate">
                   <i class="pi pi-lock"></i>
-                  <span>{{ langService.currentLang() === 'ar' ? 'خاصة بك فقط' : 'Private' }}</span>
+                  <span>{{ 'layout.calendarAgenda.private' | translate }}</span>
                 </span>
               </div>
               <p class="header-subtitle">
-                {{ langService.currentLang() === 'ar' ? 'جدول مهامك المحاسبية اليومية، المواعيد والإقفالات لتنظيم يومك' : 'Schedule and track your personal accounting tasks and deadlines' }}
+                {{ 'layout.calendarAgenda.scheduleAndTrackYourPersonal' | translate }}
               </p>
             </div>
           </div>
 
-          <button type="button" class="btn-close-drawer" (click)="close()" title="إغلاق">
+          <button type="button" class="btn-close-drawer" (click)="close()" [title]="'common.close' | translate">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -55,17 +56,17 @@ interface CalendarDay {
         <div class="agenda-kpi-strip">
           <div class="kpi-mini-card">
             <span class="kpi-num text-emerald">{{ tasksService.pendingTodayCount() }}</span>
-            <span class="kpi-lbl">{{ langService.currentLang() === 'ar' ? 'مهام اليوم المتبقية' : "Today's Pending" }}</span>
+            <span class="kpi-lbl">{{ 'layout.calendarAgenda.todaysPending' | translate }}</span>
           </div>
 
           <div class="kpi-mini-card">
             <span class="kpi-num text-rose">{{ tasksService.urgentCount() }}</span>
-            <span class="kpi-lbl">{{ langService.currentLang() === 'ar' ? 'مهام عاجلة' : 'Urgent Tasks' }}</span>
+            <span class="kpi-lbl">{{ 'layout.calendarAgenda.urgentTasks' | translate }}</span>
           </div>
 
           <div class="kpi-mini-card">
             <span class="kpi-num text-cyan">{{ tasksService.completionRate() }}%</span>
-            <span class="kpi-lbl">{{ langService.currentLang() === 'ar' ? 'نسبة الإنجاز' : 'Completion Rate' }}</span>
+            <span class="kpi-lbl">{{ 'layout.calendarAgenda.completionRate' | translate }}</span>
           </div>
         </div>
 
@@ -80,15 +81,15 @@ interface CalendarDay {
 
               <div class="cal-nav-actions">
                 <button type="button" class="btn-today-jump" (click)="jumpToToday()">
-                  {{ langService.currentLang() === 'ar' ? 'اليوم' : 'Today' }}
+                  {{ 'layout.calendarAgenda.today' | translate }}
                 </button>
 
                 <div class="nav-arrows">
-                  <button type="button" class="btn-cal-arrow" (click)="prevMonth()" title="الشهر السابق">
-                    <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-chevron-right' : 'pi-chevron-left'"></i>
+                  <button type="button" class="btn-cal-arrow" (click)="prevMonth()" [title]="'ui.calendarAgendaDrawer.1c63af' | translate">
+                    <i class="pi" [ngClass]="('layout.calendarAgenda.pichevronleft' | translate)"></i>
                   </button>
-                  <button type="button" class="btn-cal-arrow" (click)="nextMonth()" title="الشهر التالي">
-                    <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-chevron-left' : 'pi-chevron-right'"></i>
+                  <button type="button" class="btn-cal-arrow" (click)="nextMonth()" [title]="'ui.calendarAgendaDrawer.0c6938' | translate">
+                    <i class="pi" [ngClass]="('layout.calendarAgenda.pichevronright' | translate)"></i>
                   </button>
                 </div>
               </div>
@@ -121,7 +122,7 @@ interface CalendarDay {
             <div class="add-box-header">
               <span class="add-box-title">
                 <i class="pi pi-plus-circle text-emerald"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إضافة مهمة جديدة ليوم:' : 'Add Task for:' }}</span>
+                <span>{{ 'layout.calendarAgenda.addTaskFor' | translate }}</span>
                 <strong class="target-date-tag">{{ tasksService.selectedDate() }}</strong>
               </span>
             </div>
@@ -131,7 +132,7 @@ interface CalendarDay {
                 type="text" 
                 class="task-input-title" 
                 [(ngModel)]="newTitle" 
-                [placeholder]="langService.currentLang() === 'ar' ? 'عنوان المهمة (مثال: مراجعة قيود التسوية، مطابقة البنك)...' : 'Task title...'" 
+                [placeholder]="('layout.calendarAgenda.taskTitle' | translate)" 
                 (keydown.enter)="saveNewTask()"
               />
             </div>
@@ -145,18 +146,18 @@ interface CalendarDay {
 
               <!-- Priority Select -->
               <select [(ngModel)]="newPriority" class="control-select priority-sel">
-                <option value="urgent">🔴 {{ langService.currentLang() === 'ar' ? 'عاجل' : 'Urgent' }}</option>
-                <option value="medium">🟡 {{ langService.currentLang() === 'ar' ? 'متوسط' : 'Medium' }}</option>
-                <option value="normal">🔵 {{ langService.currentLang() === 'ar' ? 'عادي' : 'Normal' }}</option>
+                <option value="urgent">🔴 {{ 'layout.calendarAgenda.urgent' | translate }}</option>
+                <option value="medium">🟡 {{ 'layout.calendarAgenda.medium' | translate }}</option>
+                <option value="normal">🔵 {{ 'layout.calendarAgenda.normal' | translate }}</option>
               </select>
 
               <!-- Category Select -->
               <select [(ngModel)]="newCategory" class="control-select">
-                <option value="accounting">💼 {{ langService.currentLang() === 'ar' ? 'قيود وحسابات' : 'Accounting' }}</option>
-                <option value="audit">🔍 {{ langService.currentLang() === 'ar' ? 'تدقيق ومطابقة' : 'Audit' }}</option>
-                <option value="tax">📊 {{ langService.currentLang() === 'ar' ? 'زكاة وضريبة' : 'Zakat & Tax' }}</option>
-                <option value="meeting">👥 {{ langService.currentLang() === 'ar' ? 'اجتماع' : 'Meeting' }}</option>
-                <option value="general">📌 {{ langService.currentLang() === 'ar' ? 'عام' : 'General' }}</option>
+                <option value="accounting">💼 {{ 'layout.calendarAgenda.accounting' | translate }}</option>
+                <option value="audit">🔍 {{ 'layout.calendarAgenda.audit' | translate }}</option>
+                <option value="tax">📊 {{ 'layout.calendarAgenda.zakatTax' | translate }}</option>
+                <option value="meeting">👥 {{ 'layout.calendarAgenda.meeting' | translate }}</option>
+                <option value="general">📌 {{ 'layout.calendarAgenda.general' | translate }}</option>
               </select>
 
               <!-- Add Button -->
@@ -166,7 +167,7 @@ interface CalendarDay {
                 (click)="saveNewTask()" 
                 [disabled]="!newTitle.trim()">
                 <i class="pi pi-plus"></i>
-                <span>{{ langService.currentLang() === 'ar' ? 'إضافة' : 'Add' }}</span>
+                <span>{{ 'layout.calendarAgenda.add' | translate }}</span>
               </button>
             </div>
           </div>
@@ -178,21 +179,21 @@ interface CalendarDay {
               class="tab-btn" 
               [class.active]="filterTab === 'selectedDay'" 
               (click)="filterTab = 'selectedDay'">
-              {{ langService.currentLang() === 'ar' ? 'يوم ' : 'Day ' }} ({{ tasksService.selectedDate() }})
+              {{ 'layout.calendarAgenda.day' | translate }} ({{ tasksService.selectedDate() }})
             </button>
             <button 
               type="button" 
               class="tab-btn" 
               [class.active]="filterTab === 'today'" 
               (click)="filterTab = 'today'">
-              {{ langService.currentLang() === 'ar' ? 'مهام اليوم' : "Today's Tasks" }}
+              {{ 'layout.calendarAgenda.todaysTasks' | translate }}
             </button>
             <button 
               type="button" 
               class="tab-btn" 
               [class.active]="filterTab === 'all'" 
               (click)="filterTab = 'all'">
-              {{ langService.currentLang() === 'ar' ? 'جميع المهام' : 'All Tasks' }}
+              {{ 'layout.calendarAgenda.allTasks' | translate }}
             </button>
           </div>
 
@@ -200,8 +201,8 @@ interface CalendarDay {
           <div class="tasks-list">
             <div class="empty-tasks" *ngIf="filteredTasks().length === 0">
               <i class="pi pi-check-circle empty-check-icon"></i>
-              <h4>{{ langService.currentLang() === 'ar' ? 'لا توجد مهام في هذه القائمة' : 'No tasks scheduled' }}</h4>
-              <p>{{ langService.currentLang() === 'ar' ? 'أنت جاهز تماماً! أضف مهمة جديدة لتنظيم عملك' : 'All clear! Add a task to keep yourself organized' }}</p>
+              <h4>{{ 'layout.calendarAgenda.noTasksScheduled' | translate }}</h4>
+              <p>{{ 'layout.calendarAgenda.allClearAddATask' | translate }}</p>
             </div>
 
             <div 
@@ -215,7 +216,7 @@ interface CalendarDay {
                 class="task-check-btn" 
                 [class.checked]="task.completed" 
                 (click)="tasksService.toggleTask(task.id)"
-                title="تحديد كمكتمل"
+                [title]="'ui.calendarAgendaDrawer.bc76a8' | translate"
               >
                 <i class="pi" [ngClass]="task.completed ? 'pi-check' : ''"></i>
               </button>
@@ -258,7 +259,7 @@ interface CalendarDay {
                 type="button" 
                 class="btn-delete-task" 
                 (click)="tasksService.deleteTask(task.id)" 
-                title="حذف المهمة"
+                [title]="'projects.hub.planning.deleteTask' | translate"
               >
                 <i class="pi pi-trash"></i>
               </button>

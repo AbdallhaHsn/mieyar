@@ -1,3 +1,5 @@
+﻿using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using AlRobban.Modules.GeneralLedger.Application.Commands.Vouchers;
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Application.Queries.Vouchers;
@@ -9,6 +11,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/vouchers")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class VouchersController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -1,0 +1,556 @@
+<div class="branches-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Notifications -->
+  <div class="alert-banner alert-success" *ngIf="successMessage()">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage() }}</span>
+  </div>
+  <div class="alert-banner alert-error" *ngIf="errorMessage()">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ errorMessage() }}</span>
+  </div>
+
+  <!-- Compact Executive Header -->
+  <header class="page-header compact-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <div class="header-icon-cube">
+          <i class="pi pi-building"></i>
+        </div>
+        <div>
+          <div class="title-meta">
+            <span class="category-path">{{ 'settings.branches.corporateGovernance' | translate }}</span>
+            <span class="sep">/</span>
+            <span class="standard-badge"><i class="pi pi-shield"></i> {{ 'settings.branches.operatingBranches' | translate }}</span>
+          </div>
+          <h1 class="main-title">{{ 'branches.title' | translate }}</h1>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-refresh-compact" (click)="loadBranches()" [title]="'common.refresh' | translate">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        <span>{{ 'common.refresh' | translate }}</span>
+      </button>
+      <button type="button" class="btn-primary-compact" (click)="openAddModal()">
+        <i class="pi pi-plus"></i>
+        <span>{{ 'branches.addBranch' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Executive Compact Metrics Ribbon -->
+  <section class="executive-metrics-bar">
+    <!-- Metric 1: Total Branches -->
+    <div class="metric-segment" (click)="setStatusFilter('all')" [class.active-segment]="statusFilter() === 'all'">
+      <div class="metric-icon-mini bg-blue-subtle">
+        <i class="pi pi-building"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'branches.totalBranches' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-blue">{{ totalBranches() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <!-- Metric 2: Active Branches -->
+    <div class="metric-segment" (click)="setStatusFilter('active')" [class.active-segment]="statusFilter() === 'active'">
+      <div class="metric-icon-mini bg-emerald-subtle">
+        <i class="pi pi-verified"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'branches.activeBranches' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-emerald">{{ activeBranches() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <!-- Metric 3: Main Branch -->
+    <div class="metric-segment" (click)="setStatusFilter('main')" [class.active-segment]="statusFilter() === 'main'">
+      <div class="metric-icon-mini bg-amber-subtle">
+        <i class="pi pi-star-fill"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'branches.mainHq' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-amber text-clamp-name" [title]="mainBranchName()">{{ mainBranchName() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <!-- Metric 4: Cities Covered -->
+    <div class="metric-segment">
+      <div class="metric-icon-mini bg-purple-subtle">
+        <i class="pi pi-map-marker"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'branches.citiesCovered' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-purple">{{ citiesCovered() }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modern Command & Filter Bar -->
+  <div class="command-filter-bar">
+    <!-- Fast Search Box -->
+    <div class="search-command-box">
+      <i class="pi pi-search search-ico"></i>
+      <input 
+        type="text" 
+        [placeholder]="'branches.searchPlaceholder' | translate" 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event); currentPage.set(1)" />
+      <button class="clear-search-btn" *ngIf="searchQuery()" (click)="searchQuery.set(''); currentPage.set(1)">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Quick Status Filter Pills -->
+    <div class="status-filter-pills">
+      <button [class.active]="statusFilter() === 'all'" (click)="setStatusFilter('all')">
+        {{ 'common.all' | translate }} ({{ totalBranches() }})
+      </button>
+      <button [class.active]="statusFilter() === 'active'" (click)="setStatusFilter('active')">
+        {{ 'branches.statusActive' | translate }} ({{ activeBranches() }})
+      </button>
+      <button [class.active]="statusFilter() === 'main'" (click)="setStatusFilter('main')">
+        {{ 'branches.mainHq' | translate }} ({{ mainBranchCount() }})
+      </button>
+      <button *ngIf="inactiveBranches() > 0" [class.active]="statusFilter() === 'inactive'" (click)="setStatusFilter('inactive')">
+        {{ 'branches.statusInactive' | translate }} ({{ inactiveBranches() }})
+      </button>
+    </div>
+
+    <!-- City Filter Selector -->
+    <div class="city-filter-wrap" *ngIf="availableCities().length > 1">
+      <select [ngModel]="cityFilter()" (ngModelChange)="cityFilter.set($event); currentPage.set(1)" class="city-select">
+        <option value="all">{{ 'branches.allCities' | translate }}</option>
+        <option *ngFor="let c of availableCities()" [value]="c">{{ c }}</option>
+      </select>
+    </div>
+
+    <!-- View Mode Switcher -->
+    <div class="view-mode-toggle">
+      <button 
+        type="button" 
+        [class.active]="viewMode() === 'cards'" 
+        (click)="viewMode.set('cards')">
+        <i class="pi pi-th-large"></i>
+        <span>{{ 'branches.cardsView' | translate }}</span>
+      </button>
+      <button 
+        type="button" 
+        [class.active]="viewMode() === 'table'" 
+        (click)="viewMode.set('table')">
+        <i class="pi pi-list"></i>
+        <span>{{ 'branches.tableView' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Dynamic Content Area -->
+  <div class="main-content-display">
+    
+    <!-- VIEW MODE 1: BRANCH HUB CARDS GRID (تصميم مبتكر خارج الصندوق) -->
+    <div class="branch-cards-grid" *ngIf="viewMode() === 'cards'">
+      <div 
+        class="branch-hub-card" 
+        *ngFor="let b of paginatedBranches()"
+        [class.card-main-hq]="b.isMainBranch"
+        [class.card-inactive]="!b.isActive">
+        
+        <!-- Top Status & Code Header -->
+        <div class="card-top-row">
+          <div class="card-code-cluster">
+            <span class="hub-code-tag">{{ b.code }}</span>
+            <span class="hq-badge" *ngIf="b.isMainBranch">
+              <i class="pi pi-star-fill"></i>
+              <span>{{ 'settings.branches.headquarters' | translate }}</span>
+            </span>
+          </div>
+
+          <div class="card-status-toggle">
+            <span 
+              class="hub-status-pill" 
+              [class.active]="b.isActive"
+              (click)="toggleStatus(b)"
+              [title]="b.isActive ? ('ui.branches.b0336b' | translate) : ('ui.branches.ff9e5c' | translate)">
+              <span class="status-pulse-dot"></span>
+              {{ b.isActive ? ('settings.branches.active' | translate) : ('settings.branches.inactive' | translate) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Branch Identity -->
+        <div class="card-identity">
+          <div class="branch-icon-ring">
+            <i class="pi" [ngClass]="b.isMainBranch ? 'pi-building' : 'pi-sitemap'"></i>
+          </div>
+          <div class="branch-titles">
+            <h3 class="branch-name-ar">{{ b.nameAr }}</h3>
+            <span class="branch-name-en">{{ b.nameEn }}</span>
+          </div>
+        </div>
+
+        <!-- Location & National Address -->
+        <div class="card-geo-section">
+          <div class="geo-city-chip" *ngIf="getBranchCity(b)">
+            <i class="pi pi-map-marker"></i>
+            <span>{{ getBranchCity(b) }}</span>
+          </div>
+          <p class="geo-address-text" *ngIf="formatBranchAddress(b)">
+            {{ formatBranchAddress(b) }}
+          </p>
+          <span class="no-address-hint" *ngIf="!formatBranchAddress(b)">
+            {{ 'settings.branches.noNationalAddressSpecified' | translate }}
+          </span>
+        </div>
+
+        <!-- Regulatory & Tax Specs (ZATCA & CR) -->
+        <div class="card-tax-cr-matrix">
+          <div class="tax-spec-item" [class.has-val]="b.taxRegistrationNumber">
+            <span class="spec-label">{{ 'settings.branches.vatTaxId' | translate }}</span>
+            <strong class="spec-value">{{ b.taxRegistrationNumber || ('settings.branches.na' | translate) }}</strong>
+          </div>
+          <div class="tax-spec-item" [class.has-val]="b.crNumber">
+            <span class="spec-label">{{ 'settings.branches.crNumber' | translate }}</span>
+            <strong class="spec-value">{{ b.crNumber || ('settings.branches.na' | translate) }}</strong>
+          </div>
+        </div>
+
+        <!-- Card Action Footer -->
+        <div class="card-action-bar">
+          <button 
+            type="button" 
+            class="hub-act-btn edit-act" 
+            (click)="openEditModal(b)"
+            [title]="('settings.branches.editBranch' | translate)">
+            <i class="pi pi-pencil"></i>
+            <span>{{ 'settings.branches.edit' | translate }}</span>
+          </button>
+          
+          <button 
+            type="button" 
+            class="hub-act-btn toggle-act" 
+            [ngClass]="b.isActive ? 'warn-act' : 'success-act'"
+            (click)="toggleStatus(b)"
+            [title]="b.isActive ? ('branchesWarehouses.deactivateBranch' | translate) : ('branchesWarehouses.activateBranch' | translate)">
+            <i class="pi" [ngClass]="b.isActive ? 'pi-pause' : 'pi-play'"></i>
+            <span>{{ b.isActive ? ('settings.branches.disable' | translate) : ('settings.branches.activate' | translate) }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="hub-act-btn delete-act" 
+            [disabled]="b.isMainBranch"
+            (click)="deleteBranch(b)"
+            [title]="b.isMainBranch ? ('ui.branches.538bf7' | translate) : ('ui.branches.e65854' | translate)">
+            <i class="pi pi-trash"></i>
+            <span>{{ 'settings.branches.delete' | translate }}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW MODE 2: HIGH-DENSITY COMPACT TABLE -->
+    <div class="content-table-wrapper" *ngIf="viewMode() === 'table'">
+      <table class="data-table-compact">
+        <thead>
+          <tr>
+            <th style="width: 110px;">{{ 'settings.branches.branchCode' | translate }}</th>
+            <th>{{ 'settings.branches.branchNameArEn' | translate }}</th>
+            <th style="width: 140px;">{{ 'settings.branches.type' | translate }}</th>
+            <th>{{ 'settings.branches.cityAddress' | translate }}</th>
+            <th>{{ 'settings.branches.vatCrSpecs' | translate }}</th>
+            <th style="width: 110px;">{{ 'settings.branches.status' | translate }}</th>
+            <th style="width: 220px; text-align: center;">{{ 'settings.branches.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of paginatedBranches()" [class.row-inactive]="!b.isActive" [class.row-main]="b.isMainBranch">
+            <td>
+              <span class="code-tag-mono">{{ b.code }}</span>
+            </td>
+            <td>
+              <div class="entity-name-cluster">
+                <strong class="name-ar-text">{{ b.nameAr }}</strong>
+                <span class="name-en-sub">{{ b.nameEn }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="type-badge" [ngClass]="b.isMainBranch ? 'badge-hq' : 'badge-regional'">
+                <i class="pi" [ngClass]="b.isMainBranch ? 'pi-star-fill' : 'pi-sitemap'"></i>
+                {{ b.isMainBranch ? ('settings.branches.hq' | translate) : ('settings.branches.branch' | translate) }}
+              </span>
+            </td>
+            <td>
+              <div class="location-cluster">
+                <span class="city-chip-inline" *ngIf="getBranchCity(b)">
+                  <i class="pi pi-map-marker"></i> {{ getBranchCity(b) }}
+                </span>
+                <span class="addr-snippet" *ngIf="formatBranchAddress(b)">{{ formatBranchAddress(b) }}</span>
+                <span class="text-muted-dash" *ngIf="!getBranchCity(b) && !formatBranchAddress(b)">-</span>
+              </div>
+            </td>
+            <td>
+              <div class="tax-cr-inline">
+                <small *ngIf="b.taxRegistrationNumber" class="mono-badge vat-badge">{{ 'branchesWarehouses.vatPrefix' | translate }} {{ b.taxRegistrationNumber }}</small>
+                <small *ngIf="b.crNumber" class="mono-badge cr-badge">{{ 'branchesWarehouses.crPrefix' | translate }} {{ b.crNumber }}</small>
+                <span class="text-muted-dash" *ngIf="!b.taxRegistrationNumber && !b.crNumber">-</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-pill-table" [class.active]="b.isActive">
+                <span class="dot-indicator"></span>
+                {{ b.isActive ? ('settings.branches.active' | translate) : ('settings.branches.inactive' | translate) }}
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <div class="table-actions-cluster">
+                <button 
+                  type="button" 
+                  class="action-btn-compact btn-edit" 
+                  (click)="openEditModal(b)"
+                  [title]="('settings.branches.edit' | translate)">
+                  <i class="pi pi-pencil"></i>
+                  <span>{{ 'settings.branches.edit' | translate }}</span>
+                </button>
+                <button 
+                  type="button" 
+                  class="action-btn-compact" 
+                  [ngClass]="b.isActive ? 'btn-warn' : 'btn-success'"
+                  (click)="toggleStatus(b)"
+                  [title]="b.isActive ? ('branchesWarehouses.deactivateBranch' | translate) : ('branchesWarehouses.activateBranch' | translate)">
+                  <i class="pi" [ngClass]="b.isActive ? 'pi-pause' : 'pi-play'"></i>
+                  <span>{{ b.isActive ? ('settings.branches.disable' | translate) : ('settings.branches.activate' | translate) }}</span>
+                </button>
+                <button 
+                  type="button" 
+                  class="action-btn-compact btn-delete" 
+                  [disabled]="b.isMainBranch"
+                  (click)="deleteBranch(b)"
+                  [title]="b.isMainBranch ? ('ui.branches.538bf7' | translate) : ('ui.branches.4520ad' | translate)">
+                  <i class="pi pi-trash"></i>
+                  <span>{{ 'settings.branches.delete' | translate }}</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state-modern" *ngIf="filteredBranches().length === 0">
+      <div class="empty-icon-halo">
+        <i class="pi pi-search"></i>
+      </div>
+      <h3>{{ 'settings.branches.noMatchingBranchesFound' | translate }}</h3>
+      <p>{{ 'settings.branches.noBranchesMatchYourCurrent' | translate }}</p>
+      <button type="button" class="btn-clear-filter" (click)="searchQuery.set(''); statusFilter.set('all'); cityFilter.set('all')">
+        <i class="pi pi-undo"></i>
+        <span>{{ 'settings.branches.resetFilters' | translate }}</span>
+      </button>
+    </div>
+
+    <!-- Table & Cards Pagination Bar -->
+    <app-pagination
+      *ngIf="!isLoading() && filteredBranches().length > 0"
+      [totalItems]="filteredBranches().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      [pageSizeOptions]="[8, 12, 24, 48]"
+      [itemLabelAr]="('companies.portal.branch' | translate)"
+      [itemLabelEn]="'branches'"
+      (pageChange)="currentPage.set($event)"
+      (pageSizeChange)="pageSize.set($event)">
+    </app-pagination>
+  </div>
+
+  <!-- Zero-Scroll Compact Add / Edit Branch Modal -->
+  <div class="modal-backdrop-glass" *ngIf="showAddModal()" (click)="closeAddModal()">
+    <div class="modal-dialog-compact" (click)="$event.stopPropagation()">
+      <div class="modal-header-compact">
+        <div class="modal-title-box">
+          <div class="modal-icon-ring">
+            <i class="pi pi-building"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">{{ (isEditMode() ? 'branches.editBranch' : 'branches.addBranch') | translate }}</h3>
+            <span class="modal-subtitle">{{ (isEditMode() ? 'branches.editSubtitle' : 'branches.createSubtitle') | translate }}</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeAddModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form (ngSubmit)="saveBranch()" class="modal-form-compact">
+        <div class="form-grid-compact">
+          <!-- Branch Code -->
+          <div class="form-group">
+            <div class="label-row-trans">
+              <label class="form-label no-mb">
+                <span>{{ 'branches.code' | translate }}</span>
+              </label>
+              <div class="code-action-pill" *ngIf="!isEditMode()">
+                <span class="auto-badge" [class.badge-manual]="manualCodeEdit">
+                  <i class="pi" [ngClass]="manualCodeEdit ? 'pi-pencil' : 'pi-bolt'"></i>
+                  {{ (manualCodeEdit ? 'branches.manual' : 'branches.autoGenerated') | translate }}
+                </span>
+                <button 
+                  type="button" 
+                  class="btn-code-refresh" 
+                  (click)="resetAutoCode()" 
+                  [title]="'branches.regenerateCode' | translate">
+                  <i class="pi pi-refresh"></i>
+                </button>
+              </div>
+            </div>
+            <div class="input-wrap">
+              <i class="pi pi-hashtag input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control mono-field" 
+                [placeholder]="'branches.codePlaceholder' | translate" 
+                [(ngModel)]="branchForm.code" 
+                (input)="manualCodeEdit = true"
+                [disabled]="isEditMode()"
+                name="branchCode" />
+            </div>
+          </div>
+
+          <!-- City -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>{{ 'branches.city' | translate }}</span>
+            </label>
+            <div class="input-wrap">
+              <i class="pi pi-map-marker input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branches.cityPlaceholder' | translate" 
+                [ngModel]="branchForm.city" 
+                (ngModelChange)="onCityChange($event)"
+                name="branchCity" />
+            </div>
+          </div>
+
+          <!-- Single Unified Branch Name with Background Auto-Translation -->
+          <div class="form-group full-width">
+            <div class="label-row-trans">
+              <label class="form-label no-mb">
+                <span>{{ 'branches.name' | translate }}</span>
+                <small class="text-subtle">
+                  {{ 'branches.autoTranslateHint' | translate }}
+                </small>
+              </label>
+              <div class="trans-pill-cluster">
+                <span *ngIf="backgroundTranslation" class="trans-pill">
+                  {{ backgroundTranslation }}
+                </span>
+                <button 
+                  type="button" 
+                  class="instant-trans-badge" 
+                  (click)="forceTranslate()"
+                  [title]="'branches.instantTranslate' | translate">
+                  <i class="pi pi-globe"></i>
+                  <span>{{ 'branches.instantTranslate' | translate }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="input-wrap">
+              <i class="pi pi-building input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branches.namePlaceholder' | translate" 
+                [ngModel]="unifiedBranchName || branchForm.nameAr || branchForm.nameEn" 
+                (ngModelChange)="onUnifiedBranchNameChange($event)"
+                name="branchName" />
+            </div>
+          </div>
+
+          <!-- Full National Address -->
+          <div class="form-group full-width">
+            <label class="form-label">{{ 'branches.address' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-compass input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branches.addressPlaceholder' | translate" 
+                [(ngModel)]="branchForm.address" 
+                name="branchAddress" />
+            </div>
+          </div>
+
+          <!-- Tax Number -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branches.vatNumber' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-percentage input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control mono-field ltr-input" 
+                [placeholder]="'branches.vatPlaceholder' | translate" 
+                maxlength="15"
+                [(ngModel)]="branchForm.taxRegistrationNumber" 
+                name="branchVat" />
+            </div>
+          </div>
+
+          <!-- CR Number -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branches.crNumber' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-id-card input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control mono-field ltr-input" 
+                [placeholder]="'branches.crPlaceholder' | translate" 
+                maxlength="10"
+                [(ngModel)]="branchForm.crNumber" 
+                name="branchCr" />
+            </div>
+          </div>
+
+          <!-- Is Main Branch -->
+          <div class="form-group full-width">
+            <label class="checkbox-container">
+              <input 
+                type="checkbox" 
+                [ngModel]="branchForm.isMainBranch" 
+                (ngModelChange)="onMainBranchToggle($event)"
+                name="isMainBranch" />
+              <span class="custom-checkmark"></span>
+              <span class="checkbox-text">{{ 'branches.isMainBranch' | translate }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer-compact">
+          <button type="button" class="btn-cancel-modal" (click)="closeAddModal()">
+            {{ 'branches.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn-submit-modal" [disabled]="isSubmitting()">
+            <i class="pi pi-check" *ngIf="!isSubmitting()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+            <span>{{ (isSubmitting() ? 'branches.saving' : (isEditMode() ? 'branches.updateBranch' : 'branches.saveBranch')) | translate }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

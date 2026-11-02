@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -28,28 +29,28 @@ interface JournalEntryPreview {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     <div class="dashboard-wrap">
       <!-- Minimalist Header -->
       <div class="dash-top">
         <div>
           <h1 class="page-title">
-            {{ langService.currentLang() === 'ar' ? 'المؤشرات المالية ولوحة القيادة' : 'Financial Overview' }}
+            {{ 'dashboard.financialOverview' | translate }}
           </h1>
           <span class="page-subtitle">
-            {{ langService.currentLang() === 'ar' ? 'السنة المالية 2026 • الفترة النشطة' : 'Fiscal Year 2026 • Active Period' }}
+            {{ 'dashboard.fiscalYear2026ActivePeriod' | translate }}
           </span>
         </div>
 
         <div class="quick-nav-actions">
           <button class="btn-action green" (click)="router.navigate(['/accounting/journal-entries'])">
             <i class="pi pi-plus"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'قيد جديد' : 'New Entry' }}</span>
+            <span>{{ 'dashboard.newEntry' | translate }}</span>
           </button>
           <button class="btn-action cyan" (click)="router.navigate(['/invoicing/tax-invoices'])">
             <i class="pi pi-receipt"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice' }}</span>
+            <span>{{ 'dashboard.taxInvoice' | translate }}</span>
           </button>
         </div>
       </div>
@@ -74,7 +75,7 @@ interface JournalEntryPreview {
         <!-- Quick Financial Launchpad -->
         <div class="panel-card">
           <div class="panel-header">
-            <h3>{{ langService.currentLang() === 'ar' ? 'الوصول السريع' : 'Quick Actions' }}</h3>
+            <h3>{{ 'dashboard.quickActions' | translate }}</h3>
           </div>
           <div class="launch-grid">
             <button class="launch-card" (click)="router.navigate(['/accounting/chart-of-accounts'])">
@@ -82,8 +83,8 @@ interface JournalEntryPreview {
                 <i class="pi pi-sitemap"></i>
               </div>
               <div class="launch-info">
-                <strong>{{ langService.currentLang() === 'ar' ? 'دليل الحسابات' : 'Chart of Accounts' }}</strong>
-                <small>{{ langService.currentLang() === 'ar' ? 'شجرة الحسابات العامة' : 'General Ledger Tree' }}</small>
+                <strong>{{ 'dashboard.chartOfAccounts' | translate }}</strong>
+                <small>{{ 'dashboard.generalLedgerTree' | translate }}</small>
               </div>
             </button>
 
@@ -92,8 +93,8 @@ interface JournalEntryPreview {
                 <i class="pi pi-book"></i>
               </div>
               <div class="launch-info">
-                <strong>{{ langService.currentLang() === 'ar' ? 'دفتر اليومية' : 'Journal Entries' }}</strong>
-                <small>{{ langService.currentLang() === 'ar' ? 'القيود المحاسبية المزدوجة' : 'Double-Entry Vouchers' }}</small>
+                <strong>{{ 'dashboard.journalEntries' | translate }}</strong>
+                <small>{{ 'dashboard.doubleentryVouchers' | translate }}</small>
               </div>
             </button>
 
@@ -102,8 +103,8 @@ interface JournalEntryPreview {
                 <i class="pi pi-chart-bar"></i>
               </div>
               <div class="launch-info">
-                <strong>{{ langService.currentLang() === 'ar' ? 'ميزان المراجعة' : 'Trial Balance' }}</strong>
-                <small>{{ langService.currentLang() === 'ar' ? 'أرصدة ومطابقة الحسابات' : 'Account Balances' }}</small>
+                <strong>{{ 'dashboard.trialBalance' | translate }}</strong>
+                <small>{{ 'dashboard.accountBalances' | translate }}</small>
               </div>
             </button>
 
@@ -112,8 +113,8 @@ interface JournalEntryPreview {
                 <i class="pi pi-building"></i>
               </div>
               <div class="launch-info">
-                <strong>{{ langService.currentLang() === 'ar' ? 'الشركات والمستأجرين' : 'Tenants & Companies' }}</strong>
-                <small>{{ langService.currentLang() === 'ar' ? 'إدارة المنشآت والاشتراكات' : 'Manage Tenant Accounts' }}</small>
+                <strong>{{ 'dashboard.tenantsCompanies' | translate }}</strong>
+                <small>{{ 'dashboard.manageTenantAccounts' | translate }}</small>
               </div>
             </button>
           </div>
@@ -124,29 +125,29 @@ interface JournalEntryPreview {
           <div class="panel-header">
             <div class="header-zatca-tag">
               <span class="live-dot"></span>
-              <h3>{{ langService.currentLang() === 'ar' ? 'منظومة ZATCA فاز 2 (الفاتورة الإلكترونية)' : 'ZATCA Phase 2 E-Invoicing' }}</h3>
+              <h3>{{ 'dashboard.zatcaPhase2Einvoicing' | translate }}</h3>
             </div>
-            <span class="state-pill">{{ langService.currentLang() === 'ar' ? 'متصل ومطابق' : 'Live & Cleared' }}</span>
+            <span class="state-pill">{{ 'dashboard.liveCleared' | translate }}</span>
           </div>
 
           <div class="zatca-kpis">
             <div class="z-item">
               <span class="z-num text-cyber-green font-mono">1,428</span>
-              <span class="z-label">{{ langService.currentLang() === 'ar' ? 'فواتير معتمدة' : 'Cleared Invoices' }}</span>
+              <span class="z-label">{{ 'dashboard.clearedInvoices' | translate }}</span>
             </div>
             <div class="z-item">
               <span class="z-num text-cyber-cyan font-mono" dir="ltr">8 ms</span>
-              <span class="z-label">{{ langService.currentLang() === 'ar' ? 'زمن التشفير ECDSA' : 'Signing Latency' }}</span>
+              <span class="z-label">{{ 'dashboard.signingLatency' | translate }}</span>
             </div>
             <div class="z-item">
               <span class="z-num text-dark font-mono">100%</span>
-              <span class="z-label">{{ langService.currentLang() === 'ar' ? 'نسبة الامتثال' : 'Compliance Rate' }}</span>
+              <span class="z-label">{{ 'dashboard.complianceRate' | translate }}</span>
             </div>
           </div>
 
           <div class="security-chip">
             <i class="pi pi-check-circle text-cyber-green"></i>
-            <span>{{ langService.currentLang() === 'ar' ? 'التوقيع الرقمي والتشفير فوري مع منصة "فاتورة" بهيئة الزكاة' : 'Real-time ECDSA signatures & cryptographic stamps with ZATCA' }}</span>
+            <span>{{ 'dashboard.realtimeEcdsaSignaturesCryptog' | translate }}</span>
           </div>
         </div>
       </div>
@@ -154,9 +155,9 @@ interface JournalEntryPreview {
       <!-- Recent Entries Table -->
       <div class="panel-card">
         <div class="panel-header">
-          <h3>{{ langService.currentLang() === 'ar' ? 'أحدث قيود اليومية العامة' : 'Recent Journal Entries' }}</h3>
+          <h3>{{ 'dashboard.recentJournalEntries' | translate }}</h3>
           <button class="btn-link" (click)="router.navigate(['/accounting/journal-entries'])">
-            <span>{{ langService.currentLang() === 'ar' ? 'عرض الكل' : 'View All' }}</span>
+            <span>{{ 'dashboard.viewAll' | translate }}</span>
             <i class="pi pi-arrow-left"></i>
           </button>
         </div>
@@ -165,12 +166,12 @@ interface JournalEntryPreview {
           <table class="clean-table">
             <thead>
               <tr>
-                <th>{{ langService.currentLang() === 'ar' ? 'رقم القيد' : 'Voucher No.' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'التاريخ' : 'Date' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'البيان' : 'Description' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الفرع' : 'Branch' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'المبلغ (ر.س)' : 'Amount (SAR)' }}</th>
-                <th>{{ langService.currentLang() === 'ar' ? 'الحالة' : 'Status' }}</th>
+                <th>{{ 'dashboard.voucherNo' | translate }}</th>
+                <th>{{ 'dashboard.date' | translate }}</th>
+                <th>{{ 'dashboard.description' | translate }}</th>
+                <th>{{ 'dashboard.branch' | translate }}</th>
+                <th>{{ 'dashboard.amountSar' | translate }}</th>
+                <th>{{ 'dashboard.status' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -185,8 +186,8 @@ interface JournalEntryPreview {
                     <i class="pi pi-check"></i>
                     <span>
                       {{ item.status === 'Posted' 
-                        ? (langService.currentLang() === 'ar' ? 'مرحّل' : 'Posted') 
-                        : (langService.currentLang() === 'ar' ? 'مدقق' : 'Audited') }}
+                        ? ('dashboard.posted' | translate) 
+                        : ('dashboard.audited' | translate) }}
                     </span>
                   </span>
                 </td>

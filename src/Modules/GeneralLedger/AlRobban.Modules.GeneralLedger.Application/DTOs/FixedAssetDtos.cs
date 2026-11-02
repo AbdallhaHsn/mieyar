@@ -124,3 +124,68 @@ public record DisposeFixedAssetResultDto(
     string? JournalEntryNumber,
     string Message);
 
+// Financial & Valuation Reports (IAS 16)
+public record FixedAssetFinancialReportDto(
+    Guid CompanyId,
+    DateTime AsOfDate,
+    int? FiscalYear,
+    FixedAssetReportTotalsDto Totals,
+    List<FixedAssetCategorySummaryDto> Categories,
+    List<FixedAssetMovementCategoryDto> MovementSchedule,
+    List<FixedAssetDisposalReportItemDto> Disposals);
+
+public record FixedAssetReportTotalsDto(
+    int TotalAssetsCount,
+    int ActiveCount,
+    int FullyDepreciatedCount,
+    int DisposedCount,
+    decimal TotalAcquisitionCost,
+    decimal TotalSalvageValue,
+    decimal TotalAccumulatedDepreciation,
+    decimal TotalNetBookValue,
+    decimal TotalPeriodDepreciation,
+    decimal TotalGainsOnDisposals,
+    decimal TotalLossesOnDisposals);
+
+public record FixedAssetCategorySummaryDto(
+    Guid AssetAccountId,
+    string AccountCode,
+    string AccountNameAr,
+    int AssetCount,
+    decimal TotalCost,
+    decimal TotalSalvage,
+    decimal TotalAccumulated,
+    decimal NetBookValue,
+    decimal DepreciationRatioPercent,
+    List<FixedAssetDto> Assets);
+
+public record FixedAssetMovementCategoryDto(
+    string CategoryNameAr,
+    string AccountCode,
+    decimal OpeningCost,
+    decimal AdditionsCost,
+    decimal DisposalsCost,
+    decimal ClosingCost,
+    decimal OpeningAccumulated,
+    decimal PeriodDepreciation,
+    decimal DisposalsAccumulated,
+    decimal ClosingAccumulated,
+    decimal OpeningBookValue,
+    decimal ClosingBookValue);
+
+public record FixedAssetDisposalReportItemDto(
+    Guid AssetId,
+    string AssetCode,
+    string NameAr,
+    string NameEn,
+    DateTime? DisposalDate,
+    string? Reason,
+    decimal AcquisitionCost,
+    decimal AccumulatedDepreciationAtDisposal,
+    decimal BookValueAtDisposal,
+    decimal SalePrice,
+    decimal GainOrLossAmount,
+    bool IsGain,
+    string? JournalEntryNumber);
+
+

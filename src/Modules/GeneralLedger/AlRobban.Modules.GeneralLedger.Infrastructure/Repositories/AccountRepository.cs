@@ -55,7 +55,7 @@ public class AccountRepository : IAccountRepository
 
     public async Task<bool> HasAnyAccountsAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Accounts.AnyAsync(x => x.CompanyId == companyId, cancellationToken);
+        return await _dbContext.Accounts.IgnoreQueryFilters().AnyAsync(x => x.CompanyId == companyId, cancellationToken);
     }
 
     public async Task AddAsync(Account account, CancellationToken cancellationToken = default)

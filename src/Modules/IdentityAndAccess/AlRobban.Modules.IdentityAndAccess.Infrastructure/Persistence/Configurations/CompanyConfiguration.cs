@@ -43,7 +43,7 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasMaxLength(3);
 
         builder.Property(x => x.LogoUrl)
-            .HasMaxLength(500);
+            .HasColumnType("nvarchar(max)");
 
         builder.Property(x => x.BrandThemeColor)
             .HasMaxLength(20);

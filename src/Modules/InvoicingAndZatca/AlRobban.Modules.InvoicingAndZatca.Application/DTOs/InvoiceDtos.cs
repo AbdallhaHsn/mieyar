@@ -14,7 +14,10 @@ public record InvoiceDto(
     string TransactionTypeNameAr,
     InvoiceStatus Status,
     string StatusNameAr,
+    InvoicePaymentStatus PaymentStatus,
+    string PaymentStatusNameAr,
     string Currency,
+    Guid? CustomerId,
     string CustomerName,
     string? CustomerVatNumber,
     string? CustomerCrNumber,
@@ -27,18 +30,39 @@ public record InvoiceDto(
     decimal TotalTaxableAmount,
     decimal TotalVat,
     decimal TotalAmount,
+    decimal PaidAmount,
+    decimal RemainingAmount,
     string? PreviousInvoiceHash,
     string? InvoiceHash,
     string? CryptographicStamp,
     string? QrCodePayload,
     Guid? AssociatedJournalEntryId,
     string? AssociatedJournalEntryNumber,
+    Guid? SalespersonId,
+    string? SalespersonName,
+    string? WarehouseCode,
+    string? CreatedBy,
     DateTime CreatedAtUtc,
-    List<InvoiceLineDto> Lines);
+    List<InvoiceLineDto> Lines,
+    decimal ReturnedAmount = 0m,
+    string? BuyerStreet = null,
+    string? BuyerBuildingNumber = null,
+    string? BuyerPlotIdentification = null,
+    string? BuyerCitySubdivisionName = null,
+    string? BuyerCity = null,
+    string? BuyerPostalCode = null,
+    string? BuyerCountryCode = "SA",
+    string? BuyerOtherIdType = null,
+    string? BuyerOtherIdValue = null,
+    string? BuyerPhone = null,
+    string? BuyerEmail = null,
+    bool IsCashCustomer = false);
 
 public record InvoiceLineDto(
     Guid Id,
     int LineNumber,
+    Guid? ItemId,
+    string? WarehouseCode,
     string ItemNameAr,
     string? ItemNameEn,
     decimal Quantity,
@@ -53,6 +77,11 @@ public record InvoiceLineDto(
 public class CreateInvoiceRequest
 {
     public Guid? CompanyId { get; set; }
+    public Guid? CustomerId { get; set; }
+    public Guid? SalespersonId { get; set; }
+    public string? SalespersonName { get; set; }
+    public string? WarehouseCode { get; set; }
+    public string? CreatedBy { get; set; }
     public InvoiceType InvoiceType { get; set; } = InvoiceType.Standard;
     public TransactionType TransactionType { get; set; } = TransactionType.Invoice;
     public DateTime IssueDate { get; set; } = DateTime.UtcNow;
@@ -126,6 +155,9 @@ public class CreateInvoiceRequest
 
 public class CreateInvoiceLineRequest
 {
+    public Guid? ItemId { get; set; }
+    public string? WarehouseCode { get; set; }
+
     private string _itemNameAr = string.Empty;
     public string ItemNameAr 
     { 
@@ -167,7 +199,13 @@ public record IssueInvoiceResultDto(
     string QrCodePayload,
     Guid? JournalEntryId,
     string? JournalEntryNumber,
-    string Message);
+    string Message,
+    string ZatcaClearanceStatus = "CLEARED",
+    string ZatcaStatusNameAr = "معتمدة ومطابقة (CLEARED)",
+    string? PreviousInvoiceHash = null,
+    string? CryptographicStamp = null,
+    List<string>? ValidationWarnings = null,
+    DateTime? ClearedAtUtc = null);
 
 public record InvoiceKpisDto(
     int TotalInvoices,
@@ -178,3 +216,80 @@ public record InvoiceKpisDto(
     decimal TotalTaxableSales,
     decimal TotalVatCollected,
     decimal TotalGrossSales);
+
+public record SalespersonDto(
+    Guid Id,
+    Guid CompanyId,
+    string Code,
+    string NameAr,
+    string NameEn,
+    string? PhoneNumber,
+    string? Email,
+    Guid? UserId,
+    string? UserName,
+    string WarehouseCode,
+    string WarehouseNameAr,
+    Guid? BranchId,
+    decimal CommissionRate,
+    bool IsActive,
+    DateTime CreatedAtUtc,
+    bool CanGiveDiscount = true,
+    decimal MaxDiscountPercent = 5.0m,
+    bool CanSellCredit = false,
+    bool CanEditPrice = false,
+    bool CanProcessReturns = false,
+    bool CanSellBelowCost = false,
+    bool CanViewCostPrice = false,
+    bool CanSellFromAnyWarehouse = false,
+    string? UserRole = null);
+
+public class CreateSalespersonRequest
+{
+    public Guid? CompanyId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string NameAr { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? Email { get; set; }
+    public Guid? UserId { get; set; }
+    public string? UserName { get; set; }
+    public bool CreateUserAccount { get; set; } = false;
+    public string? UserPassword { get; set; }
+    public string? TargetRole { get; set; } = "Salesperson";
+    public string WarehouseCode { get; set; } = "WH-01";
+    public string WarehouseNameAr { get; set; } = "المستودع الرئيسي";
+    public Guid? BranchId { get; set; }
+    public decimal CommissionRate { get; set; } = 0m;
+    public bool CanGiveDiscount { get; set; } = true;
+    public decimal MaxDiscountPercent { get; set; } = 5.0m;
+    public bool CanSellCredit { get; set; } = false;
+    public bool CanEditPrice { get; set; } = false;
+    public bool CanProcessReturns { get; set; } = false;
+    public bool CanSellBelowCost { get; set; } = false;
+    public bool CanViewCostPrice { get; set; } = false;
+    public bool CanSellFromAnyWarehouse { get; set; } = false;
+}
+
+public class UpdateSalespersonRequest
+{
+    public string NameAr { get; set; } = string.Empty;
+    public string NameEn { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? Email { get; set; }
+    public Guid? UserId { get; set; }
+    public string? UserName { get; set; }
+    public string? TargetRole { get; set; }
+    public string WarehouseCode { get; set; } = "WH-01";
+    public string WarehouseNameAr { get; set; } = "المستودع الرئيسي";
+    public Guid? BranchId { get; set; }
+    public decimal CommissionRate { get; set; } = 0m;
+    public bool IsActive { get; set; } = true;
+    public bool CanGiveDiscount { get; set; } = true;
+    public decimal MaxDiscountPercent { get; set; } = 5.0m;
+    public bool CanSellCredit { get; set; } = false;
+    public bool CanEditPrice { get; set; } = false;
+    public bool CanProcessReturns { get; set; } = false;
+    public bool CanSellBelowCost { get; set; } = false;
+    public bool CanViewCostPrice { get; set; } = false;
+    public bool CanSellFromAnyWarehouse { get; set; } = false;
+}

@@ -84,3 +84,14 @@ public record AutoMatchResultDto(
     List<BankReconciliationTransactionDto> UpdatedTransactions,
     string Message);
 
+public record CreateBankAdjustmentEntryRequest(
+    Guid CompanyId,
+    Guid BankAccountId,
+    Guid CounterAccountId,
+    decimal Amount,
+    bool IsExpenseOrWithdrawal,
+    DateTime EntryDate,
+    string Description,
+    string? ReferenceNumber = null);
+
+

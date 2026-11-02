@@ -1,7 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\AlRobban.Modules.InvoicingAndZatca.Domain\AlRobban.Modules.InvoicingAndZatca.Domain.csproj" />
+    <ProjectReference Include="..\..\GeneralLedger\AlRobban.Modules.GeneralLedger.Application\AlRobban.Modules.GeneralLedger.Application.csproj" />
+    <ProjectReference Include="..\..\GeneralLedger\AlRobban.Modules.GeneralLedger.Domain\AlRobban.Modules.GeneralLedger.Domain.csproj" />
+    <ProjectReference Include="..\..\Purchasing\AlRobban.Modules.Purchasing.Domain\AlRobban.Modules.Purchasing.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\AlRobban.Shared.Application\AlRobban.Shared.Application.csproj" />
   </ItemGroup>
 

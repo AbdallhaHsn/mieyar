@@ -71,6 +71,8 @@ public class VoucherRepository : IVoucherRepository
             .ToListAsync(cancellationToken);
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _voucherNumberLocks = new();
+
     public async Task<string> GenerateNextVoucherNumberAsync(
         Guid companyId,
         VoucherType type,
@@ -79,24 +81,44 @@ public class VoucherRepository : IVoucherRepository
     {
         var prefix = type == VoucherType.Receipt ? "RV" : "PV";
         var searchPrefix = $"{prefix}-{year}-";
-
-        var lastVoucher = await _dbContext.Vouchers
-            .Where(x => x.CompanyId == companyId && x.VoucherNumber.StartsWith(searchPrefix))
-            .OrderByDescending(x => x.VoucherNumber)
-            .Select(x => x.VoucherNumber)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        int nextSeq = 1;
-        if (!string.IsNullOrEmpty(lastVoucher))
+        var lockKey = $"{companyId:N}_{type}_{year}";
+        var semaphore = _voucherNumberLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(cancellationToken);
+        try
         {
-            var parts = lastVoucher.Split('-');
-            if (parts.Length >= 3 && int.TryParse(parts[2], out var currentSeq))
+            if (_dbContext.Database.IsSqlServer() && _dbContext.Database.CurrentTransaction != null)
             {
-                nextSeq = currentSeq + 1;
+                var lockResource = $"VOUCH_NUM_{companyId:N}_{prefix}_{year}";
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_getapplock @Resource = {0}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000;",
+                    new object[] { lockResource },
+                    cancellationToken);
             }
-        }
 
-        return $"{searchPrefix}{nextSeq:D5}";
+            var numbers = await _dbContext.Vouchers
+                .Where(x => x.CompanyId == companyId && x.VoucherNumber.StartsWith(searchPrefix))
+                .Select(x => x.VoucherNumber)
+                .ToListAsync(cancellationToken);
+
+            int maxSeq = 0;
+            foreach (var num in numbers)
+            {
+                var parts = num.Split('-');
+                if (parts.Length >= 3 && int.TryParse(parts[2], out var currentSeq))
+                {
+                    if (currentSeq > maxSeq)
+                    {
+                        maxSeq = currentSeq;
+                    }
+                }
+            }
+
+            return $"{searchPrefix}{(maxSeq + 1):D5}";
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
     public async Task AddAsync(Voucher voucher, CancellationToken cancellationToken = default)

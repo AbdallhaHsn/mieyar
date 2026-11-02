@@ -2,22 +2,22 @@
   <!-- Header Strip -->
   <div class="header-strip">
     <div class="header-titles">
-      <div class="breadcrumbs">المحاسبة المالية &gt; الأصول الثابتة</div>
+      <div class="breadcrumbs">{{ 'accounting.fixedAssets.breadcrumbs' | translate }}</div>
       <h1 class="main-title">
         <i class="pi pi-box"></i>
-        سجل وإدارة الأصول الثابتة والإهلاك الآلي
+        {{ 'accounting.fixedAssets.title' | translate }}
       </h1>
-      <p class="subtitle">إدارة دورة حياة الأصول الثابتة، تتبع القيم الدفترية، وتوليد قيود استهلاك الأصول آلياً وفق معيار IAS 16</p>
+      <p class="subtitle">{{ 'accounting.fixedAssets.subtitle' | translate }}</p>
     </div>
 
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="openCreateModal()">
         <i class="pi pi-plus-circle"></i>
-        إضافة أصل جديد
+        {{ 'accounting.fixedAssets.newAsset' | translate }}
       </button>
       <button class="btn btn-primary" (click)="openDepreciationModal()">
         <i class="pi pi-calculator"></i>
-        تشغيل الإهلاك الشهري الآلي
+        {{ 'accounting.fixedAssets.runDepreciation' | translate }}
       </button>
     </div>
   </div>
@@ -40,36 +40,36 @@
     <div class="kpi-card card-cost">
       <div class="kpi-icon"><i class="pi pi-wallet"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">إجمالي تكلفة اقتناء الأصول</div>
-        <div class="kpi-value">{{ totalAcquisitionCost() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
-        <div class="kpi-sub">القيمة التاريخية لجميع الأصول المسجلة</div>
+        <div class="kpi-label">{{ 'accounting.fixedAssets.kpi.totalCost' | translate }}</div>
+        <div class="kpi-value">{{ totalAcquisitionCost() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-sub">{{ 'accounting.fixedAssets.kpi.totalCostSub' | translate }}</div>
       </div>
     </div>
 
     <div class="kpi-card card-accum">
       <div class="kpi-icon"><i class="pi pi-chart-line"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">مجمع الإهلاك التراكمي</div>
-        <div class="kpi-value text-rose">{{ totalAccumulatedDepreciation() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
-        <div class="kpi-sub">إجمالي ما تم استهلاكه دفترياً</div>
+        <div class="kpi-label">{{ 'accounting.fixedAssets.kpi.accumulatedDepr' | translate }}</div>
+        <div class="kpi-value text-rose">{{ totalAccumulatedDepreciation() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-sub">{{ 'accounting.fixedAssets.kpi.accumulatedDeprSub' | translate }}</div>
       </div>
     </div>
 
     <div class="kpi-card card-net">
       <div class="kpi-icon"><i class="pi pi-database"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">صافي القيمة الدفترية الحالية</div>
-        <div class="kpi-value text-emerald">{{ netBookValue() | number:'1.2-2' }} <span class="sar">ر.س</span></div>
-        <div class="kpi-sub">صافي الأصول القابلة للظهور في الميزانية</div>
+        <div class="kpi-label">{{ 'accounting.fixedAssets.kpi.netBookValue' | translate }}</div>
+        <div class="kpi-value text-emerald">{{ netBookValue() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-sub">{{ 'accounting.fixedAssets.kpi.netBookValueSub' | translate }}</div>
       </div>
     </div>
 
     <div class="kpi-card card-count">
       <div class="kpi-icon"><i class="pi pi-check-square"></i></div>
       <div class="kpi-body">
-        <div class="kpi-label">الأصول النشطة قيد الاستهلاك</div>
-        <div class="kpi-value">{{ activeAssetsCount() }} <span class="sar">أصل</span></div>
-        <div class="kpi-sub">من إجمالي {{ assets().length }} أصل مسجل</div>
+        <div class="kpi-label">{{ 'accounting.fixedAssets.kpi.activeCount' | translate }}</div>
+        <div class="kpi-value">{{ activeAssetsCount() }}</div>
+        <div class="kpi-sub">{{ 'accounting.fixedAssets.kpi.activeCountSub' | translate }}</div>
       </div>
     </div>
   </div>
@@ -82,19 +82,19 @@
           class="tab-btn" 
           [class.active]="statusFilter() === 0" 
           (click)="statusFilter.set(0)">
-          الكل ({{ assets().length }})
+          {{ 'common.all' | translate }} ({{ assets().length }})
         </button>
         <button 
           class="tab-btn" 
           [class.active]="statusFilter() === 1" 
           (click)="statusFilter.set(1)">
-          نشط وقيد الاستهلاك ({{ activeAssetsCount() }})
+          {{ 'accounting.partners.filters.active' | translate }} ({{ activeAssetsCount() }})
         </button>
         <button 
           class="tab-btn" 
           [class.active]="statusFilter() === 2" 
           (click)="statusFilter.set(2)">
-          مستهلك بالكامل
+          {{ 'accounting.fixedAssets.table.accumulatedDepr' | translate }}
         </button>
       </div>
 
@@ -103,7 +103,7 @@
           <i class="pi pi-search search-icon"></i>
           <input 
             type="text" 
-            placeholder="بحث برقم الأصل أو الاسم أو الموقع..." 
+            [placeholder]="'common.search' | translate" 
             [ngModel]="searchTerm()" 
             (ngModelChange)="searchTerm.set($event)" />
         </div>
@@ -114,32 +114,32 @@
       <table class="erp-table">
         <thead>
           <tr>
-            <th class="col-code">رمز الأصل</th>
-            <th>اسم الأصل</th>
-            <th>حساب الأصل</th>
-            <th class="col-date">تاريخ الاقتناء</th>
-            <th class="text-end">التكلفة (ر.س)</th>
-            <th class="text-end">الخردة</th>
-            <th class="text-center">العمر</th>
-            <th>طريقة الإهلاك</th>
-            <th class="text-end text-teal">الإهلاك الشهري</th>
-            <th class="text-end text-rose">مجمع الإهلاك</th>
-            <th class="text-end text-emerald">القيمة الدفترية</th>
-            <th class="col-status text-center">الحالة</th>
-            <th class="text-center">الإجراءات</th>
+            <th class="col-code">{{ 'accounting.fixedAssets.table.code' | translate }}</th>
+            <th>{{ 'accounting.fixedAssets.table.name' | translate }}</th>
+            <th>{{ 'accounting.journal.table.account' | translate }}</th>
+            <th class="col-date">{{ 'accounting.fixedAssets.table.purchaseDate' | translate }}</th>
+            <th class="text-end">{{ 'accounting.fixedAssets.table.cost' | translate }} ({{ 'accounting.yearEndClosing.summary.sar' | translate }})</th>
+            <th class="text-end">{{ 'accounting.fixedAssets.table.salvageValue' | translate }}</th>
+            <th class="text-center">{{ 'accounting.fixedAssets.table.usefulLife' | translate }}</th>
+            <th>{{ 'accounting.fixedAssets.table.category' | translate }}</th>
+            <th class="text-end text-teal">{{ 'accounting.fixedAssets.runDepreciation' | translate }}</th>
+            <th class="text-end text-rose">{{ 'accounting.fixedAssets.table.accumulatedDepr' | translate }}</th>
+            <th class="text-end text-emerald">{{ 'accounting.fixedAssets.table.bookValue' | translate }}</th>
+            <th class="col-status text-center">{{ 'accounting.fixedAssets.table.status' | translate }}</th>
+            <th class="text-center">{{ 'accounting.fixedAssets.table.actions' | translate }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="isLoading()">
             <td colspan="13" class="text-center py-4 text-muted">
-              <i class="pi pi-spin pi-spinner me-2"></i> جاري تحميل سجل الأصول الثابتة...
+              <i class="pi pi-spin pi-spinner me-2"></i> {{ 'common.loading' | translate }}
             </td>
           </tr>
 
           <tr *ngIf="!isLoading() && filteredAssets().length === 0">
             <td colspan="13" class="text-center py-4 text-muted">
               <i class="pi pi-box text-2xl mb-2 d-block"></i>
-              لا توجد أصول مطابقة لمعايير البحث الحالية
+              {{ 'accounting.gl.table.empty' | translate }}
             </td>
           </tr>
 
@@ -153,7 +153,7 @@
             <td>{{ a.purchaseDate | date:'yyyy-MM-dd' }}</td>
             <td class="text-end fw-semibold">{{ a.acquisitionCost | number:'1.2-2' }}</td>
             <td class="text-end text-muted">{{ a.salvageValue | number:'1.2-2' }}</td>
-            <td class="text-center">{{ a.usefulLifeMonths }} شهر</td>
+            <td class="text-center">{{ a.usefulLifeMonths }} {{ 'hr.payroll.monthWord' | translate }}</td>
             <td><span class="badge badge-method">{{ a.depreciationMethodNameAr }}</span></td>
             <td class="text-end text-teal fw-semibold">{{ a.monthlyDepreciationAmount | number:'1.2-2' }}</td>
             <td class="text-end text-rose fw-semibold">{{ a.totalAccumulatedDepreciation | number:'1.2-2' }}</td>
@@ -168,11 +168,11 @@
                 *ngIf="a.status !== 3"
                 type="button" 
                 class="btn btn-sm btn-outline-danger" 
-                title="استبعاد أو بيع الأصل" 
+                [title]="'accounting.fixedAssets.table.actions' | translate" 
                 (click)="openDisposalModal(a)">
-                <i class="pi pi-dollar me-1"></i> بيع / استبعاد
+                <i class="pi pi-dollar me-1"></i> {{ 'ui.fixedAssets.808e37' | translate }}
               </button>
-              <span *ngIf="a.status === 3" class="text-muted small">مستبعد</span>
+              <span *ngIf="a.status === 3" class="text-muted small">{{ 'ui.fixedAssets.d76f6b' | translate }}</span>
             </td>
           </tr>
         </tbody>
@@ -184,36 +184,41 @@
   <div class="modal-backdrop" *ngIf="showCreateModal()" (click)="closeCreateModal()">
     <div class="modal-dialog" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3><i class="fas fa-plus-circle me-2"></i> تسجيل أصل ثابت جديد</h3>
+        <h3><i class="fas fa-plus-circle me-2"></i> {{ 'accounting.fixedAssets.newAsset' | translate }}</h3>
         <button class="modal-close" (click)="closeCreateModal()">&times;</button>
       </div>
 
       <div class="modal-body">
-        <div class="modal-grid-2">
-          <div class="form-group">
-            <label>اسم الأصل (بالعربية) *</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              placeholder="مثال: خوادم سحابية Dell PowerEdge" 
-              [ngModel]="newAsset().nameAr" 
-              (ngModelChange)="newAsset().nameAr = $event" />
+        <!-- Single Unified Asset Name with Background Auto-Translation -->
+        <div class="form-group mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="mb-0 fw-semibold">
+              <span>{{ 'accounting.fixedAssets.table.name' | translate }}</span>
+              <span class="text-danger ms-1">*</span>
+              <small class="text-muted ms-2 me-2">
+                {{ 'common.autoTranslateHint' | translate }}
+              </small>
+            </label>
+            <div class="d-flex align-items-center gap-2">
+              <span *ngIf="backgroundTranslation()" style="font-size: 0.75rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                {{ backgroundTranslation() }}
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem; padding: 2px 8px;" (click)="forceRetranslateAsset()">
+                <i class="pi pi-globe me-1"></i> {{ 'roles.instantTranslate' | translate }}
+              </button>
+            </div>
           </div>
-
-          <div class="form-group">
-            <label>اسم الأصل (بالإنجليزية)</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              placeholder="e.g. Dell PowerEdge Servers" 
-              [ngModel]="newAsset().nameEn" 
-              (ngModelChange)="newAsset().nameEn = $event" />
-          </div>
+          <input 
+            type="text" 
+            class="form-control" 
+            [placeholder]="'accounting.fixedAssets.table.name' | translate" 
+            [ngModel]="unifiedAssetName() || newAsset().nameAr || newAsset().nameEn" 
+            (ngModelChange)="onUnifiedAssetNameChange($event)" />
         </div>
 
         <div class="modal-grid-3 mt-2">
           <div class="form-group">
-            <label>حساب الأصل (12xxx) *</label>
+            <label>{{ 'accounting.fixedAssets.table.category' | translate }} *</label>
             <select 
               class="form-control" 
               [ngModel]="newAsset().assetAccountId" 
@@ -225,7 +230,7 @@
           </div>
 
           <div class="form-group">
-            <label>حساب مجمع الإهلاك (12xxx) *</label>
+            <label>{{ 'accounting.fixedAssets.table.accumulatedDepr' | translate }} *</label>
             <select 
               class="form-control" 
               [ngModel]="newAsset().accumulatedDepreciationAccountId" 
@@ -237,7 +242,7 @@
           </div>
 
           <div class="form-group">
-            <label>حساب مصروف الإهلاك (53xxx) *</label>
+            <label>{{ 'accounting.journal.table.account' | translate }} *</label>
             <select 
               class="form-control" 
               [ngModel]="newAsset().depreciationExpenseAccountId" 
@@ -251,7 +256,7 @@
 
         <div class="modal-grid-4 mt-2">
           <div class="form-group">
-            <label>تاريخ الشراء / الاقتناء *</label>
+            <label>{{ 'accounting.fixedAssets.table.purchaseDate' | translate }} *</label>
             <input 
               type="date" 
               class="form-control" 
@@ -260,7 +265,7 @@
           </div>
 
           <div class="form-group">
-            <label>تكلفة الاقتناء (ر.س) *</label>
+            <label>{{ 'accounting.fixedAssets.table.cost' | translate }} ({{ 'accounting.yearEndClosing.summary.sar' | translate }}) *</label>
             <input 
               type="number" 
               step="0.01" 
@@ -270,7 +275,7 @@
           </div>
 
           <div class="form-group">
-            <label>قيمة الخردة (Salvage Value)</label>
+            <label>{{ 'accounting.fixedAssets.table.salvageValue' | translate }}</label>
             <input 
               type="number" 
               step="0.01" 
@@ -280,7 +285,7 @@
           </div>
 
           <div class="form-group">
-            <label>العمر الإنتاجي (بالشهور) *</label>
+            <label>{{ 'accounting.fixedAssets.table.usefulLife' | translate }} *</label>
             <input 
               type="number" 
               class="form-control text-start ltr-input" 
@@ -292,18 +297,18 @@
         <!-- Auto Calculation Card -->
         <div class="calc-preview-card mt-3">
           <div class="calc-item">
-            <span>القيمة القابلة للإهلاك:</span>
-            <strong>{{ (newAsset().acquisitionCost - newAsset().salvageValue) | number:'1.2-2' }} ر.س</strong>
+            <span>{{ 'accounting.fixedAssets.kpi.netBookValue' | translate }}:</span>
+            <strong>{{ (newAsset().acquisitionCost - newAsset().salvageValue) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
           </div>
           <div class="calc-item highlight">
-            <span>قيمة الإهلاك الشهري المحسوبة:</span>
-            <strong class="text-teal">{{ calculatePreviewMonthly() | number:'1.2-2' }} ر.س / شهرياً</strong>
+            <span>{{ 'accounting.fixedAssets.runDepreciation' | translate }}:</span>
+            <strong class="text-teal">{{ calculatePreviewMonthly() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
           </div>
         </div>
 
         <div class="modal-grid-2 mt-2">
           <div class="form-group">
-            <label>الرقم التسلسلي (Serial Number)</label>
+            <label>{{ 'accounting.fixedAssets.table.code' | translate }}</label>
             <input 
               type="text" 
               class="form-control" 
@@ -313,11 +318,11 @@
           </div>
 
           <div class="form-group">
-            <label>موقع / مكان تواجد الأصل</label>
+            <label>{{ 'accounting.partnerCreate.form.city' | translate }}</label>
             <input 
               type="text" 
               class="form-control" 
-              placeholder="مثال: الفرع الرئيسي - غرفة الخوادم" 
+              [placeholder]="'accounting.partnerCreate.form.city' | translate" 
               [ngModel]="newAsset().location" 
               (ngModelChange)="newAsset().location = $event" />
           </div>
@@ -325,11 +330,11 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeCreateModal()">إلغاء</button>
+        <button class="btn btn-secondary" (click)="closeCreateModal()">{{ 'common.cancel' | translate }}</button>
         <button class="btn btn-primary" [disabled]="isSaving()" (click)="saveAsset()">
           <i class="pi pi-check" *ngIf="!isSaving()"></i>
           <i class="pi pi-spin pi-spinner" *ngIf="isSaving()"></i>
-          حفظ وتسجيل الأصل
+          {{ 'common.save' | translate }}
         </button>
       </div>
     </div>
@@ -339,14 +344,14 @@
   <div class="modal-backdrop" *ngIf="showDepreciationModal()" (click)="closeDepreciationModal()">
     <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3><i class="pi pi-calculator me-2"></i> معالج تشغيل الإهلاك الشهري الآلي</h3>
+        <h3><i class="pi pi-calculator me-2"></i> {{ 'accounting.fixedAssets.runDepreciation' | translate }}</h3>
         <button class="modal-close" (click)="closeDepreciationModal()">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="dep-run-header">
           <div class="form-group" style="max-width: 260px;">
-            <label>تاريخ تشغيل الإهلاك الدوري:</label>
+            <label>{{ 'accounting.fixedAssets.table.purchaseDate' | translate }}:</label>
             <input 
               type="date" 
               class="form-control" 
@@ -355,8 +360,8 @@
           </div>
 
           <div class="dep-summary-pill" *ngIf="depreciationPreview()">
-            <span>الأصول المستحقة: <strong>{{ depreciationPreview()?.eligibleAssetsCount }}</strong></span>
-            <span>إجمالي الإهلاك: <strong class="text-emerald">{{ depreciationPreview()?.totalDepreciationAmount | number:'1.2-2' }} ر.س</strong></span>
+            <span>{{ 'accounting.fixedAssets.kpi.activeCount' | translate }}: <strong>{{ depreciationPreview()?.eligibleAssetsCount }}</strong></span>
+            <span>{{ 'accounting.fixedAssets.kpi.accumulatedDepr' | translate }}: <strong class="text-emerald">{{ depreciationPreview()?.totalDepreciationAmount | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong></span>
           </div>
         </div>
 
@@ -364,24 +369,24 @@
           <table class="erp-table">
             <thead>
               <tr>
-                <th>رمز الأصل</th>
-                <th>اسم الأصل</th>
-                <th class="text-end">التكلفة</th>
-                <th class="text-end">الرصيد الدفتري الحالي</th>
-                <th class="text-end text-teal">قسط الإهلاك المستحق</th>
-                <th class="text-end text-emerald">الرصيد الدفتري الجديد</th>
+                <th>{{ 'accounting.fixedAssets.table.code' | translate }}</th>
+                <th>{{ 'accounting.fixedAssets.table.name' | translate }}</th>
+                <th class="text-end">{{ 'accounting.fixedAssets.table.cost' | translate }}</th>
+                <th class="text-end">{{ 'accounting.fixedAssets.table.bookValue' | translate }}</th>
+                <th class="text-end text-teal">{{ 'accounting.fixedAssets.table.accumulatedDepr' | translate }}</th>
+                <th class="text-end text-emerald">{{ 'accounting.fixedAssets.table.bookValue' | translate }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngIf="isLoadingPreview()">
                 <td colspan="6" class="text-center py-4 text-muted">
-                  <i class="pi pi-spin pi-spinner me-2"></i> جاري احتساب مخصصات الإهلاك للأصول المؤهلة...
+                  <i class="pi pi-spin pi-spinner me-2"></i> {{ 'common.loading' | translate }}
                 </td>
               </tr>
 
               <tr *ngIf="!isLoadingPreview() && (depreciationPreview()?.items?.length === 0)">
                 <td colspan="6" class="text-center py-4 text-muted">
-                  لا توجد أصول مستحقة للإهلاك في هذا التاريخ المحدد.
+                  {{ 'accounting.gl.table.empty' | translate }}
                 </td>
               </tr>
 
@@ -399,19 +404,19 @@
 
         <div class="alert alert-info mt-3">
           <i class="pi pi-info-circle"></i>
-          سيتم إنشاء وترحيل قيد يومية آلي معتمد متوازن (مدين: حسابات مصروف الاستهلاك 53xxx / دائن: حسابات مجمع الاستهلاك 12xxx).
+          {{ 'accounting.journal.filters.posted' | translate }}
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeDepreciationModal()">إغلاق</button>
+        <button class="btn btn-secondary" (click)="closeDepreciationModal()">{{ 'common.close' | translate }}</button>
         <button 
           class="btn btn-primary" 
           [disabled]="isRunningDepreciation() || !depreciationPreview() || (depreciationPreview()?.items?.length === 0)" 
           (click)="executeDepreciation()">
           <i class="pi pi-play" *ngIf="!isRunningDepreciation()"></i>
           <i class="pi pi-spin pi-spinner" *ngIf="isRunningDepreciation()"></i>
-          اعتماد وترحيل قيد الإهلاك الدوري
+          {{ 'accounting.fixedAssets.runDepreciation' | translate }}
         </button>
       </div>
     </div>
@@ -421,7 +426,7 @@
   <div class="modal-backdrop" *ngIf="showDisposalModal()" (click)="closeDisposalModal()">
     <div class="modal-dialog" (click)="$event.stopPropagation()">
       <div class="modal-header bg-danger-subtle">
-        <h3><i class="pi pi-dollar text-danger me-2"></i> استبعاد أو بيع أصل ثابت</h3>
+        <h3><i class="pi pi-dollar text-danger me-2"></i> {{ 'accounting.fixedAssets.table.actions' | translate }}</h3>
         <button class="modal-close" (click)="closeDisposalModal()">&times;</button>
       </div>
 
@@ -433,21 +438,21 @@
               <h5 class="mb-0">{{ asset.nameAr }}</h5>
             </div>
             <div class="text-end">
-              <small class="text-muted d-block">القيمة الدفترية الحالية</small>
-              <strong class="text-primary fs-5">{{ asset.currentBookValue | number:'1.2-2' }} ر.س</strong>
+              <small class="text-muted d-block">{{ 'accounting.fixedAssets.table.bookValue' | translate }}</small>
+              <strong class="text-primary fs-5">{{ asset.currentBookValue | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
             </div>
           </div>
           <hr class="my-2" />
           <div class="row text-center small text-muted">
-            <div class="col-4">التكلفة التاريخية: <strong class="text-dark">{{ asset.acquisitionCost | number:'1.2-2' }}</strong></div>
-            <div class="col-4">مجمع الإهلاك: <strong class="text-rose">{{ asset.totalAccumulatedDepreciation | number:'1.2-2' }}</strong></div>
-            <div class="col-4">الحساب: <strong class="text-dark">{{ asset.assetAccountCode }}</strong></div>
+            <div class="col-4">{{ 'accounting.fixedAssets.table.cost' | translate }}: <strong class="text-dark">{{ asset.acquisitionCost | number:'1.2-2' }}</strong></div>
+            <div class="col-4">{{ 'accounting.fixedAssets.table.accumulatedDepr' | translate }}: <strong class="text-rose">{{ asset.totalAccumulatedDepreciation | number:'1.2-2' }}</strong></div>
+            <div class="col-4">{{ 'accounting.journal.table.account' | translate }}: <strong class="text-dark">{{ asset.assetAccountCode }}</strong></div>
           </div>
         </div>
 
         <div class="modal-grid-2">
           <div class="form-group">
-            <label>تاريخ الاستبعاد / البيع *</label>
+            <label>{{ 'accounting.fixedAssets.table.purchaseDate' | translate }} *</label>
             <input 
               type="date" 
               class="form-control" 
@@ -456,7 +461,7 @@
           </div>
 
           <div class="form-group">
-            <label>سعر البيع الإجمالي (0 في حال الشطب/التخريد) *</label>
+            <label>{{ 'accounting.fixedAssets.table.salvageValue' | translate }} *</label>
             <input 
               type="number" 
               class="form-control" 
@@ -467,7 +472,7 @@
         </div>
 
         <div class="form-group mt-2" *ngIf="disposalSalePrice() > 0">
-          <label>حساب إيداع القيمة البيعية (صندوق / بنك) *</label>
+          <label>{{ 'accounting.vouchers.modal.cashBox' | translate }} *</label>
           <select 
             class="form-control" 
             [ngModel]="disposalProceedsAccountId()" 
@@ -479,21 +484,21 @@
         </div>
 
         <div class="form-group mt-2">
-          <label>سبب الاستبعاد أو الشطب *</label>
+          <label>{{ 'accounting.journal.form.narration' | translate }} *</label>
           <input 
             type="text" 
             class="form-control" 
-            placeholder="مثال: بيع الأصل لعدم الحاجة، تلف الأصل، تقادم تكنولوجي..." 
+            [placeholder]="'accounting.journal.form.narration' | translate" 
             [ngModel]="disposalReason()" 
             (ngModelChange)="disposalReason.set($event)" />
         </div>
 
         <div class="form-group mt-2">
-          <label>ملاحظات إضافية</label>
+          <label>{{ 'accounting.journal.form.notes' | translate }}</label>
           <textarea 
             class="form-control" 
             rows="2" 
-            placeholder="بيانات المشتري، رقم الفاتورة إن وجدت..." 
+            [placeholder]="'accounting.journal.form.notes' | translate" 
             [ngModel]="disposalNotes()" 
             (ngModelChange)="disposalNotes.set($event)"></textarea>
         </div>
@@ -504,13 +509,13 @@
             <div>
               <span class="d-block fw-bold" [class.text-success]="calculateDisposalGainLoss().isGain" [class.text-danger]="!calculateDisposalGainLoss().isGain">
                 <i class="pi me-1" [class.pi-arrow-up]="calculateDisposalGainLoss().isGain" [class.pi-arrow-down]="!calculateDisposalGainLoss().isGain"></i>
-                {{ calculateDisposalGainLoss().isGain ? 'أرباح رأسمالية متوقعة من البيع (إيرادات أخرى)' : 'خسائر رأسمالية ناتجة عن الاستبعاد (مصروفات أخرى)' }}
+                {{ calculateDisposalGainLoss().isGain ? ('accounting.financialStatements.incomeStatement.netProfit' | translate) : ('accounting.financialStatements.incomeStatement.netLoss' | translate) }}
               </span>
-              <small class="text-muted">صافي الفارق بين سعر البيع والقيمة الدفترية المتبقية</small>
+              <small class="text-muted">{{ 'accounting.fixedAssets.table.bookValue' | translate }}</small>
             </div>
             <div class="text-end">
               <strong class="fs-4" [class.text-success]="calculateDisposalGainLoss().isGain" [class.text-danger]="!calculateDisposalGainLoss().isGain">
-                {{ calculateDisposalGainLoss().amount | number:'1.2-2' }} <small>ر.س</small>
+                {{ calculateDisposalGainLoss().amount | number:'1.2-2' }} <small>{{ 'accounting.yearEndClosing.summary.sar' | translate }}</small>
               </strong>
             </div>
           </div>
@@ -518,19 +523,19 @@
 
         <div class="alert alert-warning mt-3 small">
           <i class="pi pi-exclamation-triangle me-1"></i>
-          سيتم توليد وترحيل قيد يومية فوري لإقفال الأصل ومجمع استهلاكه، وإثبات المدين والدائن والأرباح أو الخسائر في دفتر الأستاذ العام وتحديث حالة الأصل إلى "مستبعد".
+          {{ 'accounting.journal.filters.posted' | translate }}
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeDisposalModal()">إلغاء</button>
+        <button class="btn btn-secondary" (click)="closeDisposalModal()">{{ 'common.cancel' | translate }}</button>
         <button 
           class="btn btn-danger" 
           [disabled]="isDisposing() || !disposalReason()" 
           (click)="executeDisposal()">
           <i class="pi pi-check" *ngIf="!isDisposing()"></i>
           <i class="pi pi-spin pi-spinner" *ngIf="isDisposing()"></i>
-          تأكيد استبعاد الأصل وترحيل القيد المحاسبي
+          {{ 'accounting.fixedAssets.table.actions' | translate }}
         </button>
       </div>
     </div>

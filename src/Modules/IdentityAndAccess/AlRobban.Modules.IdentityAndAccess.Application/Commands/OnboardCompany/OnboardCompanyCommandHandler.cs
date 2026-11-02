@@ -5,7 +5,9 @@ using AlRobban.Modules.IdentityAndAccess.Domain.Enums;
 using AlRobban.Modules.IdentityAndAccess.Domain.Repositories;
 using AlRobban.Modules.IdentityAndAccess.Domain.ValueObjects;
 using AlRobban.Shared.Application.CQRS;
+using AlRobban.Shared.Application.Events;
 using AlRobban.Shared.Kernel.Primitives;
+using MediatR;
 
 namespace AlRobban.Modules.IdentityAndAccess.Application.Commands.OnboardCompany;
 
@@ -14,15 +16,18 @@ public class OnboardCompanyCommandHandler : ICommandHandler<OnboardCompanyComman
     private readonly ICompanyRepository _companyRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IMediator _mediator;
 
     public OnboardCompanyCommandHandler(
         ICompanyRepository companyRepository,
         IUserRepository userRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IMediator mediator)
     {
         _companyRepository = companyRepository;
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
+        _mediator = mediator;
     }
 
     public async Task<Result<CompanyDto>> Handle(
@@ -119,7 +124,16 @@ public class OnboardCompanyCommandHandler : ICommandHandler<OnboardCompanyComman
         await _companyRepository.SaveChangesAsync(cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        // 8. Map to DTO
+        // 8. Publish CompanyCreatedEvent to trigger automatic financial onboarding
+        await _mediator.Publish(new CompanyCreatedEvent(
+            company.Id,
+            company.Id,
+            company.Code,
+            company.NameAr,
+            company.NameEn,
+            company.CurrencyCode), cancellationToken);
+
+        // 9. Map to DTO
         var dto = new CompanyDto(
             company.Id,
             company.Code,

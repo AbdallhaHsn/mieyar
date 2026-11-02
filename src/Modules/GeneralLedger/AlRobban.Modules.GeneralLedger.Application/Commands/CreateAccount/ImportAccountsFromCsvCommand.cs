@@ -36,8 +36,8 @@ public class ImportAccountsFromCsvCommandHandler : IRequestHandler<ImportAccount
 
     public async Task<Result<ImportAccountsResultDto>> Handle(ImportAccountsFromCsvCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
 
         if (string.IsNullOrWhiteSpace(request.CsvContent))
         {

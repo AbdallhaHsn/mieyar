@@ -1,0 +1,611 @@
+<div class="erp-invoice-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+
+  <!-- Top Action & Navigation Bar -->
+  <div class="erp-topbar">
+    <div class="topbar-title-group">
+      <div class="breadcrumbs">
+        <a routerLink="/purchasing/invoices">{{ 'purchasing.invoiceCreate.breadcrumbList' | translate }}</a>
+        <i class="pi pi-angle-left"></i>
+        <span>{{ 'purchasing.invoiceCreate.breadcrumbCurrent' | translate }}</span>
+      </div>
+      <h1 class="page-title">
+        <i class="pi pi-shopping-bag text-emerald"></i>
+        {{ 'purchasing.invoiceCreate.title' | translate }}
+      </h1>
+      <span class="page-subtitle">{{ 'purchasing.invoiceCreate.subtitle' | translate }}</span>
+    </div>
+
+    <div class="topbar-actions-group">
+      <button 
+        type="button" 
+        class="erp-btn btn-zatca" 
+        (click)="submitInvoice(true)" 
+        [disabled]="isSubmitting()"
+        [title]="'ui.purchaseInvoiceCreate.2152d4' | translate">
+        <i class="pi pi-check" *ngIf="!isSubmitting()"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+        <span>{{ 'purchasing.invoiceCreate.saveAndPost' | translate }}</span>
+      </button>
+
+      <button 
+        type="button" 
+        class="erp-btn btn-save" 
+        (click)="submitInvoice(false)" 
+        [disabled]="isSubmitting()"
+        [title]="'ui.purchaseInvoiceCreate.b3cc70' | translate">
+        <i class="pi pi-save"></i>
+        <span>{{ 'purchasing.invoiceCreate.saveDraft' | translate }}</span>
+      </button>
+
+      <button 
+        type="button" 
+        class="erp-btn btn-cancel" 
+        routerLink="/purchasing/invoices">
+        <i class="pi pi-times"></i>
+        <span>{{ 'purchasing.invoiceCreate.cancel' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3 Side-by-Side Vertical Columns (Ultra-Compact Header) -->
+  <div class="erp-sections-row">
+
+    <!-- Column 1: بيانات الفاتورة (Invoice Info) -->
+    <div class="erp-section-col">
+      <div class="section-header">
+        <i class="pi pi-file-edit text-emerald"></i>
+        <span class="header-title">{{ 'purchasing.invoiceCreate.sectionInvoiceInfo' | translate }}</span>
+      </div>
+      <div class="section-body grid-2">
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.invoiceType' | translate }}</label>
+          <select class="form-select font-bold" [(ngModel)]="purchaseType">
+            <option value="LocalGoods">{{ 'purchasing.invoiceCreate.localGoods' | translate }}</option>
+            <option value="ImportGoods">{{ 'purchasing.invoiceCreate.importGoods' | translate }}</option>
+            <option value="OperatingServices">{{ 'purchasing.invoiceCreate.operatingServices' | translate }}</option>
+            <option value="FixedAssets">{{ 'purchasing.invoiceCreate.fixedAssets' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'invoices.create.autoInvoiceNumber' | translate }}</label>
+          <div class="control-with-action">
+            <input 
+              type="text" 
+              class="form-input font-code font-bold text-emerald" 
+              [value]="invoiceNumber()" 
+              readonly />
+            <button 
+              type="button" 
+              class="btn-icon-action" 
+              (click)="generateInvoiceNumber()" 
+              [title]="'ui.purchaseInvoiceCreate.f9ea9e' | translate">
+              <i class="pi pi-refresh"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">
+            <span class="req">*</span>
+            {{ 'purchasing.invoices.table.date' | translate }}
+          </label>
+          <input 
+            type="date" 
+            class="form-input font-code" 
+            [(ngModel)]="issueDate" />
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'invoices.view.supplyDate' | translate }}</label>
+          <input 
+            type="date" 
+            class="form-input font-code" 
+            [(ngModel)]="supplyDate" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: بيانات المورد والدفع (Vendor & Payment) -->
+    <div class="erp-section-col">
+      <div class="section-header">
+        <i class="pi pi-user text-emerald"></i>
+        <span class="header-title">{{ 'ui.purchaseInvoiceCreate.7bfe7e' | translate }}</span>
+      </div>
+      <div class="section-body grid-2">
+        <div class="form-field col-span-2">
+          <label class="field-label">
+            <span class="req">*</span>
+            {{ 'ui.purchaseInvoiceCreate.0e874b' | translate }}
+          </label>
+          <div class="control-with-action">
+            <app-searchable-select
+              [items]="vendorOptions()"
+              [value]="selectedVendorId"
+              (valueChange)="selectedVendorId = $event; onVendorChange()"
+              [placeholder]="'ui.purchaseInvoiceCreate.3900e6' | translate"
+              [searchPlaceholder]="'ui.purchaseInvoiceCreate.52eace' | translate">
+            </app-searchable-select>
+            <button 
+              type="button" 
+              class="btn-icon-action" 
+              routerLink="/accounting/partners/create" 
+              [title]="'accounting.partnerCreate.titleSupplier' | translate">
+              <i class="pi pi-user-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">
+            <span class="req">*</span>
+            {{ 'ui.purchaseInvoiceCreate.5643ad' | translate }}
+          </label>
+          <input 
+            type="text" 
+            class="form-input font-code font-bold" 
+            [placeholder]="'ui.purchaseInvoiceCreate.bd215b' | translate" 
+            [(ngModel)]="vendorInvoiceNumber" />
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.vatNumber' | translate }}</label>
+          <input 
+            type="text" 
+            class="form-input font-code" 
+            [placeholder]="'ui.purchaseInvoiceCreate.732af0' | translate" 
+            maxlength="15" 
+            [value]="selectedVendor()?.taxNumber || '-'" 
+            readonly />
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.paymentMethod' | translate }}</label>
+          <select 
+            class="form-select font-bold" 
+            [(ngModel)]="paymentMethod" 
+            (ngModelChange)="onPaymentMethodChange()">
+            <option value="Credit">{{ 'ui.purchaseInvoiceCreate.947c22' | translate }}</option>
+            <option value="Cash">{{ 'ui.purchaseInvoiceCreate.83c4a5' | translate }}</option>
+            <option value="Bank">{{ 'purchasing.invoiceCreate.bankTransfer' | translate }}</option>
+            <option value="Cheque">{{ 'ui.purchaseInvoiceCreate.668f95' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.dueDate' | translate }}</label>
+          <input 
+            type="date" 
+            class="form-input font-code" 
+            [(ngModel)]="dueDate" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: البيانات اللوجستية والتوجيه (Internal Logistics) -->
+    <div class="erp-section-col">
+      <div class="section-header">
+        <i class="pi pi-truck text-emerald"></i>
+        <span class="header-title">{{ 'ui.purchaseInvoiceCreate.728658' | translate }}</span>
+      </div>
+      <div class="section-body grid-2">
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.branch' | translate }}</label>
+          <select class="form-select font-bold" [(ngModel)]="selectedBranch">
+            <option *ngFor="let b of branches()" [value]="b.code">
+              {{ b.code }} - {{ langService.currentLang() === 'ar' ? b.nameAr : b.nameEn }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.receivingWarehouse' | translate }}</label>
+          <select class="form-select font-bold text-emerald" [(ngModel)]="selectedWarehouse" (ngModelChange)="lineForm.warehouseCode = $event">
+            <option *ngFor="let w of warehouses()" [value]="w.code">
+              {{ w.code }} - {{ langService.currentLang() === 'ar' ? w.nameAr : w.nameEn }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.invoiceCreate.costCenter' | translate }}</label>
+          <select class="form-select" [(ngModel)]="selectedCostCenterId">
+            <option value="">{{ 'ui.purchaseInvoiceCreate.1a7e1d' | translate }}</option>
+            <option *ngFor="let cc of costCenters()" [value]="cc.id">
+              {{ cc.code }} - {{ langService.currentLang() === 'ar' ? cc.nameAr : (cc.nameEn || cc.nameAr) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'purchasing.procurement.pipeline.step2Title' | translate }}</label>
+          <input 
+            type="text" 
+            class="form-input font-code" 
+            [placeholder]="'ui.purchaseInvoiceCreate.ed5122' | translate" 
+            [(ngModel)]="poNumber" />
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'ui.purchaseInvoiceCreate.d3cb7a' | translate }}</label>
+          <div class="currency-split">
+            <input 
+              type="text" 
+              class="form-input font-code text-center font-bold currency-code" 
+              [(ngModel)]="currency" 
+              readonly />
+            <input 
+              type="number" 
+              step="0.0001" 
+              class="form-input font-code text-center" 
+              [(ngModel)]="exchangeRateToSar" 
+              placeholder="1.0" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ 'ui.purchaseInvoiceCreate.f5a813' | translate }}</label>
+          <input 
+            type="text" 
+            class="form-input" 
+            [placeholder]="'ui.purchaseInvoiceCreate.1e8dab' | translate" 
+            [(ngModel)]="notes" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Line Items Table Section -->
+  <div class="erp-table-card">
+    <div class="table-header-strip">
+      <div class="strip-title">
+        <i class="pi pi-list text-emerald"></i>
+        <strong>{{ 'ui.purchaseInvoiceCreate.84d537' | translate }}</strong>
+        <span class="count-badge">{{ lines().length }} {{ 'invoices.create.itemsCount' | translate }}</span>
+      </div>
+      <div class="strip-actions">
+        <span class="strip-hint">{{ 'ui.purchaseInvoiceCreate.de57af' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="erp-table-wrap">
+      <table class="erp-items-table">
+        <thead>
+          <tr>
+            <th class="th-seq">#</th>
+            <th class="th-item">{{ 'ui.purchaseInvoiceCreate.e225bd' | translate }}</th>
+            <th class="th-warehouse">{{ 'purchasing.invoiceCreate.warehouse' | translate }}</th>
+            <th class="th-unit">{{ 'purchasing.invoiceCreate.unit' | translate }}</th>
+            <th class="th-qty">{{ 'purchasing.invoiceCreate.quantity' | translate }}</th>
+            <th class="th-price">{{ 'purchasing.invoiceCreate.purchasePrice' | translate }}</th>
+            <th class="th-disc">{{ 'purchasing.invoiceCreate.discount' | translate }}</th>
+            <th class="th-taxable">{{ 'ui.purchaseInvoiceCreate.dd9485' | translate }}</th>
+            <th class="th-vat-rate">{{ 'purchasing.invoiceCreate.vat' | translate }}</th>
+            <th class="th-vat">{{ 'ui.purchaseInvoiceCreate.d180ce' | translate }}</th>
+            <th class="th-total">{{ 'ui.purchaseInvoiceCreate.1eae39' | translate }}</th>
+            <th class="th-actions">{{ 'purchasing.invoiceCreate.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Empty State when no lines added yet -->
+          <tr *ngIf="lines().length === 0">
+            <td colspan="12" class="empty-table-cell">
+              <div class="empty-table-state">
+                <i class="pi pi-box empty-icon"></i>
+                <div class="empty-text-wrap">
+                  <strong class="empty-title">{{ 'ui.purchaseInvoiceCreate.911288' | translate }}</strong>
+                  <span class="empty-desc">{{ 'ui.purchaseInvoiceCreate.7d2ec8' | translate }}</span>
+                </div>
+                <button type="button" class="btn-empty-add" (click)="openAddLineModal()">
+                  <i class="pi pi-plus"></i>
+                  <span>{{ 'ui.purchaseInvoiceCreate.16011b' | translate }}</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Formatted Display Rows -->
+          <tr *ngFor="let line of lines(); let i = index">
+            <!-- Seq # -->
+            <td class="text-center font-code th-seq">{{ i + 1 }}</td>
+
+            <!-- Item Name & Code -->
+            <td class="th-item">
+              <div class="item-display">
+                <strong class="item-title">{{ langService.currentLang() === 'ar' ? line.itemNameAr : (line.itemNameEn || line.itemNameAr) }}</strong>
+                <span class="item-code-tag" *ngIf="getItemCode(line.itemId)">{{ getItemCode(line.itemId) }}</span>
+              </div>
+            </td>
+
+            <!-- Warehouse -->
+            <td class="th-warehouse">
+              <span class="badge-wh">{{ getWarehouseName(line.warehouseCode) }}</span>
+            </td>
+
+            <!-- Unit of Measure -->
+            <td class="th-unit">
+              <span class="badge-unit">{{ line.unitOfMeasure }}</span>
+            </td>
+
+            <!-- Quantity -->
+            <td class="th-qty font-code text-center font-bold">
+              {{ line.quantity | number:'1.0-2' }}
+            </td>
+
+            <!-- Unit Purchase Price -->
+            <td class="th-price font-code text-left">
+              {{ line.unitPrice | number:'1.2-2' }}
+            </td>
+
+            <!-- Discount -->
+            <td class="th-disc font-code text-left">
+              <span class="text-rose font-bold" *ngIf="line.discountAmount > 0">-{{ line.discountAmount | number:'1.2-2' }}</span>
+              <span class="text-muted" *ngIf="!line.discountAmount || line.discountAmount === 0">-</span>
+            </td>
+
+            <!-- Net Taxable Amount -->
+            <td class="th-taxable font-code text-left font-bold text-dark">
+              {{ getLineTaxable(line) | number:'1.2-2' }}
+            </td>
+
+            <!-- VAT Rate Selection -->
+            <td class="th-vat-rate text-center">
+              <span class="badge-vat">{{ line.vatRate }}%</span>
+            </td>
+
+            <!-- VAT Amount -->
+            <td class="th-vat font-code text-left text-emerald font-bold">
+              {{ getLineVat(line) | number:'1.2-2' }}
+            </td>
+
+            <!-- Line Total -->
+            <td class="th-total font-code text-left text-primary font-bold">
+              {{ getLineTotal(line) | number:'1.2-2' }}
+            </td>
+
+            <!-- Actions (Edit / Delete) -->
+            <td class="th-actions text-center">
+              <div class="cell-actions-wrap">
+                <button 
+                  type="button" 
+                  class="btn-cell-edit" 
+                  (click)="openEditLineModal(i)" 
+                  [title]="'ui.purchaseInvoiceCreate.996387' | translate">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button 
+                  type="button" 
+                  class="btn-cell-del" 
+                  (click)="removeLine(i)" 
+                  [title]="'ui.purchaseInvoiceCreate.1ab08f' | translate">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Action & Totals Summary Footer -->
+    <div class="erp-table-footer">
+      <div class="footer-btn-side">
+        <button type="button" class="btn-add-item" (click)="openAddLineModal()">
+          <i class="pi pi-plus"></i>
+          <span>{{ 'ui.purchaseInvoiceCreate.1d2a04' | translate }}</span>
+        </button>
+      </div>
+
+      <!-- Financial Totals Summary Boxes -->
+      <div class="erp-totals-summary">
+        <div class="tot-box">
+          <span class="tot-label">{{ 'ui.purchaseInvoiceCreate.6de49d' | translate }}</span>
+          <strong class="tot-val font-code">{{ subTotal() | number:'1.2-2' }} SAR</strong>
+        </div>
+
+        <div class="tot-box" *ngIf="totalDiscount() > 0">
+          <span class="tot-label text-rose">{{ 'ui.purchaseInvoiceCreate.71a886' | translate }}</span>
+          <strong class="tot-val font-code text-rose">-{{ totalDiscount() | number:'1.2-2' }} SAR</strong>
+        </div>
+
+        <div class="tot-box">
+          <span class="tot-label">{{ 'ui.purchaseInvoiceCreate.e40bf9' | translate }}</span>
+          <strong class="tot-val font-code">{{ taxableTotal() | number:'1.2-2' }} SAR</strong>
+        </div>
+
+        <div class="tot-box vat">
+          <span class="tot-label">{{ 'ui.purchaseInvoiceCreate.9e9b24' | translate }}</span>
+          <strong class="tot-val font-code text-emerald">{{ vatTotal() | number:'1.2-2' }} SAR</strong>
+        </div>
+
+        <div class="tot-box grand">
+          <span class="tot-label">{{ 'ui.purchaseInvoiceCreate.b6aad1' | translate }}</span>
+          <strong class="tot-val font-code text-primary">{{ grandTotal() | number:'1.2-2' }} SAR</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tafqeet & Accounting Impact Status Bar -->
+    <div class="erp-status-bar">
+      <div class="tafqeet-strip">
+        <strong>{{ 'ui.purchaseInvoiceCreate.2fab49' | translate }}</strong>
+        <span>{{ tafqeetStr() }}</span>
+      </div>
+
+      <div class="accounting-impact-strip">
+        <i class="pi pi-sync text-emerald"></i>
+        <span>
+          <strong>{{ 'ui.purchaseInvoiceCreate.6524c4' | translate }}</strong> 
+          {{ 'ui.purchaseInvoiceCreate.6fd7db' | translate }} <strong>{{ taxableTotal() | number:'1.2-2' }}</strong> {{ 'ui.purchaseInvoiceCreate.708bc5' | translate }} <strong>{{ vatTotal() | number:'1.2-2' }}</strong> {{ 'ui.purchaseInvoiceCreate.3ee79a' | translate }} <strong>{{ grandTotal() | number:'1.2-2' }}</strong>)
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal Popup for Adding / Editing Line Items -->
+  <div class="modal-backdrop" *ngIf="showLineModal()" (click)="closeLineModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-left">
+          <i class="pi pi-box text-emerald"></i>
+          <h3>{{ editingIndex() !== null ? ('ui.purchaseInvoiceCreate.26b949' | translate) : ('ui.purchaseInvoiceCreate.3ec8ec' | translate) }}</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeLineModal()" [title]="('purchasing.invoiceCreate.close' | translate)"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-grid">
+          <!-- Row 1: Item Lookup & Description -->
+          <div class="m-field col-span-2">
+            <label class="m-label">
+              {{ 'ui.purchaseInvoiceCreate.f482e5' | translate }}
+            </label>
+            <app-searchable-select
+              [items]="catalogItemOptions()"
+              [value]="lineForm.itemId"
+              (valueChange)="lineForm.itemId = $event; onModalItemSelect()"
+              [placeholder]="'ui.purchaseInvoiceCreate.010105' | translate"
+              [searchPlaceholder]="'invoices.create.modalCatalogSearchPlaceholder' | translate">
+            </app-searchable-select>
+          </div>
+
+          <div class="m-field col-span-2">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+              <label class="m-label" style="margin: 0;">
+                <span class="req">*</span>
+                {{ 'ui.purchaseInvoiceCreate.e6826e' | translate }}
+                <small class="text-muted ms-1 me-1" style="font-weight: normal;">{{ 'common.arOrEn' | translate }}</small>
+              </label>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <span *ngIf="lineItemBgTranslation" style="color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                  {{ lineItemBgTranslation }}
+                </span>
+                <button type="button" class="btn btn-xs btn-outline-secondary" (click)="forceRetranslateLineItem()" [title]="'projects.hub.workspace.wbs.retranslate' | translate" style="padding: 1px 5px; font-size: 0.72rem;">
+                  <i class="pi pi-globe"></i>
+                </button>
+              </div>
+            </div>
+            <input 
+              type="text" 
+              class="m-input font-bold" 
+              [placeholder]="'ui.purchaseInvoiceCreate.681bba' | translate" 
+              [ngModel]="lineForm.itemNameAr || lineForm.itemNameEn" 
+              (ngModelChange)="onLineItemNameArChange($event)"
+              required />
+          </div>
+
+          <!-- Row 2: Warehouse, Unit, Quantity, Price -->
+          <div class="m-field">
+            <label class="m-label">{{ 'purchasing.invoiceCreate.receivingWarehouse' | translate }}</label>
+            <select class="m-select font-bold text-emerald" [(ngModel)]="lineForm.warehouseCode">
+              <option *ngFor="let w of warehouses()" [value]="w.code">
+                {{ w.code }} - {{ langService.currentLang() === 'ar' ? w.nameAr : w.nameEn }}
+              </option>
+            </select>
+          </div>
+
+          <div class="m-field">
+            <label class="m-label">{{ 'purchasing.items.table.unit' | translate }}</label>
+            <select class="m-select" [(ngModel)]="lineForm.unitOfMeasure">
+              <option *ngFor="let u of availableUnits" [value]="u">{{ u }}</option>
+            </select>
+          </div>
+
+          <div class="m-field">
+            <label class="m-label">
+              <span class="req">*</span>
+              {{ 'ui.purchaseInvoiceCreate.bde0d9' | translate }}
+            </label>
+            <input 
+              type="number" 
+              min="0.0001" 
+              step="1" 
+              class="m-input font-code font-bold text-center" 
+              [(ngModel)]="lineForm.quantity" />
+          </div>
+
+          <div class="m-field">
+            <label class="m-label">
+              <span class="req">*</span>
+              {{ 'ui.purchaseInvoiceCreate.75e5f7' | translate }}
+            </label>
+            <input 
+              type="number" 
+              min="0" 
+              step="0.01" 
+              class="m-input font-code font-bold text-left" 
+              [(ngModel)]="lineForm.unitPrice" />
+          </div>
+
+          <!-- Row 3: Discount & VAT Rate -->
+          <div class="m-field">
+            <label class="m-label">{{ 'ui.purchaseInvoiceCreate.e492e1' | translate }}</label>
+            <input 
+              type="number" 
+              min="0" 
+              step="0.01" 
+              class="m-input font-code text-left" 
+              [(ngModel)]="lineForm.discountAmount" />
+          </div>
+
+          <div class="m-field">
+            <label class="m-label">{{ 'invoices.create.modalVatRate' | translate }}</label>
+            <select class="m-select font-bold" [(ngModel)]="lineForm.vatRate">
+              <option [ngValue]="15">{{ 'ui.purchaseInvoiceCreate.b35a2d' | translate }}</option>
+              <option [ngValue]="0">{{ 'ui.purchaseInvoiceCreate.920f47' | translate }}</option>
+            </select>
+          </div>
+
+          <!-- Live Computation Card inside Modal -->
+          <div class="modal-calc-card col-span-2">
+            <div class="calc-item">
+              <span class="c-label">{{ 'ui.purchaseInvoiceCreate.e40bf9' | translate }}</span>
+              <strong class="c-val font-code">{{ modalTaxable | number:'1.2-2' }} SAR</strong>
+            </div>
+            <div class="calc-item">
+              <span class="c-label">{{ 'ui.purchaseInvoiceCreate.8ab7db' | translate }}</span>
+              <strong class="c-val font-code text-emerald">{{ modalVat | number:'1.2-2' }} SAR</strong>
+            </div>
+            <div class="calc-item grand">
+              <span class="c-label">{{ 'ui.purchaseInvoiceCreate.bef8bc' | translate }}</span>
+              <strong class="c-val font-code text-primary">{{ modalTotal | number:'1.2-2' }} SAR</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-left">
+          <button 
+            type="button" 
+            class="m-btn btn-primary" 
+            (click)="saveModalLine(false)">
+            <i class="pi pi-check"></i>
+            <span>{{ editingIndex() !== null ? ('branches.updateBranch' | translate) : ('ui.purchaseInvoiceCreate.5794e6' | translate) }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="m-btn btn-secondary" 
+            *ngIf="editingIndex() === null" 
+            (click)="saveModalLine(true)"
+            [title]="'ui.purchaseInvoiceCreate.dbaacd' | translate">
+            <i class="pi pi-plus-circle"></i>
+            <span>{{ 'ui.purchaseInvoiceCreate.dda305' | translate }}</span>
+          </button>
+        </div>
+
+        <button 
+          type="button" 
+          class="m-btn btn-cancel" 
+          (click)="closeLineModal()">
+          <span>{{ 'purchasing.invoiceCreate.cancel' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+

@@ -32,8 +32,8 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
 
     public async Task<Result<DocumentAttachmentDto>> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
 
         if (string.IsNullOrWhiteSpace(request.FileName) || string.IsNullOrWhiteSpace(request.FileContentBase64))
         {
@@ -80,7 +80,7 @@ public class GetDocumentsByEntityQueryHandler : IRequestHandler<GetDocumentsByEn
 
     public async Task<Result<IReadOnlyList<DocumentAttachmentDto>>> Handle(GetDocumentsByEntityQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var docs = await _documentRepository.GetByEntityAsync(companyId, request.EntityType, request.EntityId, cancellationToken);
         var dtos = docs.Select(DocumentAttachmentDto.FromEntity).ToList();
         return Result.Success<IReadOnlyList<DocumentAttachmentDto>>(dtos);

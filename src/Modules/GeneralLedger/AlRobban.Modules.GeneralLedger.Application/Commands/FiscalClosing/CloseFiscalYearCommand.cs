@@ -12,7 +12,10 @@ namespace AlRobban.Modules.GeneralLedger.Application.Commands.FiscalClosing;
 public record CloseFiscalYearCommand(
     Guid FiscalYearId,
     Guid? RetainedEarningsAccountId = null,
-    bool GenerateOpeningBalanceNextYear = true) : IRequest<Result<YearEndClosingResultDto>>;
+    bool GenerateOpeningBalanceNextYear = true) : IRequest<Result<YearEndClosingResultDto>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class CloseFiscalYearCommandHandler : IRequestHandler<CloseFiscalYearCommand, Result<YearEndClosingResultDto>>
 {
@@ -149,19 +152,8 @@ public class CloseFiscalYearCommandHandler : IRequestHandler<CloseFiscalYearComm
                 CostCenterId: null));
         }
 
-        // 3. Ensure Closing Period and December Period are Open
-        var targetPeriod = year.Periods.FirstOrDefault(p => p.StartDate <= year.EndDate && year.EndDate <= p.EndDate && !p.IsClosingPeriod);
-        if (targetPeriod != null && targetPeriod.Status == FiscalPeriodStatus.Locked)
-        {
-            targetPeriod.SetStatus(FiscalPeriodStatus.Open);
-        }
-
-        var closingPeriod = year.Periods.FirstOrDefault(p => p.IsClosingPeriod);
-        if (closingPeriod != null && closingPeriod.Status == FiscalPeriodStatus.Locked)
-        {
-            closingPeriod.SetStatus(FiscalPeriodStatus.Open);
-        }
-        await _settingsRepo.SaveChangesAsync(cancellationToken);
+        // 3. Closing entries are of type Closing, which is allowed to post regardless of period status
+        //    (see CreateJournalEntryCommandHandler), so period statuses are left untouched.
 
         string closingEntryNum = "N/A";
         Guid closingEntryId = Guid.Empty;
@@ -281,10 +273,13 @@ public class CloseFiscalYearCommandHandler : IRequestHandler<CloseFiscalYearComm
                     Lines: openingLines);
 
                 var openResult = await _mediator.Send(openingCommand, cancellationToken);
-                if (openResult.IsSuccess)
+                if (openResult.IsFailure)
                 {
-                    openingEntryNum = openResult.Value.EntryNumber;
+                    // Propagate: the surrounding transaction rolls back the closing entry and year closure.
+                    return Result.Failure<YearEndClosingResultDto>(openResult.Error);
                 }
+
+                openingEntryNum = openResult.Value.EntryNumber;
             }
         }
 

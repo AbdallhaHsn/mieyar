@@ -77,8 +77,8 @@ public class CreateCheckCommandHandler : IRequestHandler<CreateCheckCommand, Res
 
     public async Task<Result<PostDatedCheckDto>> Handle(CreateCheckCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
 
         var check = PostDatedCheck.Create(
             tenantId: tenantId,
@@ -190,7 +190,7 @@ public class GetChecksQueryHandler : IRequestHandler<GetChecksQuery, Result<IRea
 
     public async Task<Result<IReadOnlyList<PostDatedCheckDto>>> Handle(GetChecksQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var list = await _checkRepository.GetListAsync(companyId, request.Type, request.Status, cancellationToken);
         var dtos = list.Select(PostDatedCheckDto.FromEntity).ToList();
         return Result.Success<IReadOnlyList<PostDatedCheckDto>>(dtos);

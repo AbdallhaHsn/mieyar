@@ -161,18 +161,18 @@ html, body {
    ERP High-Density Standard (كثافة بيانات احترافية وقاعدة عامة للمشروع)
    ========================================================================= */
 :root {
-  --erp-page-pad: 0.75rem 1rem;
-  --erp-section-gap: 0.55rem;
-  --erp-card-pad: 0.55rem 0.85rem;
+  --erp-page-pad: 0.65rem 0.85rem;
+  --erp-section-gap: 0.5rem;
+  --erp-card-pad: 0.5rem 0.75rem;
   --erp-card-radius: 8px;
-  --erp-input-height: 32px;
-  --erp-btn-height: 32px;
-  --erp-table-cell-pad: 0.32rem 0.55rem;
-  --erp-table-header-pad: 0.42rem 0.55rem;
-  --erp-font-title: 1.15rem;
-  --erp-font-subtitle: 0.75rem;
-  --erp-font-body: 0.8rem;
-  --erp-font-small: 0.7rem;
+  --erp-input-height: 30px;
+  --erp-btn-height: 30px;
+  --erp-table-cell-pad: 0.3rem 0.5rem;
+  --erp-table-header-pad: 0.38rem 0.5rem;
+  --erp-font-title: 1.05rem;
+  --erp-font-subtitle: 0.72rem;
+  --erp-font-body: 0.76rem;
+  --erp-font-small: 0.68rem;
 }
 
 /* Global High-Density Table Standard */
@@ -181,6 +181,9 @@ html, body {
 .tb-main-grid,
 .gl-main-table,
 .entries-table,
+.data-table,
+.tree-table,
+.matrix-table,
 table:not(.p-calendar-table):not(.p-datepicker-calendar) {
   th {
     padding: var(--erp-table-header-pad) !important;
@@ -195,8 +198,23 @@ table:not(.p-calendar-table):not(.p-datepicker-calendar) {
   }
 }
 
+/* Dynamic Entity Name Standard (Single-Language Active Display) */
+.entity-name-text,
+.item-name-text,
+.partner-name,
+.account-name-text {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: #0F172A !important;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+  vertical-align: middle;
+}
+
 /* Global Compact Form Inputs & Selects */
-.form-control:not(textarea):not(select),
 .filter-input,
 .search-box input {
   height: var(--erp-input-height) !important;
@@ -205,13 +223,82 @@ table:not(.p-calendar-table):not(.p-datepicker-calendar) {
   border-radius: 6px !important;
 }
 
-/* Official Al-Roban Custom Styled Dropdowns (Custom SVG Chevron, Clean Padding, IBM Plex Sans Arabic) */
+/* Global Spacing between Icons and Text (حواف وهوامش واضحة بين الأيقونات والنصوص يميناً ويساراً) */
+.btn i,
+button i,
+.badge i,
+.status-pill i,
+.form-label i,
+.label-icon,
+.nav-link i,
+.header-badge i,
+.modal-title-box i {
+  margin-inline-end: 0.5rem !important;
+}
+
+/* Universal Input Wrapper with Icons (ضمان مسافة وهوامش مريحة تمنع تداخل الأيقونة مع مؤشر الكتابة والنص) */
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+
+  .input-icon {
+    position: absolute;
+    right: 0.85rem;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    pointer-events: none;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  input.form-control,
+  input {
+    padding-right: 2.65rem !important; /* مسافة أمان مريحة جداً عن الأيقونة */
+    padding-left: 0.85rem !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 0.85rem !important;
+  }
+
+  input.ltr-input {
+    direction: ltr;
+    text-align: left;
+    padding-right: 2.65rem !important;
+    padding-left: 0.85rem !important;
+  }
+
+  .password-toggle,
+  .end-icon {
+    position: absolute;
+    left: 0.85rem;
+    color: #94a3b8;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  &:has(.password-toggle),
+  &:has(.end-icon) {
+    input {
+      padding-left: 2.65rem !important;
+    }
+  }
+}
+
+/* Official Al-Roban Custom Styled Dropdowns (Universal Standard Across Project) */
 select.form-control,
 select.form-select,
+select.erp-select,
 select.filter-select,
 select.line-select,
 select {
-  height: var(--erp-input-height) !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  line-height: 38px !important;
   appearance: none !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -219,15 +306,19 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: left 0.75rem center !important;
-  background-size: 13px 13px !important;
-  padding-right: 0.65rem !important;
-  padding-left: 2rem !important;
-  font-size: var(--erp-font-body) !important;
-  border-radius: 6px !important;
+  background-size: 14px 14px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-right: 0.85rem !important;
+  padding-left: 2.25rem !important;
+  font-size: 0.84rem !important;
+  border-radius: 7px !important;
   border: 1px solid #cbd5e1 !important;
   color: #0f172a !important;
   font-family: var(--font-arabic) !important;
   cursor: pointer;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
@@ -237,15 +328,36 @@ select {
   &:focus {
     outline: none !important;
     border-color: #059669 !important;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18) !important;
   }
 
   option {
     font-family: var(--font-arabic) !important;
     color: #0f172a !important;
     background-color: #ffffff !important;
-    padding: 6px 10px !important;
+    padding: 8px 12px !important;
+    font-size: 0.84rem !important;
   }
+}
+
+/* In dense table line-items */
+.data-table select,
+.table select,
+.compact-select {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  padding-right: 0.5rem !important;
+  padding-left: 1.5rem !important;
+  font-size: 0.74rem !important;
+  background-size: 11px 11px !important;
+  background-position: left 0.4rem center !important;
+}
+
+/* Prevent any absolute floating icons from overlapping selects inside input-wrappers */
+.input-wrap:has(select) .input-icon,
+.select-wrap .input-icon {
+  display: none !important;
 }
 
 /* Global Compact Form Groups & Labels */
@@ -302,5 +414,174 @@ select {
   padding: var(--erp-page-pad) !important;
   gap: var(--erp-section-gap) !important;
 }
+
+/* Ensure SweetAlert2 overlays appear on top of all modal dialogs */
+.swal2-container {
+  z-index: 9999999 !important;
+  font-family: var(--font-arabic) !important;
+}
+
+/* ==========================================================================
+   Global Universal Print Optimization (ZATCA Invoices & Official Documents)
+   ========================================================================== */
+@media print {
+  /* 1. Hide all application chrome, navigation, headers, footers, and sidebars */
+  app-sidebar,
+  app-topbar,
+  .no-print,
+  .btn,
+  button,
+  .sales-tabs-strip,
+  .sidebar,
+  header.app-header,
+  header.page-header,
+  header.coa-header,
+  nav,
+  .modal-backdrop:not(.print-modal-backdrop),
+  .modal-overlay:not(.print-modal-backdrop),
+  .swal2-container,
+  .erp-shell > app-sidebar,
+  .erp-stage > app-topbar {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* When printing an official modal sheet, hide any background page elements */
+  body:has(.print-modal-backdrop),
+  body.voucher-printing-mode,
+  body.statement-printing-mode {
+    .page-header,
+    .tabs-subnav,
+    .kpi-strip,
+    .metrics-strip,
+    .filter-bar,
+    .toolbar-card,
+    .table-container,
+    .table-card,
+    .recurring-header-strip,
+    .recurring-table-container,
+    app-pagination,
+    .vouchers-page > *:not(.print-modal-backdrop),
+    .gl-container > *:not(.print-modal-backdrop),
+    .payroll-container > *:not(.print-modal-backdrop),
+    .period-selector-card,
+    .kpi-grid,
+    .gl-view-section,
+    .table-container-card,
+    .stats-overview,
+    .filters-card {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+
+  /* 2. Reset containers to full page without clipping or scrollbars */
+  html,
+  body,
+  .erp-shell,
+  .erp-stage,
+  .erp-content-host,
+  main,
+  .vouchers-page,
+  .gl-container,
+  .payroll-container,
+  .invoice-view-page,
+  .view-sheet-canvas {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* 3. A4 Sheet full printable rendering */
+  #invoice-print-area.invoice-a4-sheet,
+  .payslip-sheet {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm 10mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #FFFFFF !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Multi-page continuous financial statements (General Ledger / Payroll Sheet) */
+  .official-statement-sheet,
+  .official-payroll-sheet {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 4mm 6mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #FFFFFF !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .official-voucher-sheet {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm 10mm !important;
+    box-shadow: none !important;
+    border: 2px solid #1e293b !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 4. Thermal Receipt printing */
+  body.thermal-print-mode {
+    #invoice-print-area.thermal-receipt-sheet {
+      position: static !important;
+      width: 100% !important;
+      max-width: 76mm !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      page-break-inside: avoid !important;
+    }
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+}
+
+body.thermal-print-mode {
+  @media print {
+    @page {
+      size: 80mm auto;
+      margin: 2mm;
+    }
+  }
+}
+
 
 

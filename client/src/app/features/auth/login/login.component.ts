@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +10,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <!-- Splash Screen Layer -->
     <div 
@@ -37,13 +38,11 @@ import { CompanyContextService } from '../../../core/services/company-context.se
         <!-- System Typography -->
         <div class="splash-branding">
           <h1 class="splash-title">
-            <span class="cyber-accent">الرّبـــــان</span>
+            <span class="cyber-accent">{{ 'ui.login.dda875' | translate }}</span>
             <span class="splash-en">Al-Roban</span>
           </h1>
           <p class="splash-tagline">
-            {{ langService.currentLang() === 'ar' 
-              ? 'المنظومة المحاسبية والمالية السحابية الشاملة' 
-              : 'Enterprise Cloud Accounting & Financial Suite' }}
+            {{ 'auth.login.enterpriseCloudAccountingFinan' | translate }}
           </p>
         </div>
 
@@ -60,15 +59,15 @@ import { CompanyContextService } from '../../../core/services/company-context.se
 
         <!-- Quick Skip Button -->
         <button type="button" class="splash-skip-btn" (click)="dismissSplash()">
-          <span>{{ langService.currentLang() === 'ar' ? 'تخطي للواجهة مباشرة' : 'Skip Intro' }}</span>
-          <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-arrow-left' : 'pi-arrow-right'"></i>
+          <span>{{ 'auth.login.skipIntro' | translate }}</span>
+          <i class="pi" [ngClass]="('auth.login.piarrowright' | translate)"></i>
         </button>
       </div>
 
       <!-- Splash Footer Credentials Note -->
       <div class="splash-footer-badge">
         <i class="pi pi-shield"></i>
-        <span>{{ langService.currentLang() === 'ar' ? 'اعتماد هيئة الزكاة والضريبة والجمارك ZATCA • تشفير تام 256-Bit' : 'ZATCA Phase 2 Certified • 256-Bit SSL Encrypted' }}</span>
+        <span>{{ 'auth.login.zatcaPhase2Certified256bit' | translate }}</span>
       </div>
     </div>
 
@@ -91,9 +90,9 @@ import { CompanyContextService } from '../../../core/services/company-context.se
           type="button" 
           class="util-pill-btn splash-trigger-btn" 
           (click)="triggerSplash()"
-          [title]="langService.currentLang() === 'ar' ? 'عرض شاشة البداية' : 'View Splash Screen'">
+          [title]="('auth.login.viewSplashScreen' | translate)">
           <i class="pi pi-sparkles"></i>
-          <span class="btn-text">{{ langService.currentLang() === 'ar' ? 'عرض الترحيب' : 'Splash' }}</span>
+          <span class="btn-text">{{ 'auth.login.splash' | translate }}</span>
         </button>
 
         <!-- Language Switcher Pill -->
@@ -102,7 +101,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
           class="util-pill-btn lang-btn" 
           (click)="langService.toggleLanguage()">
           <i class="pi pi-globe"></i>
-          <span class="btn-text">{{ langService.currentLang() === 'ar' ? 'English' : 'العربية' }}</span>
+          <span class="btn-text">{{ 'auth.login.label' | translate }}</span>
         </button>
       </header>
 
@@ -116,10 +115,10 @@ import { CompanyContextService } from '../../../core/services/company-context.se
               <div class="badge-status-dot" title="System Online"></div>
             </div>
             <h2 class="card-title">
-              {{ langService.currentLang() === 'ar' ? 'تسجيل الدخول' : 'Sign In' }}
+              {{ 'auth.login.signIn' | translate }}
             </h2>
             <p class="card-subtitle">
-              {{ langService.currentLang() === 'ar' ? 'منصة الرّبان المحاسبية السحابية' : 'Al-Roban Cloud Accounting Platform' }}
+              {{ 'auth.login.alrobanCloudAccountingPlatform' | translate }}
             </p>
           </div>
 
@@ -131,7 +130,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
               [class.active]="isPlatformOwner" 
               (click)="selectRole(true)">
               <i class="pi pi-crown"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'الشركة المالكة' : 'Platform Owner' }}</span>
+              <span>{{ 'auth.login.platformOwner' | translate }}</span>
             </button>
             <button 
               type="button" 
@@ -139,14 +138,14 @@ import { CompanyContextService } from '../../../core/services/company-context.se
               [class.active]="!isPlatformOwner" 
               (click)="selectRole(false)">
               <i class="pi pi-building"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'منشأة مشتركة' : 'Tenant Company' }}</span>
+              <span>{{ 'auth.login.tenantCompany' | translate }}</span>
             </button>
           </div>
 
           <!-- Quick Test 1-Click Credentials -->
           <div class="quick-demo-row">
             <span class="quick-hint">
-              {{ langService.currentLang() === 'ar' ? 'تجربة سريعة:' : 'Quick Demo:' }}
+              {{ 'auth.login.quickDemo' | translate }}
             </span>
             <button 
               type="button" 
@@ -154,7 +153,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
               [class.pill-active]="isPlatformOwner"
               (click)="fillDemoSuperAdmin()">
               <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'مالك النظام' : 'SuperAdmin' }}</span>
+              <span>{{ 'auth.login.superadmin' | translate }}</span>
             </button>
             <button 
               type="button" 
@@ -162,7 +161,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
               [class.pill-active]="!isPlatformOwner"
               (click)="fillDemoTenant()">
               <i class="pi pi-check"></i>
-              <span>{{ langService.currentLang() === 'ar' ? 'شركة الخليج' : 'Tenant' }}</span>
+              <span>{{ 'auth.login.tenant' | translate }}</span>
             </button>
           </div>
 
@@ -177,7 +176,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
             <!-- Tenant Code Field (Only shown for Tenant Company) -->
             <div class="field-group slide-field" *ngIf="!isPlatformOwner">
               <label for="tenantCode">
-                {{ langService.currentLang() === 'ar' ? 'كود المنشأة المستأجرة' : 'Tenant Code' }}
+                {{ 'auth.login.tenantCode' | translate }}
               </label>
               <div class="input-box">
                 <i class="pi pi-id-card input-icon"></i>
@@ -195,7 +194,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
             <!-- Username / Email -->
             <div class="field-group">
               <label for="username">
-                {{ langService.currentLang() === 'ar' ? 'اسم المستخدم أو البريد' : 'Username or Email' }}
+                {{ 'auth.login.usernameOrEmail' | translate }}
               </label>
               <div class="input-box">
                 <i class="pi pi-user input-icon"></i>
@@ -214,10 +213,10 @@ import { CompanyContextService } from '../../../core/services/company-context.se
             <div class="field-group">
               <div class="field-label-row">
                 <label for="password">
-                  {{ langService.currentLang() === 'ar' ? 'كلمة المرور' : 'Password' }}
+                  {{ 'auth.login.password' | translate }}
                 </label>
                 <a href="javascript:void(0)" class="forgot-pwd-link">
-                  {{ langService.currentLang() === 'ar' ? 'نسيت الرمز؟' : 'Forgot?' }}
+                  {{ 'auth.login.forgot' | translate }}
                 </a>
               </div>
               <div class="input-box">
@@ -246,7 +245,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
                 <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
                 <span class="custom-check"></span>
                 <span class="label-text">
-                  {{ langService.currentLang() === 'ar' ? 'تذكر تسجيل الدخول' : 'Keep me signed in' }}
+                  {{ 'auth.login.keepMeSignedIn' | translate }}
                 </span>
               </label>
             </div>
@@ -257,8 +256,8 @@ import { CompanyContextService } from '../../../core/services/company-context.se
               <i *ngIf="loading" class="pi pi-spin pi-spinner btn-icon"></i>
               <span>
                 {{ loading 
-                  ? (langService.currentLang() === 'ar' ? 'جارٍ التحقق والدخول...' : 'Signing In...') 
-                  : (langService.currentLang() === 'ar' ? 'دخول للنظام' : 'Sign In to System') }}
+                  ? ('auth.login.signingIn' | translate) 
+                  : ('auth.login.signInToSystem' | translate) }}
               </span>
             </button>
           </form>
@@ -267,16 +266,14 @@ import { CompanyContextService } from '../../../core/services/company-context.se
           <div class="card-security-footer">
             <i class="pi pi-shield"></i>
             <span>
-              {{ langService.currentLang() === 'ar'
-                ? 'اتصال مشفر 256-Bit • متوافق مع هيئة الزكاة (ZATCA)'
-                : '256-Bit SSL Secured • ZATCA Phase 2 Ready' }}
+              {{ 'auth.login.256bitSslSecuredZatcaPhase' | translate }}
             </span>
           </div>
         </div>
 
         <!-- Clean Minimal Copyright -->
         <footer class="login-footer-copy">
-          <span>&copy; {{ currentYear }} {{ langService.currentLang() === 'ar' ? 'منظومة الرّبان المحاسبية. جميع الحقوق محفوظة.' : 'Al-Roban Financial ERP. All rights reserved.' }}</span>
+          <span>&copy; {{ currentYear }} {{ 'auth.login.alrobanFinancialErpAllRights' | translate }}</span>
         </footer>
       </main>
     </div>
@@ -1207,16 +1204,12 @@ export class LoginComponent implements OnInit {
 
   handleLogin() {
     if (!this.username || !this.password) {
-      this.errorMessage = this.langService.currentLang() === 'ar'
-        ? 'يرجى إدخال اسم المستخدم وكلمة المرور'
-        : 'Please enter username and password';
+      this.errorMessage = this.langService.t('auth.login.validationUserPass');
       return;
     }
 
     if (!this.isPlatformOwner && !this.tenantCode) {
-      this.errorMessage = this.langService.currentLang() === 'ar'
-        ? 'يرجى إدخال رمز الشركة المستأجرة'
-        : 'Please enter tenant company code';
+      this.errorMessage = this.langService.t('auth.login.validationTenantCode');
       return;
     }
 
@@ -1236,9 +1229,7 @@ export class LoginComponent implements OnInit {
         if (res.success) {
           this.router.navigate(['/dashboard']);
         } else {
-          this.errorMessage = res.error || (this.langService.currentLang() === 'ar'
-            ? 'فشل تسجيل الدخول. يرجى التأكد من البيانات'
-            : 'Login failed. Please verify credentials');
+          this.errorMessage = res.error || this.langService.t('auth.login.validationFailed');
         }
       },
       error: () => {

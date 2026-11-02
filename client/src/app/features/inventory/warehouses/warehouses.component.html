@@ -1,0 +1,651 @@
+<div class="warehouses-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Notifications -->
+  <div class="alert-banner alert-success" *ngIf="successMessage()">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage() }}</span>
+  </div>
+  <div class="alert-banner alert-error" *ngIf="errorMessage()">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ errorMessage() }}</span>
+  </div>
+
+  <!-- Compact Executive Header -->
+  <header class="page-header compact-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <div class="header-icon-cube">
+          <i class="pi pi-building"></i>
+        </div>
+        <div>
+          <div class="title-meta">
+            <span class="category-path">{{ 'inventory.warehouses.categoryPath' | translate }}</span>
+            <span class="sep">/</span>
+            <span class="standard-badge"><i class="pi pi-shield"></i> {{ 'inventory.warehouses.standardBadge' | translate }}</span>
+          </div>
+          <h1 class="main-title">{{ 'inventory.warehouses.title' | translate }}</h1>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-refresh-compact" (click)="loadData()" [title]="'zatca.actions.refreshTitle' | translate">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
+        <span>{{ 'inventory.warehouses.refresh' | translate }}</span>
+      </button>
+      <button type="button" class="btn-primary-compact" (click)="openAddModal()">
+        <i class="pi pi-plus"></i>
+        <span>{{ 'inventory.warehouses.addWarehouse' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Executive Compact Metrics Ribbon (شريط إحصائي تنفيذي مدمج وتفاعلي) -->
+  <section class="executive-metrics-bar">
+    <!-- Metric 1: Total Warehouses -->
+    <div class="metric-segment" (click)="setStatusFilter('all')" [class.active-segment]="statusFilter() === 'all'" [title]="'ui.warehouses.d89a7a' | translate">
+      <div class="metric-icon-mini bg-purple-subtle">
+        <i class="pi pi-building"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'inventory.warehouses.kpis.total' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-purple">{{ totalWarehouses() }}</strong>
+          <span class="metric-unit">{{ 'inventory.warehouses.kpis.totalSub' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <!-- Metric 2: Active Warehouses -->
+    <div class="metric-segment" (click)="setStatusFilter('active')" [class.active-segment]="statusFilter() === 'active'" [title]="'ui.warehouses.3714dc' | translate">
+      <div class="metric-icon-mini bg-emerald-subtle">
+        <i class="pi pi-verified"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'branches.branchesWarehouses.kpiActiveWarehouses' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-emerald">{{ activeWarehouses() }}</strong>
+          <span class="metric-unit">{{ 'branchesWarehouses.readyForInventory' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <!-- Metric 3: Default Warehouses -->
+    <div class="metric-segment" (click)="setStatusFilter('default')" [class.active-segment]="statusFilter() === 'default'" [title]="'ui.warehouses.288789' | translate">
+      <div class="metric-icon-mini bg-amber-subtle">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'ui.warehouses.fb1e25' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-amber">{{ defaultWarehouses() }}</strong>
+          <span class="metric-unit">{{ 'ui.warehouses.cf32ce' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <!-- Metric 4: Branches Served -->
+    <div class="metric-segment" [title]="'ui.warehouses.723542' | translate">
+      <div class="metric-icon-mini bg-blue-subtle">
+        <i class="pi pi-sitemap"></i>
+      </div>
+      <div class="metric-text-group">
+        <span class="metric-title">{{ 'ui.warehouses.ae9edf' | translate }}</span>
+        <div class="metric-number-row">
+          <strong class="metric-num text-blue">{{ branchesServed() }}</strong>
+          <span class="metric-unit">{{ 'ui.warehouses.318f95' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modern Command & Filter Bar -->
+  <div class="command-filter-bar">
+    <!-- Fast Search Box -->
+    <div class="search-command-box">
+      <i class="pi pi-search search-ico"></i>
+      <input 
+        type="text" 
+        [placeholder]="'ui.warehouses.dd92fb' | translate" 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event); currentPage.set(1)" />
+      <button class="clear-search-btn" *ngIf="searchQuery()" (click)="searchQuery.set(''); currentPage.set(1)">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Quick Status Filter Pills -->
+    <div class="status-filter-pills">
+      <button [class.active]="statusFilter() === 'all'" (click)="setStatusFilter('all')">
+        {{ 'ui.warehouses.9f324a' | translate }}{{ totalWarehouses() }})
+      </button>
+      <button [class.active]="statusFilter() === 'active'" (click)="setStatusFilter('active')">
+        {{ 'ui.warehouses.5b2f58' | translate }}{{ activeWarehouses() }})
+      </button>
+      <button [class.active]="statusFilter() === 'default'" (click)="setStatusFilter('default')">
+        {{ 'ui.warehouses.bdcf92' | translate }}{{ defaultWarehouses() }})
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Main Content Display Area (الجدول المترابط كعرض رئيسي معتمد) -->
+  <div class="warehouses-display-area">
+    <!-- Loading State -->
+    <div *ngIf="isLoading()" class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>{{ 'ui.warehouses.07add2' | translate }}</span>
+    </div>
+
+    <!-- Compact High-Density Table View (عرض الجدول المتراص المعتمد) -->
+    <div *ngIf="!isLoading() && filteredWarehouses().length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 100px;">{{ 'inventory.warehouses.cards.code' | translate }}</th>
+            <th>{{ 'branchesWarehouses.warehouseNameCol' | translate }}</th>
+            <th style="width: 150px;">{{ 'branchesWarehouses.linkedBranchCol' | translate }}</th>
+            <th>{{ 'branchesWarehouses.managerContactCol' | translate }}</th>
+            <th style="width: 95px;">{{ 'invoices.table.type' | translate }}</th>
+            <th style="width: 90px;">{{ 'branches.table.status' | translate }}</th>
+            <th style="width: 295px; text-align: center;">{{ 'branches.table.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let w of paginatedWarehouses()" [class.row-inactive]="!w.isActive">
+            <td>
+              <span class="code-tag font-mono">{{ w.code }}</span>
+            </td>
+            <td>
+              <div class="entity-name-box">
+                <strong class="name-ar">{{ w.nameAr }}</strong>
+                <span class="name-en" *ngIf="w.nameEn">{{ w.nameEn }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="branch-pill">
+                <i class="pi pi-building"></i>
+                {{ w.branchName || ('branchesWarehouses.notLinked' | translate) }}
+              </span>
+            </td>
+            <td>
+              <div class="manager-box">
+                <span class="manager-name" *ngIf="w.managerName">
+                  <i class="pi pi-user"></i> {{ w.managerName }}
+                </span>
+                <small class="manager-phone font-mono" *ngIf="w.managerPhone">
+                  <i class="pi pi-phone"></i> {{ w.managerPhone }}
+                </small>
+                <span class="text-muted" *ngIf="!w.managerName && !w.managerPhone">-</span>
+              </div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="w.isDefault ? 'badge-primary' : 'badge-neutral'">
+                <i class="pi" [ngClass]="w.isDefault ? 'pi-check-circle' : 'pi-box'"></i>
+                {{ w.isDefault ? ('branchesWarehouses.default' | translate) : ('branchesWarehouses.additional' | translate) }}
+              </span>
+            </td>
+            <td>
+              <span class="status-pill" [class.active]="w.isActive">
+                <span class="dot"></span>
+                {{ w.isActive ? ('common.active' | translate) : ('common.inactive' | translate) }}
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <div class="actions-group">
+                <!-- زر لوحة المعلومات والتقرير التحليلي للمستودع -->
+                <button 
+                  type="button" 
+                  class="action-btn btn-analytics" 
+                  (click)="openWarehouseAnalytics(w)"
+                  [title]="'ui.warehouses.93ac3f' | translate">
+                  <i class="pi pi-chart-bar"></i>
+                  <span>{{ 'ui.warehouses.b1a0b3' | translate }}</span>
+                </button>
+                <button 
+                  type="button" 
+                  class="action-btn btn-matrix" 
+                  (click)="openAccountingMatrixModal(w)"
+                  [title]="'ui.warehouses.5fc59f' | translate">
+                  <i class="pi pi-sliders-h"></i>
+                  <span>{{ 'ui.warehouses.d2927a' | translate }}</span>
+                </button>
+                <button 
+                  type="button" 
+                  class="action-btn btn-edit" 
+                  (click)="openEditModal(w)"
+                  [title]="'inventory.warehouses.modal.editTitle' | translate">
+                  <i class="pi pi-pencil"></i>
+                  <span>{{ 'common.edit' | translate }}</span>
+                </button>
+                <button 
+                  type="button" 
+                  class="action-btn" 
+                  [ngClass]="w.isActive ? 'btn-warn' : 'btn-success'"
+                  (click)="toggleStatus(w)"
+                  [title]="w.isActive ? ('branchesWarehouses.deactivateWarehouse' | translate) : ('branchesWarehouses.activateWarehouse' | translate)">
+                  <i class="pi" [ngClass]="w.isActive ? 'pi-pause' : 'pi-play'"></i>
+                  <span>{{ w.isActive ? ('settings.branches.disable' | translate) : ('settings.branches.activate' | translate) }}</span>
+                </button>
+                <button 
+                  type="button" 
+                  class="action-btn btn-delete" 
+                  [disabled]="w.isDefault"
+                  (click)="deleteWarehouse(w)"
+                  [title]="w.isDefault ? ('ui.warehouses.0bd28d' | translate) : ('inventory.warehouses.cards.deleteBtn' | translate)">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Shared Modern Pagination Bar -->
+    <app-pagination
+      *ngIf="!isLoading() && filteredWarehouses().length > 0"
+      [totalItems]="filteredWarehouses().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      [pageSizeOptions]="[6, 12, 24, 48]"
+      [itemLabelAr]="('ui.warehouses.3f320a' | translate)"
+      [itemLabelEn]="'warehouses'"
+      (pageChange)="currentPage.set($event)"
+      (pageSizeChange)="pageSize.set($event)">
+    </app-pagination>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading() && filteredWarehouses().length === 0" class="empty-state">
+      <div class="empty-icon-wrapper">
+        <i class="pi pi-inbox"></i>
+      </div>
+      <h3>{{ 'ui.warehouses.321f47' | translate }}</h3>
+      <p>{{ 'ui.warehouses.527683' | translate }}</p>
+      <div class="empty-actions">
+        <button *ngIf="searchQuery() || statusFilter() !== 'all'" 
+                type="button" 
+                class="btn-reset-filters" 
+                (click)="searchQuery.set(''); statusFilter.set('all'); currentPage.set(1)">
+          <i class="pi pi-filter-slash"></i>
+          <span>{{ 'ui.warehouses.7e9ab6' | translate }}</span>
+        </button>
+        <button type="button" class="btn-create-empty" (click)="openAddModal()">
+          <i class="pi pi-plus"></i>
+          <span>{{ 'inventory.warehouses.addWarehouse' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Warehouse Modal -->
+  <div class="modal-backdrop" *ngIf="showAddModal()" (click)="closeAddModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <i class="pi modal-icon" [ngClass]="isEditMode() ? 'pi-pencil' : 'pi-box'"></i>
+          <div>
+            <h3 class="modal-title">{{ isEditMode() ? ('inventory.warehouses.modal.editTitle' | translate) : ('branches.branchesWarehouses.addWarehouse' | translate) }}</h3>
+            <span class="modal-subtitle">{{ isEditMode() ? ('ui.warehouses.f8a207' | translate) : ('ui.warehouses.9acca5' | translate) }}</span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeAddModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form (ngSubmit)="saveWarehouse()" class="modal-form">
+        <div class="form-grid">
+          <!-- Branch -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>{{ 'inventory.warehouses.modal.branch' | translate }}</span>
+              <span class="req" style="color: #ef4444;">*</span>
+            </label>
+            <div class="input-wrap">
+              <i class="pi pi-building input-icon"></i>
+              <select 
+                class="form-control select-control" 
+                [(ngModel)]="warehouseForm.branchId" 
+                name="whBranch" 
+                required>
+                <option value="" disabled>{{ 'branchesWarehouses.selectParentBranch' | translate }}</option>
+                <option *ngFor="let b of branches()" [value]="b.id">
+                  {{ b.nameAr }} ({{ b.code }})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Warehouse Code -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>{{ 'inventory.warehouses.warehouseCode' | translate }}</span>
+              <span class="req" style="color: #ef4444;">*</span>
+            </label>
+            <div class="input-wrap">
+              <i class="pi pi-hashtag input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egWarehouseCode' | translate" 
+                [(ngModel)]="warehouseForm.code" 
+                [disabled]="isEditMode()"
+                name="whCode" 
+                required />
+            </div>
+          </div>
+
+          <!-- Single Unified Warehouse Name with Background Auto-Translation -->
+          <div class="form-group full-width">
+            <div class="label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label class="form-label" style="margin-bottom: 0;">
+                <span>{{ 'inventory.warehouses.warehouseName' | translate }}</span>
+                <span class="req" style="color: #ef4444;">*</span>
+                <small class="text-muted" style="margin-right: 0.5rem; margin-left: 0.5rem;">
+                  {{ 'inventory.warehouses.arabicOrEnglishAutotranslated' | translate }}
+                </small>
+              </label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span *ngIf="backgroundTranslation" style="font-size: 0.75rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                  {{ backgroundTranslation }}
+                </span>
+                <button 
+                  type="button" 
+                  class="instant-trans-badge" 
+                  (click)="forceTranslate()"
+                  [title]="('inventory.warehouses.autoTranslate' | translate)">
+                  <i class="pi pi-globe"></i>
+                  <span>{{ 'inventory.warehouses.autoTranslate' | translate }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="input-wrap">
+              <i class="pi pi-box input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="('inventory.warehouses.egJeddahCentralWarehouse' | translate)" 
+                [ngModel]="unifiedWarehouseName || warehouseForm.nameAr || warehouseForm.nameEn" 
+                (ngModelChange)="onUnifiedWarehouseNameChange($event)"
+                name="whName" 
+                required />
+            </div>
+          </div>
+
+          <!-- Location -->
+          <div class="form-group full-width">
+            <label class="form-label">{{ 'branchesWarehouses.locationLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-map-marker input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.egLocation' | translate" 
+                [(ngModel)]="warehouseForm.location" 
+                name="whLocation" />
+            </div>
+          </div>
+
+          <!-- Manager Name -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.managerLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-user input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'branchesWarehouses.managerNamePlaceholder' | translate" 
+                [(ngModel)]="warehouseForm.managerName" 
+                name="whManager" />
+            </div>
+          </div>
+
+          <!-- Manager Phone -->
+          <div class="form-group">
+            <label class="form-label">{{ 'branchesWarehouses.managerPhoneLabel' | translate }}</label>
+            <div class="input-wrap">
+              <i class="pi pi-phone input-icon"></i>
+              <input 
+                type="text" 
+                class="form-control ltr-input" 
+                placeholder="05XXXXXXXX" 
+                [(ngModel)]="warehouseForm.managerPhone" 
+                name="whPhone" />
+            </div>
+          </div>
+
+          <!-- Is Default Warehouse -->
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="warehouseForm.isDefault" 
+                name="isDefaultWh" />
+              <span>{{ 'branchesWarehouses.setDefaultWarehouse' | translate }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeAddModal()">
+            {{ 'inventory.warehouses.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting()">
+            <i class="pi pi-check" *ngIf="!isSubmitting()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+            <span>{{ isSubmitting() ? ('branches.saving' | translate) : ('inventory.warehouses.modal.save' | translate) }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- Warehouse Accounting Posting Matrix Modal (مصفوفة التوجيه والربط المحاسبي) -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop matrix-backdrop" *ngIf="showMatrixModal() && matrixWarehouse()" (click)="closeMatrixModal()">
+    <div class="modal-dialog matrix-dialog" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="modal-header matrix-header">
+        <div class="modal-title-box">
+          <div class="matrix-header-icon">
+            <i class="pi pi-sliders-h"></i>
+          </div>
+          <div>
+            <div class="matrix-header-badges">
+              <span class="badge badge-primary font-mono">{{ matrixWarehouse()?.code }}</span>
+              <span class="badge badge-branch"><i class="pi pi-building"></i> {{ matrixWarehouse()?.branchName || ('branches.branchesWarehouses.branchCard.mainBadge' | translate) }}</span>
+              <span class="badge badge-neutral" *ngIf="matrixWarehouse()?.isDefault"><i class="pi pi-star-fill text-warning"></i> {{ 'ui.warehouses.54beb1' | translate }}</span>
+            </div>
+            <h3 class="modal-title">
+              {{ 'ui.warehouses.7b1fd4' | translate }} {{ matrixWarehouse()?.nameAr }}
+            </h3>
+            <span class="modal-subtitle">
+              {{ 'ui.warehouses.b5fc11' | translate }}
+            </span>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeMatrixModal()" [title]="'common.attachments.close' | translate">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <!-- Payment Method Navigation Tabs & Action Toolbar -->
+      <div class="matrix-topbar">
+        <!-- Payment Method Tabs -->
+        <div class="payment-tabs">
+          <button 
+            type="button" 
+            class="payment-tab-btn" 
+            [class.active]="selectedPaymentMethod() === 1"
+            (click)="switchPaymentMethod(1)">
+            <i class="pi pi-money-bill"></i>
+            <span class="tab-title">{{ 'ui.warehouses.bdec6a' | translate }}</span>
+            <span class="tab-badge" *ngIf="hasConfiguredMatrix(1)">{{ 'ui.warehouses.e72d3b' | translate }}</span>
+          </button>
+          <button 
+            type="button" 
+            class="payment-tab-btn" 
+            [class.active]="selectedPaymentMethod() === 2"
+            (click)="switchPaymentMethod(2)">
+            <i class="pi pi-file-edit"></i>
+            <span class="tab-title">{{ 'ui.warehouses.2b2013' | translate }}</span>
+            <span class="tab-badge" *ngIf="hasConfiguredMatrix(2)">{{ 'ui.warehouses.e72d3b' | translate }}</span>
+          </button>
+          <button 
+            type="button" 
+            class="payment-tab-btn" 
+            [class.active]="selectedPaymentMethod() === 3"
+            (click)="switchPaymentMethod(3)">
+            <i class="pi pi-credit-card"></i>
+            <span class="tab-title">{{ 'ui.warehouses.e64698' | translate }}</span>
+            <span class="tab-badge" *ngIf="hasConfiguredMatrix(3)">{{ 'ui.warehouses.e72d3b' | translate }}</span>
+          </button>
+        </div>
+
+        <!-- Quick Action Toolbar -->
+        <div class="matrix-actions-bar">
+          <button 
+            type="button" 
+            class="btn btn-outline-magic" 
+            (click)="autoSuggestAccounts()"
+            [title]="'ui.warehouses.07125d' | translate">
+            <i class="pi pi-bolt"></i>
+            <span>{{ 'ui.warehouses.cd2e82' | translate }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary" 
+            (click)="copyMatrix()"
+            [title]="'ui.warehouses.9e2cfb' | translate">
+            <i class="pi pi-copy"></i>
+            <span>{{ 'ui.warehouses.1ac130' | translate }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary" 
+            (click)="pasteMatrix()"
+            [disabled]="!copiedMatrix()"
+            [title]="'ui.warehouses.db203d' | translate">
+            <i class="pi pi-file-import"></i>
+            <span>{{ 'ui.warehouses.797d47' | translate }}</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-primary btn-save-matrix" 
+            (click)="saveAccountingMatrix()"
+            [disabled]="isMatrixSaving()">
+            <i class="pi pi-check" *ngIf="!isMatrixSaving()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="isMatrixSaving()"></i>
+            <span>{{ isMatrixSaving() ? ('branches.saving' | translate) : ('ui.warehouses.fc56d2' | translate) }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Matrix Modal Body -->
+      <div class="matrix-body">
+        <div class="matrix-loading-overlay" *ngIf="isMatrixLoading()">
+          <i class="pi pi-spin pi-spinner matrix-spinner"></i>
+          <span>{{ 'ui.warehouses.de2f36' | translate }}</span>
+        </div>
+
+        <div class="table-container matrix-table-container">
+          <table class="data-table matrix-table">
+            <thead>
+              <tr>
+                <th style="width: 48px; text-align: center;">#</th>
+                <th style="width: 280px;">{{ 'ui.warehouses.98311c' | translate }}</th>
+                <th style="width: 170px; text-align: center;">{{ 'ui.warehouses.a5227b' | translate }}</th>
+                <th style="width: 130px; text-align: center;">{{ 'accounting.journal.ui.code' | translate }}</th>
+                <th>{{ 'ui.warehouses.7986f2' | translate }}</th>
+                <th style="width: 55px; text-align: center;">{{ 'ui.warehouses.0d97fd' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of matrixRows; let idx = index" [class.row-assigned]="getMatrixAccountId(row.idKey)">
+                <td style="text-align: center; font-weight: 700; color: #64748b;">
+                  {{ idx + 1 }}
+                </td>
+                <td>
+                  <div class="row-meta">
+                    <span class="row-name">{{ langService.currentLang() === 'ar' ? row.nameAr : (row.nameEn || row.nameAr) }}</span>
+                    <small class="row-hint">{{ langService.currentLang() === 'ar' ? row.hintAr : (row.hintEn || row.hintAr) }}</small>
+                  </div>
+                </td>
+                <td style="text-align: center;">
+                  <span class="side-badge" [ngClass]="row.sideClass">
+                    <i class="pi" [ngClass]="row.sideClass === 'side-debit' ? 'pi-arrow-down-left' : (row.sideClass === 'side-credit' ? 'pi-arrow-up-right' : 'pi-arrows-h')"></i>
+                    {{ langService.currentLang() === 'ar' ? row.sideAr : (row.sideEn || row.sideAr) }}
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <span class="acc-code-badge font-mono" *ngIf="getMatrixAccountCode(row.codeKey)">
+                    {{ getMatrixAccountCode(row.codeKey) }}
+                  </span>
+                  <span class="text-muted-dash" *ngIf="!getMatrixAccountCode(row.codeKey)">—</span>
+                </td>
+                <td>
+                  <app-account-picker
+                    [accounts]="flattenedAccounts()"
+                    [ngModel]="getMatrixAccountId(row.idKey)"
+                    (accountSelect)="onAccountSelected(row.idKey, row.codeKey, row.nameKey, $event)"
+                    [compact]="true"
+                    [placeholder]="('ui.warehouses.3dabdc' | translate) + (langService.currentLang() === 'ar' ? row.nameAr : (row.nameEn || row.nameAr))">
+                  </app-account-picker>
+                </td>
+                <td style="text-align: center;">
+                  <button 
+                    type="button" 
+                    class="btn-clear-row"
+                    *ngIf="getMatrixAccountId(row.idKey)"
+                    (click)="clearRowAccount(row.idKey, row.codeKey, row.nameKey)"
+                    [title]="'ui.warehouses.2f51af' | translate">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Matrix Modal Footer -->
+      <div class="modal-footer matrix-footer">
+        <div class="matrix-stats">
+          <span class="stat-pill">
+            <i class="pi pi-check-circle text-success"></i>
+            {{ 'ui.warehouses.397168' | translate }} {{ getConfiguredAccountsCount() }} {{ 'branchesWarehouses.outOf' | translate }} {{ matrixRows.length }} {{ 'ui.warehouses.59eab7' | translate }}
+          </span>
+          <span class="stat-pill" *ngIf="copiedMatrix()">
+            <i class="pi pi-copy text-primary"></i>
+            {{ 'ui.warehouses.4f7017' | translate }}{{ getPaymentMethodName(copiedMatrix()?.paymentMethod || 1) }})
+          </span>
+        </div>
+
+        <div class="footer-buttons">
+          <button type="button" class="btn btn-secondary" (click)="closeMatrixModal()">
+            {{ 'inventory.warehouses.close' | translate }}
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary" 
+            (click)="saveAccountingMatrix()"
+            [disabled]="isMatrixSaving()">
+            <i class="pi pi-save" *ngIf="!isMatrixSaving()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="isMatrixSaving()"></i>
+            <span>{{ isMatrixSaving() ? ('branches.saving' | translate) : ('ui.warehouses.fc56d2' | translate) }}</span>
+          </button>
+        </div>
+      </div>
+
+  </div>
+</div>

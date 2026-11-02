@@ -97,6 +97,14 @@ public class Company : AggregateRoot<Guid>, IAuditableEntity
         return branch;
     }
 
+    public bool RemoveBranch(Guid branchId)
+    {
+        var branch = _branches.FirstOrDefault(b => b.Id == branchId);
+        if (branch == null || branch.IsMainBranch) return false;
+        _branches.Remove(branch);
+        return true;
+    }
+
     public FiscalYear AddFiscalYear(int yearNumber, string nameAr, string nameEn, DateTime startDate, DateTime endDate)
     {
         var fiscalYear = new FiscalYear(

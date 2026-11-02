@@ -17,27 +17,60 @@ public class JwtTokenService : IJwtTokenService
 
     public JwtTokenService(IConfiguration configuration)
     {
-        _secretKey = configuration["Jwt:SecretKey"] ?? "AlRobbanEnterpriseAccountingSuperSecretKey2026!#$@%";
+        _secretKey = configuration["Jwt:SecretKey"]
+            ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
         _issuer = configuration["Jwt:Issuer"] ?? "AlRobban.Security";
         _audience = configuration["Jwt:Audience"] ?? "AlRobban.Client";
-        _expiryDays = int.TryParse(configuration["Jwt:ExpiryDays"], out var days) ? days : 7;
+        _expiryDays = int.TryParse(configuration["Jwt:ExpiryDays"], out var days) ? days : 1;
     }
 
-    public AuthResponseDto GenerateToken(User user, Company? company)
+    public AuthResponseDto GenerateToken(User user, Company? company, CompanyRole? companyRole = null)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_secretKey);
         var expiresAtUtc = DateTime.UtcNow.AddDays(_expiryDays);
+
+        var effectiveRole = user.Role.ToString();
+        if (companyRole != null && string.Equals(companyRole.Code, "SALES_REP", StringComparison.OrdinalIgnoreCase))
+        {
+            effectiveRole = "Salesperson";
+        }
 
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.UserName),
             new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString()),
+            new(ClaimTypes.Role, effectiveRole),
             new("full_name_ar", user.FullNameAr),
             new("full_name_en", user.FullNameEn)
         };
+
+        List<string>? permissionsList = null;
+        if (companyRole != null)
+        {
+            claims.Add(new Claim("role_code", companyRole.Code));
+            claims.Add(new Claim("role_name_ar", companyRole.NameAr));
+
+            if (!string.IsNullOrWhiteSpace(companyRole.PermissionsJson))
+            {
+                try
+                {
+                    permissionsList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(companyRole.PermissionsJson);
+                    if (permissionsList != null)
+                    {
+                        foreach (var perm in permissionsList)
+                        {
+                            claims.Add(new Claim("permission", perm));
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore JSON deserialization error if empty
+                }
+            }
+        }
 
         if (user.TenantId.HasValue)
         {
@@ -49,7 +82,9 @@ public class JwtTokenService : IJwtTokenService
             claims.Add(new Claim("company_code", company.Code));
             claims.Add(new Claim("company_name_ar", company.NameAr));
             claims.Add(new Claim("company_name_en", company.NameEn));
-            if (!string.IsNullOrEmpty(company.LogoUrl))
+            if (!string.IsNullOrEmpty(company.LogoUrl) && 
+                !company.LogoUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && 
+                company.LogoUrl.Length <= 256)
             {
                 claims.Add(new Claim("company_logo", company.LogoUrl));
             }
@@ -80,11 +115,14 @@ public class JwtTokenService : IJwtTokenService
             user.UserName,
             user.FullNameAr,
             user.FullNameEn,
-            user.Role.ToString(),
+            effectiveRole,
             user.TenantId,
             company?.NameAr,
             company?.NameEn,
             company?.LogoUrl,
-            company?.BrandThemeColor);
+            company?.BrandThemeColor,
+            companyRole?.Code,
+            companyRole?.NameAr,
+            permissionsList);
     }
 }

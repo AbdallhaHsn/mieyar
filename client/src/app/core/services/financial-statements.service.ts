@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface FinancialStatementItem {
   accountId: string;
@@ -165,7 +166,7 @@ export interface FinancialStatementSettings {
 })
 export class FinancialStatementsService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:5000/api/financial-statements';
+  private baseUrl = `${environment.apiUrl}/api/financial-statements`;
 
   getIncomeStatement(params: {
     companyId?: string;
@@ -261,6 +262,29 @@ export class FinancialStatementsService {
 
     return this.http.get<ZatcaVatReturn>(`${this.baseUrl}/vat-return`, { params: httpParams });
   }
+
+  closeVatPeriod(payload: CloseVatPeriodRequest): Observable<VatPeriodClosingResultDto> {
+    return this.http.post<VatPeriodClosingResultDto>(`${this.baseUrl}/vat-return/close-period`, payload);
+  }
+}
+
+export interface VatPeriodClosingResultDto {
+  journalEntryId: string;
+  journalEntryNumber: string;
+  periodLabel: string;
+  totalOutputVat: number;
+  totalInputVat: number;
+  netVatPayableOrRefundable: number;
+  isRefundable: boolean;
+  closedAtUtc: string;
+}
+
+export interface CloseVatPeriodRequest {
+  companyId?: string;
+  fromDate: string;
+  toDate: string;
+  periodNameAr?: string;
+  periodNameEn?: string;
 }
 
 export interface EquityStatementRow {

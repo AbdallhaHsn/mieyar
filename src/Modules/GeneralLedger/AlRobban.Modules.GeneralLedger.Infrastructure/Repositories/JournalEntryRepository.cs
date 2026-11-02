@@ -37,13 +37,49 @@ public class JournalEntryRepository : IJournalEntryRepository
             .FirstOrDefaultAsync(x => x.CompanyId == companyId && x.EntryNumber == entryNumber, cancellationToken);
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _entryNumberLocks = new();
+
     public async Task<string> GenerateNextEntryNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
     {
-        var prefix = $"JV-{year}-";
-        var count = await _dbContext.JournalEntries
-            .CountAsync(x => x.CompanyId == companyId && x.EntryNumber.StartsWith(prefix), cancellationToken);
+        var lockKey = $"{companyId:N}_{year}";
+        var semaphore = _entryNumberLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(cancellationToken);
+        try
+        {
+            if (_dbContext.Database.IsSqlServer() && _dbContext.Database.CurrentTransaction != null)
+            {
+                var lockResource = $"JE_NUM_{companyId:N}_{year}";
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_getapplock @Resource = {0}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000;",
+                    new object[] { lockResource },
+                    cancellationToken);
+            }
 
-        return $"{prefix}{(count + 1).ToString("D5")}";
+            var prefix = $"JV-{year}-";
+            var numbers = await _dbContext.JournalEntries
+                .Where(x => x.CompanyId == companyId && x.EntryNumber.StartsWith(prefix))
+                .Select(x => x.EntryNumber)
+                .ToListAsync(cancellationToken);
+
+            int maxSeq = 0;
+            foreach (var num in numbers)
+            {
+                var parts = num.Split('-');
+                if (parts.Length >= 3 && int.TryParse(parts[2], out var currentSeq))
+                {
+                    if (currentSeq > maxSeq)
+                    {
+                        maxSeq = currentSeq;
+                    }
+                }
+            }
+
+            return $"{prefix}{(maxSeq + 1):D5}";
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
     public async Task<List<JournalEntry>> GetListAsync(
@@ -146,7 +182,8 @@ public class JournalEntryRepository : IJournalEntryRepository
 
         if (toDate.HasValue)
         {
-            query = query.Where(x => x.JournalEntry != null && x.JournalEntry.EntryDate <= toDate.Value.Date);
+            var endOfDay = toDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(x => x.JournalEntry != null && x.JournalEntry.EntryDate <= endOfDay);
         }
 
         if (costCenterId.HasValue)

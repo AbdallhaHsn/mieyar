@@ -1,517 +1,975 @@
-<div class="erp-invoice-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+<div class="erp-invoice-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
 
-  <!-- Top Action Bar (Matching Reference Screenshot) -->
+  <!-- Top Action & Navigation Bar -->
   <div class="erp-topbar">
+    <div class="topbar-title-group">
+      <div class="breadcrumbs">
+        <a *ngIf="isQuotationMode() || isQuotationRoute()" routerLink="/invoicing/quotations">{{ 'invoices.create.breadcrumbsQuotations' | translate }}</a>
+        <a *ngIf="isCreditNoteMode() || isCreditNoteRoute()" routerLink="/invoicing/credit-notes">{{ 'invoices.create.breadcrumbsCreditNotes' | translate }}</a>
+        <a *ngIf="!isCreditNoteMode() && !isCreditNoteRoute() && !isQuotationMode() && !isQuotationRoute()" routerLink="/invoicing/tax-invoices">{{ 'invoices.create.breadcrumbsSales' | translate }}</a>
+        <i class="pi pi-angle-left"></i>
+        <span>{{ pageTitle() }}</span>
+      </div>
+      <h1 class="page-title">
+        <i class="pi" [ngClass]="isQuotationMode() ? 'pi-file-edit' : (transactionType() === TransactionType.CreditNote ? 'pi-replay' : 'pi-receipt')"></i>
+        {{ pageTitle() }}
+      </h1>
+      <span class="page-subtitle">{{ 'invoices.create.subtitle' | translate }}</span>
+    </div>
+
     <div class="topbar-actions-group">
-      <button type="button" class="erp-btn btn-zatca" (click)="saveInvoice(true)" [disabled]="isSubmitting()" title="حفظ واعتماد فوري لدى هيئة الزكاة">
-        <i class="pi pi-send"></i>
-        <span>اعتماد ZATCA</span>
+      <button 
+        type="button" 
+        class="erp-btn btn-zatca" 
+        (click)="saveInvoice(true)" 
+        [disabled]="isSubmitting()"
+        [title]="'invoices.create.zatcaSubmit' | translate">
+        <i class="pi pi-send" *ngIf="!isSubmitting()"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting()"></i>
+        <span>{{ 'invoices.create.zatcaSubmit' | translate }}</span>
       </button>
 
-      <button type="button" class="erp-btn btn-save" (click)="saveInvoice(false)" [disabled]="isSubmitting()">
+      <button 
+        type="button" 
+        class="erp-btn btn-save" 
+        (click)="saveInvoice(false)" 
+        [disabled]="isSubmitting()"
+        [title]="'invoices.create.saveDraft' | translate">
         <i class="pi pi-save"></i>
-        <span>حفظ</span>
-      </button>
-
-      <button type="button" class="erp-btn btn-cancel" routerLink="/invoicing/tax-invoices">
-        <i class="pi pi-times"></i>
-        <span>الغاء</span>
+        <span>{{ 'invoices.create.saveDraft' | translate }}</span>
       </button>
     </div>
   </div>
 
-  <!-- Main Invoice Form Panel -->
-  <div class="erp-form-card">
+  <!-- Mode Switcher & Return Trigger Bar -->
+  <div class="erp-mode-bar">
+    <div class="mode-tabs-cluster">
+      <button 
+        type="button" 
+        class="mode-btn" 
+        [class.active]="!isCreditNoteMode() && !isQuotationMode()" 
+        (click)="switchToSalesInvoiceMode()">
+        <i class="pi pi-receipt"></i>
+        <span>{{ 'invoices.create.modeSales' | translate }}</span>
+      </button>
 
-    <!-- Row 1: Invoice Type, Internal Flag & Status -->
-    <div class="erp-form-row">
-      <div class="field-item col-type">
-        <label class="field-label">نوع الفاتورة</label>
-        <div class="field-control">
-          <select 
-            class="form-select" 
-            [value]="invoiceType()" 
-            (change)="invoiceType.set(+$any($event.target).value)">
-            <option [value]="InvoiceType.SimplifiedTaxInvoice">فاتورة مبسطة</option>
-            <option [value]="InvoiceType.StandardTaxInvoice">فاتورة ضريبية</option>
-          </select>
+      <button 
+        type="button" 
+        class="mode-btn return-btn" 
+        [class.active]="isCreditNoteMode()" 
+        (click)="switchToCreditNoteMode()">
+        <i class="pi pi-replay"></i>
+        <span>{{ 'invoices.create.modeCreditNote' | translate }}</span>
+        <span class="mode-pill-badge" *ngIf="isCreditNoteMode()">{{ 'invoices.create.modePillBadge' | translate }}</span>
+      </button>
+    </div>
+
+    <!-- Quick helper hint when in sales invoice mode -->
+    <div class="mode-helper-hint" *ngIf="!isCreditNoteMode()">
+      <span class="hint-text">{{ 'invoices.create.returnHelperHint' | translate }}</span>
+      <button type="button" class="btn-link-return" (click)="switchToCreditNoteMode()">
+        <i class="pi pi-replay"></i>
+        <span>{{ 'invoices.create.returnHelperBtn' | translate }}</span>
+      </button>
+    </div>
+
+    <!-- Quick helper hint when in credit note mode -->
+    <div class="mode-helper-hint" *ngIf="isCreditNoteMode()">
+      <span class="hint-text">{{ 'invoices.create.salesHelperHint' | translate }}</span>
+      <button type="button" class="btn-link-return" (click)="switchToSalesInvoiceMode()">
+        <i class="pi pi-receipt"></i>
+        <span>{{ 'invoices.create.salesHelperBtn' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Dedicated Original Invoice Lookup Card (Only shown in Return Mode) -->
+  <div class="original-invoice-lookup-card" *ngIf="isCreditNoteMode()">
+    <!-- 1. Ultra-Compact Bar when invoice is loaded and search is collapsed -->
+    <div class="selected-invoice-compact-bar" *ngIf="selectedOriginalInvoice() as orig; else standaloneSearchTpl">
+      <div class="sicb-left">
+        <div class="sicb-badge">
+          <i class="pi pi-check-circle"></i>
+          <span>{{ 'invoices.create.originalInvoiceLabel' | translate }}</span>
+          <strong class="font-code">{{ orig.invoiceNumber }}</strong>
+        </div>
+        <div class="sicb-divider"></div>
+        <div class="sicb-item">
+          <span class="sicb-lbl">{{ 'invoices.table.customer' | translate }}:</span>
+          <strong class="sicb-val">{{ orig.customerName }}</strong>
+        </div>
+        <div class="sicb-divider"></div>
+        <div class="sicb-item">
+          <span class="sicb-lbl">{{ 'invoices.table.issueDate' | translate }}:</span>
+          <span class="sicb-val font-code">{{ orig.issueDate | date:'yyyy/MM/dd' }}</span>
+        </div>
+        <div class="sicb-divider"></div>
+        <div class="sicb-item">
+          <span class="sicb-lbl">{{ 'invoices.create.subtotal' | translate }}:</span>
+          <strong class="sicb-val font-code text-price">{{ orig.totalAmount | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}</strong>
         </div>
       </div>
 
-      <div class="field-item col-checkbox">
-        <label class="checkbox-inline">
-          <input 
-            type="checkbox" 
-            [checked]="isInternalInvoice()" 
-            (change)="isInternalInvoice.set($any($event.target).checked)" />
-          <span>فاتورة داخلية</span>
-        </label>
-      </div>
+      <div class="sicb-right">
+        <div class="sicb-reason-inline">
+          <label class="sicb-lbl">{{ 'invoices.create.returnReason' | translate }}:</label>
+          <select 
+            class="form-select form-select-sm font-bold" 
+            [value]="returnReason()" 
+            (change)="returnReason.set($any($event.target).value)">
+            <option value="إرجاع بضاعة من العميل">{{ 'invoices.create.returnReasonGoods' | translate }}</option>
+            <option value="بضاعة معيبة أو تالفة">{{ 'invoices.create.returnReasonDefective' | translate }}</option>
+            <option value="اختلاف في المواصفات أو المقاسات">{{ 'invoices.create.returnReasonSpecs' | translate }}</option>
+            <option value="إلغاء المعاملة بالكامل">{{ 'invoices.create.returnReasonCancel' | translate }}</option>
+            <option value="خصم أو تسوية سعرية بعد البيع">{{ 'invoices.create.returnReasonDiscount' | translate }}</option>
+          </select>
+        </div>
 
-      <div class="field-item col-status">
-        <label class="checkbox-inline">
-          <input 
-            type="checkbox" 
-            [checked]="invoiceStatusFlag()" 
-            (change)="invoiceStatusFlag.set($any($event.target).checked)" />
-          <span>الفاتورة الحالة</span>
-        </label>
-        <button type="button" class="btn-refresh-icon" (click)="generateInvoiceNumber()" title="تحديث رقم الفاتورة">
-          <i class="pi pi-refresh"></i>
+        <button 
+          type="button" 
+          class="btn-toggle-lookup" 
+          (click)="toggleInvoiceLookupExpand()" 
+          [title]="'invoices.create.changeInvoice' | translate">
+          <i class="pi" [ngClass]="isLookupExpanded() ? 'pi-times' : 'pi-sync'"></i>
+          <span>{{ (isLookupExpanded() ? 'invoices.create.closeLookup' : 'invoices.create.changeInvoice') | translate }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Row 2: Invoice Number & Date -->
-    <div class="erp-form-row">
-      <div class="field-item col-half">
-        <label class="field-label">رقم الفاتوره</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input font-code font-bold" 
-            [value]="invoiceNumber()" 
-            (input)="invoiceNumber.set($any($event.target).value)" />
+    <!-- 2. Standalone Full Search Form (When no invoice selected yet) -->
+    <ng-template #standaloneSearchTpl>
+      <div class="lookup-header-strip">
+        <div class="strip-lead">
+          <i class="pi pi-search"></i>
+          <strong>{{ 'invoices.create.recallOriginalInvoice' | translate }}</strong>
         </div>
       </div>
+      <div class="lookup-body-content">
+        <div class="lookup-grid">
+          <!-- Search by Number -->
+          <div class="lookup-col">
+            <label class="lookup-label">
+              <span class="req">*</span>
+              {{ 'invoices.create.enterOriginalNumber' | translate }}
+            </label>
+            <div class="lookup-input-group">
+              <input 
+                type="text" 
+                class="form-input font-code font-bold" 
+                [placeholder]="'invoices.create.enterOriginalNumberPlaceholder' | translate" 
+                [value]="originalInvoiceSearchTerm()"
+                (input)="originalInvoiceSearchTerm.set($any($event.target).value)"
+                (keyup.enter)="searchOriginalInvoiceByNumber()" />
+              <button 
+                type="button" 
+                class="btn-lookup-action" 
+                (click)="searchOriginalInvoiceByNumber()" 
+                [disabled]="isLoadingOriginalInvoice()"
+                [title]="'invoices.create.recallBtn' | translate">
+                <i class="pi pi-search" *ngIf="!isLoadingOriginalInvoice()"></i>
+                <i class="pi pi-spin pi-spinner" *ngIf="isLoadingOriginalInvoice()"></i>
+                <span>{{ 'invoices.create.recallBtn' | translate }}</span>
+              </button>
+            </div>
+          </div>
 
-      <div class="field-item col-half">
-        <label class="field-label">التاريخ</label>
-        <div class="field-control">
+          <!-- Or pick from list -->
+          <div class="lookup-col">
+            <label class="lookup-label">{{ 'invoices.create.orPickFromList' | translate }}</label>
+            <select 
+              class="form-select font-bold" 
+              [value]="referenceInvoiceId()" 
+              (change)="onOriginalInvoiceSelectChange($any($event.target).value)">
+              <option value="">{{ 'invoices.create.pickFromListPlaceholder' | translate }}</option>
+              <option *ngFor="let inv of originalInvoicesList()" [value]="inv.id">
+                {{ inv.invoiceNumber }} | {{ inv.customerName }} | {{ inv.totalAmount | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }} ({{ inv.issueDate | date:'yyyy/MM/dd' }})
+              </option>
+            </select>
+          </div>
+
+          <!-- Return Reason -->
+          <div class="lookup-col">
+            <label class="lookup-label">
+              <span class="req">*</span>
+              {{ 'invoices.create.returnReason' | translate }}:
+            </label>
+            <select 
+              class="form-select font-bold" 
+              [value]="returnReason()" 
+              (change)="returnReason.set($any($event.target).value)">
+              <option value="إرجاع بضاعة من العميل">{{ 'invoices.create.returnReasonGoods' | translate }}</option>
+              <option value="بضاعة معيبة أو تالفة">{{ 'invoices.create.returnReasonDefective' | translate }}</option>
+              <option value="اختلاف في المواصفات أو المقاسات">{{ 'invoices.create.returnReasonSpecs' | translate }}</option>
+              <option value="إلغاء المعاملة بالكامل">{{ 'invoices.create.returnReasonCancel' | translate }}</option>
+              <option value="خصم أو تسوية سعرية بعد البيع">{{ 'invoices.create.returnReasonDiscount' | translate }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- 3. Drawer when user clicks 'تغيير الفاتورة' on an already loaded invoice -->
+    <div class="lookup-drawer-expanded" *ngIf="selectedOriginalInvoice() && isLookupExpanded()">
+      <div class="drawer-grid">
+        <div class="lookup-col">
+          <label class="lookup-label">{{ 'invoices.create.enterOriginalNumber' | translate }}</label>
+          <div class="lookup-input-group">
+            <input 
+              type="text" 
+              class="form-input font-code font-bold" 
+              [placeholder]="'invoices.create.enterOriginalNumberPlaceholder' | translate" 
+              [value]="originalInvoiceSearchTerm()"
+              (input)="originalInvoiceSearchTerm.set($any($event.target).value)"
+              (keyup.enter)="searchOriginalInvoiceByNumber()" />
+            <button 
+              type="button" 
+              class="btn-lookup-action" 
+              (click)="searchOriginalInvoiceByNumber()" 
+              [disabled]="isLoadingOriginalInvoice()">
+              <i class="pi pi-search" *ngIf="!isLoadingOriginalInvoice()"></i>
+              <i class="pi pi-spin pi-spinner" *ngIf="isLoadingOriginalInvoice()"></i>
+              <span>{{ 'invoices.create.recallBtn' | translate }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="lookup-col">
+          <label class="lookup-label">{{ 'invoices.create.orPickFromList' | translate }}</label>
+          <select 
+            class="form-select font-bold" 
+            [value]="referenceInvoiceId()" 
+            (change)="onOriginalInvoiceSelectChange($any($event.target).value)">
+            <option value="">{{ 'invoices.create.pickFromListPlaceholder' | translate }}</option>
+            <option *ngFor="let inv of originalInvoicesList()" [value]="inv.id">
+              {{ inv.invoiceNumber }} | {{ inv.customerName }} | {{ inv.totalAmount | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }} ({{ inv.issueDate | date:'yyyy/MM/dd' }})
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 Side-by-Side Vertical Columns (Ultra-Compact Smart Header) -->
+  <div class="erp-sections-row">
+
+    <!-- Column 1: بيانات الفاتورة (Invoice Info) -->
+    <div class="erp-section-col">
+      <div class="section-header">
+        <i class="pi" [ngClass]="isCreditNoteMode() ? 'pi-replay' : 'pi-file-edit'"></i>
+        <span class="header-title">{{ (isCreditNoteMode() ? 'invoices.create.creditNoteTitleBar' : 'invoices.create.invoiceDetails') | translate }}</span>
+      </div>
+      <div class="section-body grid-2">
+        <div class="form-field" *ngIf="!isCreditNoteMode()">
+          <label class="field-label">{{ 'invoices.create.invoiceType' | translate }}</label>
+          <select 
+            class="form-select font-bold" 
+            [value]="invoiceType()" 
+            (change)="invoiceType.set(+$any($event.target).value)">
+            <option [value]="InvoiceType.StandardTaxInvoice">{{ 'invoices.create.standardB2b' | translate }}</option>
+            <option [value]="InvoiceType.SimplifiedTaxInvoice">{{ 'invoices.create.simplifiedB2c' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-field" *ngIf="!isCreditNoteMode()">
+          <label class="field-label">{{ 'invoices.table.type' | translate }}</label>
+          <div class="transaction-type-badge">
+            <i class="pi pi-receipt"></i>
+            <span>{{ 'invoices.create.salesTitle' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">{{ (isCreditNoteMode() ? 'invoices.create.autoCreditNoteNumber' : 'invoices.create.autoInvoiceNumber') | translate }}</label>
+          <div class="control-with-action">
+            <input 
+              type="text" 
+              class="form-input font-code font-bold" 
+              [value]="invoiceNumber()" 
+              (input)="invoiceNumber.set($any($event.target).value)" 
+              readonly />
+            <button 
+              type="button" 
+              class="btn-icon-action" 
+              (click)="generateInvoiceNumber()" 
+              [title]="'invoices.refresh' | translate">
+              <i class="pi pi-refresh"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">
+            <span class="req">*</span>
+            {{ (isCreditNoteMode() ? 'invoices.create.creditNoteDate' : 'invoices.create.issueDate') | translate }}
+          </label>
           <input 
             type="date" 
-            class="form-input font-code" 
+            class="form-input font-code font-bold" 
             [value]="issueDate()" 
             (input)="issueDate.set($any($event.target).value)" />
         </div>
-      </div>
-    </div>
 
-    <!-- Row 3: Project Link -->
-    <div class="erp-form-row">
-      <div class="field-item col-project-check">
-        <label class="checkbox-inline">
-          <input 
-            type="checkbox" 
-            [checked]="isProjectLinked()" 
-            (change)="isProjectLinked.set($any($event.target).checked)" />
-          <span>مرتبط بالمشروع</span>
-        </label>
-      </div>
-
-      <div class="field-item col-project-code">
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input" 
-            placeholder="رمز المشروع" 
-            [value]="projectCode()" 
-            (input)="projectCode.set($any($event.target).value)" 
-            [disabled]="!isProjectLinked()" />
-        </div>
-      </div>
-
-      <div class="field-item col-project-name">
-        <label class="field-label">الاسم</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input" 
-            placeholder="الاسم" 
-            [value]="projectName()" 
-            (input)="projectName.set($any($event.target).value)" 
-            [disabled]="!isProjectLinked()" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 4: Payment Method, Discount Days & Credit Date -->
-    <div class="erp-form-row">
-      <div class="field-item col-third">
-        <label class="field-label">طريقة الدفع</label>
-        <div class="field-control">
-          <select 
-            class="form-select" 
-            [value]="paymentMeansCode()" 
-            (change)="paymentMeansCode.set($any($event.target).value)">
-            <option value="10">نقدي</option>
-            <option value="30">تحويل بنكي</option>
-            <option value="48">مدى / بطاقة</option>
-            <option value="42">آجل</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field-item col-third">
-        <label class="field-label">الايام المخصومه</label>
-        <div class="field-control">
-          <input 
-            type="number" 
-            class="form-input font-code" 
-            [value]="discountDays()" 
-            (input)="discountDays.set(+$any($event.target).value)" />
-        </div>
-      </div>
-
-      <div class="field-item col-third">
-        <label class="field-label">الرصيد الدائن حتى</label>
-        <div class="field-control">
+        <div class="form-field" [class.col-span-2]="paymentMeansCode() !== '42' || isCreditNoteMode()">
+          <label class="field-label">{{ 'invoices.create.supplyDate' | translate }}</label>
           <input 
             type="date" 
             class="form-input font-code" 
-            [value]="creditBalanceDate()" 
-            (input)="creditBalanceDate.set($any($event.target).value)" />
+            [value]="supplyDate()" 
+            (input)="supplyDate.set($any($event.target).value)" />
         </div>
-      </div>
-    </div>
 
-    <!-- Row 5: Branch Code & Name -->
-    <div class="erp-form-row">
-      <div class="field-item col-third">
-        <label class="field-label">رمز الفرع</label>
-        <div class="field-control">
+        <div class="form-field" *ngIf="paymentMeansCode() === '42' && !isCreditNoteMode()">
+          <label class="field-label">{{ 'invoices.create.dueDate' | translate }}</label>
           <input 
-            type="text" 
+            type="date" 
             class="form-input font-code" 
-            placeholder="رمز الفرع" 
-            [value]="branchCode()" 
-            (input)="branchCode.set($any($event.target).value)" />
-        </div>
-      </div>
-
-      <div class="field-item col-third">
-        <label class="field-label">اسم الفرع</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input" 
-            placeholder="اسم الفرع" 
-            [value]="branchName()" 
-            (input)="branchName.set($any($event.target).value)" />
-        </div>
-      </div>
-
-      <div class="field-item col-third">
-        <div class="field-control no-label-margin">
-          <input 
-            type="text" 
-            class="form-input font-latin" 
-            placeholder="اسم الفرع" 
-            [value]="branchNameEn()" 
-            (input)="branchNameEn.set($any($event.target).value)" />
+            [value]="dueDate()" 
+            (input)="dueDate.set($any($event.target).value)" />
         </div>
       </div>
     </div>
 
-    <!-- Row 6: Salesman Code & Name -->
-    <div class="erp-form-row">
-      <div class="field-item col-third">
-        <label class="field-label">البائع</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input font-code" 
-            placeholder="رقم البائع" 
-            [value]="salesmanCode()" 
-            (input)="salesmanCode.set($any($event.target).value)" />
-        </div>
+    <!-- Column 2: بيانات العميل وشروط الدفع (Customer & Payment - Smart & Anti-Redundancy) -->
+    <div class="erp-section-col">
+      <div class="section-header">
+        <i class="pi pi-users"></i>
+        <span class="header-title">{{ 'invoices.create.customerSection' | translate }}</span>
       </div>
-
-      <div class="field-item col-third">
-        <label class="field-label">اسم البائع</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input" 
-            placeholder="اسم البائع" 
-            [value]="salesmanName()" 
-            (input)="salesmanName.set($any($event.target).value)" />
+      <div class="section-body grid-2">
+        <div class="form-field col-span-2">
+          <div class="label-header-split">
+            <label class="field-label" style="margin: 0;">
+              <span class="req">*</span>
+              {{ 'invoices.table.customer' | translate }}
+            </label>
+            <button 
+              type="button" 
+              class="btn-quick-cash" 
+              *ngIf="selectedPartnerId() !== 'cash' && !isCreditNoteMode()"
+              (click)="setCashCustomer()" 
+              [title]="'invoices.create.cashCustomer' | translate">
+              <i class="pi pi-user"></i>
+              <span>{{ 'invoices.create.cashCustomer' | translate }}</span>
+            </button>
+          </div>
+          <div class="control-with-action">
+            <app-searchable-select
+              [items]="customerOptions()"
+              [value]="selectedPartnerId()"
+              (valueChange)="onPartnerSelected($event)"
+              [placeholder]="'invoices.create.customerSelect' | translate"
+              [searchPlaceholder]="'invoices.create.customerSearch' | translate">
+            </app-searchable-select>
+            <button 
+              type="button" 
+              class="btn-icon-action" 
+              *ngIf="!isCreditNoteMode()"
+              routerLink="/accounting/partners/create" 
+              [queryParams]="{ type: 'customer' }" 
+              [title]="'invoices.create.addNewCustomerTitle' | translate">
+              <i class="pi pi-user-plus"></i>
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="field-item col-third">
-        <div class="field-control no-label-margin">
-          <input 
-            type="text" 
-            class="form-input font-latin" 
-            placeholder="اسم البائع" 
-            [value]="salesmanNameEn()" 
-            (input)="salesmanNameEn.set($any($event.target).value)" />
+        <!-- Compact Customer Summary Strip (Zero Overlap, Clean Flow) -->
+        <div class="form-field col-span-2" *ngIf="selectedPartnerId() && selectedPartnerId() !== 'cash'">
+          <div class="customer-info-strip">
+            <div class="cis-chips">
+              <span class="cis-chip" *ngIf="buyerVatNumber()" [title]="'invoices.create.customerVat' | translate">
+                <i class="pi pi-verified"></i>
+                <span class="lbl">{{ 'invoices.create.customerVat' | translate }}:</span>
+                <strong class="font-code">{{ buyerVatNumber() }}</strong>
+              </span>
+              <span class="cis-chip" *ngIf="buyerOtherIdValue()" [title]="'invoices.create.customerCr' | translate">
+                <i class="pi pi-id-card"></i>
+                <span class="lbl">{{ 'invoices.create.customerCr' | translate }}:</span>
+                <strong class="font-code">{{ buyerOtherIdValue() }}</strong>
+              </span>
+              <span class="cis-chip addr-chip" *ngIf="buyerAddress()" [title]="buyerAddress()">
+                <i class="pi pi-map-marker"></i>
+                <span class="addr-text">{{ buyerAddress() }}</span>
+              </span>
+            </div>
+            <button 
+              type="button" 
+              class="btn-csc-toggle" 
+              (click)="toggleCustomBuyerDetails()"
+              [title]="'invoices.create.customBuyerTitle' | translate">
+              <i class="pi" [ngClass]="customBuyerDetailsVisible() ? 'pi-times' : 'pi-pencil'"></i>
+              <span>{{ (customBuyerDetailsVisible() ? 'invoices.create.customBuyerCancel' : 'invoices.create.customBuyerToggle') | translate }}</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Row 7: Customer Code (Select/Search) & Customer Name -->
-    <div class="erp-form-row">
-      <div class="field-item col-third">
-        <label class="field-label">العميل</label>
-        <div class="field-control customer-code-wrap">
+        <!-- Cash Customer Smart Badge -->
+        <div class="form-field col-span-2" *ngIf="selectedPartnerId() === 'cash'">
+          <div class="cash-info-strip">
+            <div class="cis-cash-text">
+              <i class="pi pi-wallet"></i>
+              <span>{{ 'invoices.create.cashCustomerSimplified' | translate }}</span>
+            </div>
+            <button 
+              type="button" 
+              class="btn-csc-toggle" 
+              (click)="toggleCustomBuyerDetails()">
+              <i class="pi" [ngClass]="customBuyerDetailsVisible() ? 'pi-times' : 'pi-pencil'"></i>
+              <span>{{ (customBuyerDetailsVisible() ? 'invoices.create.customBuyerCancel' : 'invoices.create.customBuyerToggle') | translate }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Expandable Custom Buyer Details Drawer (Only shown when toggled) -->
+        <div class="form-field col-span-2 custom-buyer-drawer" *ngIf="customBuyerDetailsVisible()">
+          <div class="drawer-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ 'invoices.create.customBuyerTitle' | translate }}</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span *ngIf="buyerBackgroundTranslation()" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                {{ buyerBackgroundTranslation() }}
+              </span>
+              <button type="button" class="btn-mini-translate" (click)="forceTranslateBuyerName()" [disabled]="!unifiedBuyerName().trim() && !buyerName().trim()">
+                <i class="pi pi-globe"></i>
+                <span>{{ 'roles.instantTranslate' | translate }}</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <input 
+              type="text" 
+              class="form-input font-bold" 
+              [placeholder]="'invoices.create.customerSelect' | translate" 
+              [value]="unifiedBuyerName() || buyerName() || buyerNameEn()" 
+              (input)="onUnifiedBuyerNameChange($any($event.target).value)" />
+          </div>
+          <div class="bilingual-input-split" style="margin-top: 4px;">
+            <input 
+              type="text" 
+              class="form-input font-code" 
+              [placeholder]="'invoices.create.customerVat' | translate" 
+              maxlength="15" 
+              [value]="buyerVatNumber()" 
+              (input)="buyerVatNumber.set($any($event.target).value)" />
+            <input 
+              type="text" 
+              class="form-input" 
+              [placeholder]="'invoices.create.customerAddress' | translate" 
+              [value]="buyerAddress()" 
+              (input)="buyerAddress.set($any($event.target).value)" />
+          </div>
+        </div>
+
+        <div class="form-field col-span-2">
+          <label class="field-label">{{ 'invoices.create.paymentMethod' | translate }}</label>
           <select 
-            class="form-select partner-select-code" 
-            [value]="selectedPartnerId()" 
-            (change)="onPartnerSelected($any($event.target).value)">
-            <option value="cash">CASH - عميل نقدي عام</option>
-            <option *ngFor="let p of partners()" [value]="p.id">
-              {{ p.code }} ({{ p.nameAr }})
+            class="form-select font-bold" 
+            [value]="paymentMeansCode()" 
+            (change)="paymentMeansCode.set($any($event.target).value)">
+            <option value="10">{{ 'invoices.create.cash' | translate }}</option>
+            <option value="42">{{ 'invoices.create.credit' | translate }}</option>
+            <option value="48">{{ 'invoices.create.card' | translate }}</option>
+            <option value="30">{{ 'invoices.create.bankTransfer' | translate }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: البيانات اللوجستية والتوجيه (Currency eliminated, Notes expanded) -->
+    <div class="erp-section-col">
+      <div class="section-header">
+        <i class="pi pi-compass"></i>
+        <span class="header-title">{{ (isCreditNoteMode() ? 'invoices.create.logisticsReturnTitle' : 'invoices.create.logisticsTitle') | translate }}</span>
+      </div>
+      <div class="section-body grid-2">
+        <!-- Row 1: Branch & Warehouse side-by-side (Linked to Salesperson) -->
+        <div class="form-field">
+          <div class="label-header-split">
+            <label class="field-label" style="margin: 0;">{{ 'invoices.create.branch' | translate }}</label>
+            <span class="security-lock-mini" *ngIf="isWarehouseLocked()" [title]="'invoices.create.branchLockedTitle' | translate">
+              <i class="pi pi-lock"></i> {{ 'invoices.create.locked' | translate }}
+            </span>
+          </div>
+          <select 
+            class="form-select font-bold" 
+            [value]="branchCode()" 
+            [disabled]="isWarehouseLocked()"
+            [title]="isWarehouseLocked() ? ('invoices.create.branchLockedNotice' | translate) : ''"
+            (change)="onBranchChange($any($event.target).value)">
+            <option *ngFor="let b of companyContext.activeCompany().branches" [value]="b.code">
+              {{ b.code }} - {{ langService.currentLang() === 'ar' ? b.nameAr : b.nameEn }}
             </option>
           </select>
-          <button type="button" class="btn-pencil-edit" (click)="openCustomerModal()" title="إضافة أو تعديل العميل في دليل الشركاء">
-            <i class="pi pi-pencil"></i>
-          </button>
         </div>
-      </div>
 
-      <div class="field-item col-third">
-        <label class="field-label">اسم العميل</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input font-bold" 
-            placeholder="اسم العميل" 
-            [value]="buyerName()" 
-            (input)="buyerName.set($any($event.target).value)" />
-        </div>
-      </div>
-
-      <div class="field-item col-third">
-        <div class="field-control no-label-margin">
-          <input 
-            type="text" 
-            class="form-input font-latin" 
-            placeholder="اسم العميل" 
-            [value]="buyerNameEn()" 
-            (input)="buyerNameEn.set($any($event.target).value)" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 8: Secondary ID Scheme & ID Number -->
-    <div class="erp-form-row">
-      <div class="field-item col-half">
-        <label class="field-label">نوع معرف آخر</label>
-        <div class="field-control">
+        <div class="form-field">
+          <div class="label-header-split">
+            <label class="field-label" style="margin: 0;">
+              {{ (isCreditNoteMode() ? 'invoices.create.receivingWarehouse' : 'invoices.create.warehouse') | translate }}
+            </label>
+            <span class="security-lock-mini" *ngIf="isWarehouseLocked()" [title]="assignedWarehouseNotice()">
+              <i class="pi pi-lock"></i> {{ 'invoices.create.isolated' | translate }}
+            </span>
+          </div>
           <select 
-            class="form-select" 
-            [value]="buyerOtherIdType()" 
-            (change)="buyerOtherIdType.set($any($event.target).value)">
-            <option value="">اختر.....</option>
-            <option value="CRN">السجل التجاري (CRN)</option>
-            <option value="700">الرقم الموحد 700</option>
-            <option value="NAT">الهوية الوطنية</option>
-            <option value="IQA">رقم الإقامة</option>
-            <option value="MOM">ترخيص بلدي</option>
-            <option value="OTH">أخرى</option>
+            class="form-select font-bold" 
+            [(ngModel)]="selectedWarehouse"
+            [disabled]="isWarehouseLocked()"
+            [title]="isWarehouseLocked() ? assignedWarehouseNotice() : ''">
+            <option *ngFor="let w of filteredWarehouses()" [value]="w.code">
+              {{ w.code }} - {{ langService.currentLang() === 'ar' ? w.nameAr : w.nameEn }}
+            </option>
           </select>
         </div>
-      </div>
 
-      <div class="field-item col-half">
-        <label class="field-label">رقم الهوية</label>
-        <div class="field-control">
+        <!-- Row 2: Salesperson -->
+        <div class="form-field col-span-2">
+          <div class="label-header-split">
+            <label class="field-label" style="margin: 0;">{{ 'invoices.create.salesperson' | translate }}</label>
+            <span class="issuer-chip" [title]="'invoices.create.currentUserTitle' | translate">
+              <i class="pi pi-user-check"></i>
+              {{ 'invoices.create.issuerRegistered' | translate }} <strong>{{ currentUserName() }}</strong>
+            </span>
+          </div>
+
+          <div class="salesperson-input-wrapper" *ngIf="!authService.isSalesperson()">
+            <select 
+              class="form-select font-bold" 
+              [value]="selectedSalespersonId()" 
+              (change)="onSalespersonChange($any($event.target).value)">
+              <option value="">{{ 'invoices.create.salespersonSelect' | translate }}</option>
+              <option *ngFor="let sp of salespersons()" [value]="sp.id">
+                {{ sp.code }} - {{ langService.currentLang() === 'ar' ? sp.nameAr : (sp.nameEn || sp.nameAr) }} ({{ sp.warehouseNameAr || sp.warehouseCode }})
+              </option>
+            </select>
+          </div>
+
+          <div class="salesperson-locked-box" *ngIf="authService.isSalesperson()">
+            <div class="sp-user-badge">
+              <i class="pi pi-id-card"></i>
+              <span class="sp-name">{{ selectedSalespersonName() || currentUserName() }}</span>
+              <span class="sp-code-pill" *ngIf="salesmanCode()">{{ salesmanCode() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Notes Field -->
+        <div class="form-field col-span-2">
+          <label class="field-label">{{ 'invoices.create.notes' | translate }}</label>
           <input 
             type="text" 
-            class="form-input font-code" 
-            placeholder="رقم الهوية" 
-            [value]="buyerOtherIdValue()" 
-            (input)="buyerOtherIdValue.set($any($event.target).value)" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 9: Address Textarea & VAT Number -->
-    <div class="erp-form-row align-start">
-      <div class="field-item col-half">
-        <label class="field-label">العنوان إلى</label>
-        <div class="field-control">
-          <textarea 
-            class="form-textarea" 
-            rows="2" 
-            placeholder="العنوان إلى (العنوان الوطني السعودي للتوريد)..." 
-            [value]="buyerAddress()" 
-            (input)="buyerAddress.set($any($event.target).value)"></textarea>
-        </div>
-      </div>
-
-      <div class="field-item col-half">
-        <label class="field-label">رمز الضريبة/القيمة المضافة</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            maxlength="15" 
-            class="form-input font-code" 
-            placeholder="رمز الضريبة/القيمة المضافة (15 رقماً)" 
-            [value]="buyerVatNumber()" 
-            (input)="buyerVatNumber.set($any($event.target).value)" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 10: Reference Number -->
-    <div class="erp-form-row">
-      <div class="field-item col-half">
-        <label class="field-label">رقم المرجع</label>
-        <div class="field-control">
-          <input 
-            type="text" 
-            class="form-input font-code" 
-            placeholder="رقم المرجع" 
-            [value]="referenceNumber()" 
-            (input)="referenceNumber.set($any($event.target).value)" />
+            class="form-input" 
+            [placeholder]="'invoices.create.notesPlaceholder' | translate" 
+            [value]="notes()" 
+            (input)="notes.set($any($event.target).value)" />
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- Items Table Section (Matching Reference Screenshot) -->
+  <!-- Line Items Table Section -->
   <div class="erp-table-card">
+    <div class="table-header-strip" [class.return-strip]="isCreditNoteMode()">
+      <div class="strip-title">
+        <i class="pi" [ngClass]="isCreditNoteMode() ? 'pi-replay' : 'pi-list'"></i>
+        <strong *ngIf="!isCreditNoteMode()">{{ 'invoices.create.lineItems' | translate }}</strong>
+        <strong *ngIf="isCreditNoteMode()">{{ 'invoices.view.tableItems' | translate }}</strong>
+        <span class="count-badge">{{ lineItems().length }} {{ 'invoices.create.itemsCount' | translate }}</span>
+      </div>
+      <div class="strip-actions">
+        <span class="strip-hint" *ngIf="!isCreditNoteMode()">{{ 'invoices.create.subtitle' | translate }}</span>
+        <span class="strip-hint return-hint" *ngIf="isCreditNoteMode()">
+          💡 {{ 'invoices.create.returnHintPrefix' | translate }} «{{ 'invoices.create.cancelItem' | translate }} ❌» {{ 'invoices.create.returnHintSuffix' | translate }}
+        </span>
+      </div>
+    </div>
+
     <div class="erp-table-wrap">
       <table class="erp-items-table">
         <thead>
           <tr>
-            <th class="th-seq">مسلسل</th>
-            <th class="th-name">اسم الصنف</th>
-            <th class="th-unit">الوحده</th>
-            <th class="th-qty">الكميه</th>
-            <th class="th-price">السعر</th>
-            <th class="th-disc">الخصم</th>
-            <th class="th-taxable">الخاضع للضريبة</th>
-            <th class="th-vat">الضريبة</th>
-            <th class="th-total">الإجمالي</th>
-            <th class="th-curr">رمز العمله</th>
-            <th class="th-del">حذف</th>
+            <th class="th-seq">#</th>
+            <th class="th-item">{{ 'invoices.create.item' | translate }}</th>
+            <th class="th-unit text-center">{{ 'invoices.create.unit' | translate }}</th>
+            <th class="th-qty text-center" *ngIf="!isCreditNoteMode()">{{ 'invoices.create.qty' | translate }}</th>
+            <th class="th-orig-qty text-center" *ngIf="isCreditNoteMode()" [title]="'invoices.create.origQty' | translate">{{ 'invoices.create.origQty' | translate }}</th>
+            <th class="th-return-qty text-center" *ngIf="isCreditNoteMode()" [title]="'invoices.create.returnQty' | translate">{{ 'invoices.create.returnQty' | translate }}</th>
+            <th class="th-price">{{ 'invoices.create.unitPrice' | translate }}</th>
+            <th class="th-disc">{{ 'invoices.create.discount' | translate }}</th>
+            <th class="th-taxable">{{ (isCreditNoteMode() ? 'invoices.create.netReturn' : 'invoices.create.taxable') | translate }}</th>
+            <th class="th-vat-rate text-center">{{ 'invoices.create.vatRate' | translate }}</th>
+            <th class="th-vat">{{ (isCreditNoteMode() ? 'invoices.create.returnVat' : 'invoices.create.vat') | translate }}</th>
+            <th class="th-total">{{ (isCreditNoteMode() ? 'invoices.create.returnTotal' : 'invoices.create.lineTotal') | translate }}</th>
+            <th class="th-actions text-center">{{ (isCreditNoteMode() ? 'invoices.create.cancelItem' : 'invoices.create.actions') | translate }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let line of lineItems(); let i = index">
+          <!-- Empty State when no lines added yet -->
+          <tr *ngIf="lineItems().length === 0">
+            <td [attr.colspan]="isCreditNoteMode() ? 12 : 11" class="empty-table-cell">
+              <div class="empty-table-state">
+                <i class="pi" [ngClass]="isCreditNoteMode() ? 'pi-replay empty-icon rose' : 'pi-box empty-icon'"></i>
+                <div class="empty-text-wrap" *ngIf="!isCreditNoteMode()">
+                  <strong class="empty-title">{{ 'invoices.create.emptySalesTitle' | translate }}</strong>
+                  <span class="empty-desc">{{ 'invoices.create.emptySalesDesc' | translate }}</span>
+                </div>
+                <div class="empty-text-wrap" *ngIf="isCreditNoteMode()">
+                  <strong class="empty-title">{{ 'invoices.create.emptyReturnTitle' | translate }}</strong>
+                  <span class="empty-desc">{{ 'invoices.create.emptyReturnDesc' | translate }}</span>
+                </div>
+                <button type="button" class="btn-empty-add" (click)="openAddLineModal()" *ngIf="!isCreditNoteMode()">
+                  <i class="pi pi-plus"></i>
+                  <span>{{ 'invoices.create.emptySalesBtn' | translate }}</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Formatted Display Rows -->
+          <tr *ngFor="let line of lineItems(); let i = index; trackBy: trackByIndex">
+            <!-- Seq # -->
             <td class="text-center font-code th-seq">{{ i + 1 }}</td>
 
-            <td class="th-name">
-              <input 
-                type="text" 
-                class="erp-cell-input font-bold" 
-                [value]="line.itemNameAr" 
-                (input)="updateLine(i, 'itemNameAr', $any($event.target).value)" 
-                placeholder="اسم الصنف أو الخدمة..." 
-                required />
+            <!-- Item Name & Code -->
+            <td class="th-item">
+              <div class="item-display">
+                <strong class="item-title">{{ langService.currentLang() === 'ar' ? line.itemNameAr : (line.itemNameEn || line.itemNameAr) }}</strong>
+                <span class="item-code-tag" *ngIf="line.itemCode || getItemCode(line.itemId)">{{ line.itemCode || getItemCode(line.itemId) }}</span>
+              </div>
             </td>
 
+            <!-- Unit of Measure -->
             <td class="th-unit">
-              <select 
-                class="erp-cell-select" 
-                [value]="line.unit" 
-                (change)="updateLine(i, 'unit', $any($event.target).value)">
-                <option *ngFor="let u of availableUnits" [value]="u">{{ u }}</option>
-              </select>
+              <span class="badge-unit">{{ line.unit }}</span>
             </td>
 
-            <td class="th-qty">
-              <input 
-                type="number" 
-                min="1" 
-                step="1" 
-                class="erp-cell-input font-code text-center" 
-                [value]="line.quantity" 
-                (input)="updateLine(i, 'quantity', +$any($event.target).value)" />
+            <!-- Quantity (Normal Sales Mode) -->
+            <td class="th-qty font-code text-center font-bold" *ngIf="!isCreditNoteMode()">
+              {{ line.quantity | number:'1.0-2' }}
             </td>
 
-            <td class="th-price">
-              <input 
-                type="number" 
-                min="0" 
-                step="10" 
-                class="erp-cell-input font-code text-left" 
-                [value]="line.unitPrice" 
-                (input)="updateLine(i, 'unitPrice', +$any($event.target).value)" />
+            <!-- Original Sold Quantity (Return Mode) -->
+            <td class="th-orig-qty font-code text-center text-muted font-bold" *ngIf="isCreditNoteMode()">
+              <span class="badge-orig-sold">{{ (line.originalQuantity || line.quantity) | number:'1.0-2' }}</span>
             </td>
 
-            <td class="th-disc">
-              <input 
-                type="number" 
-                min="0" 
-                step="5" 
-                class="erp-cell-input font-code text-left" 
-                [value]="line.discount" 
-                (input)="updateLine(i, 'discount', +$any($event.target).value)" />
+            <!-- Returned Quantity with Inline Editor (Return Mode) -->
+            <td class="th-return-qty font-code text-center" *ngIf="isCreditNoteMode()">
+              <div class="return-qty-editor">
+                <input 
+                  type="number" 
+                  step="1" 
+                  min="0.01" 
+                  [max]="line.originalQuantity || line.quantity" 
+                  [ngModel]="line.quantity" 
+                  (ngModelChange)="onReturnQuantityChange(line, $event)" 
+                  class="return-qty-input font-code font-bold" />
+              </div>
             </td>
 
-            <td class="th-taxable font-code text-left font-bold text-dark">
-              {{ lineComputations()[i].taxable | number:'1.2-2' }}
+            <!-- Unit Sales Price -->
+            <td class="th-price font-code text-left">
+              <div>{{ line.unitPrice | number:'1.2-2' }}</div>
+              <span *ngIf="line.costPrice && line.unitPrice < line.costPrice" class="below-cost-tag" [title]="'invoices.create.modalLossWarning' | translate">
+                {{ 'invoices.create.modalLossWarning' | translate }} ({{ (line.costPrice - line.unitPrice) | number:'1.2-2' }}-)
+              </span>
             </td>
 
-            <td class="th-vat font-code text-left text-emerald font-bold">
-              {{ lineComputations()[i].vat | number:'1.2-2' }}
+            <!-- Discount -->
+            <td class="th-disc font-code text-left">
+              <span class="discount-pill font-bold" *ngIf="line.discount > 0">-{{ line.discount | number:'1.2-2' }}</span>
+              <span class="text-muted" *ngIf="!line.discount || line.discount === 0">-</span>
             </td>
 
-            <td class="th-total font-code text-left text-primary font-bold">
-              {{ lineComputations()[i].total | number:'1.2-2' }}
+            <!-- Net Taxable Amount -->
+            <td class="th-taxable font-code text-left font-bold">
+              {{ ((line.quantity * line.unitPrice) - line.discount) | number:'1.2-2' }}
             </td>
 
-            <td class="th-curr text-center font-code">
-              {{ currency() }}
+            <!-- VAT Rate % -->
+            <td class="th-vat-rate text-center">
+              <span class="badge-vat">{{ line.vatRate }}%</span>
             </td>
 
-            <td class="th-del text-center">
-              <button 
-                type="button" 
-                class="btn-cell-del" 
-                (click)="removeLineItem(i)" 
-                [disabled]="lineItems().length <= 1"
-                title="حذف السطر">
-                <i class="pi pi-times"></i>
-              </button>
+            <!-- VAT Amount -->
+            <td class="th-vat font-code text-left font-bold">
+              {{ (((line.quantity * line.unitPrice) - line.discount) * (line.vatRate / 100)) | number:'1.2-2' }}
+            </td>
+
+            <!-- Line Total Amount -->
+            <td class="th-total font-code text-left font-bold text-dark">
+              {{ ((((line.quantity * line.unitPrice) - line.discount)) * (1 + line.vatRate / 100)) | number:'1.2-2' }}
+            </td>
+
+            <!-- Actions (Normal edit/del vs Return mode Cancel Item) -->
+            <td class="th-actions text-center">
+              <!-- Regular sales mode: edit / delete -->
+              <div class="cell-actions-wrap" *ngIf="!isCreditNoteMode()">
+                <button 
+                  type="button" 
+                  class="btn-cell-edit" 
+                  (click)="openEditLineModal(i)" 
+                  [title]="'common.edit' | translate">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button 
+                  type="button" 
+                  class="btn-cell-del" 
+                  (click)="removeLine(i)" 
+                  [title]="'common.delete' | translate">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+
+              <!-- Return mode: Cancel item from return -->
+              <div class="cell-return-actions-wrap" *ngIf="isCreditNoteMode()">
+                <button 
+                  type="button" 
+                  class="btn-cell-cancel-return" 
+                  (click)="cancelReturnOfLine(i)" 
+                  [title]="'invoices.create.cancelItem' | translate">
+                  <i class="pi pi-times-circle"></i>
+                  <span>{{ 'invoices.create.cancelItem' | translate }}</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Table Action & Totals Summary Footer -->
+    <!-- Table Footer with Compact Totals Strip & Add Item Button -->
     <div class="erp-table-footer">
-      <button type="button" class="btn-add-item" (click)="addLineItem()">
+      <button type="button" class="btn-add-item" (click)="openAddLineModal()" *ngIf="!isCreditNoteMode()">
         <i class="pi pi-plus"></i>
-        <span>إضافة صنف جديد</span>
+        <span>{{ 'invoices.create.addItem' | translate }}</span>
       </button>
+      <div class="return-footer-badge" *ngIf="isCreditNoteMode() && !referenceInvoiceNumber()">
+        <i class="pi pi-shield-check"></i>
+        <span>{{ 'invoices.create.modeCreditNote' | translate }}</span>
+      </div>
 
-      <!-- Totals Bar -->
       <div class="erp-totals-summary">
         <div class="tot-box">
-          <span class="tot-label">المجموع قبل الخصم:</span>
-          <strong class="tot-val font-code">{{ subtotal() | number:'1.2-2' }} SAR</strong>
+          <span class="tot-label">{{ 'invoices.create.subtotal' | translate }}:</span>
+          <span class="tot-val font-code">{{ subtotal() | number:'1.2-2' }}</span>
         </div>
 
         <div class="tot-box" *ngIf="totalDiscount() > 0">
-          <span class="tot-label text-red">الخصم:</span>
-          <strong class="tot-val font-code text-red">-{{ totalDiscount() | number:'1.2-2' }} SAR</strong>
+          <span class="tot-label">{{ 'invoices.create.discount' | translate }}:</span>
+          <span class="tot-val font-code">-{{ totalDiscount() | number:'1.2-2' }}</span>
         </div>
 
         <div class="tot-box">
-          <span class="tot-label">الخاضع للضريبة:</span>
-          <strong class="tot-val font-code">{{ totalTaxableAmount() | number:'1.2-2' }} SAR</strong>
+          <span class="tot-label">{{ 'invoices.create.taxable' | translate }}:</span>
+          <span class="tot-val font-code">{{ totalTaxableAmount() | number:'1.2-2' }}</span>
         </div>
 
         <div class="tot-box vat">
-          <span class="tot-label">ضريبة القيمة المضافة (15%):</span>
-          <strong class="tot-val font-code text-emerald">{{ totalVatAmount() | number:'1.2-2' }} SAR</strong>
+          <span class="tot-label">{{ 'invoices.create.vatTotal' | translate }}:</span>
+          <span class="tot-val font-code">{{ totalVatAmount() | number:'1.2-2' }}</span>
         </div>
 
         <div class="tot-box grand">
-          <span class="tot-label">الإجمالي النهائي:</span>
-          <strong class="tot-val font-code text-primary">{{ grandTotal() | number:'1.2-2' }} SAR</strong>
+          <span class="tot-label">{{ 'invoices.create.grandTotal' | translate }}:</span>
+          <span class="tot-val font-code">{{ grandTotal() | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Tafqeet & ZATCA Status Bar -->
+    <!-- Status Bar: Tafqeet in Words & ZATCA Phase 2 Compliance Status -->
     <div class="erp-status-bar">
       <div class="tafqeet-strip">
-        <strong>المبلغ كتابة:</strong>
+        <strong>{{ 'invoices.create.amountInWords' | translate }}</strong>
         <span>{{ amountInWordsAr() }}</span>
       </div>
 
-      <div class="zatca-strip" [class.ready]="zatcaChecklist().isFullyCompliant">
-        <i class="pi" [class.pi-check-circle]="zatcaChecklist().isFullyCompliant" [class.pi-info-circle]="!zatcaChecklist().isFullyCompliant"></i>
-        <span>{{ zatcaChecklist().isFullyCompliant ? 'مطابق لمتطلبات هيئة الزكاة والضريبة (جاهز للاعتماد)' : 'مسودة قيد الاستكمال' }}</span>
+      <div class="accounting-impact-strip">
+        <i class="pi pi-shield"></i>
+        <strong>{{ 'invoices.create.complianceStatus' | translate }}</strong>
+        <span class="badge-zatca-tag" [class.ready]="zatcaChecklist().isFullyCompliant">
+          {{ (zatcaChecklist().isFullyCompliant ? 'invoices.create.compliantReady' : 'invoices.create.compliantWaiting') | translate }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modern Modal Popup for Adding / Editing Line Items -->
+  <div class="modal-backdrop" *ngIf="showLineModal()" (click)="closeLineModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-left">
+          <i class="pi pi-box"></i>
+          <h3>{{ (editingIndex() !== null ? 'invoices.create.modalEditTitle' : 'invoices.create.modalAddTitle') | translate }}</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeLineModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-grid">
+          <!-- Choose Item from Catalog -->
+          <div class="m-field col-span-2">
+            <label class="m-label">
+              <span>{{ 'invoices.create.modalCatalogSelect' | translate }}</span>
+              <span class="text-muted" style="font-size: 0.65rem;">{{ 'invoices.create.modalCatalogOptional' | translate }}</span>
+            </label>
+            <app-searchable-select
+              [items]="catalogItemOptions()"
+              [value]="lineForm.itemId"
+              (valueChange)="lineForm.itemId = $event; onModalItemSelect()"
+              [placeholder]="'invoices.create.modalCatalogPlaceholder' | translate"
+              [searchPlaceholder]="'invoices.create.modalCatalogSearchPlaceholder' | translate">
+            </app-searchable-select>
+          </div>
+
+          <!-- Single Unified Item Name with Background Auto-Translation -->
+          <div class="m-field col-span-2">
+            <div class="m-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <label style="margin-bottom: 0;">
+                <span class="req" style="color: #ef4444;">*</span>
+                <span>{{ 'invoices.create.modalItemName' | translate }}</span>
+                <small class="text-muted ms-1 me-1" style="font-weight: normal;">{{ 'invoices.create.modalItemNameHint' | translate }}</small>
+              </label>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <span *ngIf="modalLineBackgroundTranslation()" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                  {{ modalLineBackgroundTranslation() }}
+                </span>
+                <button type="button" class="btn-mini-translate" style="padding: 1px 6px; font-size: 0.7rem;" (click)="forceRetranslateModalLine()" [title]="'roles.instantTranslate' | translate">
+                  <i class="pi pi-sync"></i>
+                </button>
+              </div>
+            </div>
+            <input 
+              type="text" 
+              class="m-input font-bold" 
+              [placeholder]="'invoices.create.modalItemNamePlaceholder' | translate" 
+              [ngModel]="lineForm.itemNameAr || lineForm.itemNameEn" 
+              (ngModelChange)="onModalLineNameChange($event)" />
+          </div>
+
+          <!-- Row 3: Quantity with attached Unit Pill & Unit Price -->
+          <div class="m-field">
+            <div class="m-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <label style="margin-bottom: 0;">
+                <span class="req">*</span>
+                {{ 'invoices.create.modalSoldQty' | translate }}
+              </label>
+              <span *ngIf="isModalStockable()" class="cost-hint-pill" [class.input-loss-warning]="getModalItemStock() <= 0" [title]="'invoices.create.availableStockTitle' | translate">
+                {{ 'invoices.create.modalAvailableStock' | translate }} {{ getModalItemStock() }} {{ lineForm.unit || ('invoices.create.unit' | translate) }}
+              </span>
+            </div>
+            <div class="input-with-unit-wrap">
+              <input 
+                type="number" 
+                min="0.01" 
+                step="1" 
+                class="m-input font-code font-bold text-center" 
+                [(ngModel)]="lineForm.quantity" />
+              <span class="unit-attached-pill" [title]="'invoices.create.itemUnitTitle' | translate">{{ lineForm.unit || ('invoices.create.unit' | translate) }}</span>
+            </div>
+          </div>
+
+          <div class="m-field">
+            <div class="m-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <label style="margin-bottom: 0;">
+                <span class="req">*</span>
+                {{ 'invoices.create.modalUnitPrice' | translate }}
+              </label>
+              <span *ngIf="getModalItemCost() > 0" class="cost-hint-pill" [title]="'invoices.create.itemCostPriceTitle' | translate">
+                {{ 'invoices.create.modalCost' | translate }} {{ getModalItemCost() | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }}
+              </span>
+            </div>
+            <input 
+              type="number" 
+              min="0" 
+              step="0.01" 
+              class="m-input font-code font-bold text-left" 
+              [class.input-loss-warning]="getModalItemCost() > 0 && lineForm.unitPrice < getModalItemCost()"
+              [(ngModel)]="lineForm.unitPrice" />
+
+            <!-- Live Profit/Loss Margin Indicator -->
+            <div *ngIf="getModalItemCost() > 0 && lineForm.unitPrice > 0" 
+                 class="modal-margin-chip" 
+                 [class.loss]="lineForm.unitPrice < getModalItemCost()"
+                 [class.profit]="lineForm.unitPrice >= getModalItemCost()">
+              <i class="pi" [ngClass]="lineForm.unitPrice < getModalItemCost() ? 'pi-exclamation-triangle' : 'pi-check-circle'"></i>
+              <span *ngIf="lineForm.unitPrice < getModalItemCost()">
+                {{ 'invoices.create.modalLossWarning' | translate }} (-{{ (getModalItemCost() - lineForm.unitPrice) | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }} | {{ getModalLossPercentage() }}%)
+              </span>
+              <span *ngIf="lineForm.unitPrice >= getModalItemCost()">
+                {{ 'invoices.create.modalProfitMargin' | translate }} +{{ (lineForm.unitPrice - getModalItemCost()) | number:'1.2-2' }} {{ 'invoices.kpis.sar' | translate }} (+{{ getModalProfitPercentage() }}%)
+              </span>
+            </div>
+          </div>
+
+          <!-- Row 4: Discount & VAT Rate -->
+          <div class="m-field">
+            <label class="m-label">{{ 'invoices.create.modalDiscount' | translate }}</label>
+            <input 
+              type="number" 
+              min="0" 
+              step="0.01" 
+              class="m-input font-code text-left" 
+              [(ngModel)]="lineForm.discount" />
+          </div>
+
+          <div class="m-field">
+            <label class="m-label">{{ 'invoices.create.modalVatRate' | translate }}</label>
+            <select class="m-select font-bold font-code" [(ngModel)]="lineForm.vatRate">
+              <option [value]="15">{{ 'invoices.create.modalVatStandard' | translate }}</option>
+              <option [value]="0">{{ 'invoices.create.modalVatZero' | translate }}</option>
+            </select>
+          </div>
+
+          <!-- Real-time Live Calculation Box -->
+          <div class="modal-calc-card col-span-2">
+            <div class="calc-item">
+              <span class="calc-label">{{ 'invoices.create.modalTaxableAmount' | translate }}</span>
+              <strong class="calc-val font-code">{{ modalTaxable | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+            </div>
+
+            <div class="calc-divider"></div>
+
+            <div class="calc-item">
+              <span class="calc-label">{{ 'invoices.create.modalVatAmount' | translate }}</span>
+              <strong class="calc-val font-code">+{{ modalVat | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+            </div>
+
+            <div class="calc-divider"></div>
+
+            <div class="calc-item grand">
+              <span class="calc-label">{{ 'invoices.create.modalLineTotal' | translate }}</span>
+              <strong class="calc-val font-code font-bold">{{ modalTotal | number:'1.2-2' }} <small>{{ 'invoices.kpis.sar' | translate }}</small></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          class="m-btn btn-continue" 
+          (click)="saveModalLine(true)" 
+          *ngIf="editingIndex() === null">
+          <i class="pi pi-plus-circle"></i>
+          <span>{{ 'invoices.create.modalAddAndContinue' | translate }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="m-btn btn-save" 
+          (click)="saveModalLine(false)">
+          <i class="pi pi-check"></i>
+          <span>{{ (editingIndex() !== null ? 'invoices.create.modalUpdateLine' : 'invoices.create.modalSaveLine') | translate }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="m-btn btn-cancel" 
+          (click)="closeLineModal()">
+          <i class="pi pi-times"></i>
+          <span>{{ 'common.cancel' | translate }}</span>
+        </button>
       </div>
     </div>
   </div>

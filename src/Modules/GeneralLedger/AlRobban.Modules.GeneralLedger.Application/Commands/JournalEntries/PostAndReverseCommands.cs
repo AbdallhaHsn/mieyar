@@ -7,7 +7,10 @@ using MediatR;
 
 namespace AlRobban.Modules.GeneralLedger.Application.Commands.JournalEntries;
 
-public record PostJournalEntryCommand(Guid Id, string? PostedBy) : IRequest<Result<bool>>;
+public record PostJournalEntryCommand(Guid Id, string? PostedBy) : IRequest<Result<bool>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class PostJournalEntryCommandHandler : IRequestHandler<PostJournalEntryCommand, Result<bool>>
 {
@@ -68,7 +71,10 @@ public class PostJournalEntryCommandHandler : IRequestHandler<PostJournalEntryCo
     }
 }
 
-public record ReverseJournalEntryCommand(Guid Id, string Reason, string? ReversedBy) : IRequest<Result<JournalEntryDto>>;
+public record ReverseJournalEntryCommand(Guid Id, string Reason, string? ReversedBy) : IRequest<Result<JournalEntryDto>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class ReverseJournalEntryCommandHandler : IRequestHandler<ReverseJournalEntryCommand, Result<JournalEntryDto>>
 {

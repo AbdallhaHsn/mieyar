@@ -1,0 +1,199 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.erp-pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1.25rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  font-size: 0.85rem;
+  color: #475569;
+  user-select: none;
+  box-sizing: border-box;
+
+  &.compact {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* 1. Summary Section */
+.pag-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  color: #475569;
+  white-space: nowrap;
+
+  .pag-num {
+    font-family: monospace, inherit;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 0 0.15rem;
+
+    &.total {
+      color: #059669;
+    }
+  }
+
+  .empty-pag-text {
+    color: #94a3b8;
+    font-style: italic;
+  }
+}
+
+/* 2. Navigation Group */
+.pag-nav-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.pag-pages-list {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pag-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+
+  i {
+    font-size: 0.75rem;
+  }
+
+  &:hover:not([disabled]) {
+    background: #f8fafc;
+    border-color: #059669;
+    color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.08);
+  }
+
+  &:active:not([disabled]) {
+    transform: translateY(0);
+  }
+
+  &[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+  }
+
+  &.page-num-btn {
+    min-width: 32px;
+    padding: 0 0.45rem;
+    font-family: monospace, inherit;
+
+    &.active {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      border-color: #047857;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.28);
+    }
+  }
+
+  &.step-btn {
+    padding: 0 0.65rem;
+
+    .btn-text {
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+  }
+
+  &.edge-btn {
+    min-width: 32px;
+    padding: 0 0.35rem;
+    color: #64748b;
+  }
+}
+
+.pag-ellipsis {
+  padding: 0 0.25rem;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* 3. Page Size Selector */
+.pag-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+
+  .size-label {
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+
+  .size-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #1e293b;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+
+    &:hover {
+      border-color: #94a3b8;
+    }
+
+    &:focus {
+      border-color: #059669;
+      box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.12);
+    }
+  }
+}
+
+/* Responsive adjustment */
+@media (max-width: 768px) {
+  .erp-pagination-container {
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .pag-summary,
+  .pag-size-selector {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .step-btn .btn-text {
+    display: none;
+  }
+}

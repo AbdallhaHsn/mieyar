@@ -8,6 +8,7 @@ public interface IInvoiceRepository
     Task<Invoice?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Invoice?> GetByNumberAsync(Guid companyId, string invoiceNumber, CancellationToken cancellationToken = default);
     Task<string> GetLastInvoiceHashAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<ZatcaDeviceConfig?> GetZatcaConfigAsync(Guid companyId, CancellationToken cancellationToken = default);
     Task<string> GenerateNextNumberAsync(Guid companyId, TransactionType type, int year, CancellationToken cancellationToken = default);
     Task<List<Invoice>> GetListAsync(
         Guid companyId,

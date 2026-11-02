@@ -40,6 +40,14 @@ public class InvoiceRepository : IInvoiceRepository
         return last ?? "NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjhhZDRmMTBkNFZ1";
     }
 
+    public async Task<ZatcaDeviceConfig?> GetZatcaConfigAsync(Guid companyId, CancellationToken cancellationToken = default)
+    {
+        return await _context.ZatcaDeviceConfigs
+            .Where(c => c.CompanyId == companyId)
+            .OrderByDescending(c => c.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<string> GenerateNextNumberAsync(Guid companyId, TransactionType type, int year, CancellationToken cancellationToken = default)
     {
         var prefix = type switch
@@ -47,6 +55,7 @@ public class InvoiceRepository : IInvoiceRepository
             TransactionType.Invoice => "INV",
             TransactionType.CreditNote => "CN",
             TransactionType.DebitNote => "DN",
+            TransactionType.Quotation => "QUO",
             _ => "INV"
         };
 

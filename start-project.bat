@@ -1,16 +1,14 @@
 @echo off
-chcp 65001 > nul
-title تشغيل نظام الربان المحاسبي - Al-Roban ERP
-echo ==============================================================================
-echo                 نظام الربان المحاسبي المتكامل (Al-Roban ERP)
-echo                        سكربت التشغيل السريع
-echo ==============================================================================
-echo.
-echo جاري بدء تشغيل البيئة والواجهة الخلفية والأمامية...
-echo.
+setlocal
+cd /d "%~dp0"
+title Al-Roban ERP
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-all.ps1" %*
+set PATH=C:\Program Files\dotnet;%PATH%
+set DOTNET_ROOT=C:\Program Files\dotnet
 
-echo.
-echo تم تنفيذ أمر التشغيل. اضغط أي مفتاح للإغلاق...
-pause > nul
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-all.ps1" %*
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] Encountered an issue while running startup script.
+    pause
+)

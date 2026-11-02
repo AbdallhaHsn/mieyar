@@ -121,6 +121,24 @@ public class InvoicesController : ControllerBase
     }
 
     /// <summary>
+    /// سداد أو تحصيل دفعة من الفاتورة الضريبية وترحيل سند القبض
+    /// </summary>
+    [HttpPost("{id:guid}/pay")]
+    [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Pay(
+        [FromRoute] Guid id,
+        [FromBody] PayInvoiceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new PayInvoiceCommand(id, request, User.Identity?.Name ?? "User"), cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { result.Error.Code, result.Error.Description });
+        }
+        return Ok(result.Value);
+    }
+
+    /// <summary>
     /// تحميل ملف الفاتورة بصيغة UBL 2.1 XML المطابقة لمتطلبات زكاة المرحلة الثانية
     /// </summary>
     [HttpGet("{id:guid}/xml")]
@@ -133,8 +151,18 @@ public class InvoicesController : ControllerBase
             return NotFound(new { error = "الفاتورة المطلوبة غير موجودة" });
         }
 
-        var xml = _cryptoService.GenerateInvoiceXml(invoice, "شركة الربان للحلول والأنظمة المحاسبية", "300000000000003");
+        var zatcaConfig = await _invoiceRepo.GetZatcaConfigAsync(invoice.CompanyId, cancellationToken);
+        var sellerName = !string.IsNullOrWhiteSpace(zatcaConfig?.OrganizationName) 
+            ? zatcaConfig.OrganizationName 
+            : "شركة الربان للحلول الذكية";
+        var sellerVat = !string.IsNullOrWhiteSpace(zatcaConfig?.OrganizationVatNumber) 
+            ? zatcaConfig.OrganizationVatNumber 
+            : "300123456700003";
+
+        var cert = zatcaConfig?.ProductionCsid ?? zatcaConfig?.ComplianceCsid;
+        var xml = _cryptoService.GenerateInvoiceXml(invoice, sellerName, sellerVat, invoice.CryptographicStamp, cert);
         var bytes = System.Text.Encoding.UTF8.GetBytes(xml);
         return File(bytes, "application/xml", $"{invoice.InvoiceNumber}.xml");
     }
 }
+

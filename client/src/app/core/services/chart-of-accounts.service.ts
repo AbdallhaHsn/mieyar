@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, of, tap } from 'rxjs';
 import { AccountDto, AccountingStandardGuidance, CreateAccountRequest } from '../models/account.model';
 import { CompanyContextService } from './company-context.service';
+import { LanguageService } from './language.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +12,8 @@ import { CompanyContextService } from './company-context.service';
 export class ChartOfAccountsService {
   private http = inject(HttpClient);
   private companyContext = inject(CompanyContextService);
-  private readonly apiUrl = 'http://localhost:5000/api/accounts';
+  private langService = inject(LanguageService);
+  private readonly apiUrl = `${environment.apiUrl}/api/accounts`;
 
   accountsTree = signal<AccountDto[]>([]);
   standards = signal<AccountingStandardGuidance[]>([]);
@@ -62,7 +65,7 @@ export class ChartOfAccountsService {
       }),
       catchError(err => {
         console.error('Failed to load accounts tree', err);
-        this.errorMessage.set('فشل في جلب شجرة الحسابات من الخادم. يرجى التأكد من تشغيل خادم الربان.');
+        this.errorMessage.set(this.langService.t('accounting.chartOfAccounts.service.loadTreeFailed'));
         this.isLoading.set(false);
         return of([]);
       })
@@ -82,7 +85,7 @@ export class ChartOfAccountsService {
       }),
       catchError(err => {
         this.isLoading.set(false);
-        const msg = err.error?.description || 'حدث خطأ أثناء حفظ الحساب الجديد.';
+        const msg = err.error?.description || this.langService.t('accounting.chartOfAccounts.service.createFailed');
         this.errorMessage.set(msg);
         throw err;
       })
@@ -98,7 +101,7 @@ export class ChartOfAccountsService {
       }),
       catchError(err => {
         this.isLoading.set(false);
-        const msg = err.error?.description || 'حدث خطأ أثناء تعديل الحساب.';
+        const msg = err.error?.description || this.langService.t('accounting.chartOfAccounts.service.updateFailed');
         this.errorMessage.set(msg);
         throw err;
       })

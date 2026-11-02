@@ -1,0 +1,1065 @@
+<div class="payroll-container animate-fade-in" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  
+  <!-- ============================================================== -->
+  <!-- 1. TOP HEADER & ENTERPRISE ACTIONS BAR                          -->
+  <!-- ============================================================== -->
+  <header class="page-header no-print">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1>💵 {{ 'hr.payroll.title' | translate }}</h1>
+        <span class="badge-tag wps-tag">{{ 'hr.payroll.mudadBadge' | translate }}</span>
+      </div>
+      <p class="subtitle">{{ 'hr.payroll.subtitle' | translate }}</p>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="header-actions">
+      <!-- 1. Calculate Payroll -->
+      <button
+        class="btn btn-primary"
+        (click)="calculateCurrentMonth()"
+        [disabled]="actionLoading">
+        <i class="pi pi-refresh" [class.pi-spin]="actionLoading"></i>
+        <span>{{ currentPeriod ? ('hr.payroll.recalculatePayroll' | translate) : ('hr.payroll.calculatePayroll' | translate) }}</span>
+      </button>
+
+      <!-- 2. Print Official Payroll Sheet -->
+      <button
+        class="btn btn-outline-print"
+        *ngIf="currentPeriod && currentPeriod.lines && currentPeriod.lines.length > 0"
+        (click)="openPrintModal()"
+        [disabled]="actionLoading">
+        <i class="pi pi-print"></i>
+        <span>{{ 'hr.payroll.printOfficialSheet' | translate }}</span>
+      </button>
+
+      <!-- 3. Export to CSV / Excel -->
+      <button
+        class="btn btn-outline-excel"
+        *ngIf="currentPeriod && currentPeriod.lines && currentPeriod.lines.length > 0"
+        (click)="exportToCsv()"
+        [disabled]="actionLoading">
+        <i class="pi pi-file-excel"></i>
+        <span>{{ 'hr.payroll.exportExcel' | translate }}</span>
+      </button>
+
+      <!-- 4. WPS SIF / Mudad File -->
+      <button
+        class="btn btn-outline-wps"
+        *ngIf="currentPeriod && currentPeriod.lines && currentPeriod.lines.length > 0"
+        (click)="openWpsDialog()"
+        [disabled]="actionLoading">
+        <i class="pi pi-download"></i>
+        <span>{{ 'hr.payroll.wpsFile' | translate }}</span>
+      </button>
+
+      <!-- 5. Post to General Ledger (GL) -->
+      <button
+        class="btn btn-success"
+        *ngIf="currentPeriod && currentPeriod.status !== 4 && currentPeriod.status !== 5"
+        (click)="postToGl()"
+        [disabled]="actionLoading || !currentPeriod.lines || currentPeriod.lines.length === 0">
+        <i class="pi pi-book"></i>
+        <span>{{ 'hr.payroll.postAccrualGl' | translate }}</span>
+      </button>
+
+      <!-- 6. Mark as Paid (إثبات الصرف البنكي وتوليد قيد السداد) -->
+      <button
+        class="btn btn-purple"
+        *ngIf="currentPeriod && (currentPeriod.status === 4 || currentPeriod.status === 3)"
+        (click)="markAsPaid()"
+        [disabled]="actionLoading">
+        <i class="pi pi-wallet"></i>
+        <span>{{ 'hr.payroll.markDisbursement' | translate }}</span>
+      </button>
+
+      <!-- 7. View GL Journal Entries (معاينة القيود المحاسبية المرتبطة) -->
+      <button
+        class="btn btn-outline-info"
+        *ngIf="currentPeriod && (currentPeriod.journalEntryNumber || currentPeriod.paymentJournalEntryNumber)"
+        (click)="viewJournalEntry(currentPeriod.paymentJournalEntryId || currentPeriod.journalEntryId, currentPeriod.paymentJournalEntryNumber || currentPeriod.journalEntryNumber)">
+        <i class="pi pi-book"></i>
+        <span>{{ 'hr.payroll.viewAccountingEntries' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- 2. PERIOD SELECTOR & SEARCH/FILTER BAR                         -->
+  <!-- ============================================================== -->
+  <div class="period-selector-card shadow-card no-print">
+    <div class="selector-row">
+      <div class="sel-group">
+        <label><i class="pi pi-calendar text-emerald"></i> {{ 'hr.payroll.financialMonth' | translate }}:</label>
+        <select [(ngModel)]="selectedMonth" (change)="loadPeriods()">
+          <option *ngFor="let m of months" [value]="m.value">{{ m.nameAr }}</option>
+        </select>
+      </div>
+
+      <div class="sel-group">
+        <label><i class="pi pi-calendar-plus text-emerald"></i> {{ 'hr.payroll.fiscalYear' | translate }}:</label>
+        <select [(ngModel)]="selectedYear" (change)="loadPeriods()">
+          <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+        </select>
+      </div>
+
+      <!-- Quick Search -->
+      <div class="search-box" *ngIf="currentPeriod && currentPeriod.lines && currentPeriod.lines.length > 0">
+        <i class="pi pi-search search-icon"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          [placeholder]="'hr.payroll.searchPlaceholder' | translate"
+        />
+        <button *ngIf="searchTerm" class="clear-search-btn" (click)="searchTerm = ''">&times;</button>
+      </div>
+
+      <!-- Bank Filter -->
+      <div class="sel-group" *ngIf="availableBanks.length > 1">
+        <label><i class="pi pi-building"></i> {{ 'hr.payroll.bank' | translate }}:</label>
+        <select [(ngModel)]="selectedBank">
+          <option value="">{{ 'hr.payroll.allBanks' | translate }} ({{ currentPeriod?.lines?.length }})</option>
+          <option *ngFor="let b of availableBanks" [value]="b">{{ getBankFriendlyName(b) }} ({{ b }})</option>
+        </select>
+      </div>
+
+      <!-- Period Status Pill -->
+      <div class="period-status-pill" *ngIf="currentPeriod">
+        <span class="status-indicator" [ngClass]="getStatusBadgeClass(currentPeriod.status)">
+          {{ getStatusText(currentPeriod.status) }}
+        </span>
+
+        <!-- Accrual JV Badge -->
+        <div
+          class="gl-link clickable"
+          *ngIf="currentPeriod.journalEntryNumber"
+          (click)="viewJournalEntry(currentPeriod.journalEntryId, currentPeriod.journalEntryNumber)"
+          [title]="'hr.payroll.viewAccrualJvTitle' | translate">
+          <i class="pi pi-book text-emerald"></i>
+          <span>{{ 'hr.payroll.accrualJv' | translate }}: <strong>{{ currentPeriod.journalEntryNumber }}</strong> <i class="pi pi-external-link"></i></span>
+        </div>
+
+        <!-- Payment JV Badge -->
+        <div
+          class="gl-link clickable payment-jv"
+          *ngIf="currentPeriod.paymentJournalEntryNumber"
+          (click)="viewJournalEntry(currentPeriod.paymentJournalEntryId, currentPeriod.paymentJournalEntryNumber)"
+          [title]="'hr.payroll.viewPaymentJvTitle' | translate">
+          <i class="pi pi-check-circle text-purple"></i>
+          <span>{{ 'hr.payroll.paymentJv' | translate }}: <strong>{{ currentPeriod.paymentJournalEntryNumber }}</strong> <i class="pi pi-external-link"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 3. FINANCIAL KPI SUMMARIES STRIP                               -->
+  <!-- ============================================================== -->
+  <div class="kpi-grid no-print" *ngIf="currentPeriod">
+    <div class="kpi-card">
+      <div class="kpi-icon blue">
+        <i class="pi pi-money-bill"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.payroll.totalPayrollAllowances' | translate }}</span>
+        <div class="kpi-value">{{ currentPeriod.totalGrossSalary | number:'1.2-2' }} <span class="kpi-unit">SAR</span></div>
+        <span class="kpi-sub">{{ 'hr.payroll.basic' | translate }}: {{ currentPeriod.totalBasicSalary | number:'1.2-2' }} | {{ 'hr.payroll.allowancesAndOvertime' | translate }}: {{ (currentPeriod.totalGrossSalary - currentPeriod.totalBasicSalary) | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon orange">
+        <i class="pi pi-shield"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.payroll.gosiTitle' | translate }}</span>
+        <div class="kpi-value text-orange">{{ (currentPeriod.totalEmployeeGosiDeduction + currentPeriod.totalCompanyGosiContribution) | number:'1.2-2' }} <span class="kpi-unit">SAR</span></div>
+        <span class="kpi-sub">{{ 'hr.payroll.empDeduction' | translate }}: {{ currentPeriod.totalEmployeeGosiDeduction | number:'1.2-2' }} | {{ 'hr.payroll.orgShare' | translate }}: {{ currentPeriod.totalCompanyGosiContribution | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon red">
+        <i class="pi pi-minus-circle"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.payroll.totalDeductionsTitle' | translate }}</span>
+        <div class="kpi-value text-danger">{{ currentPeriod.totalDeductions | number:'1.2-2' }} <span class="kpi-unit">SAR</span></div>
+        <span class="kpi-sub">{{ 'hr.payroll.gosiPlusAbsence' | translate }}: {{ currentPeriod.totalAbsenceDeductions | number:'1.2-2' }} + {{ 'hr.payroll.loansAndOther' | translate }}: {{ (currentPeriod.totalLoanDeductions + currentPeriod.totalOtherDeductions) | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card highlight-green">
+      <div class="kpi-icon green">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.payroll.netPayableTitle' | translate }}</span>
+        <div class="kpi-value text-success font-extrabold">{{ currentPeriod.totalNetSalary | number:'1.2-2' }} <span class="kpi-unit">SAR</span></div>
+        <span class="kpi-sub">{{ 'hr.payroll.beneficiariesCount' | translate }}: {{ currentPeriod.employeeCount }} {{ 'hr.payroll.approvedEmployee' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 4. DETAILED INTERACTIVE PAYROLL TABLE                          -->
+  <!-- ============================================================== -->
+  <div class="table-container shadow-card no-print" *ngIf="currentPeriod && currentPeriod.lines && currentPeriod.lines.length > 0">
+    <div class="table-header-bar">
+      <div class="table-title-area">
+        <i class="pi pi-list text-emerald"></i>
+        <h3>{{ 'hr.payroll.detailedPayrollSheet' | translate }} — {{ currentPeriod.payrollNumber }}</h3>
+        <span class="period-dates font-mono">({{ currentPeriod.startDate | date:'yyyy-MM-dd' }} ~ {{ currentPeriod.endDate | date:'yyyy-MM-dd' }})</span>
+      </div>
+      <div class="table-meta-counts">
+        <span class="table-count" *ngIf="searchTerm || selectedBank">{{ 'hr.payroll.displayedCount' | translate }}: {{ filteredLines.length }} {{ 'hr.payroll.outOfTotal' | translate }} {{ currentPeriod.lines.length }} {{ 'hr.payroll.employee' | translate }}</span>
+        <span class="table-count" *ngIf="!searchTerm && !selectedBank">{{ 'hr.payroll.totalApprovedCount' | translate }}: {{ currentPeriod.lines.length }} {{ 'hr.payroll.employee' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="th-num">#</th>
+            <th class="th-emp">{{ 'hr.payroll.empAndJob' | translate }}</th>
+            <th class="th-id">{{ 'hr.payroll.idOrIqama' | translate }}</th>
+            <th class="th-amt">{{ 'hr.payroll.basic' | translate }}</th>
+            <th class="th-amt">{{ 'hr.payroll.housing' | translate }}</th>
+            <th class="th-amt">{{ 'hr.payroll.transport' | translate }}</th>
+            <th class="th-amt">{{ 'hr.payroll.otherAndOvertime' | translate }}</th>
+            <th class="th-amt font-bold">{{ 'hr.payroll.table.grossSalary' | translate }}</th>
+            <th class="th-amt text-danger">{{ 'hr.payroll.gosiDeduction' | translate }}</th>
+            <th class="th-amt text-muted">{{ 'hr.payroll.absenceAndLoans' | translate }}</th>
+            <th class="th-amt th-net">{{ 'hr.payroll.table.netSalary' | translate }} (SAR)</th>
+            <th class="th-bank">{{ 'hr.payroll.bankAndIban' | translate }}</th>
+            <th class="th-actions text-center">{{ 'hr.payroll.table.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let line of filteredLines; let idx = index">
+            <td class="text-center font-mono font-bold">{{ idx + 1 }}</td>
+            <td>
+              <div class="emp-name-box">
+                <span class="emp-code font-mono">{{ line.employeeNumber }}</span>
+                <strong class="ar-name">{{ line.employeeNameAr }}</strong>
+                <span class="en-name font-mono" *ngIf="line.employeeNameEn">{{ line.employeeNameEn }}</span>
+              </div>
+            </td>
+            <td class="id-number font-mono">{{ line.nationalIdOrIqama }}</td>
+            <td class="amount-cell font-mono">{{ line.basicSalary | number:'1.2-2' }}</td>
+            <td class="amount-cell font-mono">{{ line.housingAllowance | number:'1.2-2' }}</td>
+            <td class="amount-cell font-mono">{{ line.transportationAllowance | number:'1.2-2' }}</td>
+            <td class="amount-cell font-mono">
+              <span>{{ (line.otherAllowances + line.overtimeAmount) | number:'1.2-2' }}</span>
+              <span class="overtime-badge" *ngIf="line.overtimeAmount > 0" [title]="('hr.payroll.overtimeBadge' | translate) + ': ' + line.overtimeAmount">{{ 'hr.payroll.overtimeBadge' | translate }}</span>
+            </td>
+            <td class="amount-cell font-mono font-semibold">{{ line.grossSalary | number:'1.2-2' }}</td>
+            <td class="amount-cell font-mono text-danger">-{{ line.employeeGosiDeduction | number:'1.2-2' }}</td>
+            <td class="amount-cell font-mono text-muted">
+              <span>-{{ (line.absenceDeduction + line.loanDeduction + line.otherDeductions) | number:'1.2-2' }}</span>
+              <span class="ded-badge" *ngIf="(line.absenceDeduction + line.loanDeduction) > 0" [title]="('hr.payroll.absenceLabel' | translate) + ': ' + line.absenceDeduction + ' | ' + ('hr.payroll.loansLabel' | translate) + ': ' + line.loanDeduction">{{ 'hr.payroll.adjustedBadge' | translate }}</span>
+            </td>
+            <td class="amount-cell font-mono net-cell">
+              <strong>{{ line.netSalary | number:'1.2-2' }}</strong>
+            </td>
+            <td>
+              <div class="bank-tag" [title]="line.iban">
+                <span class="bank-code-badge">{{ getBankFriendlyName(line.bankCode) }}</span>
+                <span class="iban-text font-mono">{{ line.iban }}</span>
+              </div>
+            </td>
+            <td class="text-center actions-col">
+              <div class="row-actions-group">
+                <!-- 1. Edit Adjustments -->
+                <button
+                  type="button"
+                  class="btn-action btn-action-edit"
+                  [title]="'hr.payroll.editActionTitle' | translate"
+                  (click)="openAdjustmentModal(line)"
+                  [disabled]="currentPeriod.status === 4 || currentPeriod.status === 5">
+                  <i class="pi pi-pencil"></i>
+                  <span>{{ 'hr.payroll.editAction' | translate }}</span>
+                </button>
+
+                <!-- 2. Individual Payslip -->
+                <button
+                  type="button"
+                  class="btn-action btn-action-payslip"
+                  [title]="'hr.payroll.payslipActionTitle' | translate"
+                  (click)="openPayslipModal(line)">
+                  <i class="pi pi-id-card"></i>
+                  <span>{{ 'hr.payroll.payslipAction' | translate }}</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td colspan="3" class="text-bold text-center">{{ 'hr.payroll.grandTotalAndMovements' | translate }}</td>
+            <td class="font-mono font-bold">{{ currentPeriod.totalBasicSalary | number:'1.2-2' }}</td>
+            <td class="font-mono font-bold">{{ currentPeriod.totalHousingAllowance | number:'1.2-2' }}</td>
+            <td class="font-mono font-bold">{{ currentPeriod.totalTransportationAllowance | number:'1.2-2' }}</td>
+            <td class="font-mono font-bold">{{ (currentPeriod.totalOtherAllowances + currentPeriod.totalOvertime) | number:'1.2-2' }}</td>
+            <td class="font-mono font-bold">{{ currentPeriod.totalGrossSalary | number:'1.2-2' }}</td>
+            <td class="font-mono text-danger font-bold">-{{ currentPeriod.totalEmployeeGosiDeduction | number:'1.2-2' }}</td>
+            <td class="font-mono text-muted font-bold">-{{ (currentPeriod.totalAbsenceDeductions + currentPeriod.totalLoanDeductions + currentPeriod.totalOtherDeductions) | number:'1.2-2' }}</td>
+            <td class="font-mono net-cell font-extrabold">{{ currentPeriod.totalNetSalary | number:'1.2-2' }}</td>
+            <td colspan="2" class="text-end font-bold text-emerald">{{ currentPeriod.employeeCount }} {{ 'hr.payroll.employee' | translate }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Empty State when no period calculated yet -->
+  <div *ngIf="!loading && (!currentPeriod || !currentPeriod.lines || currentPeriod.lines.length === 0)" class="empty-state shadow-card no-print">
+    <i class="pi pi-calendar-times empty-icon"></i>
+    <h3>{{ 'hr.payroll.noPayrollCalculated' | translate }} {{ selectedMonth }}/{{ selectedYear }}</h3>
+    <p>{{ 'hr.payroll.noPayrollSubtitle' | translate }}</p>
+    <button class="btn btn-primary" (click)="calculateCurrentMonth()" [disabled]="actionLoading">
+      <i class="pi pi-calculator"></i>
+      <span>{{ 'hr.payroll.calculateThisMonthNow' | translate }}</span>
+    </button>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: MANUAL ADJUSTMENTS MODAL (تعديل البدلات والاستقطاعات)  -->
+  <!-- ============================================================== -->
+  <div class="modal-overlay animate-fade-in" *ngIf="showAdjustmentModal" (click)="closeAdjustmentModal()">
+    <div class="modal-container adjustment-modal animate-scale-up" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-sliders-h text-emerald"></i>
+          <h3>{{ 'hr.payroll.adjModalTitle' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="closeAdjustmentModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedLineForAdjustment">
+        <!-- Employee Identity Header -->
+        <div class="adj-emp-summary">
+          <div class="emp-pill">
+            <span class="lbl">{{ 'hr.payroll.employeeLabel' | translate }}</span>
+            <strong>{{ selectedLineForAdjustment.employeeNameAr }} ({{ selectedLineForAdjustment.employeeNumber }})</strong>
+          </div>
+          <div class="emp-pill">
+            <span class="lbl">{{ 'hr.payroll.idIqamaLabel' | translate }}</span>
+            <strong class="font-mono">{{ selectedLineForAdjustment.nationalIdOrIqama }}</strong>
+          </div>
+          <div class="emp-pill">
+            <span class="lbl">{{ 'hr.payroll.basicHousingTransport' | translate }}</span>
+            <strong class="font-mono text-emerald">{{ (selectedLineForAdjustment.basicSalary + selectedLineForAdjustment.housingAllowance + selectedLineForAdjustment.transportationAllowance) | number:'1.2-2' }} SAR</strong>
+          </div>
+        </div>
+
+        <div class="adj-form-grid">
+          <!-- Overtime -->
+          <div class="form-group">
+            <label><i class="pi pi-clock text-emerald"></i> {{ 'hr.payroll.overtimeAmountLabel' | translate }}</label>
+            <input type="number" [(ngModel)]="adjOvertimeAmount" min="0" step="10" placeholder="0.00" />
+            <small class="hint">{{ 'hr.payroll.overtimeHint' | translate }}</small>
+          </div>
+
+          <!-- Absence Deduction -->
+          <div class="form-group">
+            <label><i class="pi pi-calendar-times text-danger"></i> {{ 'hr.payroll.absenceAmountLabel' | translate }}</label>
+            <input type="number" [(ngModel)]="adjAbsenceDeduction" min="0" step="10" placeholder="0.00" />
+            <small class="hint">{{ 'hr.payroll.absenceHint' | translate }}</small>
+          </div>
+
+          <!-- Loan Deduction -->
+          <div class="form-group">
+            <label><i class="pi pi-credit-card text-amber"></i> {{ 'hr.payroll.loanAmountLabel' | translate }}</label>
+            <input type="number" [(ngModel)]="adjLoanDeduction" min="0" step="50" placeholder="0.00" />
+            <small class="hint">{{ 'hr.payroll.loanHint' | translate }}</small>
+          </div>
+
+          <!-- Other Deductions -->
+          <div class="form-group">
+            <label><i class="pi pi-minus-circle text-muted"></i> {{ 'hr.payroll.otherAmountLabel' | translate }}</label>
+            <input type="number" [(ngModel)]="adjOtherDeductions" min="0" step="10" placeholder="0.00" />
+            <small class="hint">{{ 'hr.payroll.otherHint' | translate }}</small>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group notes-group">
+          <label>{{ 'hr.payroll.adjNotesLabel' | translate }}</label>
+          <input type="text" [(ngModel)]="adjNotes" [placeholder]="'hr.payroll.adjNotesPlaceholder' | translate" />
+        </div>
+
+        <!-- Live Calculation Preview -->
+        <div class="adj-calculation-preview">
+          <div class="calc-row">
+            <span>{{ 'hr.payroll.newGross' | translate }}</span>
+            <strong class="font-mono">{{ getAdjNewGross() | number:'1.2-2' }} SAR</strong>
+          </div>
+          <div class="calc-row text-danger">
+            <span>{{ 'hr.payroll.newDeductions' | translate }}</span>
+            <strong class="font-mono">-{{ getAdjNewDeductions() | number:'1.2-2' }} SAR</strong>
+          </div>
+          <div class="calc-row net-row">
+            <span>{{ 'hr.payroll.newNet' | translate }}</span>
+            <strong class="font-mono text-emerald">{{ getAdjNewNet() | number:'1.2-2' }} SAR</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAdjustmentModal()">{{ 'common.cancel' | translate }}</button>
+        <button type="button" class="btn btn-success" (click)="saveAdjustment()" [disabled]="actionLoading">
+          <i class="pi pi-check"></i>
+          <span>{{ 'hr.payroll.saveAndRecalculate' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: OFFICIAL PAYROLL STATEMENT PRINT & PDF PREVIEW        -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop print-modal-backdrop" *ngIf="showPrintModal" (click)="closePrintModal()">
+    <div class="print-preview-dialog print-preview-landscape" (click)="$event.stopPropagation()">
+      
+      <!-- Sticky Print Toolbar -->
+      <div class="print-toolbar no-print">
+        <div class="toolbar-left">
+          <div class="toolbar-badge">
+            <i class="pi pi-print"></i>
+          </div>
+          <div class="toolbar-titles">
+            <strong>{{ 'hr.payroll.previewOfficialSheet' | translate }}</strong>
+            <span class="sub-badge font-mono">{{ currentPeriod?.payrollNumber }} — {{ 'hr.payroll.monthWord' | translate }} {{ currentPeriod?.periodMonth }}/{{ currentPeriod?.periodYear }}</span>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <button type="button" class="btn-print-main" (click)="triggerPrintSheet()">
+            <i class="pi pi-print"></i>
+            <span>{{ 'hr.payroll.printSheetBtn' | translate }}</span>
+          </button>
+          <button type="button" class="btn-toolbar-close" (click)="closePrintModal()">
+            <i class="pi pi-times"></i>
+            <span>{{ 'common.close' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable A4 Paper Container (Landscape Mode) -->
+      <div class="print-paper-container">
+        <article class="official-payroll-sheet" id="printable-payroll-sheet">
+          
+          <!-- Corporate Header -->
+          <header class="sheet-print-header">
+            <div class="org-info">
+              <div class="org-brand-badge">
+                <span class="brand-accent-tag">{{ 'hr.payroll.saudiArabia' | translate }}</span>
+                <span class="brand-accent-tag dot-tag">&bull;</span>
+                <span class="brand-accent-tag">{{ 'hr.payroll.wpsSystem' | translate }}</span>
+              </div>
+              <h2 class="org-name-ar">{{ companyContext.activeCompany().nameAr || ('ui.payrollWorksheet.c77814' | translate) }}</h2>
+              <span class="org-name-en">{{ companyContext.activeCompany().nameEn || 'Meyar Smart Accounting Solutions Co.' }}</span>
+              <div class="org-tax-row">
+                <span class="tax-badge">{{ 'common.vatNumber' | translate }}: <strong class="font-mono">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
+                <span class="dot">&bull;</span>
+                <span class="cr-badge">{{ 'common.crNumber' | translate }}: <strong class="font-mono">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
+              </div>
+            </div>
+
+            <div class="center-title-box">
+              <div class="title-crown-badge">
+                <i class="pi pi-verified text-emerald"></i>
+                <span>{{ 'hr.payroll.officialApprovedSheet' | translate }}</span>
+              </div>
+              <h1 class="sheet-main-title">{{ 'hr.payroll.officialSheetMainTitle' | translate }}</h1>
+              <span class="sheet-sub-title font-mono">OFFICIAL MONTHLY PAYROLL STATEMENT (WPS / MUDAD)</span>
+              <span class="standard-cert-badge">{{ 'hr.payroll.officialSheetSubtitle' | translate }}</span>
+            </div>
+
+            <div class="left-seal-box">
+              <div class="official-seal-wrapper">
+                <div class="seal-frame">
+                  <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="36" cy="36" r="34" stroke="#047857" stroke-width="2" stroke-dasharray="5 2.5"/>
+                    <circle cx="36" cy="36" r="28" stroke="#047857" stroke-width="1.2"/>
+                    <circle cx="36" cy="36" r="26" stroke="#059669" stroke-opacity="0.2" stroke-width="1"/>
+                    <path d="M36 16L41 27H31L36 16Z" fill="#047857"/>
+                    <text x="36" y="41" font-size="7.5" font-weight="900" fill="#047857" text-anchor="middle" letter-spacing="0.5">{{ 'ui.payrollWorksheet.5d1f93' | translate }}</text>
+                    <text x="36" y="50" font-size="5.5" font-weight="700" fill="#475569" text-anchor="middle">{{ 'hr.payroll.officialSealText' | translate }}</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <!-- Period Meta Grid -->
+          <section class="sheet-meta-box">
+            <div class="meta-cell">
+              <span class="m-lbl"><i class="pi pi-hashtag text-emerald"></i> {{ 'hr.payroll.payrollNumberLabel' | translate }}</span>
+              <strong class="m-val font-mono text-emerald payroll-id-badge">{{ currentPeriod?.payrollNumber }}</strong>
+            </div>
+            <div class="meta-cell">
+              <span class="m-lbl"><i class="pi pi-calendar text-emerald"></i> {{ 'hr.payroll.financialMonth' | translate }}:</span>
+              <strong class="m-val font-mono">{{ 'hr.payroll.monthWord' | translate }} {{ currentPeriod?.periodMonth }} / {{ currentPeriod?.periodYear }}</strong>
+            </div>
+            <div class="meta-cell">
+              <span class="m-lbl"><i class="pi pi-clock text-emerald"></i> {{ 'hr.payroll.accrualPeriodLabel' | translate }}</span>
+              <strong class="m-val font-mono">{{ currentPeriod?.startDate | date:'yyyy-MM-dd' }} ~ {{ currentPeriod?.endDate | date:'yyyy-MM-dd' }}</strong>
+            </div>
+            <div class="meta-cell">
+              <span class="m-lbl"><i class="pi pi-users text-emerald"></i> {{ 'hr.payroll.employeesCountLabel' | translate }}</span>
+              <strong class="m-val font-mono text-slate-800">{{ currentPeriod?.employeeCount }} {{ 'hr.payroll.approvedEmployee' | translate }}</strong>
+            </div>
+            <div class="meta-cell">
+              <span class="m-lbl"><i class="pi pi-check-circle text-emerald"></i> {{ 'hr.payroll.approvalStatusLabel' | translate }}</span>
+              <span class="status-approved-badge font-bold">
+                <i class="pi pi-verified"></i>
+                <span>{{ getStatusText(currentPeriod!.status) }}</span>
+              </span>
+            </div>
+            <div class="meta-cell">
+              <span class="m-lbl"><i class="pi pi-print text-emerald"></i> {{ 'hr.payroll.issueDateLabel' | translate }}</span>
+              <strong class="m-val font-mono">{{ currentPrintDate | date:'yyyy-MM-dd HH:mm' }}</strong>
+            </div>
+          </section>
+
+          <!-- Financial Summary Balances Strip -->
+          <section class="sheet-balances-summary">
+            <div class="summary-box">
+              <div class="s-top">
+                <span class="s-lbl">{{ 'hr.payroll.totalPayrollAllowances' | translate }}</span>
+                <i class="pi pi-money-bill text-slate-500"></i>
+              </div>
+              <strong class="s-val font-mono" dir="ltr">{{ currentPeriod?.totalGrossSalary | number:'1.2-2' }} <small>SAR</small></strong>
+              <span class="s-hint">{{ 'hr.payroll.basic' | translate }}: {{ currentPeriod?.totalBasicSalary | number:'1.2-2' }} | {{ 'hr.payroll.housing' | translate }}: {{ (currentPeriod!.totalGrossSalary - currentPeriod!.totalBasicSalary) | number:'1.2-2' }}</span>
+            </div>
+
+            <div class="summary-box">
+              <div class="s-top">
+                <span class="s-lbl text-orange">{{ 'hr.payroll.gosiEmpTitle' | translate }}</span>
+                <i class="pi pi-shield text-orange"></i>
+              </div>
+              <strong class="s-val font-mono text-orange" dir="ltr">-{{ currentPeriod?.totalEmployeeGosiDeduction | number:'1.2-2' }} <small>SAR</small></strong>
+              <span class="s-hint">{{ 'hr.payroll.empShare' | translate }}: {{ currentPeriod?.totalEmployeeGosiDeduction | number:'1.2-2' }} | {{ 'hr.payroll.companyShare' | translate }}: {{ currentPeriod?.totalCompanyGosiContribution | number:'1.2-2' }}</span>
+            </div>
+
+            <div class="summary-box">
+              <div class="s-top">
+                <span class="s-lbl text-danger">{{ 'hr.payroll.deductionsLoansAbsence' | translate }}</span>
+                <i class="pi pi-minus-circle text-danger"></i>
+              </div>
+              <strong class="s-val font-mono text-danger" dir="ltr">-{{ (currentPeriod!.totalAbsenceDeductions + currentPeriod!.totalLoanDeductions + currentPeriod!.totalOtherDeductions) | number:'1.2-2' }} <small>SAR</small></strong>
+              <span class="s-hint">{{ 'hr.payroll.absenceLabel' | translate }}: {{ currentPeriod?.totalAbsenceDeductions | number:'1.2-2' }} | {{ 'hr.payroll.loansLabel' | translate }}: {{ currentPeriod?.totalLoanDeductions | number:'1.2-2' }}</span>
+            </div>
+
+            <div class="summary-box highlight-closing">
+              <div class="s-top">
+                <span class="s-lbl text-emerald-dark font-extrabold">{{ 'hr.payroll.netPayableWps' | translate }}</span>
+                <i class="pi pi-wallet text-emerald"></i>
+              </div>
+              <strong class="s-val font-mono text-emerald-dark font-black" dir="ltr">{{ currentPeriod?.totalNetSalary | number:'1.2-2' }} <small>SAR</small></strong>
+              <span class="s-hint text-emerald-dark font-bold"><i class="pi pi-check"></i> {{ 'hr.payroll.mudadApprovedHint' | translate }}</span>
+            </div>
+          </section>
+
+          <!-- Full Printable Payroll Table -->
+          <section class="sheet-table-section">
+            <table class="sheet-print-table">
+              <thead>
+                <tr>
+                  <th class="th-p-num">{{ 'hr.payroll.tblNum' | translate }}</th>
+                  <th class="th-p-code">{{ 'hr.payroll.tblCode' | translate }}</th>
+                  <th class="th-p-name">{{ 'hr.payroll.tblEmpData' | translate }}</th>
+                  <th class="th-p-id">{{ 'hr.payroll.idOrIqama' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.basic' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.housing' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.transport' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.otherAndOvertime' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.table.grossSalary' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.gosiDeduction' | translate }}</th>
+                  <th class="th-p-amt">{{ 'hr.payroll.absenceAndLoans' | translate }}</th>
+                  <th class="th-p-amt th-p-net">{{ 'hr.payroll.table.netSalary' | translate }} (SAR)</th>
+                  <th class="th-p-bank">{{ 'hr.payroll.tblBankTransferData' | translate }}</th>
+                  <th class="th-p-sig">{{ 'hr.payroll.tblDisbursementStatus' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let line of currentPeriod?.lines; let idx = index">
+                  <td class="text-center font-mono font-bold">{{ idx + 1 }}</td>
+                  <td class="font-mono text-center font-bold p-emp-code">{{ line.employeeNumber }}</td>
+                  <td>
+                    <div class="p-emp-name">
+                      <strong class="p-name-ar">{{ line.employeeNameAr }}</strong>
+                      <span class="p-en-name font-mono" *ngIf="line.employeeNameEn">{{ line.employeeNameEn }}</span>
+                    </div>
+                  </td>
+                  <td class="font-mono text-center p-id-cell">{{ line.nationalIdOrIqama }}</td>
+                  <td class="text-end font-mono" dir="ltr">{{ line.basicSalary | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono" dir="ltr">{{ line.housingAllowance | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono" dir="ltr">{{ line.transportationAllowance | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono" dir="ltr">{{ (line.otherAllowances + line.overtimeAmount) | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono font-bold text-slate-900" dir="ltr">{{ line.grossSalary | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono text-danger" dir="ltr">{{ isNonZero(line.employeeGosiDeduction) ? ('-' + (line.employeeGosiDeduction | number:'1.2-2')) : '0.00' }}</td>
+                  <td class="text-end font-mono text-muted" dir="ltr">{{ isNonZero(line.absenceDeduction + line.loanDeduction + line.otherDeductions) ? ('-' + ((line.absenceDeduction + line.loanDeduction + line.otherDeductions) | number:'1.2-2')) : '0.00' }}</td>
+                  <td class="text-end font-mono font-bold text-emerald-dark bg-highlight-net" dir="ltr">{{ line.netSalary | number:'1.2-2' }}</td>
+                  <td class="p-bank-cell">
+                    <span class="p-bank-pill">{{ getBankFriendlyName(line.bankCode) }} ({{ line.bankCode }})</span>
+                    <span class="p-iban font-mono" dir="ltr">{{ formatIban(line.iban) }}</span>
+                  </td>
+                  <td class="text-center p-sig-cell">
+                    <span class="p-wps-status-pill">
+                      <i class="pi pi-check"></i>
+                      <span>{{ 'hr.payroll.bankTransferWps' | translate }}</span>
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="totals-row">
+                  <td colspan="4" class="text-end font-bold totals-title">{{ 'hr.payroll.grandTotalAndMovements' | translate }}</td>
+                  <td class="text-end font-mono font-bold" dir="ltr">{{ currentPeriod?.totalBasicSalary | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono font-bold" dir="ltr">{{ currentPeriod?.totalHousingAllowance | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono font-bold" dir="ltr">{{ currentPeriod?.totalTransportationAllowance | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono font-bold" dir="ltr">{{ (currentPeriod!.totalOtherAllowances + currentPeriod!.totalOvertime) | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono font-bold text-slate-900" dir="ltr">{{ currentPeriod?.totalGrossSalary | number:'1.2-2' }}</td>
+                  <td class="text-end font-mono font-bold text-danger" dir="ltr">{{ isNonZero(currentPeriod?.totalEmployeeGosiDeduction) ? ('-' + (currentPeriod?.totalEmployeeGosiDeduction | number:'1.2-2')) : '0.00' }}</td>
+                  <td class="text-end font-mono font-bold text-muted" dir="ltr">{{ isNonZero(currentPeriod!.totalAbsenceDeductions + currentPeriod!.totalLoanDeductions + currentPeriod!.totalOtherDeductions) ? ('-' + ((currentPeriod!.totalAbsenceDeductions + currentPeriod!.totalLoanDeductions + currentPeriod!.totalOtherDeductions) | number:'1.2-2')) : '0.00' }}</td>
+                  <td class="text-end font-mono font-extrabold text-emerald-dark bg-highlight-net" dir="ltr">{{ currentPeriod?.totalNetSalary | number:'1.2-2' }}</td>
+                  <td colspan="2" class="text-center font-bold text-emerald totals-count-badge">{{ currentPeriod?.employeeCount }} {{ 'hr.payroll.approvedEmployee' | translate }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+
+          <!-- Concluding Block: Tafqeet, Signatures Matrix, and Compliance Footer -->
+          <div class="sheet-closing-block">
+            <!-- Arabic Tafqeet Box -->
+            <section class="sheet-tafqeet-box" *ngIf="currentPeriod">
+              <div class="tafqeet-card">
+                <div class="tafqeet-icon-box">
+                  <i class="pi pi-wallet text-emerald"></i>
+                </div>
+                <div class="tafqeet-content">
+                  <span class="tafqeet-label">{{ 'hr.payroll.tafqeetLabel' | translate }}</span>
+                  <span class="tafqeet-text font-bold">
+                    {{ getTafqeetTotalNet() }}
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Tripartite Signatures Matrix -->
+            <section class="sheet-signatures-matrix">
+              <div class="signature-box">
+                <span class="sig-header">{{ 'hr.payroll.hrPrepTitle' | translate }}</span>
+                <div class="sig-content">
+                  <span class="sig-name">{{ 'hr.payroll.hrDept' | translate }}</span>
+                  <div class="sig-line">{{ 'hr.payroll.signature' | translate }} ........................................</div>
+                  <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+                </div>
+              </div>
+
+              <div class="signature-box">
+                <span class="sig-header">{{ 'hr.payroll.internalAuditTitle' | translate }}</span>
+                <div class="sig-content">
+                  <span class="sig-name">{{ 'hr.payroll.auditDept' | translate }}</span>
+                  <div class="sig-line">{{ 'hr.payroll.signature' | translate }} ........................................</div>
+                  <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+                </div>
+              </div>
+
+              <div class="signature-box approved">
+                <span class="sig-header">{{ 'hr.payroll.finalApprovalTitle' | translate }}</span>
+                <div class="sig-content">
+                  <span class="sig-name">{{ 'hr.payroll.cfoTitle' | translate }}</span>
+                  <div class="sig-endorse-pill"><i class="pi pi-check-circle"></i> {{ 'hr.payroll.approvedDisbursementBadge' | translate }}</div>
+                  <div class="sig-line">{{ 'hr.payroll.stampAndSignature' | translate }} ........................................</div>
+                  <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Compliance Footer -->
+            <footer class="sheet-compliance-footer">
+              <div class="compliance-left">
+                <span>{{ 'hr.payroll.automatedExtractNotice' | translate }}</span>
+                <span class="dot">&bull;</span>
+                <span>{{ 'hr.payroll.complianceNotice' | translate }}</span>
+              </div>
+              <div class="compliance-right font-mono">
+                <span>{{ 'hr.payroll.issueDateTime' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+              </div>
+            </footer>
+          </div>
+
+        </article>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 3: INDIVIDUAL EMPLOYEE PAYSLIP (قسيمة راتب الموظف المعتمدة) -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop print-modal-backdrop" *ngIf="showPayslipModal && selectedLineForPayslip" (click)="closePayslipModal()">
+    <div class="print-preview-dialog print-preview-portrait" (click)="$event.stopPropagation()">
+      
+      <!-- Sticky Payslip Toolbar -->
+      <div class="print-toolbar no-print">
+        <div class="toolbar-left">
+          <div class="toolbar-badge">
+            <i class="pi pi-id-card"></i>
+          </div>
+          <div class="toolbar-titles">
+            <strong>{{ 'hr.payroll.payslipModalTitle' | translate }}</strong>
+            <span class="sub-badge font-mono">{{ selectedLineForPayslip.employeeNameAr }} — {{ selectedLineForPayslip.employeeNumber }}</span>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <button type="button" class="btn-print-main" (click)="triggerPrintPayslip()">
+            <i class="pi pi-print"></i>
+            <span>{{ 'hr.payroll.printPayslipBtn' | translate }}</span>
+          </button>
+          <button type="button" class="btn-toolbar-close" (click)="closePayslipModal()">
+            <i class="pi pi-times"></i>
+            <span>{{ 'common.close' | translate }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable A4 Paper Container (Portrait Mode) -->
+      <div class="print-paper-container">
+        <article class="payslip-sheet" id="printable-payslip">
+          
+          <!-- Payslip Header -->
+          <header class="payslip-header">
+            <div class="org-info">
+              <h2 class="org-name-ar">{{ companyContext.activeCompany().nameAr || ('ui.payrollWorksheet.3b6f89' | translate) }}</h2>
+              <span class="org-name-en">{{ companyContext.activeCompany().nameEn || 'Meyar Smart Solutions Co.' }}</span>
+              <div class="org-tax-row">
+                <span>{{ 'common.vatNumber' | translate }}: <strong class="font-mono">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
+                <span class="dot">&bull;</span>
+                <span>{{ 'common.crNumber' | translate }}: <strong class="font-mono">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
+              </div>
+            </div>
+
+            <div class="payslip-title-box">
+              <h1 class="payslip-main-title">{{ 'hr.payroll.payslipMainTitle' | translate }}</h1>
+              <span class="payslip-sub-title">MONTHLY SALARY PAYSLIP</span>
+              <span class="payslip-badge font-mono">{{ currentPeriod?.payrollNumber }}</span>
+            </div>
+
+            <div class="left-seal-box">
+              <div class="seal-frame">
+                <svg width="55" height="55" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="30" cy="30" r="28" stroke="#047857" stroke-width="2" stroke-dasharray="4 2"/>
+                  <circle cx="30" cy="30" r="23" stroke="#047857" stroke-width="1"/>
+                  <path d="M30 14L34 23H26L30 14Z" fill="#047857"/>
+                  <text x="30" y="34" font-size="6" font-weight="bold" fill="#047857" text-anchor="middle">{{ 'ui.payrollWorksheet.5d1f93' | translate }}</text>
+                  <text x="30" y="42" font-size="5" fill="#64748B" text-anchor="middle">{{ 'hr.payroll.officialDocText' | translate }}</text>
+                </svg>
+              </div>
+            </div>
+          </header>
+
+          <!-- Employee Information Matrix -->
+          <section class="payslip-emp-grid">
+            <div class="info-cell">
+              <span class="lbl">{{ 'hr.payroll.empNameLabel' | translate }}</span>
+              <strong class="val">{{ selectedLineForPayslip.employeeNameAr }}</strong>
+            </div>
+            <div class="info-cell">
+              <span class="lbl">{{ 'hr.payroll.table.employeeCode' | translate }}:</span>
+              <strong class="val font-mono">{{ selectedLineForPayslip.employeeNumber }}</strong>
+            </div>
+            <div class="info-cell">
+              <span class="lbl">{{ 'hr.payroll.table.nationalId' | translate }}:</span>
+              <strong class="val font-mono">{{ selectedLineForPayslip.nationalIdOrIqama }}</strong>
+            </div>
+            <div class="info-cell">
+              <span class="lbl">{{ 'hr.payroll.salaryPeriodLabel' | translate }}</span>
+              <strong class="val font-mono">{{ 'hr.payroll.monthWord' | translate }} {{ currentPeriod?.periodMonth }} / {{ currentPeriod?.periodYear }}</strong>
+            </div>
+            <div class="info-cell">
+              <span class="lbl">{{ 'hr.payroll.transferBankLabel' | translate }}</span>
+              <strong class="val">{{ getBankFriendlyName(selectedLineForPayslip.bankCode) }} ({{ selectedLineForPayslip.bankCode }})</strong>
+            </div>
+            <div class="info-cell">
+              <span class="lbl">{{ 'hr.payroll.ibanLabel' | translate }}</span>
+              <strong class="val font-mono">{{ selectedLineForPayslip.iban }}</strong>
+            </div>
+          </section>
+
+          <!-- Earnings vs Deductions Matrix -->
+          <section class="payslip-breakdown-section">
+            <div class="breakdown-column earnings-column">
+              <div class="col-header earnings-header">
+                <i class="pi pi-plus-circle"></i>
+                <span>{{ 'hr.payroll.earningsTitle' | translate }}</span>
+              </div>
+              <div class="col-body">
+                <div class="item-row">
+                  <span>{{ 'hr.payroll.table.basicSalary' | translate }}:</span>
+                  <strong class="font-mono">{{ selectedLineForPayslip.basicSalary | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row">
+                  <span>{{ 'hr.payroll.table.housingAllowance' | translate }}:</span>
+                  <strong class="font-mono">{{ selectedLineForPayslip.housingAllowance | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row">
+                  <span>{{ 'hr.payroll.table.transportAllowance' | translate }}:</span>
+                  <strong class="font-mono">{{ selectedLineForPayslip.transportationAllowance | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row" *ngIf="selectedLineForPayslip.otherAllowances > 0">
+                  <span>{{ 'hr.payroll.table.otherAllowances' | translate }}:</span>
+                  <strong class="font-mono">{{ selectedLineForPayslip.otherAllowances | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row highlight-sub" *ngIf="selectedLineForPayslip.overtimeAmount > 0">
+                  <span>{{ 'hr.payroll.overtimeAmountLabel' | translate }}</span>
+                  <strong class="font-mono text-emerald">+{{ selectedLineForPayslip.overtimeAmount | number:'1.2-2' }} SAR</strong>
+                </div>
+              </div>
+              <div class="col-footer earnings-footer">
+                <span>{{ 'hr.payroll.table.grossSalary' | translate }}:</span>
+                <strong class="font-mono">{{ selectedLineForPayslip.grossSalary | number:'1.2-2' }} SAR</strong>
+              </div>
+            </div>
+
+            <div class="breakdown-column deductions-column">
+              <div class="col-header deductions-header">
+                <i class="pi pi-minus-circle"></i>
+                <span>{{ 'hr.payroll.deductionsTitle' | translate }}</span>
+              </div>
+              <div class="col-body">
+                <div class="item-row">
+                  <span>{{ 'hr.payroll.table.gosiEmployee' | translate }}:</span>
+                  <strong class="font-mono text-danger">-{{ selectedLineForPayslip.employeeGosiDeduction | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row" *ngIf="selectedLineForPayslip.absenceDeduction > 0">
+                  <span>{{ 'hr.payroll.absenceAmountLabel' | translate }}</span>
+                  <strong class="font-mono text-danger">-{{ selectedLineForPayslip.absenceDeduction | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row" *ngIf="selectedLineForPayslip.loanDeduction > 0">
+                  <span>{{ 'hr.payroll.loanAmountLabel' | translate }}</span>
+                  <strong class="font-mono text-danger">-{{ selectedLineForPayslip.loanDeduction | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row" *ngIf="selectedLineForPayslip.otherDeductions > 0">
+                  <span>{{ 'hr.payroll.table.otherDeductions' | translate }}:</span>
+                  <strong class="font-mono text-danger">-{{ selectedLineForPayslip.otherDeductions | number:'1.2-2' }} SAR</strong>
+                </div>
+                <div class="item-row text-muted" *ngIf="(selectedLineForPayslip.absenceDeduction + selectedLineForPayslip.loanDeduction + selectedLineForPayslip.otherDeductions) === 0">
+                  <span>{{ 'hr.payroll.noExtraDeductions' | translate }}</span>
+                  <span class="font-mono">—</span>
+                </div>
+              </div>
+              <div class="col-footer deductions-footer">
+                <span>{{ 'hr.payroll.totalDeductionsTitle' | translate }}:</span>
+                <strong class="font-mono text-danger">-{{ selectedLineForPayslip.totalDeductions | number:'1.2-2' }} SAR</strong>
+              </div>
+            </div>
+          </section>
+
+          <!-- Net Salary Highlight Card -->
+          <section class="payslip-net-box">
+            <div class="net-summary-card">
+              <div class="net-left">
+                <span class="net-label">{{ 'hr.payroll.netPayablePayslip' | translate }}</span>
+                <div class="net-amount font-mono">{{ selectedLineForPayslip.netSalary | number:'1.2-2' }} <small>SAR</small></div>
+              </div>
+              <div class="net-tafqeet">
+                <span class="tafqeet-lbl">{{ 'hr.payroll.amountInWords' | translate }}</span>
+                <strong class="tafqeet-val">{{ getTafqeetAmount(selectedLineForPayslip.netSalary) }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <!-- Company GOSI Note -->
+          <section class="gosi-info-strip">
+            <i class="pi pi-info-circle text-emerald"></i>
+            <span>{{ 'hr.payroll.companyGosiNote' | translate }} <strong>{{ selectedLineForPayslip.companyGosiContribution | number:'1.2-2' }} SAR</strong> {{ 'hr.payroll.borneByCompany' | translate }}</span>
+          </section>
+
+          <!-- Signatures Section -->
+          <section class="payslip-signatures">
+            <div class="sig-box">
+              <span class="sig-title">{{ 'hr.payroll.hrPrepAndApproval' | translate }}</span>
+              <div class="sig-line">{{ 'hr.payroll.stampAndSignature' | translate }} ................................</div>
+              <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+            </div>
+            <div class="sig-box">
+              <span class="sig-title">{{ 'hr.payroll.empAcknowledgment' | translate }}</span>
+              <div class="sig-line">{{ 'hr.payroll.signature' | translate }} ................................</div>
+              <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
+            </div>
+          </section>
+
+          <!-- Payslip Footer -->
+          <footer class="payslip-footer">
+            <span>{{ 'hr.payroll.payslipFooterNotice' | translate }}</span>
+            <span class="font-mono">{{ currentPrintDate | date:'yyyy-MM-dd HH:mm' }}</span>
+          </footer>
+
+        </article>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 4: WPS SIF PREVIEW / EXPORT MODAL                        -->
+  <!-- ============================================================== -->
+  <div *ngIf="showWpsModal" class="modal-backdrop animate-fade-in" (click)="closeWpsModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-file-export text-success"></i>
+          <h3>{{ 'hr.payroll.wpsModalTitle' | translate }}</h3>
+          <span class="wps-tag">{{ 'hr.payroll.mudadSamaCompliant' | translate }}</span>
+        </div>
+        <button class="close-btn" (click)="closeWpsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body compact-scroll">
+        <p class="wps-desc">
+          {{ 'hr.payroll.wpsDescription' | translate }}
+        </p>
+
+        <div class="wps-form-grid">
+          <div class="form-group">
+            <label>{{ 'hr.payroll.unifiedMolId' | translate }}</label>
+            <input type="text" [(ngModel)]="wpsEstablishmentId" (input)="openWpsDialog()" />
+          </div>
+          <div class="form-group">
+            <label>{{ 'hr.payroll.crName' | translate }}</label>
+            <input type="text" [(ngModel)]="wpsEstablishmentName" (input)="openWpsDialog()" />
+          </div>
+          <div class="form-group">
+            <label>{{ 'hr.payroll.employerIban' | translate }}</label>
+            <input type="text" [(ngModel)]="wpsEmployerIban" (input)="openWpsDialog()" dir="ltr" />
+          </div>
+          <div class="form-group">
+            <label>{{ 'hr.payroll.employerBankCode' | translate }}</label>
+            <input type="text" [(ngModel)]="wpsEmployerBankCode" (input)="openWpsDialog()" />
+          </div>
+        </div>
+
+        <div class="sif-preview-box">
+          <div class="sif-header">
+            <span>{{ 'hr.payroll.sifPreviewTitle' | translate }}</span>
+            <span class="rec-count font-mono">{{ currentPeriod?.employeeCount }} {{ 'hr.payroll.employee' | translate }} — {{ currentPeriod?.totalNetSalary | number:'1.2-2' }} SAR</span>
+          </div>
+          <pre class="sif-content font-mono">{{ wpsPreviewContent }}</pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeWpsModal()">{{ 'common.close' | translate }}</button>
+        <button type="button" class="btn btn-outline-primary" (click)="saveWpsSettingsAsDefault()" [title]="'hr.payroll.saveAsDefaultTitle' | translate">
+          <i class="pi pi-save"></i>
+          <span>{{ 'hr.payroll.saveAsDefaultSettings' | translate }}</span>
+        </button>
+        <button type="button" class="btn btn-success" (click)="downloadWpsFile()">
+          <i class="pi pi-download"></i>
+          <span>{{ 'hr.payroll.downloadSifBtn' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ============================================================== -->
+  <!-- MODAL 5: JOURNAL ENTRY AUDIT PREVIEW MODAL                    -->
+  <!-- ============================================================== -->
+  <div class="modal-overlay animate-fade-in" *ngIf="showJournalModal" (click)="closeJournalModal()">
+    <div class="modal-container journal-modal animate-scale-up" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-book text-emerald"></i>
+          <h3>{{ 'hr.payroll.glModalTitle' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="closeJournalModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" *ngIf="journalLoading">
+        <div class="loading-spinner-box text-center py-8">
+          <i class="pi pi-spin pi-spinner text-emerald text-3xl"></i>
+          <p class="mt-2 text-slate-600">{{ 'hr.payroll.loadingEntry' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="modal-body" *ngIf="!journalLoading && selectedJournalEntry">
+        <!-- Entry Meta Ribbon -->
+        <div class="jv-meta-strip">
+          <div class="jv-pill">
+            <span class="lbl">{{ 'hr.payroll.entryNumberLabel' | translate }}</span>
+            <strong class="val font-mono text-emerald">{{ selectedJournalEntry.entryNumber }}</strong>
+          </div>
+          <div class="jv-pill">
+            <span class="lbl">{{ 'hr.payroll.entryDateLabel' | translate }}</span>
+            <strong class="val font-mono">{{ selectedJournalEntry.entryDate | date:'yyyy-MM-dd' }}</strong>
+          </div>
+          <div class="jv-pill">
+            <span class="lbl">{{ 'hr.payroll.table.status' | translate }}:</span>
+            <span class="badge-posted"><i class="pi pi-verified"></i> {{ 'hr.payroll.postedAndAudited' | translate }}</span>
+          </div>
+          <div class="jv-pill" *ngIf="selectedJournalEntry.referenceNumber">
+            <span class="lbl">{{ 'hr.payroll.referenceLabel' | translate }}</span>
+            <strong class="val font-mono">{{ selectedJournalEntry.referenceNumber }}</strong>
+          </div>
+        </div>
+
+        <div class="jv-desc-box">
+          <span class="desc-lbl"><i class="pi pi-info-circle"></i> {{ 'hr.payroll.narrationLabel' | translate }}</span>
+          <p class="desc-text">{{ selectedJournalEntry.descriptionAr }}</p>
+        </div>
+
+        <!-- Lines Table -->
+        <div class="table-container jv-lines-table-wrap">
+          <table class="data-table jv-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;" class="text-center">#</th>
+                <th style="width: 120px;">{{ 'hr.payroll.accountCode' | translate }}</th>
+                <th>{{ 'hr.payroll.accountNameInCoa' | translate }}</th>
+                <th>{{ 'hr.payroll.narrationAndDetail' | translate }}</th>
+                <th class="text-end" style="width: 130px;">{{ 'hr.payroll.debit' | translate }}</th>
+                <th class="text-end" style="width: 130px;">{{ 'hr.payroll.credit' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of selectedJournalEntry.lines; let idx = index">
+                <td class="text-center font-mono text-muted">{{ idx + 1 }}</td>
+                <td class="font-mono font-bold text-slate-800">{{ line.accountCode }}</td>
+                <td class="font-bold text-slate-900">{{ line.accountNameAr || line.accountNameEn }}</td>
+                <td class="text-slate-600 text-sm">{{ line.description }}</td>
+                <td class="text-end font-mono font-bold" [class.text-emerald]="line.debit > 0">
+                  {{ line.debit > 0 ? (line.debit | number:'1.2-2') : '-' }}
+                </td>
+                <td class="text-end font-mono font-bold" [class.text-danger]="line.credit > 0">
+                  {{ line.credit > 0 ? (line.credit | number:'1.2-2') : '-' }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="totals-row">
+                <td colspan="4" class="text-bold text-end">{{ 'hr.payroll.entryBalanceTotal' | translate }}</td>
+                <td class="text-end font-mono font-bold text-emerald">{{ selectedJournalEntry.totalDebit | number:'1.2-2' }} SAR</td>
+                <td class="text-end font-mono font-bold text-danger">{{ selectedJournalEntry.totalCredit | number:'1.2-2' }} SAR</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeJournalModal()">{{ 'common.close' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="openInJournalModule(selectedJournalEntry?.id)">
+          <i class="pi pi-external-link"></i>
+          <span>{{ 'hr.payroll.openInJournalModule' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

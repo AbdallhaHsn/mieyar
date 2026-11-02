@@ -1,6 +1,7 @@
 using AlRobban.Modules.GeneralLedger.Application.DTOs;
 using AlRobban.Modules.GeneralLedger.Domain.Enums;
 using AlRobban.Modules.GeneralLedger.Domain.Repositories;
+using AlRobban.Shared.Application.Abstractions;
 using AlRobban.Shared.Kernel.Primitives;
 using MediatR;
 
@@ -19,18 +20,21 @@ public class GetGeneralLedgerOverviewQueryHandler : IRequestHandler<GetGeneralLe
 {
     private readonly IAccountRepository _accountRepo;
     private readonly IJournalEntryRepository _journalRepo;
+    private readonly ICurrentTenantContext _tenantContext;
 
     public GetGeneralLedgerOverviewQueryHandler(
         IAccountRepository accountRepo,
-        IJournalEntryRepository journalRepo)
+        IJournalEntryRepository journalRepo,
+        ICurrentTenantContext tenantContext)
     {
         _accountRepo = accountRepo;
         _journalRepo = journalRepo;
+        _tenantContext = tenantContext;
     }
 
     public async Task<Result<GeneralLedgerReportDto>> Handle(GetGeneralLedgerOverviewQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var fromDate = request.FromDate ?? new DateTime(DateTime.UtcNow.Year, 1, 1);
         var toDate = request.ToDate ?? DateTime.UtcNow;
 
@@ -143,15 +147,15 @@ public class GetAccountStatementQueryHandler : IRequestHandler<GetAccountStateme
 
     public async Task<Result<AccountStatementDto>> Handle(GetAccountStatementQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("22222222-2222-2222-2222-222222222222");
-        var fromDate = request.FromDate ?? new DateTime(DateTime.UtcNow.Year, 1, 1);
-        var toDate = request.ToDate ?? DateTime.UtcNow;
-
         var account = await _accountRepo.GetByIdAsync(request.AccountId, cancellationToken);
         if (account == null)
         {
             return Result.Failure<AccountStatementDto>(new Error("Account.NotFound", "الحساب المحاسبي غير موجود"));
         }
+
+        var companyId = request.CompanyId ?? account.CompanyId;
+        var fromDate = request.FromDate ?? new DateTime(DateTime.UtcNow.Year, 1, 1);
+        var toDate = request.ToDate ?? DateTime.UtcNow;
 
         var openingBalance = await _journalRepo.GetAccountOpeningBalanceAsync(
             companyId,

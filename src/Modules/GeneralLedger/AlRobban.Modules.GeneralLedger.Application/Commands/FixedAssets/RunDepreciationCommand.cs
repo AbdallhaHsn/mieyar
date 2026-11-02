@@ -7,7 +7,10 @@ using MediatR;
 
 namespace AlRobban.Modules.GeneralLedger.Application.Commands.FixedAssets;
 
-public record RunDepreciationCommand(RunDepreciationRequest Request) : IRequest<Result<RunDepreciationResultDto>>;
+public record RunDepreciationCommand(RunDepreciationRequest Request) : IRequest<Result<RunDepreciationResultDto>>, AlRobban.Shared.Application.Abstractions.ITransactionalCommand
+{
+    public string TransactionModule => AlRobban.Shared.Application.Abstractions.TransactionModules.GeneralLedger;
+}
 
 public class RunDepreciationCommandHandler : IRequestHandler<RunDepreciationCommand, Result<RunDepreciationResultDto>>
 {

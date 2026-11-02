@@ -1,0 +1,956 @@
+<div class="manufacturing-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Header Section -->
+  <div class="mfg-header">
+    <div class="header-titles">
+      <div class="badge-title">
+        <i class="pi pi-cog"></i>
+        <span>{{ 'manufacturing.hub.titleBadge' | translate }}</span>
+      </div>
+      <h2>{{ 'manufacturing.hub.title' | translate }}</h2>
+      <p>{{ 'manufacturing.hub.subtitle' | translate }}</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline-info" (click)="openCreateRawMaterialModal()">
+        <i class="pi pi-tags"></i>
+        <span>{{ 'manufacturing.hub.newRawMaterial' | translate }}</span>
+      </button>
+      <button class="btn btn-secondary" (click)="openCreateBomModal()">
+        <i class="pi pi-sitemap"></i>
+        <span>{{ 'manufacturing.hub.newBom' | translate }}</span>
+      </button>
+      <button class="btn btn-primary" (click)="openCreateWorkOrderModal()">
+        <i class="pi pi-plus"></i>
+        <span>{{ 'manufacturing.hub.newWorkOrder' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Executive Financial & Production KPIs -->
+  <div class="metrics-grid" *ngIf="metrics">
+    <div class="metric-card card-blue">
+      <div class="metric-icon"><i class="pi pi-box"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">{{ 'manufacturing.hub.kpis.workOrders' | translate }}</span>
+        <h3 class="metric-val">{{ metrics.totalWorkOrders }}</h3>
+        <span class="metric-sub">{{ metrics.activeWorkOrders }} {{ 'manufacturing.hub.kpis.workOrdersSub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-teal">
+      <div class="metric-icon"><i class="pi pi-check-circle"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">{{ 'manufacturing.hub.kpis.completedOrders' | translate }}</span>
+        <h3 class="metric-val">{{ metrics.completedWorkOrders }}</h3>
+        <span class="metric-sub">{{ 'manufacturing.hub.kpis.completedOrdersSub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-amber">
+      <div class="metric-icon"><i class="pi pi-money-bill"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">{{ 'manufacturing.hub.kpis.totalCost' | translate }}</span>
+        <h3 class="metric-val">{{ formatCurrency(metrics.totalProductionCost) }}</h3>
+        <span class="metric-sub">{{ 'manufacturing.hub.kpis.totalCostSub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-green">
+      <div class="metric-icon"><i class="pi pi-sitemap"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">{{ 'ui.manufacturingHub.881cf5' | translate }}</span>
+        <h3 class="metric-val">{{ metrics.totalBoms }}</h3>
+        <span class="metric-sub">{{ 'ui.manufacturingHub.f3a85e' | translate }} {{ metrics.efficiencyRate }}%</span>
+      </div>
+    </div>
+
+    <div class="metric-card card-purple">
+      <div class="metric-icon"><i class="pi pi-tags"></i></div>
+      <div class="metric-info">
+        <span class="metric-label">{{ 'ui.manufacturingHub.f85858' | translate }}</span>
+        <h3 class="metric-val">{{ metrics.totalRawMaterials || rawMaterials.length }} {{ 'ui.manufacturingHub.1d2502' | translate }}</h3>
+        <span class="metric-sub">{{ 'ui.manufacturingHub.9937ce' | translate }} {{ formatCurrency(metrics.rawMaterialsInventoryValue) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs & Toolbar -->
+  <div class="tabs-and-toolbar">
+    <div class="mfg-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'work-orders'" (click)="setTab('work-orders')">
+        <i class="pi pi-list"></i>
+        <span>{{ 'ui.manufacturingHub.441265' | translate }}{{ workOrders.length }})</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'bom'" (click)="setTab('bom')">
+        <i class="pi pi-sitemap"></i>
+        <span>{{ 'ui.manufacturingHub.a44938' | translate }}{{ boms.length }})</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'raw-materials'" (click)="setTab('raw-materials')">
+        <i class="pi pi-tags"></i>
+        <span>{{ 'ui.manufacturingHub.b04d95' | translate }}{{ rawMaterials.length }})</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'workstations'" (click)="setTab('workstations')">
+        <i class="pi pi-server"></i>
+        <span>{{ 'ui.manufacturingHub.eb18a2' | translate }}{{ workstations.length }})</span>
+      </button>
+    </div>
+
+    <div class="mfg-toolbar">
+      <div class="search-input-wrap" *ngIf="activeTab === 'work-orders'">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="woSearchTerm"
+          [placeholder]="'ui.manufacturingHub.df71f9' | translate"
+        />
+      </div>
+      <div class="search-input-wrap" *ngIf="activeTab === 'bom'">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="bomSearchTerm"
+          [placeholder]="'ui.manufacturingHub.c805dd' | translate"
+        />
+      </div>
+      <div class="search-input-wrap" *ngIf="activeTab === 'raw-materials'">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="rawMaterialSearchTerm"
+          [placeholder]="'ui.manufacturingHub.4f57ec' | translate"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: WORK ORDERS (أوامر التشغيل والإنتاج)                                -->
+  <!-- ========================================================================= -->
+  <div class="tab-content" *ngIf="activeTab === 'work-orders'">
+    <!-- Status Filter Ribbon -->
+    <div class="filter-pills-bar">
+      <button class="filter-pill" [class.active]="woStatusFilter === 'all'" (click)="woStatusFilter = 'all'">{{ 'ui.manufacturingHub.321786' | translate }}{{ workOrders.length }})</button>
+      <button class="filter-pill" [class.active]="woStatusFilter === 'Planned'" (click)="woStatusFilter = 'Planned'">{{ 'ui.manufacturingHub.e4c339' | translate }}</button>
+      <button class="filter-pill" [class.active]="woStatusFilter === 'Confirmed'" (click)="woStatusFilter = 'Confirmed'">{{ 'ui.manufacturingHub.1cb97c' | translate }}</button>
+      <button class="filter-pill" [class.active]="woStatusFilter === 'InProgress'" (click)="woStatusFilter = 'InProgress'">{{ 'ui.manufacturingHub.75c5e4' | translate }}</button>
+      <button class="filter-pill" [class.active]="woStatusFilter === 'QualityCheck'" (click)="woStatusFilter = 'QualityCheck'">{{ 'ui.manufacturingHub.d4c602' | translate }}</button>
+      <button class="filter-pill" [class.active]="woStatusFilter === 'Completed'" (click)="woStatusFilter = 'Completed'">{{ 'ui.manufacturingHub.c6d1b8' | translate }}</button>
+    </div>
+
+    <!-- Work Orders Modern Table -->
+    <div class="table-container card">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>{{ 'manufacturing.hub.table.orderNumber' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.e7a827' | translate }}</th>
+            <th class="text-center">{{ 'ui.manufacturingHub.f72c56' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.476779' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.8242c9' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.06660e' | translate }}</th>
+            <th class="text-center">{{ 'branches.table.status' | translate }}</th>
+            <th class="actions-col">{{ 'ui.manufacturingHub.90eb97' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let wo of filteredWorkOrders" class="interactive-row">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge-code font-bold">{{ wo.workOrderNumber }}</span>
+                <span class="priority-tag" [ngClass]="'prio-' + wo.priority.toLowerCase()">
+                  {{ wo.priority === 'Urgent' ? ('layout.calendarAgenda.urgent' | translate) : (wo.priority === 'High' ? ('ui.manufacturingHub.85af62' | translate) : ('layout.calendarAgenda.normal' | translate)) }}
+                </span>
+              </div>
+              <small class="d-block text-muted mt-1">{{ 'ui.manufacturingHub.d5a8ab' | translate }} {{ wo.bomCode }}</small>
+            </td>
+
+            <td>
+              <strong>{{ wo.finishedProductNameAr }}</strong>
+              <small class="d-block text-muted">{{ wo.finishedProductNameEn }}</small>
+              <small class="d-block text-cyan">{{ 'ui.manufacturingHub.6bf7bb' | translate }} {{ wo.rawMaterialsWarehouseName }}</small>
+            </td>
+
+            <td class="text-center">
+              <div class="qty-progress-wrap">
+                <div class="qty-text">
+                  <strong>{{ wo.completedQuantity }}</strong> / {{ wo.plannedQuantity }} {{ wo.unitOfMeasure }}
+                </div>
+                <div class="progress-bar-bg">
+                  <div
+                    class="progress-bar-fill"
+                    [ngClass]="wo.status === 'Completed' ? 'fill-green' : 'fill-teal'"
+                    [style.width.%]="(wo.completedQuantity / (wo.plannedQuantity || 1)) * 100">
+                  </div>
+                </div>
+                <small class="text-muted">{{ Math.round((wo.completedQuantity / (wo.plannedQuantity || 1)) * 100) }}{{ 'ui.manufacturingHub.122960' | translate }}</small>
+              </div>
+            </td>
+
+            <td>
+              <div><strong>{{ wo.assignedWorkstation }}</strong></div>
+              <small class="d-block text-muted"><i class="pi pi-user text-cyan"></i> {{ wo.assignedSupervisor }}</small>
+            </td>
+
+            <td>
+              <div>{{ 'ui.manufacturingHub.06e923' | translate }} <strong>{{ wo.startDate }}</strong></div>
+              <small class="d-block text-muted">{{ 'ui.manufacturingHub.5603fd' | translate }} {{ wo.dueDate }}</small>
+              <small class="d-block text-emerald" *ngIf="wo.completedDate">{{ 'ui.manufacturingHub.3ad573' | translate }} {{ wo.completedDate }}</small>
+            </td>
+
+            <td>
+              <div><strong>{{ formatCurrency(wo.totalActualCost || wo.estimatedTotalCost) }}</strong></div>
+              <small class="d-block text-muted">
+                {{ formatCurrency((wo.totalActualCost || wo.estimatedTotalCost) / (wo.plannedQuantity || 1)) }} / {{ wo.unitOfMeasure }}
+              </small>
+            </td>
+
+            <td class="text-center">
+              <span class="status-badge" [ngClass]="getStatusClass(wo.status)">
+                {{ getStatusText(wo.status) }}
+              </span>
+            </td>
+
+            <td class="actions-col">
+              <div class="action-buttons-group">
+                <!-- Action: Start Execution -->
+                <button
+                  *ngIf="wo.status === 'Confirmed' || wo.status === 'Planned'"
+                  class="btn-sm btn-outline-cyan"
+                  (click)="updateOrderStatus(wo, 'InProgress')"
+                  [title]="'ui.manufacturingHub.1ed1dc' | translate">
+                  <i class="pi pi-play"></i> {{ 'ui.manufacturingHub.b7c33d' | translate }}
+                </button>
+
+                <!-- Action: Move to Quality Check -->
+                <button
+                  *ngIf="wo.status === 'InProgress'"
+                  class="btn-sm btn-outline-amber"
+                  (click)="updateOrderStatus(wo, 'QualityCheck')"
+                  [title]="'ui.manufacturingHub.7ce1bc' | translate">
+                  <i class="pi pi-filter"></i> {{ 'ui.manufacturingHub.351c12' | translate }}
+                </button>
+
+                <!-- Action: Complete & Deposit to Warehouse -->
+                <button
+                  *ngIf="wo.status === 'QualityCheck' || wo.status === 'InProgress'"
+                  class="btn-sm btn-success-outline"
+                  (click)="updateOrderStatus(wo, 'Completed')"
+                  [title]="'ui.manufacturingHub.f5b141' | translate">
+                  <i class="pi pi-check"></i> {{ 'ui.manufacturingHub.2ea972' | translate }}
+                </button>
+
+                <!-- Delete -->
+                <button
+                  class="btn-sm btn-outline-danger"
+                  (click)="deleteWorkOrder(wo.id)"
+                  [title]="'ui.manufacturingHub.1f3fa1' | translate">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredWorkOrders.length === 0">
+            <td colspan="8" class="empty-state">
+              <i class="pi pi-inbox empty-icon"></i>
+              <h4>{{ 'ui.manufacturingHub.b72956' | translate }}</h4>
+              <button class="btn btn-primary" (click)="openCreateWorkOrderModal()">
+                <i class="pi pi-plus"></i> {{ 'ui.manufacturingHub.8370d9' | translate }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: BILL OF MATERIALS (شجرة المنتج وقوائم المواد)                        -->
+  <!-- ========================================================================= -->
+  <div class="tab-content bom-tab-view" *ngIf="activeTab === 'bom'">
+    <div class="bom-layout-split">
+      <!-- Left List of BOMs -->
+      <div class="boms-list-side">
+        <div class="section-title-wrap">
+          <h4>{{ 'ui.manufacturingHub.c0e26c' | translate }}{{ filteredBoms.length }})</h4>
+          <button class="btn-sm btn-primary" (click)="openCreateBomModal()">
+            <i class="pi pi-plus"></i> {{ 'ui.manufacturingHub.ec5152' | translate }}
+          </button>
+        </div>
+
+        <div class="bom-cards-scroll">
+          <div
+            *ngFor="let b of filteredBoms"
+            class="bom-summary-card card"
+            [class.selected]="selectedBomForView?.id === b.id"
+            (click)="selectBomView(b)">
+            <div class="card-top">
+              <span class="badge-code">{{ b.code }}</span>
+              <span class="version-tag">{{ 'ui.manufacturingHub.25ed5f' | translate }} {{ b.version }}</span>
+            </div>
+            <h5>{{ b.nameAr }}</h5>
+            <small class="text-muted d-block">{{ b.finishedProductNameAr }}</small>
+            <div class="cost-split-preview">
+              <div class="c-item">
+                <span class="c-lbl">{{ 'ui.manufacturingHub.2f9ba4' | translate }}</span>
+                <strong>{{ formatCurrency(b.totalMaterialCost) }}</strong>
+              </div>
+              <div class="c-item">
+                <span class="c-lbl">{{ 'ui.manufacturingHub.cd670a' | translate }}</span>
+                <strong>{{ formatCurrency(b.totalLaborCost + b.totalOverheadCost) }}</strong>
+              </div>
+              <div class="c-item total">
+                <span class="c-lbl">{{ 'ui.manufacturingHub.c33d35' | translate }}</span>
+                <strong class="text-emerald">{{ formatCurrency(b.totalUnitCost) }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Selected BOM Details & Tree Breakdown -->
+      <div class="bom-detail-side" *ngIf="selectedBomForView">
+        <div class="detail-card card">
+          <div class="detail-header">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge-code font-bold">{{ selectedBomForView.code }}</span>
+                <h3>{{ selectedBomForView.nameAr }}</h3>
+              </div>
+              <p class="text-muted mt-1">{{ selectedBomForView.nameEn }}</p>
+            </div>
+            <div class="header-unit-cost-box">
+              <span class="u-lbl">{{ 'ui.manufacturingHub.559f46' | translate }}</span>
+              <h2 class="u-val">{{ formatCurrency(selectedBomForView.totalUnitCost) }}</h2>
+              <small class="text-muted">{{ 'ui.manufacturingHub.9bec0d' | translate }} {{ selectedBomForView.unitOfMeasure }}</small>
+            </div>
+          </div>
+
+          <!-- Cost Distribution Stack Bar -->
+          <div class="cost-distribution-card">
+            <div class="dist-labels">
+              <span class="lbl-mat"><i class="pi pi-circle-fill"></i> {{ 'ui.manufacturingHub.1200b0' | translate }} {{ formatCurrency(selectedBomForView.totalMaterialCost) }} ({{ Math.round((selectedBomForView.totalMaterialCost / selectedBomForView.totalUnitCost) * 100) }}%)</span>
+              <span class="lbl-lab"><i class="pi pi-circle-fill"></i> {{ 'ui.manufacturingHub.862edd' | translate }} {{ formatCurrency(selectedBomForView.totalLaborCost) }} ({{ Math.round((selectedBomForView.totalLaborCost / selectedBomForView.totalUnitCost) * 100) }}%)</span>
+              <span class="lbl-ovh"><i class="pi pi-circle-fill"></i> {{ 'ui.manufacturingHub.441b90' | translate }} {{ formatCurrency(selectedBomForView.totalOverheadCost) }} ({{ Math.round((selectedBomForView.totalOverheadCost / selectedBomForView.totalUnitCost) * 100) }}%)</span>
+            </div>
+            <div class="dist-bar-stack">
+              <div class="bar-slice slice-blue" [style.width.%]="(selectedBomForView.totalMaterialCost / selectedBomForView.totalUnitCost) * 100"></div>
+              <div class="bar-slice slice-amber" [style.width.%]="(selectedBomForView.totalLaborCost / selectedBomForView.totalUnitCost) * 100"></div>
+              <div class="bar-slice slice-green" [style.width.%]="(selectedBomForView.totalOverheadCost / selectedBomForView.totalUnitCost) * 100"></div>
+            </div>
+          </div>
+
+          <!-- Section 1: Raw Materials Components Table -->
+          <div class="sub-table-section mt-3">
+            <div class="section-title">
+              <i class="pi pi-box text-cyan"></i>
+              <span>{{ 'ui.manufacturingHub.7791be' | translate }}</span>
+            </div>
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>{{ 'ui.manufacturingHub.544a74' | translate }}</th>
+                  <th>{{ 'ui.manufacturingHub.f5ad85' | translate }}</th>
+                  <th class="text-center">{{ 'purchasing.procurementHub.requestedQty' | translate }}</th>
+                  <th class="text-center">{{ 'ui.manufacturingHub.6c1613' | translate }}</th>
+                  <th>{{ 'invoices.create.unitPrice' | translate }}</th>
+                  <th>{{ 'projects.hub.workspace.projectTimesheets.thTotalCost' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of selectedBomForView.components">
+                  <td><span class="badge-code">{{ c.itemCode }}</span></td>
+                  <td>
+                    <strong>{{ c.itemNameAr }}</strong>
+                    <small class="d-block text-muted">{{ c.itemNameEn }}</small>
+                  </td>
+                  <td class="text-center"><strong>{{ c.quantityRequired }}</strong> {{ c.unitOfMeasure }}</td>
+                  <td class="text-center"><span class="scrap-badge">{{ c.scrapPercentage }}%</span></td>
+                  <td>{{ formatCurrency(c.unitCost) }}</td>
+                  <td><strong>{{ formatCurrency(c.totalCost) }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Section 2: Operations & Workstations Routing Table -->
+          <div class="sub-table-section mt-3">
+            <div class="section-title">
+              <i class="pi pi-server text-emerald"></i>
+              <span>{{ 'ui.manufacturingHub.b6cd94' | translate }}</span>
+            </div>
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>{{ 'ui.manufacturingHub.feb02f' | translate }}</th>
+                  <th>{{ 'ui.manufacturingHub.9f687d' | translate }}</th>
+                  <th class="text-center">{{ 'ui.manufacturingHub.72898f' | translate }}</th>
+                  <th>{{ 'ui.manufacturingHub.6d9d18' | translate }}</th>
+                  <th>{{ 'ui.manufacturingHub.d02e57' | translate }}</th>
+                  <th>{{ 'ui.manufacturingHub.0e63fd' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let op of selectedBomForView.operations">
+                  <td>
+                    <strong>{{ op.operationNameAr }}</strong>
+                    <small class="d-block text-muted">{{ op.operationNameEn }}</small>
+                  </td>
+                  <td><i class="pi pi-cog text-cyan"></i> {{ op.workstationName }}</td>
+                  <td class="text-center"><strong>{{ op.standardTimeMinutes }}</strong> {{ 'ui.manufacturingHub.b03018' | translate }}</td>
+                  <td>{{ formatCurrency(op.hourlyLaborRate) }}</td>
+                  <td>{{ formatCurrency(op.hourlyOverheadRate) }}</td>
+                  <td><strong class="text-info">{{ formatCurrency(op.totalOperationCost) }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bom-footer-actions">
+            <button class="btn btn-outline-danger" (click)="deleteBom(selectedBomForView.id)">
+              <i class="pi pi-trash"></i> {{ 'ui.manufacturingHub.22e22c' | translate }}
+            </button>
+            <button class="btn btn-primary" (click)="openCreateWorkOrderModal()">
+              <i class="pi pi-plus"></i> {{ 'ui.manufacturingHub.6ed645' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: WORKSTATIONS (مراكز العمل والماكينات)                               -->
+  <!-- ========================================================================= -->
+  <div class="tab-content" *ngIf="activeTab === 'workstations'">
+    <div class="workstations-grid">
+      <div *ngFor="let ws of workstations" class="workstation-card card">
+        <div class="ws-header">
+          <div class="ws-icon-box">
+            <i class="pi pi-server"></i>
+          </div>
+          <div>
+            <span class="badge-code">{{ ws.code }}</span>
+            <h4>{{ ws.nameAr }}</h4>
+            <small class="text-muted">{{ ws.nameEn }}</small>
+          </div>
+        </div>
+
+        <div class="ws-meta-grid">
+          <div class="m-item">
+            <span class="m-lbl">{{ 'ui.manufacturingHub.0f3aa1' | translate }}</span>
+            <strong class="text-emerald">{{ formatCurrency(ws.hourlyCost) }} {{ 'ui.manufacturingHub.52b9bd' | translate }}</strong>
+          </div>
+          <div class="m-item">
+            <span class="m-lbl">{{ 'ui.manufacturingHub.b71b93' | translate }}</span>
+            <strong>{{ ws.capacityPerDayHours }} {{ 'ui.manufacturingHub.092ace' | translate }}</strong>
+          </div>
+          <div class="m-item">
+            <span class="m-lbl">{{ 'ui.manufacturingHub.21a931' | translate }}</span>
+            <strong class="text-cyan">{{ ws.efficiencyPercentage }}%</strong>
+          </div>
+          <div class="m-item">
+            <span class="m-lbl">{{ 'branches.table.status' | translate }}</span>
+            <span class="status-badge status-completed">{{ ws.status === 'Active' ? ('ui.manufacturingHub.74fdf3' | translate) : ws.status }}</span>
+          </div>
+        </div>
+
+        <div class="ws-footer">
+          <small class="text-muted"><i class="pi pi-map-marker"></i> {{ ws.location }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: RAW MATERIALS (المواد الخام والأولية ومخزون التصنيع)                -->
+  <!-- ========================================================================= -->
+  <div class="tab-content" *ngIf="activeTab === 'raw-materials'">
+    <!-- Category Filter Ribbon -->
+    <div class="filter-pills-bar d-flex justify-content-between align-items-center">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="filter-pill" [class.active]="rawMaterialCategoryFilter === 'all'" (click)="rawMaterialCategoryFilter = 'all'">
+          {{ 'ui.manufacturingHub.058c55' | translate }}{{ rawMaterials.length }})
+        </button>
+        <button *ngFor="let cat of categories" class="filter-pill" [class.active]="rawMaterialCategoryFilter === cat.code || rawMaterialCategoryFilter === cat.nameAr" (click)="rawMaterialCategoryFilter = cat.code">
+          {{ cat.nameAr }}
+        </button>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-secondary btn-sm" (click)="seedStandardMaterials()">
+          <i class="pi pi-cloud-download"></i> {{ 'ui.manufacturingHub.abe3bb' | translate }}
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="openCreateRawMaterialModal()">
+          <i class="pi pi-plus"></i> {{ 'ui.manufacturingHub.d69059' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Raw Materials Table -->
+    <div class="table-container card">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>{{ 'ui.manufacturingHub.544a74' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.6f59f5' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.c5f69b' | translate }}</th>
+            <th class="text-center">{{ 'purchasing.items.table.unit' | translate }}</th>
+            <th class="text-center">{{ 'ui.manufacturingHub.cace47' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.74ce41' | translate }}</th>
+            <th>{{ 'ui.manufacturingHub.4fe02d' | translate }}</th>
+            <th class="actions-col">{{ 'ui.manufacturingHub.f3b77b' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of filteredRawMaterials">
+            <td><span class="badge-code font-mono">{{ m.itemCode }}</span></td>
+            <td>
+              <strong>{{ m.nameAr }}</strong>
+              <small class="d-block text-muted">{{ m.nameEn }}</small>
+            </td>
+            <td><span class="badge-cat">{{ m.categoryAr }}</span></td>
+            <td class="text-center"><strong>{{ m.unitOfMeasure }}</strong></td>
+            <td class="text-center">
+              <span class="stock-badge" [class.stock-low]="(m.currentStock || 0) <= (m.minStockLevel || 0)">
+                <i class="pi pi-box"></i> {{ (m.currentStock || 0) | number:'1.0-2' }}
+              </span>
+            </td>
+            <td><strong class="text-emerald">{{ formatCurrency(m.unitCost) }}</strong></td>
+            <td>
+              <small><i class="pi pi-building text-muted"></i> {{ m.warehouseName }}</small>
+            </td>
+            <td class="actions-col">
+              <div class="action-buttons-wrap">
+                <button class="btn-sm btn-outline-primary" (click)="useRawMaterialInNewBom(m)" [title]="'ui.manufacturingHub.b1ee5b' | translate">
+                  <i class="pi pi-sitemap"></i> {{ 'ui.manufacturingHub.0d3276' | translate }}
+                </button>
+                <button class="btn-sm btn-outline-secondary" (click)="editRawMaterial(m)" [title]="'ui.manufacturingHub.6b8fdb' | translate">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button class="btn-sm btn-outline-danger" (click)="deleteRawMaterial(m)" [title]="'ui.manufacturingHub.6489a3' | translate">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredRawMaterials.length === 0">
+            <td colspan="8" class="text-center py-4 text-muted">
+              <i class="pi pi-inbox d-block mb-2" style="font-size: 1.8rem;"></i>
+              {{ 'ui.manufacturingHub.63e48d' | translate }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: CREATE WORK ORDER (أمر تشغيل وإنتاج جديد)                         -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" *ngIf="showWorkOrderModal">
+    <div class="modal-dialog card modal-md">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="pi pi-plus-circle"></i>
+          <div>
+            <h3>{{ 'ui.manufacturingHub.789102' | translate }}</h3>
+            <p>{{ 'ui.manufacturingHub.76a8a6' | translate }}</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="showWorkOrderModal = false"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.f2381b' | translate }} <span class="required">*</span></label>
+            <select [(ngModel)]="workOrderForm.bomId" (change)="onWorkOrderBomSelect()" class="form-control-styled">
+              <option *ngFor="let b of boms" [value]="b.id">{{ b.nameAr }} ({{ b.code }})</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'manufacturing.hub.table.orderNumber' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="workOrderForm.workOrderNumber" class="form-control-styled" />
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.af5f9b' | translate }} <span class="required">*</span></label>
+            <input type="number" [(ngModel)]="workOrderForm.plannedQuantity" min="1" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.34d91d' | translate }} <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="workOrderForm.startDate" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.6e712c' | translate }} <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="workOrderForm.dueDate" class="form-control-styled" />
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.29b73c' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="workOrderForm.assignedSupervisor" [placeholder]="'ui.manufacturingHub.cb94c6' | translate" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.1c4d62' | translate }}</label>
+            <input type="text" [(ngModel)]="workOrderForm.assignedWorkstation" class="form-control-styled" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>{{ 'ui.manufacturingHub.88a761' | translate }}</label>
+          <textarea [(ngModel)]="workOrderForm.notes" rows="2" [placeholder]="'ui.manufacturingHub.40b26f' | translate" class="form-control-styled"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showWorkOrderModal = false">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveWorkOrder()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'ui.manufacturingHub.9b2b66' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: CREATE / EDIT BOM (شجرة منتج وقائمة مواد)                         -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" *ngIf="showBomModal">
+    <div class="modal-dialog card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="pi pi-sitemap"></i>
+          <div>
+            <h3>{{ 'ui.manufacturingHub.40bd6b' | translate }}</h3>
+            <p>{{ 'ui.manufacturingHub.13852b' | translate }}</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="showBomModal = false"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Rule 1: Auto-Translation for BOM Name -->
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.19fdf2' | translate }} <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="bomForm.nameAr"
+              (input)="onBomNameArInput()"
+              [placeholder]="'ui.manufacturingHub.dd4605' | translate"
+              class="form-control-styled"
+            />
+          </div>
+
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="margin-bottom: 0;">{{ 'ui.manufacturingHub.ac25ac' | translate }}</label>
+              <button type="button" class="btn-inline-translate" (click)="retranslateBomName()">
+                <i class="pi pi-globe"></i> {{ 'roles.instantTranslate' | translate }}
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="bomForm.nameEn"
+              placeholder="Ready-Mix Concrete C35 Formula"
+              class="form-control-styled"
+            />
+          </div>
+        </div>
+
+        <!-- Rule 1: Auto-Translation for Finished Product Name -->
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.65d25a' | translate }} <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="bomForm.finishedProductNameAr"
+              (input)="onProductNameArInput()"
+              [placeholder]="'ui.manufacturingHub.28a29b' | translate"
+              class="form-control-styled"
+            />
+          </div>
+
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="margin-bottom: 0;">{{ 'ui.manufacturingHub.96e0ad' | translate }}</label>
+              <button type="button" class="btn-inline-translate" (click)="retranslateProductName()">
+                <i class="pi pi-globe"></i> {{ 'roles.instantTranslate' | translate }}
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="bomForm.finishedProductNameEn"
+              placeholder="Sulfate Resistant Concrete C35"
+              class="form-control-styled"
+            />
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'manufacturing.hub.table.bomCode' | translate }}</label>
+            <input type="text" [(ngModel)]="bomForm.code" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.00aa11' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="bomForm.unitOfMeasure" [placeholder]="'ui.manufacturingHub.b9bfb6' | translate" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.1fe777' | translate }}</label>
+            <input type="text" [(ngModel)]="bomForm.version" class="form-control-styled" />
+          </div>
+        </div>
+
+        <!-- Components Table in Modal -->
+        <div class="sub-table-section mt-3">
+          <div class="section-title d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <i class="pi pi-box text-cyan"></i>
+              <span>{{ 'ui.manufacturingHub.72db57' | translate }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-xs text-muted">{{ 'ui.manufacturingHub.fd95bf' | translate }}</span>
+              <select [(ngModel)]="selectedRawMaterialId" (change)="onRawMaterialSelectedInBom()" class="form-control-styled form-control-sm" style="width: auto; min-width: 270px; font-size: 0.78rem;">
+                <option value="">{{ 'ui.manufacturingHub.50b49d' | translate }}{{ rawMaterials.length }} {{ 'ui.manufacturingHub.53ca54' | translate }}</option>
+                <option *ngFor="let rm of rawMaterials" [value]="rm.id">
+                  [{{ rm.itemCode }}] {{ rm.nameAr }} ({{ rm.unitCost }} {{ 'ui.manufacturingHub.9c18e1' | translate }} {{ rm.unitOfMeasure }})
+                </option>
+              </select>
+              <button type="button" class="btn btn-outline-info btn-xs" (click)="openCreateRawMaterialModal()" [title]="'ui.manufacturingHub.13e4dc' | translate">
+                <i class="pi pi-plus"></i> {{ 'ui.manufacturingHub.ad20ff' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>{{ 'ui.manufacturingHub.f5ad85' | translate }}</th>
+                <th class="text-center">{{ 'invoices.create.qty' | translate }}</th>
+                <th class="text-center">{{ 'invoices.create.unit' | translate }}</th>
+                <th class="text-center">{{ 'ui.manufacturingHub.3d3e92' | translate }}</th>
+                <th>{{ 'invoices.create.unitPrice' | translate }}</th>
+                <th>{{ 'invoices.create.lineTotal' | translate }}</th>
+                <th class="actions-col">{{ 'common.delete' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of bomForm.components; let i = index">
+                <td>
+                  <strong>{{ c.itemNameAr }}</strong>
+                  <small *ngIf="c.itemCode" class="d-block text-muted font-mono" style="font-size: 0.7rem;">{{ c.itemCode }} - {{ c.itemNameEn }}</small>
+                </td>
+                <td class="text-center">{{ c.quantityRequired }}</td>
+                <td class="text-center">{{ c.unitOfMeasure }}</td>
+                <td class="text-center">{{ c.scrapPercentage }}%</td>
+                <td>{{ formatCurrency(c.unitCost) }}</td>
+                <td><strong>{{ formatCurrency(c.totalCost) }}</strong></td>
+                <td class="actions-col">
+                  <button class="btn-sm btn-outline-danger" (click)="removeComponentFromBom(i)"><i class="pi pi-trash"></i></button>
+                </td>
+              </tr>
+
+              <!-- Add Line Form -->
+              <tr class="add-row-form">
+                <td>
+                  <input type="text" [(ngModel)]="newComponentLine.itemNameAr" [placeholder]="'ui.manufacturingHub.0a76e6' | translate" class="table-input" />
+                  <small *ngIf="newComponentLine.itemCode" class="text-muted d-block font-mono" style="font-size: 0.65rem;">{{ 'ui.manufacturingHub.1d7661' | translate }} {{ newComponentLine.itemCode }}</small>
+                </td>
+                <td>
+                  <input type="number" [(ngModel)]="newComponentLine.quantityRequired" class="table-input text-center" />
+                </td>
+                <td>
+                  <input type="text" [(ngModel)]="newComponentLine.unitOfMeasure" class="table-input text-center" />
+                </td>
+                <td>
+                  <input type="number" [(ngModel)]="newComponentLine.scrapPercentage" class="table-input text-center" />
+                </td>
+                <td>
+                  <input type="number" [(ngModel)]="newComponentLine.unitCost" class="table-input" />
+                </td>
+                <td colspan="2">
+                  <button class="btn-sm btn-primary w-100" (click)="addComponentToBom()">
+                    <i class="pi pi-plus"></i> {{ 'ui.manufacturingHub.66f09c' | translate }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Real-Time BOM Cost Preview Banner -->
+        <div class="bom-cost-preview-banner">
+          <div class="cost-item">
+            <span>{{ 'ui.manufacturingHub.7f6eeb' | translate }}</span>
+            <strong>{{ formatCurrency(bomTotalMaterialCost) }}</strong>
+          </div>
+          <div class="cost-item">
+            <span>{{ 'ui.manufacturingHub.659a59' | translate }}</span>
+            <strong>{{ formatCurrency(bomTotalLaborCost) }}</strong>
+          </div>
+          <div class="cost-item">
+            <span>{{ 'ui.manufacturingHub.d21b67' | translate }}</span>
+            <strong>{{ formatCurrency(bomTotalOverheadCost) }}</strong>
+          </div>
+          <div class="cost-item total-highlight">
+            <span>{{ 'ui.manufacturingHub.aad8b7' | translate }}</span>
+            <strong class="text-emerald">{{ formatCurrency(bomTotalUnitCost) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showBomModal = false">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveBom()">
+          <i class="pi pi-check"></i>
+          <span>{{ 'ui.manufacturingHub.7e02af' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: CREATE / EDIT RAW MATERIAL (إضافة / تعديل مادة خام)               -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" *ngIf="showRawMaterialModal">
+    <div class="modal-dialog card modal-md">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="pi pi-tags"></i>
+          <div>
+            <h3>{{ isEditingRawMaterial ? ('ui.manufacturingHub.169410' | translate) : ('ui.manufacturingHub.1b6da0' | translate) }}</h3>
+            <p>{{ 'ui.manufacturingHub.2fc6d1' | translate }}</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="showRawMaterialModal = false"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.6ac2a1' | translate }} <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="rawMaterialForm.itemCode" placeholder="RAW-001" class="form-control-styled font-mono" />
+          </div>
+
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="margin: 0;">{{ 'ui.manufacturingHub.cfddf4' | translate }}</label>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-text-action" style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" (click)="manageCategoriesFromModal()" [title]="'ui.manufacturingHub.7e918d' | translate">
+                  <i class="pi pi-cog"></i> {{ 'ui.manufacturingHub.12de2c' | translate }}
+                </button>
+                <button type="button" class="btn-text-action" style="background: none; border: none; color: #0284c7; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" (click)="addNewCategoryFromModal()" [title]="'ui.manufacturingHub.c006f4' | translate">
+                  <i class="pi pi-plus-circle"></i> {{ 'ui.manufacturingHub.cf8168' | translate }}
+                </button>
+              </div>
+            </div>
+            <select [(ngModel)]="rawMaterialForm.category" (change)="onRawMaterialCategoryChange()" class="form-control-styled">
+              <option value="">{{ 'ui.manufacturingHub.1aa470' | translate }}</option>
+              <option *ngFor="let cat of categories" [value]="cat.code">
+                {{ cat.nameAr }} ({{ cat.nameEn }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Rule 1: Auto-Translation for Raw Material Name -->
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.9a5a76' | translate }} <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="rawMaterialForm.nameAr"
+              (input)="onRawMaterialNameArInput()"
+              [placeholder]="'ui.manufacturingHub.dd83de' | translate"
+              class="form-control-styled"
+            />
+          </div>
+
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label style="margin-bottom: 0;">{{ 'ui.manufacturingHub.4de1e2' | translate }}</label>
+              <button type="button" class="btn-inline-translate" (click)="retranslateRawMaterialName()">
+                <i class="pi pi-globe"></i> {{ 'roles.instantTranslate' | translate }}
+              </button>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="rawMaterialForm.nameEn"
+              placeholder="Sulfate Resistant Portland Cement"
+              class="form-control-styled"
+            />
+          </div>
+        </div>
+
+        <div class="form-grid three-col">
+          <div class="form-field">
+            <label>{{ 'purchasing.items.table.unit' | translate }}</label>
+            <select [(ngModel)]="rawMaterialForm.unitOfMeasure" class="form-control-styled">
+              <option value="كجم">{{ 'ui.manufacturingHub.1ad5c8' | translate }}</option>
+              <option value="طن">{{ 'ui.manufacturingHub.9ad4d6' | translate }}</option>
+              <option value="لتر">{{ 'ui.manufacturingHub.a66cbf' | translate }}</option>
+              <option value="م³ (متر مكعب)">{{ 'ui.manufacturingHub.fc7af1' | translate }}</option>
+              <option value="م² (متر مربع)">{{ 'ui.manufacturingHub.5e9199' | translate }}</option>
+              <option value="متر">{{ 'ui.manufacturingHub.6d24e6' | translate }}</option>
+              <option value="لوح">{{ 'ui.manufacturingHub.a89689' | translate }}</option>
+              <option value="حبة / قطعة">{{ 'ui.manufacturingHub.9ce2fd' | translate }}</option>
+              <option value="أنبوبة">{{ 'ui.manufacturingHub.74d3d3' | translate }}</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.b8bd4b' | translate }} <span class="required">*</span></label>
+            <input type="number" [(ngModel)]="rawMaterialForm.unitCost" step="0.01" class="form-control-styled" />
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.52d4fc' | translate }}</label>
+            <input type="number" [(ngModel)]="rawMaterialForm.currentStock" class="form-control-styled" />
+          </div>
+        </div>
+
+        <div class="form-grid two-col">
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.dfb528' | translate }}</label>
+            <select [(ngModel)]="rawMaterialForm.warehouseName" class="form-control-styled">
+              <option value="مستودع المواد الخام والمخاليط">{{ 'ui.manufacturingHub.5a6d03' | translate }}</option>
+              <option value="ساحة تخزين حديد التسليح الخام">{{ 'ui.manufacturingHub.88a26a' | translate }}</option>
+              <option value="مستودع قطاعات الألمنيوم والإكسسوارات">{{ 'ui.manufacturingHub.298ec0' | translate }}</option>
+              <option value="مستودع الكيماويات ومواد العزل">{{ 'ui.manufacturingHub.3e575e' | translate }}</option>
+              <option value="المستودع المركزي الرئيسي">{{ 'ui.manufacturingHub.dae2a4' | translate }}</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ 'ui.manufacturingHub.cde7b3' | translate }}</label>
+            <input type="number" [(ngModel)]="rawMaterialForm.minStockLevel" class="form-control-styled" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>{{ 'ui.manufacturingHub.c8372f' | translate }}</label>
+          <textarea [(ngModel)]="rawMaterialForm.notes" rows="2" class="form-control-styled" [placeholder]="'ui.manufacturingHub.24a118' | translate"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showRawMaterialModal = false">{{ 'common.cancel' | translate }}</button>
+        <button class="btn btn-primary" (click)="saveRawMaterial()">
+          <i class="pi pi-check"></i> {{ isEditingRawMaterial ? ('branches.updateBranch' | translate) : ('ui.manufacturingHub.a2ee86' | translate) }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

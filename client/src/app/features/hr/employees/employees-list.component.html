@@ -1,0 +1,531 @@
+<div class="hr-page-container animate-fade-in" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1>👥 {{ 'hr.employees.title' | translate }}</h1>
+        <span class="badge-tag">{{ 'hr.employees.gosiBadge' | translate }}</span>
+        <span class="badge-tag wps-tag">{{ 'hr.employees.wpsBadge' | translate }}</span>
+      </div>
+      <p class="subtitle">{{ 'hr.employees.subtitle' | translate }}</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="openEosbModal()">
+        <i class="pi pi-calculator"></i>
+        <span>{{ 'hr.employees.eosbCalculator' | translate }}</span>
+      </button>
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="pi pi-user-plus"></i>
+        <span>{{ 'hr.employees.addEmployee' | translate }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notifications -->
+  <div *ngIf="successMessage" class="alert alert-success">
+    <i class="pi pi-check-circle"></i>
+    <span>{{ successMessage }}</span>
+  </div>
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="pi pi-exclamation-triangle"></i>
+    <span>{{ error }}</span>
+  </div>
+
+  <!-- KPI Summary Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon blue">
+        <i class="pi pi-users"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.employees.kpis.total' | translate }}</span>
+        <div class="kpi-value">{{ totalCount }} <span class="kpi-unit">{{ 'hr.employees.kpis.totalUnit' | translate }}</span></div>
+        <span class="kpi-sub">{{ saudiCount }} {{ 'hr.employees.saudi' | translate }} / {{ totalCount - saudiCount }} {{ 'hr.employees.resident' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon green">
+        <i class="pi pi-flag-fill"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.employees.kpis.saudizationRate' | translate }}</span>
+        <div class="kpi-value text-green">{{ saudizationRate }}%</div>
+        <span class="kpi-sub">{{ 'hr.employees.kpis.nitaqatBadge' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon purple">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.employees.kpis.totalPayroll' | translate }}</span>
+        <div class="kpi-value">{{ totalMonthlyGross | number:'1.2-2' }} <span class="kpi-unit">{{ 'common.sar' | translate }}</span></div>
+        <span class="kpi-sub">{{ 'hr.employees.kpis.payrollSub' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon orange">
+        <i class="pi pi-shield"></i>
+      </div>
+      <div class="kpi-details">
+        <span class="kpi-title">{{ 'hr.employees.kpis.gosiTitle' | translate }}</span>
+        <div class="kpi-value text-orange">{{ totalMonthlyGosi | number:'1.2-2' }} <span class="kpi-unit">{{ 'common.sar' | translate }}</span></div>
+        <span class="kpi-sub">{{ 'hr.employees.kpis.gosiSub' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="filter-toolbar">
+    <div class="search-box">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="applyFilters()"
+        [placeholder]="'hr.employees.searchPlaceholder' | translate"
+      />
+    </div>
+
+    <div class="filter-group">
+      <label>{{ 'hr.employees.nationalityLabel' | translate }}</label>
+      <select [(ngModel)]="nationalityFilter" (change)="applyFilters()">
+        <option value="ALL">{{ 'hr.employees.allNationalities' | translate }}</option>
+        <option value="SAUDI">{{ 'hr.employees.saudiOnly' | translate }}</option>
+        <option value="NON_SAUDI">{{ 'hr.employees.residentOnly' | translate }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>{{ 'hr.employees.statusLabel' | translate }}</label>
+      <select [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option value="ALL">{{ 'hr.employees.allStatuses' | translate }}</option>
+        <option value="1">{{ 'hr.employees.statusActive' | translate }}</option>
+        <option value="2">{{ 'hr.employees.statusLeave' | translate }}</option>
+        <option value="3">{{ 'hr.employees.statusProbation' | translate }}</option>
+        <option value="5">{{ 'hr.employees.statusResigned' | translate }}</option>
+        <option value="6">{{ 'hr.employees.statusTerminated' | translate }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Employees Table -->
+  <div class="table-container shadow-card">
+    <div *ngIf="loading" class="table-loading">
+      <i class="pi pi-spin pi-spinner text-primary"></i>
+      <span>{{ 'hr.employees.loading' | translate }}</span>
+    </div>
+
+    <table *ngIf="!loading && filteredEmployees.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'hr.employees.table.empCode' | translate }}</th>
+          <th>{{ 'hr.employees.table.empName' | translate }}</th>
+          <th>{{ 'hr.employees.table.jobAndDept' | translate }}</th>
+          <th>{{ 'hr.employees.table.idOrIqama' | translate }}</th>
+          <th>{{ 'hr.employees.table.nationality' | translate }}</th>
+          <th>{{ 'hr.employees.table.basicSalary' | translate }}</th>
+          <th>{{ 'hr.employees.table.grossSalary' | translate }}</th>
+          <th>{{ 'hr.employees.table.gosi' | translate }}</th>
+          <th>{{ 'hr.employees.table.bankIban' | translate }}</th>
+          <th>{{ 'hr.employees.table.status' | translate }}</th>
+          <th class="text-center">{{ 'hr.employees.table.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of paginatedEmployees">
+          <td class="emp-code">
+            <strong>{{ emp.employeeNumber }}</strong>
+          </td>
+          <td>
+            <div class="emp-profile-cell">
+              <div class="avatar" [class.saudi-avatar]="emp.isSaudi">
+                {{ emp.firstNameAr.charAt(0) }}
+              </div>
+              <div class="emp-names">
+                <span class="ar-name">{{ emp.fullNameAr }}</span>
+                <span class="en-name">{{ emp.fullNameEn }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="job-cell">
+              <span class="job-ar">{{ emp.jobTitleAr }}</span>
+              <span class="dept-badge">{{ emp.departmentName || ('ui.employeesList.a9ba7b' | translate) }}</span>
+            </div>
+          </td>
+          <td class="id-number">{{ emp.nationalIdOrIqama }}</td>
+          <td>
+            <span class="nationality-badge" [class.is-saudi]="emp.isSaudi">
+              <i class="pi" [ngClass]="emp.isSaudi ? 'pi-flag-fill' : 'pi-globe'"></i>
+              {{ emp.nationality }}
+            </span>
+          </td>
+          <td class="amount-cell">{{ emp.basicSalary | number:'1.2-2' }}</td>
+          <td class="amount-cell bold-amount">{{ emp.grossSalary | number:'1.2-2' }}</td>
+          <td class="amount-cell text-muted">
+            <span [title]="'hr.payroll.empShare' | translate">{{ emp.monthlyEmployeeGosi | number:'1.2-2' }}</span>
+            <small class="comp-gosi">+{{ emp.monthlyCompanyGosi | number:'1.2-2' }} {{ 'hr.employees.table.companyShare' | translate }}</small>
+          </td>
+          <td>
+            <div class="bank-cell" [title]="emp.iban">
+              <span class="bank-name">{{ emp.bankName }}</span>
+              <span class="iban-code">{{ emp.iban.substring(0, 4) }}...{{ emp.iban.substring(emp.iban.length - 4) }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusBadgeClass(emp.status)">
+              {{ getStatusText(emp.status) }}
+            </span>
+          </td>
+          <td class="text-center actions-cell">
+            <button class="icon-btn" (click)="openEditModal(emp)" [title]="'hr.employees.table.editProfile' | translate">
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button class="icon-btn eosb-btn" (click)="openEosbModal(emp)" [title]="'hr.employees.table.calcEosb' | translate">
+              <i class="pi pi-calculator"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Table Pagination Bar -->
+    <app-pagination
+      *ngIf="!loading && filteredEmployees.length > 0"
+      [totalItems]="filteredEmployees.length"
+      [pageSize]="pageSize"
+      [currentPage]="currentPage"
+      [pageSizeOptions]="[5, 10, 20, 50, 100]"
+      [itemLabelAr]="('hr.payroll.employee' | translate)"
+      [itemLabelEn]="'employees'"
+      (pageChange)="currentPage = $event"
+      (pageSizeChange)="pageSize = $event">
+    </app-pagination>
+
+    <div *ngIf="!loading && filteredEmployees.length === 0" class="empty-state">
+      <i class="pi pi-users empty-icon"></i>
+      <h3>{{ 'hr.employees.table.emptyTitle' | translate }}</h3>
+      <p>{{ 'hr.employees.table.emptyDesc' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT MODAL -->
+  <div *ngIf="showModal" class="modal-backdrop animate-fade-in" (click)="closeModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi" [ngClass]="isEditMode ? 'pi-user-edit' : 'pi-user-plus'"></i>
+          <h3>{{ isEditMode ? ('hr.employees.modal.editTitle' | translate) : ('hr.employees.modal.createTitle' | translate) }}</h3>
+          <span class="auto-trans-pill">{{ 'hr.employees.modal.rule1Pill' | translate }}</span>
+        </div>
+        <button class="close-btn" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body compact-scroll">
+        <!-- Section 1: Names & Translation -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="pi pi-id-card"></i> {{ 'hr.employees.modal.secPersonal' | translate }}</h4>
+          
+          <div class="form-row">
+            <!-- Unified First Name -->
+            <div class="form-group flex-1">
+              <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">
+                  <span>{{ 'hr.employees.modal.firstName' | translate }}</span>
+                  <span class="required" style="color: #ef4444;">*</span>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <span *ngIf="firstNameBgTranslation" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                    {{ firstNameBgTranslation }}
+                  </span>
+                  <button type="button" class="btn-micro-translate" (click)="forceRetranslate('firstName')" [title]="'accounting.partnerCreate.instantTranslate' | translate">
+                    <i class="pi pi-sync"></i>
+                  </button>
+                </div>
+              </div>
+              <input
+                type="text"
+                [ngModel]="form.firstNameAr || form.firstNameEn"
+                (ngModelChange)="onUnifiedFirstNameChange($event)"
+                [placeholder]="'hr.employees.modal.firstNamePlaceholder' | translate"
+                required
+              />
+            </div>
+
+            <!-- Unified Last Name -->
+            <div class="form-group flex-1">
+              <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">
+                  <span>{{ 'hr.employees.modal.lastName' | translate }}</span>
+                  <span class="required" style="color: #ef4444;">*</span>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <span *ngIf="lastNameBgTranslation" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                    {{ lastNameBgTranslation }}
+                  </span>
+                  <button type="button" class="btn-micro-translate" (click)="forceRetranslate('lastName')" [title]="'accounting.partnerCreate.instantTranslate' | translate">
+                    <i class="pi pi-sync"></i>
+                  </button>
+                </div>
+              </div>
+              <input
+                type="text"
+                [ngModel]="form.lastNameAr || form.lastNameEn"
+                (ngModelChange)="onUnifiedLastNameChange($event)"
+                [placeholder]="'hr.employees.modal.lastNamePlaceholder' | translate"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.idNumberLabel' | translate }} <span class="required">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="form.nationalIdOrIqama"
+                maxlength="10"
+                [placeholder]="'hr.employees.modal.idNumberPlaceholder' | translate"
+                required
+              />
+            </div>
+
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.nationalityCitizenship' | translate }}</label>
+              <div class="nationality-toggle-bar">
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="form.isSaudi"
+                  (click)="onNationalityToggle(true)">
+                  <i class="pi pi-flag-fill"></i> {{ 'hr.employees.modal.saudiCitizen' | translate }}
+                </button>
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="!form.isSaudi"
+                  (click)="onNationalityToggle(false)">
+                  <i class="pi pi-globe"></i> {{ 'hr.employees.modal.nonSaudi' | translate }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Unified Job Title -->
+            <div class="form-group flex-1">
+              <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="margin-bottom: 0;">
+                  <span>{{ 'hr.employees.modal.jobTitle' | translate }}</span>
+                  <span class="required" style="color: #ef4444;">*</span>
+                  <small class="text-muted ms-1 me-1">{{ 'common.arOrEn' | translate }}</small>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <span *ngIf="jobTitleBgTranslation" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+                    {{ jobTitleBgTranslation }}
+                  </span>
+                  <button type="button" class="btn-micro-translate" (click)="forceRetranslate('jobTitle')" [title]="'accounting.partnerCreate.instantTranslate' | translate">
+                    <i class="pi pi-sync"></i>
+                  </button>
+                </div>
+              </div>
+              <input
+                type="text"
+                [ngModel]="form.jobTitleAr || form.jobTitleEn"
+                (ngModelChange)="onUnifiedJobTitleChange($event)"
+                [placeholder]="'hr.employees.modal.jobTitlePlaceholder' | translate"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.department' | translate }}</label>
+              <input type="text" [(ngModel)]="form.departmentName" [placeholder]="'hr.employees.modal.departmentPlaceholder' | translate" />
+            </div>
+
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.hireDate' | translate }}</label>
+              <input type="date" [(ngModel)]="form.hireDate" required />
+            </div>
+
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.contractType' | translate }}</label>
+              <select [(ngModel)]="form.contractType">
+                <option [ngValue]="1">{{ 'hr.employees.modal.fixedContract' | translate }}</option>
+                <option [ngValue]="2">{{ 'hr.employees.modal.indefiniteContract' | translate }}</option>
+                <option [ngValue]="3">{{ 'hr.employees.modal.partTime' | translate }}</option>
+                <option [ngValue]="4">{{ 'hr.employees.modal.temporaryContract' | translate }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Salary Breakdown & Live GOSI Preview -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="pi pi-money-bill"></i> {{ 'hr.employees.modal.secSalary' | translate }}</h4>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.basicSalary' | translate }} <span class="required">*</span></label>
+              <input type="number" [(ngModel)]="form.basicSalary" min="0" step="100" />
+            </div>
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.housing' | translate }}</label>
+              <input type="number" [(ngModel)]="form.housingAllowance" min="0" step="100" />
+            </div>
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.transport' | translate }}</label>
+              <input type="number" [(ngModel)]="form.transportationAllowance" min="0" step="50" />
+            </div>
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.otherAllowances' | translate }}</label>
+              <input type="number" [(ngModel)]="form.otherAllowances" min="0" step="50" />
+            </div>
+          </div>
+
+          <!-- Live GOSI Preview Widget -->
+          <div class="gosi-preview-widget">
+            <div class="widget-col">
+              <span class="w-label">{{ 'hr.employees.modal.grossSalary' | translate }}</span>
+              <strong class="w-val text-primary">{{ previewGrossSalary | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+            <div class="widget-col">
+              <span class="w-label">{{ 'hr.employees.modal.gosiSubject' | translate }}</span>
+              <strong class="w-val">{{ previewGosiSubject | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+            <div class="widget-col">
+              <span class="w-label">{{ 'hr.employees.modal.gosiEmpDeduction' | translate }}</span>
+              <strong class="w-val text-danger">-{{ previewEmployeeGosi | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+            <div class="widget-col">
+              <span class="w-label">{{ 'hr.employees.modal.gosiCompShare' | translate }}</span>
+              <strong class="w-val text-warning">+{{ previewCompanyGosi | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+            <div class="widget-col highlight">
+              <span class="w-label">{{ 'hr.employees.modal.netPayable' | translate }}</span>
+              <strong class="w-val text-success">{{ previewNetSalary | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Banking for WPS / Mudad -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="pi pi-credit-card"></i> {{ 'hr.employees.modal.secBanking' | translate }}</h4>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label>{{ 'hr.employees.modal.selectBank' | translate }}</label>
+              <select [(ngModel)]="form.bankCode" (change)="onBankSelect(form.bankCode)">
+                <option *ngFor="let b of bankOptions" [value]="b.code">
+                  {{ b.nameAr }} ({{ b.code }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group flex-2">
+              <label>{{ 'hr.employees.modal.ibanLabel' | translate }} <span class="required">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="form.iban"
+                [placeholder]="'hr.employees.modal.ibanPlaceholder' | translate"
+                maxlength="34"
+                dir="ltr"
+                required
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">{{ 'common.cancel' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="saveEmployee()" [disabled]="loading">
+          <i class="pi pi-check"></i>
+          <span>{{ isEditMode ? ('hr.employees.modal.saveChanges' | translate) : ('hr.employees.modal.createEmp' | translate) }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EOSB CALCULATOR MODAL -->
+  <div *ngIf="showEosbModal" class="modal-backdrop animate-fade-in" (click)="closeEosbModal()">
+    <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="pi pi-calculator text-primary"></i>
+          <h3>{{ 'hr.employees.eosb.title' | translate }}</h3>
+        </div>
+        <button class="close-btn" (click)="closeEosbModal()">&times;</button>
+      </div>
+
+      <div class="modal-body compact-scroll">
+        <div class="form-group">
+          <label>{{ 'hr.employees.eosb.selectEmployee' | translate }}</label>
+          <select [(ngModel)]="selectedEmployeeForEosb" (change)="calculateEosb()">
+            <option *ngFor="let emp of employees" [ngValue]="emp">
+              {{ emp.fullNameAr }} ({{ emp.employeeNumber }}{{ 'ui.employeesList.cef33d' | translate }} {{ emp.hireDate.substring(0, 10) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row" *ngIf="selectedEmployeeForEosb">
+          <div class="form-group flex-1">
+            <label>{{ 'hr.employees.eosb.hireDate' | translate }}</label>
+            <input type="text" [value]="selectedEmployeeForEosb.hireDate.substring(0, 10)" disabled />
+          </div>
+          <div class="form-group flex-1">
+            <label>{{ 'hr.employees.eosb.calculationDate' | translate }}</label>
+            <input type="date" [(ngModel)]="eosbCalculationDate" (change)="calculateEosb()" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'hr.employees.eosb.reasonLabel' | translate }}</label>
+          <select [(ngModel)]="eosbReason" (change)="calculateEosb()">
+            <option [ngValue]="1">{{ 'hr.employees.eosb.reasons.r1' | translate }}</option>
+            <option [ngValue]="2">{{ 'hr.employees.eosb.reasons.r2' | translate }}</option>
+            <option [ngValue]="7">{{ 'hr.employees.eosb.reasons.r7' | translate }}</option>
+            <option [ngValue]="3">{{ 'hr.employees.eosb.reasons.r3' | translate }}</option>
+            <option [ngValue]="4">{{ 'hr.employees.eosb.reasons.r4' | translate }}</option>
+            <option [ngValue]="5">{{ 'hr.employees.eosb.reasons.r5' | translate }}</option>
+            <option [ngValue]="6">{{ 'hr.employees.eosb.reasons.r6' | translate }}</option>
+          </select>
+        </div>
+
+        <!-- Result Box -->
+        <div *ngIf="eosbResult" class="eosb-result-card animate-fade-in">
+          <div class="res-row">
+            <span>{{ 'hr.employees.eosb.servicePeriod' | translate }}</span>
+            <strong>{{ eosbResult.totalYearsOfService }} {{ 'ui.employeesList.f91a7c' | translate }}</strong>
+          </div>
+          <div class="res-row">
+            <span>{{ 'hr.employees.eosb.lastSalary' | translate }}</span>
+            <strong>{{ eosbResult.lastGrossSalary | number:'1.2-2' }} {{ 'common.sar' | translate }}</strong>
+          </div>
+          <div class="res-row">
+            <span>{{ 'hr.employees.eosb.entitledRate' | translate }}</span>
+            <span class="badge-tag" [class.wps-tag]="eosbResult.entitledPercentage === 100">{{ eosbResult.entitledPercentage }}%</span>
+          </div>
+          <div class="res-divider"></div>
+          <div class="res-total">
+            <span>{{ 'hr.employees.eosb.dueBenefit' | translate }}</span>
+            <div class="final-amount">{{ eosbResult.endOfServiceBenefitAmount | number:'1.2-2' }} <span>{{ 'common.sar' | translate }}</span></div>
+          </div>
+          <small class="res-guidance">
+            {{ 'hr.employees.eosb.legalNote' | translate }}
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeEosbModal()">{{ 'common.close' | translate }}</button>
+      </div>
+    </div>
+  </div>
+</div>

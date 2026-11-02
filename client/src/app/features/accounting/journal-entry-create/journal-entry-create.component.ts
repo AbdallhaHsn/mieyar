@@ -9,6 +9,7 @@ import {
   ElementRef 
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { 
@@ -18,6 +19,7 @@ import {
 import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts.service';
 import { FinancialSettingsService, CostCenter } from '../../../core/services/financial-settings.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
+import { ModulesSettingsService } from '../../../core/services/modules-settings.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
 import { AccountDto } from '../../../core/models/account.model';
@@ -64,7 +66,7 @@ export interface LocalDraftState {
 @Component({
   selector: 'app-journal-entry-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   templateUrl: './journal-entry-create.component.html',
   styleUrls: ['./journal-entry-create.component.scss']
 })
@@ -74,6 +76,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
   chartService = inject(ChartOfAccountsService);
   settingsService = inject(FinancialSettingsService);
   companyContext = inject(CompanyContextService);
+  modulesSettings = inject(ModulesSettingsService);
   langService = inject(LanguageService);
   translator = inject(AccountingTranslatorService);
   private elementRef = inject(ElementRef);
@@ -423,14 +426,14 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
   discardRecoveredDraft() {
     const isAr = this.langService.currentLang() === 'ar';
     Swal.fire({
-      title: isAr ? 'مسح المسودة وبدء قيد جديد؟' : 'Discard Draft & Start Fresh?',
-      text: isAr ? 'سيتم حذف جميع الأسطر المحفوظة محلياً والبدء بقيد فارغ تماماً.' : 'All unsaved lines in local storage will be cleared.',
+      title: this.langService.t('accounting.journalEntryCreate.alerts.discardDraftTitle'),
+      text: this.langService.t('accounting.journalEntryCreate.alerts.discardDraftText'),
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
-      confirmButtonText: isAr ? 'نعم، ابدأ قيد فارغ' : 'Yes, discard draft',
-      cancelButtonText: isAr ? 'إلغاء والتراجع' : 'Cancel'
+      confirmButtonText: this.langService.t('accounting.journalEntryCreate.alerts.discardConfirm'),
+      cancelButtonText: this.langService.t('common.cancel')
     }).then((res) => {
       if (res.isConfirmed) {
         localStorage.removeItem(this.getDraftStorageKey());
@@ -556,7 +559,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
   removeLine(index: number) {
     if (this.lines().length <= 2) {
       const isAr = this.langService.currentLang() === 'ar';
-      Swal.fire(isAr ? 'تنبيه' : 'Warning', isAr ? 'يجب أن يحتوي القيد على سطرين على الأقل' : 'Entry must have at least 2 lines', 'info');
+      Swal.fire(this.langService.t('common.warning'), this.langService.t('accounting.journalEntryCreate.alerts.minTwoLines'), 'info');
       return;
     }
 
@@ -593,6 +596,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
     if (line.debit !== null && line.debit > 0) {
       line.credit = null;
     }
+    this.lines.update(list => [...list]);
     this.triggerAutoSave();
   }
 
@@ -601,6 +605,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
     if (line.credit !== null && line.credit > 0) {
       line.debit = null;
     }
+    this.lines.update(list => [...list]);
     this.triggerAutoSave();
   }
 
@@ -650,7 +655,11 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
     const cred = this.totalCredit();
 
     if (deb === 0 && cred === 0) {
-      Swal.fire(isAr ? 'ملاحظة' : 'Note', isAr ? 'يرجى إدخال قيم للمدين أو الدائن أولاً قبل الموازنة' : 'Enter some debit or credit amounts first', 'info');
+      Swal.fire(
+        this.langService.t('accounting.journalEntryCreate.alerts.note'),
+        this.langService.t('accounting.journalEntryCreate.alerts.enterValuesBeforeBalance'),
+        'info'
+      );
       return;
     }
 
@@ -658,8 +667,8 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
     if (diff < 0.005) {
       Swal.fire({
         icon: 'success',
-        title: isAr ? 'القيد متوازن بالفعل!' : 'Already Balanced!',
-        text: isAr ? 'إجمالي المدين يتطابق تماماً مع إجمالي الدائن.' : 'Total Debit equals Total Credit perfectly.',
+        title: this.langService.t('accounting.journalEntryCreate.alerts.alreadyBalancedTitle'),
+        text: this.langService.t('accounting.journalEntryCreate.alerts.alreadyBalancedText'),
         timer: 1600,
         showConfirmButton: false
       });
@@ -700,8 +709,8 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
 
     Swal.fire({
       icon: 'success',
-      title: isAr ? 'تمت موازنة القيد بنجاح' : 'Auto-Balanced Successfully',
-      text: isAr ? `تمت إضافة سطر موازنة بقيمة ${diff} SAR` : `Balancing line added for ${diff} SAR`,
+      title: this.langService.t('accounting.journalEntryCreate.alerts.autoBalancedSuccessTitle'),
+      text: this.langService.t('accounting.journalEntryCreate.alerts.autoBalancedSuccessText', { diff }),
       timer: 1600,
       showConfirmButton: false
     });
@@ -836,6 +845,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
     line.accountNameEn = account.nameEn;
     line.isPickerOpen = false;
     line.searchFilter = '';
+    this.lines.update(list => [...list]);
     this.triggerAutoSave();
 
     // After selecting account, move focus directly to Cost Center as requested
@@ -987,7 +997,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
   importExcelData() {
     const isAr = this.langService.currentLang() === 'ar';
     if (!this.excelRawText.trim()) {
-      Swal.fire(isAr ? 'تنبيه' : 'Warning', isAr ? 'يرجى لصق بيانات من جدول Excel أولاً' : 'Please paste Excel tabular data first', 'warning');
+      Swal.fire(this.langService.t('common.warning'), this.langService.t('accounting.journalEntryCreate.alerts.pasteExcelFirst'), 'warning');
       return;
     }
 
@@ -1059,10 +1069,11 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
 
       Swal.fire({
         icon: 'success',
-        title: isAr ? 'تم استيراد أسطر القيد بنجاح' : 'Rows Imported Successfully',
-        text: isAr 
-          ? `تم استيراد ${parsedRows.length} سطر (${matchedCount} حساب تم التعرف عليه تلقائياً).` 
-          : `Imported ${parsedRows.length} lines (${matchedCount} accounts matched).`
+        title: this.langService.t('accounting.journalEntryCreate.alerts.excelImportSuccessTitle'),
+        text: this.langService.t('accounting.journalEntryCreate.alerts.excelImportSuccessText', {
+          count: parsedRows.length,
+          matched: matchedCount
+        })
       });
     }
   }
@@ -1091,7 +1102,11 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
 
     const desc = this.primaryInputText().trim() || this.entryModel.descriptionAr.trim() || this.entryModel.descriptionEn.trim();
     if (!desc) {
-      Swal.fire(isAr ? 'تنبيه' : 'Warning', isAr ? 'يرجى إدخال البيان العام للقيد' : 'Please provide general entry description', 'warning');
+      Swal.fire(
+        this.langService.t('common.warning'),
+        this.langService.t('accounting.journalEntryCreate.alerts.provideDescription'),
+        'warning'
+      );
       return;
     }
 
@@ -1102,13 +1117,25 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
       this.entryModel.descriptionEn = this.translator.translateArabicToEnglish(desc) || desc;
     }
 
+    // Filter out completely untouched/empty lines (e.g. if a user added a row by mistake or didn't need it)
     const currentLines = this.lines();
-    for (let i = 0; i < currentLines.length; i++) {
-      const line = currentLines[i];
+    const activeLines = currentLines.filter(l => l.accountId || (Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0 || (l.description && l.description.trim().length > 0));
+
+    if (activeLines.length < 2) {
+      Swal.fire(
+        this.langService.t('accounting.journalEntryCreate.alerts.accountingWarning'),
+        this.langService.t('accounting.journalEntryCreate.alerts.minTwoLinesComplete'),
+        'warning'
+      );
+      return;
+    }
+
+    for (let i = 0; i < activeLines.length; i++) {
+      const line = activeLines[i];
       if (!line.accountId) {
         Swal.fire(
-          isAr ? 'تنبيه محاسبي' : 'Accounting Warning', 
-          isAr ? `يرجى اختيار الحساب المحاسبي للسطر رقم ${i + 1}` : `Select account for line #${i + 1}`, 
+          this.langService.t('accounting.journalEntryCreate.alerts.accountingWarning'), 
+          this.langService.t('accounting.journalEntryCreate.alerts.selectAccountRow', { row: i + 1 }), 
           'warning'
         );
         return;
@@ -1117,19 +1144,63 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
       const cred = Number(line.credit) || 0;
       if (deb === 0 && cred === 0) {
         Swal.fire(
-          isAr ? 'تنبيه محاسبي' : 'Accounting Warning', 
-          isAr ? `يجب إدخال قيمة في المدين أو الدائن للسطر رقم ${i + 1}` : `Enter debit or credit for line #${i + 1}`, 
+          this.langService.t('accounting.journalEntryCreate.alerts.accountingWarning'), 
+          this.langService.t('accounting.journalEntryCreate.alerts.enterDebitOrCreditRow', { row: i + 1 }), 
           'warning'
         );
         return;
       }
+
+      // Cost Center Policy Verification according to Modules Settings
+      const costCenterPolicy = this.modulesSettings.accountingSettings().costCenterPolicy;
+      if (costCenterPolicy === 'MandatoryAll' && !line.costCenterId && this.costCenters.length > 0) {
+        Swal.fire(
+          this.langService.t('accounting.journalEntryCreate.alerts.costCenterPolicy'),
+          this.langService.t('accounting.journalEntryCreate.alerts.costCenterMandatoryAll', { row: i + 1 }),
+          'warning'
+        );
+        return;
+      } else if (costCenterPolicy === 'MandatoryForIncomeAndExpense' && !line.costCenterId && this.costCenters.length > 0) {
+        const accCode = line.accountCode || '';
+        if ((accCode.startsWith('4') || accCode.startsWith('5')) && !line.costCenterId) {
+          Swal.fire(
+            this.langService.t('accounting.journalEntryCreate.alerts.costCenterPolicy'),
+            this.langService.t('accounting.journalEntryCreate.alerts.costCenterMandatoryRevExp', { row: i + 1, account: line.accountNameAr }),
+            'warning'
+          );
+          return;
+        }
+      }
+    }
+
+    // Backdated Entries Enforcement
+    const allowBackdated = this.modulesSettings.accountingSettings().allowBackdatedEntries;
+    const maxDays = this.modulesSettings.accountingSettings().maxBackdatedDays || 0;
+    const entryD = new Date(this.entryModel.entryDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = today.getTime() - entryD.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (!allowBackdated && diffDays > 0) {
+      Swal.fire(
+        this.langService.t('accounting.journalEntryCreate.alerts.backdatedProhibitedTitle'),
+        this.langService.t('accounting.journalEntryCreate.alerts.backdatedProhibitedText'),
+        'warning'
+      );
+      return;
+    } else if (allowBackdated && diffDays > maxDays) {
+      Swal.fire(
+        this.langService.t('accounting.journalEntryCreate.alerts.maxBackdatedLimitTitle'),
+        this.langService.t('accounting.journalEntryCreate.alerts.maxBackdatedLimitText', { days: maxDays }),
+        'warning'
+      );
+      return;
     }
 
     if (postImmediately && !this.isBalanced()) {
       Swal.fire(
-        isAr ? 'القيد غير متوازن!' : 'Unbalanced Entry!', 
-        isAr ? `لا يمكن ترحيل القيد مع وجود فارغ بمقدار ${this.difference()} SAR. يمكنك استخدام زر "موازنة تلقائية" لحل الفارق.` 
-             : `Cannot post unbalanced entry. Difference is ${this.difference()} SAR.`, 
+        this.langService.t('accounting.journalEntryCreate.alerts.unbalancedEntryTitle'), 
+        this.langService.t('accounting.journalEntryCreate.alerts.unbalancedEntryText', { diff: this.difference() }), 
         'error'
       );
       return;
@@ -1146,7 +1217,7 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
       descriptionEn: this.entryModel.descriptionEn || this.entryModel.descriptionAr,
       referenceNumber: this.entryModel.referenceNumber || undefined,
       postImmediately,
-      lines: currentLines.map(l => ({
+      lines: activeLines.map(l => ({
         accountId: l.accountId,
         costCenterId: l.costCenterId || undefined,
         description: l.description || this.entryModel.descriptionAr,
@@ -1164,12 +1235,13 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'success',
           title: postImmediately 
-            ? (isAr ? 'تم ترحيل القيد بنجاح! 🚀' : 'Entry Posted Successfully! 🚀')
-            : (isAr ? 'تم حفظ القيد كمسودة في السيرفر 📁' : 'Draft Saved to Server 📁'),
-          html: isAr 
-            ? `رقم القيد الصادر: <strong>${res.entryNumber}</strong><br>تم حفظ ${currentLines.length} أسطر محاسبية.` 
-            : `Entry Number: <strong>${res.entryNumber}</strong>`,
-          confirmButtonText: isAr ? 'العودة لدفتر القيود' : 'Back to Journal Entries'
+            ? this.langService.t('accounting.journalEntryCreate.alerts.entryPostedSuccessTitle')
+            : this.langService.t('accounting.journalEntryCreate.alerts.draftSavedSuccessTitle'),
+          html: this.langService.t('accounting.journalEntryCreate.alerts.entrySavedHtml', {
+            number: res.entryNumber,
+            lines: currentLines.length
+          }),
+          confirmButtonText: this.langService.t('accounting.journalEntryCreate.alerts.backToJournal')
         }).then(() => {
           this.router.navigate(['/accounting/journal-entries']);
         });
@@ -1178,8 +1250,8 @@ export class JournalEntryCreateComponent implements OnInit, OnDestroy {
         this.isSubmitting.set(false);
         Swal.fire({
           icon: 'error',
-          title: isAr ? 'فشل حفظ القيد على السيرفر' : 'Failed to Save Entry',
-          text: err?.error?.description || (isAr ? 'تعذر الاتصال بالخادم. القيد لا يزال محفوظاً بأمان في متصفحك محلياً.' : 'Server error. Draft safely stored locally.')
+          title: this.langService.t('accounting.journalEntryCreate.alerts.saveFailedTitle'),
+          text: err?.error?.description || this.langService.t('accounting.journalEntryCreate.alerts.saveFailedText')
         });
       }
     });

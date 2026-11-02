@@ -14,9 +14,12 @@ public record AuthResponseDto(
     string? CompanyNameAr,
     string? CompanyNameEn,
     string? CompanyLogoUrl,
-    string? BrandThemeColor);
+    string? BrandThemeColor,
+    string? RoleCode = null,
+    string? RoleNameAr = null,
+    List<string>? Permissions = null);
 
 public interface IJwtTokenService
 {
-    AuthResponseDto GenerateToken(User user, Company? company);
+    AuthResponseDto GenerateToken(User user, Company? company, CompanyRole? companyRole = null);
 }

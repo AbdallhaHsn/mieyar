@@ -6,13 +6,14 @@ import { AccountDto, AccountingStandardGuidance, AccountNature, AccountType, Cre
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
-import { Router } from '@angular/router';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { Router, RouterModule } from '@angular/router';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-chart-of-accounts',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, TranslatePipe],
   templateUrl: './chart-of-accounts.component.html',
   styleUrls: ['./chart-of-accounts.component.scss']
 })
@@ -22,7 +23,7 @@ export class ChartOfAccountsComponent implements OnInit {
   langService = inject(LanguageService);
   translator = inject(AccountingTranslatorService);
   private fb = inject(FormBuilder);
-  private router = inject(Router);
+  router = inject(Router);
 
   // Global Language Reactivity bound directly to Layout Navbar
   currentLang = computed(() => this.langService.currentLang());
@@ -188,16 +189,16 @@ export class ChartOfAccountsComponent implements OnInit {
         window.URL.revokeObjectURL(url);
         Swal.fire({
           icon: 'success',
-          title: this.currentLang() === 'ar' ? 'تم التصدير بنجاح' : 'Export Successful',
-          text: this.currentLang() === 'ar' ? 'تم تحميل ملف دليل الحسابات بنجاح بصيغة CSV المتوافقة مع Excel' : 'Chart of Accounts CSV downloaded successfully',
+          title: this.langService.t('accounting.chartOfAccounts.alerts.exportSuccess'),
+          text: this.langService.t('accounting.chartOfAccounts.alerts.exportSuccessText'),
           confirmButtonColor: '#0284c7'
         });
       },
       error: () => {
         Swal.fire({
           icon: 'error',
-          title: this.currentLang() === 'ar' ? 'خطأ في التصدير' : 'Export Failed',
-          text: this.currentLang() === 'ar' ? 'حدث خطأ أثناء تصدير شجرة الحسابات.' : 'Error exporting chart of accounts.',
+          title: this.langService.t('accounting.chartOfAccounts.alerts.exportFailed'),
+          text: this.langService.t('accounting.chartOfAccounts.alerts.exportFailedText'),
           confirmButtonColor: '#ef4444'
         });
       }
@@ -214,14 +215,15 @@ export class ChartOfAccountsComponent implements OnInit {
       if (csvText) {
         this.coaService.importCsv(csvText).subscribe({
           next: (res) => {
+            const isAr = this.currentLang() === 'ar';
             Swal.fire({
               icon: 'success',
-              title: this.currentLang() === 'ar' ? 'اكتمل الاستيراد بنجاح' : 'Import Complete',
+              title: this.langService.t('accounting.chartOfAccounts.alerts.importSuccess'),
               html: `
-                <div style="text-align: right; direction: rtl; font-family: Cairo, sans-serif; line-height: 1.8;">
-                  <p>✅ <strong>تم إنشاء:</strong> ${res.createdCount} حساب جديد</p>
-                  <p>🔄 <strong>تم تحديث:</strong> ${res.updatedCount} حساب سابق</p>
-                  ${res.errorCount > 0 ? `<p style="color: #ef4444;">⚠️ <strong>أخطاء:</strong> ${res.errorCount}</p>` : ''}
+                <div style="text-align: ${isAr ? 'right' : 'left'}; direction: ${isAr ? 'rtl' : 'ltr'}; font-family: inherit; line-height: 1.8;">
+                  <p>✅ <strong>${this.langService.t('accounting.chartOfAccounts.alerts.importCreated')}</strong> ${res.createdCount} ${this.langService.t('accounting.chartOfAccounts.alerts.newAccounts')}</p>
+                  <p>🔄 <strong>${this.langService.t('accounting.chartOfAccounts.alerts.importUpdated')}</strong> ${res.updatedCount} ${this.langService.t('accounting.chartOfAccounts.alerts.previousAccounts')}</p>
+                  ${res.errorCount > 0 ? `<p style="color: #ef4444;">⚠️ <strong>${this.langService.t('accounting.chartOfAccounts.alerts.importErrors')}</strong> ${res.errorCount}</p>` : ''}
                 </div>
               `,
               confirmButtonColor: '#10b981'
@@ -231,8 +233,8 @@ export class ChartOfAccountsComponent implements OnInit {
           error: (err) => {
             Swal.fire({
               icon: 'error',
-              title: this.currentLang() === 'ar' ? 'فشل الاستيراد' : 'Import Failed',
-              text: err.error?.description || 'فشل في استيراد البيانات من ملف CSV.',
+              title: this.langService.t('accounting.chartOfAccounts.alerts.importFailed'),
+              text: err.error?.description || this.langService.t('accounting.chartOfAccounts.alerts.importFailedDefault'),
               confirmButtonColor: '#ef4444'
             });
           }
@@ -253,6 +255,15 @@ export class ChartOfAccountsComponent implements OnInit {
     }
   }
 
+  goToStatement(account: AccountDto, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.router.navigate(['/accounting/account-statement'], {
+      queryParams: { accountId: account.id }
+    });
+  }
+
   renameAccount(node: AccountDto, event?: Event): void {
     if (event) {
       event.stopPropagation();
@@ -261,78 +272,98 @@ export class ChartOfAccountsComponent implements OnInit {
     const isEn = this.currentLang() === 'en';
 
     Swal.fire({
-      title: isEn ? 'Edit / Rename Account' : 'تعديل وإعادة تسمية الحساب',
+      title: this.langService.t('accounting.chartOfAccounts.alerts.editTitle'),
       html: `
-        <div style="font-family: inherit; text-align: right; direction: ${isEn ? 'ltr' : 'rtl'}; padding: 0.25rem 0;">
+        <div style="font-family: inherit; text-align: ${isEn ? 'left' : 'right'}; direction: ${isEn ? 'ltr' : 'rtl'}; padding: 0.25rem 0;">
           <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 0.5rem 0.8rem; border-radius: 8px; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
             <span style="font-weight: 700; font-family: monospace; color: #0284C7; font-size: 0.95rem;">${node.accountCode}</span>
-            <span style="font-size: 0.75rem; color: #64748B;">${isEn ? 'Level ' + node.level : 'المستوى ' + node.level}</span>
+            <span style="font-size: 0.75rem; color: #64748B;">${this.langService.t('accounting.chartOfAccounts.alerts.levelLabel', { level: node.level })}</span>
           </div>
 
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-            ${isEn ? 'Account Name (Arabic):' : 'اسم الحساب باللغة العربية:'}
+          <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+            <span>${this.langService.t('accounting.chartOfAccounts.alerts.accountName')}</span>
+            <span id="swal-trans-badge" style="font-size: 0.72rem; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+              ${node.nameEn || node.nameAr || ''}
+            </span>
           </label>
           <input 
-            id="swal-name-ar" 
+            id="swal-unified-name" 
             class="swal2-input" 
             style="width: 100%; margin: 0 0 0.75rem 0; font-size: 0.875rem; height: 38px; border-radius: 6px; box-sizing: border-box;" 
-            value="${node.nameAr || ''}" 
-            placeholder="الاسم بالعربية..."
+            value="${node.nameAr || node.nameEn || ''}" 
+            placeholder="${this.langService.t('accounting.chartOfAccounts.alerts.accountNamePlaceholder')}" 
           />
 
           <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-            ${isEn ? 'Account Name (English):' : 'اسم الحساب باللغة الإنجليزية:'}
-          </label>
-          <input 
-            id="swal-name-en" 
-            class="swal2-input" 
-            style="width: 100%; margin: 0 0 0.75rem 0; font-size: 0.875rem; height: 38px; border-radius: 6px; box-sizing: border-box;" 
-            value="${node.nameEn || ''}" 
-            placeholder="Account Name in English..." 
-            dir="ltr"
-          />
-
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
-            ${isEn ? 'Description / Notes (Optional):' : 'ملاحظات وتوجيه (اختياري):'}
+            ${this.langService.t('accounting.chartOfAccounts.alerts.notesLabel')}
           </label>
           <textarea 
             id="swal-desc" 
             class="swal2-textarea" 
             style="width: 100%; margin: 0; font-size: 0.825rem; height: 55px; border-radius: 6px; box-sizing: border-box; resize: none;" 
-            placeholder="${isEn ? 'Notes...' : 'شرح أو ملاحظات توجيهية...'}"
+            placeholder="${this.langService.t('accounting.chartOfAccounts.alerts.notesPlaceholder')}"
           >${node.description || ''}</textarea>
         </div>
       `,
       showCancelButton: true,
       confirmButtonColor: '#10B981',
       cancelButtonColor: '#64748B',
-      confirmButtonText: isEn ? 'Save Changes' : 'حفظ التعديلات',
-      cancelButtonText: isEn ? 'Cancel' : 'إلغاء',
+      confirmButtonText: this.langService.t('accounting.chartOfAccounts.alerts.saveChanges'),
+      cancelButtonText: this.langService.t('common.cancel'),
       focusConfirm: false,
       didOpen: () => {
-        const arInput = document.getElementById('swal-name-ar') as HTMLInputElement;
-        const enInput = document.getElementById('swal-name-en') as HTMLInputElement;
+        const input = document.getElementById('swal-unified-name') as HTMLInputElement;
+        const badge = document.getElementById('swal-trans-badge') as HTMLElement;
+        let debounceTimer: any;
 
-        if (arInput && enInput) {
-          arInput.addEventListener('blur', () => {
-            if (arInput.value.trim() && !enInput.value.trim()) {
-              enInput.value = this.translator.translateArabicToEnglish(arInput.value.trim());
+        if (input) {
+          input.addEventListener('input', () => {
+            const val = input.value.trim();
+            if (!val) {
+              if (badge) badge.innerText = '';
+              return;
+            }
+
+            const isAr = this.translator.containsArabic(val);
+            if (isAr) {
+              const instantEn = this.translator.translateArabicToEnglish(val);
+              if (badge) badge.innerText = `EN: ${instantEn}`;
+              clearTimeout(debounceTimer);
+              debounceTimer = setTimeout(async () => {
+                const onlineEn = await this.translator.translateOnline(val, 'ar', 'en');
+                if (onlineEn && badge) badge.innerText = `EN: ${onlineEn}`;
+              }, 450);
+            } else {
+              const instantAr = this.translator.translateEnglishToArabic(val);
+              if (badge) badge.innerText = `AR: ${instantAr}`;
+              clearTimeout(debounceTimer);
+              debounceTimer = setTimeout(async () => {
+                const onlineAr = await this.translator.translateOnline(val, 'en', 'ar');
+                if (onlineAr && badge) badge.innerText = `AR: ${onlineAr}`;
+              }, 450);
             }
           });
         }
       },
-      preConfirm: () => {
-        const nameAr = (document.getElementById('swal-name-ar') as HTMLInputElement)?.value?.trim();
-        const nameEn = (document.getElementById('swal-name-en') as HTMLInputElement)?.value?.trim();
+      preConfirm: async () => {
+        const val = (document.getElementById('swal-unified-name') as HTMLInputElement)?.value?.trim();
         const description = (document.getElementById('swal-desc') as HTMLTextAreaElement)?.value?.trim();
 
-        if (!nameAr) {
-          Swal.showValidationMessage(isEn ? 'Arabic name is required' : 'يرجى إدخال اسم الحساب بالعربية');
+        if (!val) {
+          Swal.showValidationMessage(this.langService.t('accounting.chartOfAccounts.alerts.nameRequired'));
           return false;
         }
-        if (!nameEn) {
-          Swal.showValidationMessage(isEn ? 'English name is required' : 'يرجى إدخال اسم الحساب بالإنجليزية');
-          return false;
+
+        const isAr = this.translator.containsArabic(val);
+        let nameAr = '';
+        let nameEn = '';
+
+        if (isAr) {
+          nameAr = val;
+          nameEn = await this.translator.translateOnline(val, 'ar', 'en') || this.translator.translateArabicToEnglish(val);
+        } else {
+          nameEn = val;
+          nameAr = await this.translator.translateOnline(val, 'en', 'ar') || this.translator.translateEnglishToArabic(val);
         }
 
         return { nameAr, nameEn, description };
@@ -348,23 +379,23 @@ export class ChartOfAccountsComponent implements OnInit {
         }).subscribe({
           next: () => {
             Swal.fire({
-              title: isEn ? 'Updated Successfully' : 'تم تعديل الحساب بنجاح',
-              text: isEn ? `Account (${node.accountCode}) details have been updated.` : `تم حفظ وتعديل مسميات الحساب (${node.accountCode}) بنجاح.`,
+              title: this.langService.t('accounting.chartOfAccounts.alerts.updateSuccess'),
+              text: this.langService.t('accounting.chartOfAccounts.alerts.updateSuccessText', { code: node.accountCode }),
               icon: 'success',
               confirmButtonColor: '#059669',
-              confirmButtonText: isEn ? 'OK' : 'حسناً',
+              confirmButtonText: this.langService.t('common.ok'),
               timer: 1800,
               timerProgressBar: true
             });
           },
           error: (err) => {
-            const msg = err.error?.description || (isEn ? 'Failed to update account.' : 'تعذر تحديث بيانات الحساب.');
+            const msg = err.error?.description || this.langService.t('accounting.chartOfAccounts.alerts.updateErrorDefault');
             Swal.fire({
-              title: isEn ? 'Update Error' : 'خطأ أثناء التعديل',
+              title: this.langService.t('accounting.chartOfAccounts.alerts.updateError'),
               text: msg,
               icon: 'error',
               confirmButtonColor: '#059669',
-              confirmButtonText: isEn ? 'OK' : 'موافق'
+              confirmButtonText: this.langService.t('common.ok')
             });
           }
         });
@@ -378,17 +409,16 @@ export class ChartOfAccountsComponent implements OnInit {
     }
 
     const isEn = this.currentLang() === 'en';
+    const accDisplayName = isEn ? (node.nameEn || node.nameAr) : node.nameAr;
 
     // Rule 1: Root accounts protection
     if (node.level === 1) {
       Swal.fire({
-        title: isEn ? 'Protected Root Account' : 'حساب رئيسي جذري محمي',
-        text: isEn 
-          ? 'Level 1 root categories (Assets, Liabilities, Equity, Revenues, Expenses) cannot be deleted as they form the foundational architecture of the General Ledger.'
-          : 'الحسابات الجذرية للمستوى الأول (مثل الأصول، الخصوم، حقوق الملكية، الإيرادات، المصروفات) تمثل الهيكل الأساسي للنظام المحاسبي ولا يمكن حذفها للحفاظ على التوازن المالي.',
+        title: this.langService.t('accounting.chartOfAccounts.alerts.protectedRootTitle'),
+        text: this.langService.t('accounting.chartOfAccounts.alerts.protectedRootText'),
         icon: 'info',
         confirmButtonColor: '#059669',
-        confirmButtonText: isEn ? 'Understood' : 'حسناً، مفهوم'
+        confirmButtonText: this.langService.t('accounting.chartOfAccounts.alerts.understood')
       });
       return;
     }
@@ -397,36 +427,34 @@ export class ChartOfAccountsComponent implements OnInit {
     if (node.hasChildren || (node.subAccounts && node.subAccounts.length > 0)) {
       const count = node.subAccounts ? node.subAccounts.length : 0;
       Swal.fire({
-        title: isEn ? 'Cannot Delete Group Account' : 'لا يمكن حذف الحساب حالياً',
+        title: this.langService.t('accounting.chartOfAccounts.alerts.cannotDeleteGroupTitle'),
         html: `
           <div style="font-family: inherit; text-align: center; padding: 0.5rem 0;">
             <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">
-              ${node.accountCode} - ${isEn ? (node.nameEn || node.nameAr) : node.nameAr}
+              ${node.accountCode} - ${accDisplayName}
             </div>
             <p style="color: #475569; font-size: 0.85rem; line-height: 1.6; margin: 0;">
-              ${isEn 
-                ? `This is a group account containing <b>${count}</b> sub-account(s). To delete it, you must first delete or reassign all its dependent sub-accounts.`
-                : `هذا الحساب تجميعي يحتوي على <b>${count}</b> حسابات فرعية تابعة له.<br><br>لحذف هذا الحساب، يرجى حذف كافة الحسابات الفرعية التابعة له أولاً ثم تكرار العملية.`}
+              ${this.langService.t('accounting.chartOfAccounts.alerts.cannotDeleteGroupText', { count })}
             </p>
           </div>
         `,
         icon: 'warning',
         confirmButtonColor: '#0284c7',
-        confirmButtonText: isEn ? 'OK, Understood' : 'حسناً، فهمت'
+        confirmButtonText: this.langService.t('accounting.chartOfAccounts.alerts.understood')
       });
       return;
     }
 
     // Rule 3: Valid to delete (leaf or empty group)
     Swal.fire({
-      title: isEn ? 'Delete Account?' : 'هل أنت متأكد من حذف الحساب؟',
+      title: this.langService.t('accounting.chartOfAccounts.alerts.confirmDeleteAccount'),
       html: `
         <div style="font-family: inherit; text-align: center; padding: 0.5rem 0;">
           <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.4rem;">
-            ${node.accountCode} - ${isEn ? (node.nameEn || node.nameAr) : node.nameAr}
+            ${node.accountCode} - ${accDisplayName}
           </div>
           <p style="color: #ef4444; font-size: 0.85rem; margin: 0; font-weight: 600;">
-            ${isEn ? 'This action is permanent and cannot be undone.' : 'هذا الإجراء نهائي ولا يمكن التراجع عنه.'}
+            ${this.langService.t('accounting.chartOfAccounts.alerts.permanentActionWarning')}
           </p>
         </div>
       `,
@@ -434,8 +462,8 @@ export class ChartOfAccountsComponent implements OnInit {
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#64748b',
-      confirmButtonText: isEn ? 'Yes, Delete Permanently' : 'نعم، حذف الحساب نهائياً',
-      cancelButtonText: isEn ? 'Cancel' : 'إلغاء',
+      confirmButtonText: this.langService.t('accounting.chartOfAccounts.alerts.yesDeletePermanently'),
+      cancelButtonText: this.langService.t('common.cancel'),
       reverseButtons: true,
       focusCancel: true
     }).then((result) => {
@@ -443,23 +471,27 @@ export class ChartOfAccountsComponent implements OnInit {
         this.coaService.deleteAccount(node.id).subscribe({
           next: () => {
             Swal.fire({
-              title: isEn ? 'Deleted Successfully' : 'تم الحذف بنجاح',
-              text: isEn ? `Account (${node.accountCode}) has been removed.` : `تم حذف الحساب (${node.accountCode} - ${node.nameAr}) من شجرة الحسابات بنجاح.`,
+              title: this.langService.t('accounting.chartOfAccounts.alerts.deleteSuccess'),
+              text: this.langService.t('accounting.chartOfAccounts.alerts.deleteSuccessText', { code: node.accountCode, name: accDisplayName }),
               icon: 'success',
               confirmButtonColor: '#059669',
-              confirmButtonText: isEn ? 'OK' : 'حسناً',
+              confirmButtonText: this.langService.t('common.ok'),
               timer: 2000,
               timerProgressBar: true
             });
+            const company = this.companyContext.activeCompany();
+            if (company && company.id) {
+              this.coaService.loadAccountsTree(company.id).subscribe();
+            }
           },
           error: (err) => {
-            const msg = err.error?.description || (isEn ? 'Could not delete account. Make sure it has no dependent sub-accounts.' : 'تعذر حذف الحساب. يرجى التأكد من عدم وجود حسابات فرعية تابعة له.');
+            const msg = err.error?.description || this.langService.t('accounting.chartOfAccounts.alerts.cannotDeleteAccountDefault');
             Swal.fire({
-              title: isEn ? 'Cannot Delete Account' : 'تعذر حذف الحساب',
+              title: this.langService.t('accounting.chartOfAccounts.alerts.cannotDeleteAccount'),
               text: msg,
               icon: 'error',
               confirmButtonColor: '#059669',
-              confirmButtonText: isEn ? 'OK' : 'موافق'
+              confirmButtonText: this.langService.t('common.ok')
             });
           }
         });

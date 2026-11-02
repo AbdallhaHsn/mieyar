@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface FiscalPeriod {
   id: string;
@@ -97,7 +98,7 @@ export interface YearEndClosingResult {
 })
 export class FinancialSettingsService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api/financial-settings';
+  private apiUrl = `${environment.apiUrl}/api/financial-settings`;
 
   getOverview(companyId?: string): Observable<FinancialSettingsOverview> {
     const url = companyId ? `${this.apiUrl}?companyId=${companyId}` : this.apiUrl;

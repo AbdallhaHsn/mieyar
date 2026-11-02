@@ -2,15 +2,22 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, map } from 'rxjs/operators';
 import { CompanyContextService, Company } from './company-context.service';
+import { LanguageService } from './language.service';
+import { environment } from '../../../environments/environment';
+
+import Swal from 'sweetalert2';
 
 export interface CurrentUser {
   id: string;
   userName: string;
   fullNameAr: string;
   fullNameEn: string;
-  role: 'SuperAdmin' | 'CompanyAdmin' | 'Accountant' | 'FinancialAuditor';
+  role: 'SuperAdmin' | 'CompanyAdmin' | 'Accountant' | 'FinancialAuditor' | 'Salesperson' | string;
+  roleCode?: string;
+  roleNameAr?: string;
+  permissions?: string[];
   tenantId?: string;
   companyNameAr?: string;
   companyNameEn?: string;
@@ -33,6 +40,7 @@ export class AuthService {
   private router = inject(Router);
   private http = inject(HttpClient);
   private companyContext = inject(CompanyContextService);
+  private langService = inject(LanguageService);
 
   private readonly STORAGE_KEY = 'alrobban_user';
   private readonly TOKEN_KEY = 'alrobban_token';
@@ -41,14 +49,28 @@ export class AuthService {
   currentUser = signal<CurrentUser | null>(this.getStoredUser());
 
   isSuperAdmin = computed(() => this.currentUser()?.role === 'SuperAdmin');
-  isCompanyAdmin = computed(() => this.currentUser()?.role === 'CompanyAdmin');
+  isCompanyAdmin = computed(() => this.currentUser()?.role === 'CompanyAdmin' || this.currentUser()?.roleCode === 'COMPANY_ADMIN');
+  isSalesperson = computed(() => this.currentUser()?.role === 'Salesperson' || this.currentUser()?.roleCode === 'SALES_REP');
+  isAccountant = computed(() => this.currentUser()?.role === 'Accountant' || this.currentUser()?.roleCode === 'ACCOUNTANT' || this.currentUser()?.roleCode === 'FINANCE_MANAGER');
   isAuthenticated = computed(() => !!this.currentUser());
 
-  constructor() {
-    // If a user was restored from storage, re-apply branding
+  hasPermission(perm: string): boolean {
     const user = this.currentUser();
-    if (user && user.brandThemeColor) {
-      this.companyContext.applyBrandColor(user.brandThemeColor);
+    if (!user) return false;
+    if (this.isSuperAdmin() || this.isCompanyAdmin()) return true;
+    if (!user.permissions || user.permissions.length === 0) return true;
+    return user.permissions.includes(perm);
+  }
+
+  constructor() {
+    // If a user was restored from storage, re-apply branding and synchronize company context
+    const user = this.currentUser();
+    if (user) {
+      if (user.tenantId) {
+        this.companyContext.setCompanyFromUser(user);
+      } else if (user.brandThemeColor) {
+        this.companyContext.applyBrandColor(user.brandThemeColor);
+      }
     }
   }
 
@@ -66,107 +88,44 @@ export class AuthService {
    * Authenticates either Platform Owner (SuperAdmin) or Tenant Enterprise
    */
   login(req: LoginRequest): Observable<{ success: boolean; user?: CurrentUser; error?: string }> {
-    // Attempt backend authentication
-    const endpoint = 'http://localhost:5000/api/auth/login';
+    const endpoint = `${environment.apiUrl}/api/auth/login`;
     
     return this.http.post<any>(endpoint, {
-      userName: req.username,
+      userNameOrEmail: req.username,
       password: req.password
     }).pipe(
-      tap((res) => {
-        if (res && res.token) {
+      map((res) => {
+        if (res && res.token && (res.user || res.userId || res.userName)) {
+          const u = res.user || res;
           const user: CurrentUser = {
-            id: res.user.id,
-            userName: res.user.userName,
-            fullNameAr: res.user.fullNameAr,
-            fullNameEn: res.user.fullNameEn,
-            role: res.user.role,
-            tenantId: res.user.tenantId,
-            token: res.token
+            id: u.id || u.userId,
+            userName: u.userName,
+            fullNameAr: u.fullNameAr,
+            fullNameEn: u.fullNameEn,
+            role: u.role,
+            roleCode: u.roleCode,
+            roleNameAr: u.roleNameAr,
+            permissions: u.permissions || [],
+            tenantId: u.tenantId,
+            token: res.token,
+            companyNameAr: u.companyNameAr,
+            companyNameEn: u.companyNameEn,
+            companyLogoUrl: u.companyLogoUrl,
+            brandThemeColor: u.brandColor || u.brandThemeColor
           };
           this.setSession(user);
+          if (user.tenantId) {
+            this.companyContext.setCompanyFromUser(user);
+          }
+          return { success: true, user };
         }
+        return { success: false, error: this.langService.t('auth.login.responseIncomplete') };
       }),
-      catchError(() => {
-        // Fallback for seamless offline/demo preview if backend is not seeded or returns 401
-        return of(this.mockLogin(req));
+      catchError((err) => {
+        const msg = err?.error?.description || err?.error?.message || this.langService.t('auth.login.failedDefault');
+        return of({ success: false, error: msg });
       })
     );
-  }
-
-  /**
-   * Seamless mock login for previewing both Platform Owner and Tenant modes
-   */
-  mockLogin(req: LoginRequest): { success: boolean; user?: CurrentUser; error?: string } {
-    if (req.isPlatformOwner) {
-      // Platform Owner (الشركة المالكة للمشروع)
-      const user: CurrentUser = {
-        id: '00000000-0000-0000-0000-000000000001',
-        userName: req.username || 'admin',
-        fullNameAr: 'الشركة المالكة - مدير المنصة',
-        fullNameEn: 'Platform Owner - Super Admin',
-        role: 'SuperAdmin',
-        brandThemeColor: '#0f766e'
-      };
-      this.setSession(user);
-      return { success: true, user };
-    } else {
-      // Tenant Company User (الشركات المستأجرة)
-      const user: CurrentUser = {
-        id: '11111111-2222-3333-4444-555555555555',
-        userName: req.username || 'alkhaleej_admin',
-        fullNameAr: 'شركة الخليج للتقنية - المدير المالي',
-        fullNameEn: 'Al-Khaleej Tech - Financial Admin',
-        role: 'CompanyAdmin',
-        tenantId: '11111111-2222-3333-4444-555555555555',
-        companyNameAr: 'شركة الخليج للحلول والتقنية المحدودة',
-        companyNameEn: 'Al-Khaleej Solutions & Tech Ltd.',
-        brandThemeColor: '#2563eb'
-      };
-
-      // Set tenant company context
-      this.companyContext.setCompany({
-        id: '11111111-2222-3333-4444-555555555555',
-        code: req.tenantCode || 'KHALEEJ-01',
-        nameAr: 'شركة الخليج للحلول والتقنية المحدودة',
-        nameEn: 'Al-Khaleej Solutions & Tech Ltd.',
-        vatNumber: '310987654300003',
-        commercialRegistration: '1010998877',
-        currencyCode: 'SAR',
-        brandThemeColor: '#2563eb',
-        branches: [
-          {
-            id: 'b-kh-1',
-            code: 'MAIN',
-            nameAr: 'الفرع الرئيسي - الرياض',
-            nameEn: 'Main Branch - Riyadh',
-            isMainBranch: true
-          },
-          {
-            id: 'b-kh-2',
-            code: 'JED',
-            nameAr: 'فرع جدة والموانئ',
-            nameEn: 'Jeddah & Ports Branch',
-            isMainBranch: false
-          }
-        ],
-        fiscalYears: [
-          {
-            id: 'fy-2026',
-            yearNumber: 2026,
-            nameAr: 'السنة المالية 2026',
-            nameEn: 'Fiscal Year 2026',
-            startDate: '2026-01-01',
-            endDate: '2026-12-31',
-            isClosed: false,
-            periods: []
-          }
-        ]
-      });
-
-      this.setSession(user);
-      return { success: true, user };
-    }
   }
 
   private setSession(user: CurrentUser) {
@@ -177,24 +136,53 @@ export class AuthService {
     }
   }
 
+  private isHandlingExpiry = false;
+
+  /**
+   * Graceful session expiration handler
+   * Notifies user with SweetAlert2, saves return URL, and navigates to login
+   */
+  handleSessionExpired() {
+    if (this.isHandlingExpiry) return;
+    this.isHandlingExpiry = true;
+
+    // Capture current URL so user can seamlessly resume work after re-login
+    const currentUrl = this.router.url;
+    if (currentUrl && !currentUrl.includes('/login')) {
+      sessionStorage.setItem('alrobban_return_url', currentUrl);
+    }
+
+    this.currentUser.set(null);
+    localStorage.removeItem(this.STORAGE_KEY);
+    localStorage.removeItem(this.TOKEN_KEY);
+    this.companyContext.clear();
+
+    Swal.fire({
+      icon: 'warning',
+      title: this.langService.t('auth.sessionExpired.title'),
+      html: `
+        <div style="font-size: 0.95rem; color: #475569; line-height: 1.6;">
+          <p style="margin-bottom: 0.5rem;">${this.langService.t('auth.sessionExpired.text1')}</p>
+          <p style="font-weight: 600; color: #0f172a;">${this.langService.t('auth.sessionExpired.text2')}</p>
+        </div>
+      `,
+      confirmButtonText: this.langService.t('auth.sessionExpired.reloginBtn'),
+      confirmButtonColor: '#059669',
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    }).then(() => {
+      this.isHandlingExpiry = false;
+      this.router.navigate(['/login']);
+    });
+  }
+
   logout() {
     this.currentUser.set(null);
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem(this.TOKEN_KEY);
+    sessionStorage.removeItem('alrobban_return_url');
+    this.companyContext.clear();
     this.router.navigate(['/login']);
-  }
-
-  loginAsSuperAdmin() {
-    const user: CurrentUser = {
-      id: '00000000-0000-0000-0000-000000000001',
-      userName: 'admin',
-      fullNameAr: 'الشركة المالكة - مدير المنصة',
-      fullNameEn: 'Platform Owner - Super Admin',
-      role: 'SuperAdmin',
-      brandThemeColor: '#0f766e'
-    };
-    this.setSession(user);
-    this.companyContext.applyBrandColor('#0f766e');
   }
 
   loginAsCompanyAdmin(tenant: {
@@ -220,6 +208,7 @@ export class AuthService {
       brandThemeColor: tenant.brandColor
     };
     this.setSession(user);
+    this.companyContext.setCompanyFromUser(user);
     if (tenant.brandColor) {
       this.companyContext.applyBrandColor(tenant.brandColor);
     }
