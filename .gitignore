@@ -47,3 +47,6 @@ scratch/
 certs/
 *.pem
 src/Bootstrapper/AlRobban.WebAPI/appsettings.Development.json
+
+# Separate standalone project
+portfolio/
