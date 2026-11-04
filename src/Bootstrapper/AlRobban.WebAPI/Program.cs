@@ -217,7 +217,7 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // Configure Middleware Pipeline
-if (app.Environment.IsDevelopment())
+// تمكين Swagger UI في جميع البيئات (Development و Production) للمعاينة والاختبار السهل
 {
     // Swagger UI bundle parser compatibility fix: Swashbuckle + Microsoft.OpenApi outputs "openapi": "3.0.4"
     // which bundled Swagger UI regex rejects with "The provided definition does not specify a valid version field".
