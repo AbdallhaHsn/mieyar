@@ -16,6 +16,7 @@ import { InvoicesService } from '../../../core/services/invoices.service';
 import { AccountDto } from '../../../core/models/account.model';
 import { AccountPickerComponent } from '../../../shared/components/account-picker/account-picker.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TenantManagementService, CompanyQuotaDto } from '../../../core/services/tenant-management.service';
 
 export interface WarehouseItemAnalyticsDto {
   itemId: string;
@@ -58,6 +59,15 @@ export class WarehousesComponent implements OnInit {
   private coaService = inject(ChartOfAccountsService);
   public purchasingService = inject(PurchasingService);
   public invoicesService = inject(InvoicesService);
+  private tenantService = inject(TenantManagementService);
+
+  // License Quota State
+  licenseQuota = signal<CompanyQuotaDto | null>(null);
+  isWarehouseQuotaFull = computed(() => {
+    const q = this.licenseQuota();
+    if (!q || q.maxWarehouses === null) return false;
+    return (q.usedWarehouses ?? 0) >= q.maxWarehouses;
+  });
 
   isLoading = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
@@ -345,6 +355,14 @@ export class WarehousesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    this.loadQuota();
+  }
+
+  loadQuota(): void {
+    this.tenantService.getCurrentLicenseQuota().subscribe({
+      next: (q) => this.licenseQuota.set(q),
+      error: () => {}
+    });
   }
 
   get currentCompanyId(): string {
@@ -384,6 +402,16 @@ export class WarehousesComponent implements OnInit {
   }
 
   openAddModal(): void {
+    if (this.isWarehouseQuotaFull()) {
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('companies.portal.quotaFullWarning'),
+        confirmButtonColor: '#059669'
+      });
+      return;
+    }
+
     this.warehouseForm = this.getEmptyForm();
     if (this.branches().length > 0) {
       this.warehouseForm.branchId = this.branches()[0].id;
@@ -520,7 +548,25 @@ export class WarehousesComponent implements OnInit {
         },
         error: (err) => {
           this.isSubmitting.set(false);
-          this.errorMessage.set(err?.error?.description || err?.error?.message || this.langService.t('inventory.warehouses.alerts.warehouseSaveFailed'));
+          const desc = err?.error?.description || err?.error?.message || this.langService.t('inventory.warehouses.alerts.warehouseSaveFailed');
+          this.errorMessage.set(desc);
+          if (err?.error?.code === 'License.LimitReached') {
+            const limit = err.error?.limit ?? '';
+            const msg = this.langService.t('companies.portal.licenseLimitReachedWarehouses').replace('{limit}', limit.toString());
+            Swal.fire({
+              icon: 'warning',
+              title: this.langService.t('common.warning'),
+              text: msg,
+              confirmButtonColor: '#059669'
+            });
+          } else if (err?.error?.code === 'License.Expired') {
+            Swal.fire({
+              icon: 'warning',
+              title: this.langService.t('common.warning'),
+              text: this.langService.t('companies.portal.licenseExpiredNotice'),
+              confirmButtonColor: '#059669'
+            });
+          }
         }
       });
     }
@@ -533,7 +579,7 @@ export class WarehousesComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('inventory.warehouses.alerts.cannotDeleteDefault'),
         confirmButtonText: this.langService.t('inventory.warehouses.alerts.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -673,7 +719,7 @@ export class WarehousesComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('inventory.warehouses.alerts.coaNotLoaded'),
         confirmButtonText: this.langService.t('inventory.warehouses.alerts.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -854,7 +900,7 @@ export class WarehousesComponent implements OnInit {
         title: this.langService.t('inventory.warehouses.alerts.clipboardEmptyTitle'),
         text: this.langService.t('inventory.warehouses.alerts.clipboardEmptyText'),
         confirmButtonText: this.langService.t('inventory.warehouses.alerts.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

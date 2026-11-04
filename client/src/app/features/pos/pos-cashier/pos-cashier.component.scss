@@ -710,7 +710,7 @@
       color: #ffffff;
 
       &:hover:not(:disabled) {
-        background: #0369a1;
+        background: #047857;
         box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
       }
     }
@@ -1096,8 +1096,90 @@
 .text-orange { color: #fbbf24 !important; }
 .text-danger { color: #ef4444 !important; }
 
+/* Utility & Shift Modal Classes */
+.d-flex { display: flex !important; }
+.justify-content-between { justify-content: space-between !important; }
+.align-items-center { align-items: center !important; }
+.fw-bold { font-weight: 700 !important; }
+.fs-5 { font-size: 1.05rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-3 { margin-top: 0.85rem !important; }
+.mb-3 { margin-bottom: 0.85rem !important; }
+.p-2 { padding: 0.5rem !important; }
+.p-3 { padding: 0.85rem !important; }
+.rounded { border-radius: 8px !important; }
+.border { border: 1px solid #e2e8f0 !important; }
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  border: 1px solid transparent;
+}
+.alert-info {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.alert-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.alert-success {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+.alert-danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+@media (max-width: 1024px) {
+  :host {
+    height: auto;
+    overflow: visible;
+  }
+  .pos-screen-container {
+    height: auto;
+    overflow: visible;
+  }
+  .pos-topbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+  }
+  .pos-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+}
+
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
   70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
+  }
 }

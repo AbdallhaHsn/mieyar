@@ -17,6 +17,7 @@ import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts
 import { FinancialSettingsService, CostCenter } from '../../../core/services/financial-settings.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
 import { AccountDto } from '../../../core/models/account.model';
 import { TafqeetService } from '../../../core/services/tafqeet.service';
 import Swal from 'sweetalert2';
@@ -193,7 +194,6 @@ interface EditLine {
             <tr>
               <th>{{ 'accounting.journal.ui.entryNo' | translate }}</th>
               <th>{{ 'accounting.journal.ui.date' | translate }}</th>
-              <th>{{ 'accounting.journal.ui.period' | translate }}</th>
               <th class="col-desc-head">{{ 'accounting.journal.ui.description' | translate }}</th>
               <th>{{ 'accounting.journal.ui.reference' | translate }}</th>
               <th>{{ 'accounting.journal.ui.debit' | translate }}</th>
@@ -209,9 +209,6 @@ interface EditLine {
                 <span class="jv-pill" (click)="viewEntry(item)">{{ item.entryNumber }}</span>
               </td>
               <td>{{ item.entryDate | date:'yyyy-MM-dd' }}</td>
-              <td>
-                <span class="period-badge">{{ item.fiscalPeriodNameAr }}</span>
-              </td>
               <td class="col-desc" [title]="item.descriptionAr">
                 <strong>{{ langService.currentLang() === 'ar' ? item.descriptionAr : item.descriptionEn }}</strong>
               </td>
@@ -438,7 +435,7 @@ interface EditLine {
                 <input 
                   type="text" 
                   class="form-input" 
-                  [(ngModel)]="newRecurringModel.descriptionAr" 
+                  [(ngModel)]="newRecurringModel.descriptionAr" (ngModelChange)="onRecurringDescArChange($event)" 
                   [placeholder]="'accounting.journal.ui.arabicAccountingDescription1' | translate" 
                   required />
               </div>
@@ -618,7 +615,7 @@ interface EditLine {
 
               <div class="form-field col-span-2">
                 <label>{{ 'accounting.journal.ui.generalDescriptionAr' | translate }}</label>
-                <input type="text" class="form-input" [(ngModel)]="newEntryModel.descriptionAr" [placeholder]="'ui.journalEntries.078897' | translate" />
+                <input type="text" class="form-input" [(ngModel)]="newEntryModel.descriptionAr" (ngModelChange)="onEntryDescArChange($event)" [placeholder]="'ui.journalEntries.078897' | translate" />
               </div>
 
               <div class="form-field">
@@ -947,7 +944,6 @@ interface EditLine {
                   <h1 class="voucher-title-main">
                     {{ 'accounting.journal.ui.generalJournalVoucher' | translate }}
                   </h1>
-                  <span class="voucher-title-sub">{{ 'ui.journalEntries.ac5cc3' | translate }}</span>
                 </div>
 
                 <!-- Left: Verification QR & System Seal -->
@@ -995,7 +991,6 @@ interface EditLine {
                       <rect x="66" y="88" width="6" height="6" fill="#0f172a" />
                       <rect x="80" y="88" width="6" height="6" fill="#0f172a" />
                     </svg>
-                    <span class="qr-text">{{ 'ui.journalEntries.a25961' | translate }}</span>
                   </div>
                 </div>
               </header>
@@ -3021,6 +3016,21 @@ export class JournalEntriesComponent implements OnInit {
   private activeRoute = inject(ActivatedRoute);
   companyContext = inject(CompanyContextService);
   langService = inject(LanguageService);
+  translator = inject(AccountingTranslatorService);
+
+  onEntryDescArChange(val: string) {
+    this.newEntryModel.descriptionAr = val;
+    if (val && val.trim()) {
+      this.newEntryModel.descriptionEn = this.translator.translateArabicToEnglish(val);
+    }
+  }
+
+  onRecurringDescArChange(val: string) {
+    this.newRecurringModel.descriptionAr = val;
+    if (val && val.trim()) {
+      this.newRecurringModel.descriptionEn = this.translator.translateArabicToEnglish(val);
+    }
+  }
 
   loading = signal<boolean>(true);
   submitting = signal<boolean>(false);

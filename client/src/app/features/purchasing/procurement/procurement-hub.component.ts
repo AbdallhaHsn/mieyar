@@ -22,6 +22,7 @@ import {
   PayPurchaseInvoiceRequest
 } from '../../../core/services/purchasing.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { AccountingTranslatorService } from '../../../core/services/accounting-translator.service';
 import { tafqeet } from '../../../core/utils/tafqeet';
 import Swal from 'sweetalert2';
@@ -49,6 +50,7 @@ export class ProcurementHubComponent implements OnInit {
   private http = inject(HttpClient);
   public purchasingService = inject(PurchasingService);
   public langService = inject(LanguageService);
+  public authService = inject(AuthService);
   private translator = inject(AccountingTranslatorService);
 
   // Active Tab: 'overview' | 'requisitions' | 'orders' | 'receipts' | 'invoices'
@@ -74,6 +76,59 @@ export class ProcurementHubComponent implements OnInit {
 
   searchReceipts = '';
   searchInvoices = '';
+
+  filteredRequisitions(): PurchaseRequisitionDto[] {
+    const q = (this.searchRequisitions || '').trim().toLowerCase();
+    return this.requisitions().filter(r => {
+      if (this.filterRequisitionStatus !== null && r.status !== this.filterRequisitionStatus) return false;
+      if (!q) return true;
+      return (
+        (r.requisitionNumber || '').toLowerCase().includes(q) ||
+        (r.title || '').toLowerCase().includes(q) ||
+        (r.departmentName || '').toLowerCase().includes(q) ||
+        (r.requesterName || '').toLowerCase().includes(q) ||
+        (r.reason || '').toLowerCase().includes(q)
+      );
+    });
+  }
+
+  filteredOrders(): PurchaseOrderDto[] {
+    const q = (this.searchOrders || '').trim().toLowerCase();
+    return this.orders().filter(o => {
+      if (this.filterOrderStatus !== null && o.status !== this.filterOrderStatus) return false;
+      if (!q) return true;
+      return (
+        (o.orderNumber || '').toLowerCase().includes(q) ||
+        (o.requisitionNumber || '').toLowerCase().includes(q) ||
+        (o.vendorName || '').toLowerCase().includes(q) ||
+        (o.vendorVatNumber || '').toLowerCase().includes(q)
+      );
+    });
+  }
+
+  filteredReceipts(): GoodsReceiptNoteDto[] {
+    const q = (this.searchReceipts || '').trim().toLowerCase();
+    if (!q) return this.receipts();
+    return this.receipts().filter(g =>
+      (g.receiptNumber || '').toLowerCase().includes(q) ||
+      (g.purchaseOrderNumber || '').toLowerCase().includes(q) ||
+      (g.vendorName || '').toLowerCase().includes(q) ||
+      (g.deliveryNoteNumber || '').toLowerCase().includes(q) ||
+      (g.warehouseCode || '').toLowerCase().includes(q)
+    );
+  }
+
+  filteredInvoices(): PurchaseInvoiceDto[] {
+    const q = (this.searchInvoices || '').trim().toLowerCase();
+    if (!q) return this.invoices();
+    return this.invoices().filter(inv =>
+      (inv.invoiceNumber || '').toLowerCase().includes(q) ||
+      (inv.vendorInvoiceNumber || '').toLowerCase().includes(q) ||
+      (inv.vendorName || '').toLowerCase().includes(q) ||
+      (inv.purchaseOrderNumber || '').toLowerCase().includes(q) ||
+      (inv.goodsReceiptNoteNumber || '').toLowerCase().includes(q)
+    );
+  }
 
   // Quick Stats
   pendingRequisitionsCount = computed(() => this.requisitions().filter(r => r.status === RequisitionStatus.Draft || r.status === RequisitionStatus.Submitted).length);

@@ -22,17 +22,20 @@ public class SalespersonsController : ControllerBase
     private readonly IUserRepository _userRepo;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICurrentTenantContext _tenant;
+    private readonly ILicenseService _license;
 
     public SalespersonsController(
         ISalespersonRepository salespersonRepo,
         IUserRepository userRepo,
         IPasswordHasher passwordHasher,
-        ICurrentTenantContext tenant)
+        ICurrentTenantContext tenant,
+        ILicenseService license)
     {
         _salespersonRepo = salespersonRepo;
         _userRepo = userRepo;
         _passwordHasher = passwordHasher;
         _tenant = tenant;
+        _license = license;
     }
 
     /// <summary>Authenticated tenant (guaranteed by TenantEnforcementFilter before any action runs).</summary>
@@ -127,6 +130,26 @@ public class SalespersonsController : ControllerBase
     }
 
     /// <summary>
+    /// استرجاع قائمة الأقسام المسجلة للبائعين في الشركة
+    /// </summary>
+    [HttpGet("departments")]
+    public async Task<IActionResult> GetDepartments(CancellationToken cancellationToken)
+    {
+        var salespersons = await _salespersonRepo.GetListAsync(CurrentCompanyId, cancellationToken: cancellationToken);
+        var distinctDepartments = salespersons
+            .Where(s => !string.IsNullOrWhiteSpace(s.DepartmentName))
+            .GroupBy(s => s.DepartmentName!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => new
+            {
+                NameAr = g.Key,
+                NameEn = g.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.DepartmentNameEn))?.DepartmentNameEn ?? g.Key
+            })
+            .ToList();
+
+        return Ok(distinctDepartments);
+    }
+
+    /// <summary>
     /// إنشاء بائع جديد وربطه بالمستودع المخصص وحساب المستخدم
     /// </summary>
     [HttpPost]
@@ -174,6 +197,13 @@ public class SalespersonsController : ControllerBase
         // Auto-create user account if requested
         if (request.CreateUserAccount && !string.IsNullOrWhiteSpace(request.UserName))
         {
+            var existingUsers = await _userRepo.GetUsersByTenantAsync(companyId, cancellationToken);
+            var licenseCheck = await _license.CheckCanAddAsync(companyId, LicenseResource.Users, existingUsers.Count(u => u.IsActive), cancellationToken);
+            if (!licenseCheck.Allowed)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, licenseCheck.ToResponse());
+            }
+
             var uName = request.UserName.Trim().ToLowerInvariant();
             if (await _userRepo.ExistsWithUserNameAsync(uName, cancellationToken))
             {
@@ -239,7 +269,9 @@ public class SalespersonsController : ControllerBase
             request.CanViewCostPrice,
             request.CanSellFromAnyWarehouse,
             null,
-            _tenant.UserName ?? "Admin");
+            _tenant.UserName ?? "Admin",
+            request.DepartmentName,
+            request.DepartmentNameEn);
 
         await _salespersonRepo.AddAsync(salesperson, cancellationToken);
         await _salespersonRepo.SaveChangesAsync(cancellationToken);
@@ -287,7 +319,9 @@ public class SalespersonsController : ControllerBase
             request.CanViewCostPrice,
             request.CanSellFromAnyWarehouse,
             sp.PermissionsJson,
-            _tenant.UserName ?? "Admin");
+            _tenant.UserName ?? "Admin",
+            request.DepartmentName,
+            request.DepartmentNameEn);
 
         await _salespersonRepo.SaveChangesAsync(cancellationToken);
         return Ok(MapToDto(sp));
@@ -344,6 +378,9 @@ public class SalespersonsController : ControllerBase
             s.CanProcessReturns,
             s.CanSellBelowCost,
             s.CanViewCostPrice,
-            s.CanSellFromAnyWarehouse);
+            s.CanSellFromAnyWarehouse,
+            null,
+            s.DepartmentName,
+            s.DepartmentNameEn);
     }
 }

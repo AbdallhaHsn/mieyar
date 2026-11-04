@@ -6,8 +6,9 @@ namespace AlRobban.Shared.Infrastructure.MultiTenancy;
 
 /// <summary>
 /// Resolves the active tenant strictly from the authenticated principal.
-/// Anonymous requests never resolve a tenant. The X-Tenant-Id header is honoured
-/// ONLY for authenticated SuperAdmin users (platform owner impersonation / support).
+/// Anonymous requests never resolve a tenant. The platform owner (SuperAdmin) is never bound
+/// to a tenant: no X-Tenant-Id impersonation is honoured, so the platform owner can manage
+/// companies and licenses but can never read or write company business data.
 /// </summary>
 public class TenantContext : ICurrentTenantContext
 {
@@ -40,14 +41,8 @@ public class TenantContext : ICurrentTenantContext
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null) return null;
 
-            // 1. SuperAdmin platform owner impersonation via explicit header
-            if (IsSuperAdmin &&
-                httpContext.Request.Headers.TryGetValue(TenantHeaderName, out var headerVal) &&
-                Guid.TryParse(headerVal.ToString(), out var headerTenantId) &&
-                headerTenantId != Guid.Empty)
-            {
-                return headerTenantId;
-            }
+            // 1. The platform owner never operates inside a tenant
+            if (IsSuperAdmin) return null;
 
             // 2. Authoritative authenticated token claim (anti-spoofing)
             var claim = Principal?.FindFirst("tenant_id");
@@ -56,13 +51,7 @@ public class TenantContext : ICurrentTenantContext
                 return claimTenantId;
             }
 
-            // 3. Fallback to header if claim is absent (development or initial admin setup)
-            if (httpContext.Request.Headers.TryGetValue(TenantHeaderName, out var fallbackHeader) &&
-                Guid.TryParse(fallbackHeader.ToString(), out var fallbackTenantId) &&
-                fallbackTenantId != Guid.Empty)
-            {
-                return fallbackTenantId;
-            }
+            // 3. Never trust a client-supplied header for tenant resolution (anti-spoofing)
 
             return null;
         }

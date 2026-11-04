@@ -95,21 +95,19 @@ public class VoucherRepository : IVoucherRepository
                     cancellationToken);
             }
 
-            var numbers = await _dbContext.Vouchers
+            var lastNumber = await _dbContext.Vouchers
                 .Where(x => x.CompanyId == companyId && x.VoucherNumber.StartsWith(searchPrefix))
+                .OrderByDescending(x => x.VoucherNumber)
                 .Select(x => x.VoucherNumber)
-                .ToListAsync(cancellationToken);
+                .FirstOrDefaultAsync(cancellationToken);
 
             int maxSeq = 0;
-            foreach (var num in numbers)
+            if (!string.IsNullOrEmpty(lastNumber))
             {
-                var parts = num.Split('-');
+                var parts = lastNumber.Split('-');
                 if (parts.Length >= 3 && int.TryParse(parts[2], out var currentSeq))
                 {
-                    if (currentSeq > maxSeq)
-                    {
-                        maxSeq = currentSeq;
-                    }
+                    maxSeq = currentSeq;
                 }
             }
 

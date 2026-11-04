@@ -1,4 +1,5 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
 
 export type TaskPriority = 'urgent' | 'medium' | 'normal';
@@ -24,6 +25,7 @@ export interface CalendarTask {
   providedIn: 'root'
 })
 export class UserCalendarTasksService {
+  private http = inject(HttpClient);
   private authService = inject(AuthService);
 
   tasks = signal<CalendarTask[]>([]);
@@ -77,9 +79,21 @@ export class UserCalendarTasksService {
           // Drop untouched sample tasks that were auto-seeded by earlier versions
           .filter(t => !(t.id.startsWith('task_def_') && !t.completed));
         this.tasks.set(parsed);
-        this.saveToStorage(userId, parsed);
+        this.saveToStorage(userId, parsed, false);
       } else {
         this.tasks.set([]);
+      }
+      if (userId && userId !== 'guest') {
+        this.http.get<{ found: boolean; data: CalendarTask[] }>(`/api/system-data/store/${encodeURIComponent(key)}`).subscribe({
+          next: (res) => {
+            if (res?.found && Array.isArray(res.data)) {
+              const cleaned = res.data.filter(t => !(t.id.startsWith('task_def_') && !t.completed));
+              this.tasks.set(cleaned);
+              this.saveToStorage(userId, cleaned, false);
+            }
+          },
+          error: () => {}
+        });
       }
     } catch {
       this.tasks.set([]);
@@ -89,12 +103,16 @@ export class UserCalendarTasksService {
   private saveCurrent() {
     const user = this.authService.currentUser();
     const userId = user?.id || user?.userName || 'guest';
-    this.saveToStorage(userId, this.tasks());
+    this.saveToStorage(userId, this.tasks(), true);
   }
 
-  private saveToStorage(userId: string, items: CalendarTask[]) {
+  private saveToStorage(userId: string, items: CalendarTask[], syncRemote = true) {
     try {
-      localStorage.setItem(this.getStorageKey(userId), JSON.stringify(items));
+      const key = this.getStorageKey(userId);
+      localStorage.setItem(key, JSON.stringify(items));
+      if (syncRemote && userId && userId !== 'guest') {
+        this.http.post(`/api/system-data/store/${encodeURIComponent(key)}`, items).subscribe({ error: () => {} });
+      }
     } catch (e) {
       console.error('Failed to save calendar tasks', e);
     }

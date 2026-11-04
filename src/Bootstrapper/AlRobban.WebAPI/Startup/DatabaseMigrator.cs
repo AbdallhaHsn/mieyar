@@ -44,8 +44,16 @@ public static class DatabaseMigrator
         await MigrateAsync(sp.GetRequiredService<HumanResourcesDbContext>());
         await MigrateAsync(sp.GetRequiredService<ProjectsDbContext>());
         await MigrateAsync(sp.GetRequiredService<ManufacturingDbContext>());
+        await EnsureExtendedTablesExistAsync(sp);
 
         // 8. Auto-seed initial platform admin, tenant company, and master data if fresh
+        // The platform owner must never be bound to a company (older databases may have it linked to a demo tenant).
+        var identity = sp.GetRequiredService<IdentityAndAccessDbContext>();
+        var unbound = await identity.Users.IgnoreQueryFilters()
+            .Where(u => u.Role == AlRobban.Modules.IdentityAndAccess.Domain.Enums.UserRole.SuperAdmin && u.TenantId != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.TenantId, (Guid?)null));
+        if (unbound > 0) Serilog.Log.Information("Unbound {Count} SuperAdmin user(s) from tenant companies.", unbound);
+
         await SeedDefaultDataAsync(sp);
     }
 
@@ -129,6 +137,149 @@ public static class DatabaseMigrator
         return Task.CompletedTask;
     }
 
+    private static async Task EnsureExtendedTablesExistAsync(IServiceProvider sp)
+    {
+        try
+        {
+            var identityDb = sp.GetRequiredService<IdentityAndAccessDbContext>();
+            const string sql = @"
+IF SCHEMA_ID(N'proj') IS NULL EXEC(N'CREATE SCHEMA [proj]');
+IF SCHEMA_ID(N'pur') IS NULL EXEC(N'CREATE SCHEMA [pur]');
+
+IF OBJECT_ID(N'[proj].[ProjectPlanningTasks]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [proj].[ProjectPlanningTasks] (
+        [Id] uniqueidentifier NOT NULL PRIMARY KEY,
+        [CompanyId] uniqueidentifier NOT NULL,
+        [ProjectId] uniqueidentifier NOT NULL,
+        [ProjectName] nvarchar(250) NOT NULL DEFAULT N'',
+        [ProjectCode] nvarchar(50) NOT NULL DEFAULT N'',
+        [PhaseId] uniqueidentifier NULL,
+        [TitleAr] nvarchar(300) NOT NULL,
+        [TitleEn] nvarchar(300) NOT NULL DEFAULT N'',
+        [StartDate] nvarchar(30) NOT NULL DEFAULT N'',
+        [EndDate] nvarchar(30) NOT NULL DEFAULT N'',
+        [DurationDays] int NOT NULL DEFAULT 30,
+        [ProgressPercentage] decimal(6,2) NOT NULL DEFAULT 0,
+        [AssignedTo] nvarchar(150) NOT NULL DEFAULT N'',
+        [AssignedRole] nvarchar(150) NOT NULL DEFAULT N'',
+        [IsMilestone] bit NOT NULL DEFAULT 0,
+        [Status] nvarchar(50) NOT NULL DEFAULT N'Planned',
+        [PredecessorId] nvarchar(100) NULL,
+        [EstimatedCost] decimal(18,2) NOT NULL DEFAULT 0,
+        [Notes] nvarchar(max) NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    CREATE INDEX [IX_ProjectPlanningTasks_CompanyId_ProjectId] ON [proj].[ProjectPlanningTasks] ([CompanyId], [ProjectId]);
+END
+
+IF OBJECT_ID(N'[proj].[ProjectTimesheets]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [proj].[ProjectTimesheets] (
+        [Id] uniqueidentifier NOT NULL PRIMARY KEY,
+        [CompanyId] uniqueidentifier NOT NULL,
+        [ProjectId] uniqueidentifier NOT NULL,
+        [ProjectName] nvarchar(250) NOT NULL DEFAULT N'',
+        [ProjectCode] nvarchar(50) NOT NULL DEFAULT N'',
+        [PhaseId] uniqueidentifier NULL,
+        [PhaseName] nvarchar(250) NULL,
+        [Date] nvarchar(30) NOT NULL DEFAULT N'',
+        [EntryType] nvarchar(50) NOT NULL DEFAULT N'internal_labor',
+        [UnitOfMeasure] nvarchar(50) NOT NULL DEFAULT N'hour',
+        [Quantity] decimal(18,2) NOT NULL DEFAULT 0,
+        [UnitPrice] decimal(18,2) NOT NULL DEFAULT 0,
+        [EmployeeName] nvarchar(150) NOT NULL DEFAULT N'',
+        [EmployeeRole] nvarchar(150) NOT NULL DEFAULT N'',
+        [SubcontractorName] nvarchar(250) NULL,
+        [SubcontractorContractNo] nvarchar(100) NULL,
+        [RetentionPercentage] decimal(6,2) NOT NULL DEFAULT 0,
+        [RetentionAmount] decimal(18,2) NOT NULL DEFAULT 0,
+        [NetPayable] decimal(18,2) NOT NULL DEFAULT 0,
+        [TaskDescription] nvarchar(500) NOT NULL DEFAULT N'',
+        [Hours] decimal(18,2) NOT NULL DEFAULT 0,
+        [HourlyRate] decimal(18,2) NOT NULL DEFAULT 0,
+        [TotalCost] decimal(18,2) NOT NULL DEFAULT 0,
+        [IsBillable] bit NOT NULL DEFAULT 1,
+        [Status] nvarchar(50) NOT NULL DEFAULT N'Approved',
+        [Notes] nvarchar(max) NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    CREATE INDEX [IX_ProjectTimesheets_CompanyId_ProjectId] ON [proj].[ProjectTimesheets] ([CompanyId], [ProjectId]);
+END
+
+IF OBJECT_ID(N'[proj].[ProjectAccountingSettings]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [proj].[ProjectAccountingSettings] (
+        [Id] uniqueidentifier NOT NULL PRIMARY KEY,
+        [CompanyId] uniqueidentifier NOT NULL,
+        [DefaultRetentionPercentage] decimal(6,2) NOT NULL DEFAULT 10,
+        [DefaultAdvancePaymentPercentage] decimal(6,2) NOT NULL DEFAULT 20,
+        [DefaultVatRate] decimal(6,2) NOT NULL DEFAULT 15,
+        [RequireConsultantApproval] bit NOT NULL DEFAULT 1,
+        [AutoPostProgressBillingToGl] bit NOT NULL DEFAULT 1,
+        [AutoIssueTaxInvoiceOnApprove] bit NOT NULL DEFAULT 1,
+        [AutoCreateProjectCostCenter] bit NOT NULL DEFAULT 1,
+        [AlertGuaranteeExpiryDays] int NOT NULL DEFAULT 30,
+        [ArAccountCode] nvarchar(50) NOT NULL DEFAULT N'11301',
+        [ArAccountName] nvarchar(200) NOT NULL DEFAULT N'العملاء والمدينون التجاريون',
+        [RetentionAccountCode] nvarchar(50) NOT NULL DEFAULT N'11303',
+        [RetentionAccountName] nvarchar(200) NOT NULL DEFAULT N'تأمينات وضمان أعمال محتجزة',
+        [AdvancePaymentAccountCode] nvarchar(50) NOT NULL DEFAULT N'21302',
+        [AdvancePaymentAccountName] nvarchar(200) NOT NULL DEFAULT N'دفعات مقدمة من العملاء',
+        [RevenueAccountCode] nvarchar(50) NOT NULL DEFAULT N'41103',
+        [RevenueAccountName] nvarchar(200) NOT NULL DEFAULT N'إيرادات عقود ومشاريع مقاولات',
+        [VatAccountCode] nvarchar(50) NOT NULL DEFAULT N'21201',
+        [VatAccountName] nvarchar(200) NOT NULL DEFAULT N'ضريبة القيمة المضافة المحصلة (مخرجات 15%)',
+        [GuaranteeMarginAccountCode] nvarchar(50) NOT NULL DEFAULT N'11204',
+        [GuaranteeMarginAccountName] nvarchar(200) NOT NULL DEFAULT N'تأمينات نقدية لخطابات الضمان لدى البنوك',
+        [GuaranteeCommissionAccountCode] nvarchar(50) NOT NULL DEFAULT N'53102',
+        [GuaranteeCommissionAccountName] nvarchar(200) NOT NULL DEFAULT N'عمولات ومصاريف إصدار خطابات الضمان',
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    CREATE UNIQUE INDEX [IX_ProjectAccountingSettings_CompanyId] ON [proj].[ProjectAccountingSettings] ([CompanyId]);
+END
+
+IF OBJECT_ID(N'[pur].[ItemCategories]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [pur].[ItemCategories] (
+        [Id] uniqueidentifier NOT NULL PRIMARY KEY,
+        [CompanyId] uniqueidentifier NOT NULL,
+        [Code] nvarchar(50) NOT NULL,
+        [NameAr] nvarchar(200) NOT NULL,
+        [NameEn] nvarchar(200) NOT NULL DEFAULT N'',
+        [Description] nvarchar(500) NULL,
+        [Color] nvarchar(50) NULL,
+        [Icon] nvarchar(100) NULL,
+        [IsActive] bit NOT NULL DEFAULT 1,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    CREATE INDEX [IX_ItemCategories_CompanyId_Code] ON [pur].[ItemCategories] ([CompanyId], [Code]);
+END
+
+IF OBJECT_ID(N'[dbo].[SystemKeyValueStores]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[SystemKeyValueStores] (
+        [StoreKey] nvarchar(250) NOT NULL PRIMARY KEY,
+        [JsonValue] nvarchar(max) NOT NULL,
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT GETUTCDATE()
+    );
+END
+
+IF OBJECT_ID(N'[inv].[Salespersons]', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'[inv].[Salespersons]', N'DepartmentName') IS NULL
+        ALTER TABLE [inv].[Salespersons] ADD [DepartmentName] nvarchar(150) NULL;
+    IF COL_LENGTH(N'[inv].[Salespersons]', N'DepartmentNameEn') IS NULL
+        ALTER TABLE [inv].[Salespersons] ADD [DepartmentNameEn] nvarchar(150) NULL;
+END";
+            await identityDb.Database.ExecuteSqlRawAsync(sql);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning("EnsureExtendedTablesExistAsync warning: {Message}", ex.Message);
+        }
+    }
+
     private static async Task SeedDefaultDataAsync(IServiceProvider sp)
     {
         try
@@ -136,7 +287,44 @@ public static class DatabaseMigrator
             var identityDb = sp.GetRequiredService<IdentityAndAccessDbContext>();
             var passwordHasher = sp.GetRequiredService<AlRobban.Modules.IdentityAndAccess.Application.Services.IPasswordHasher>();
 
+            var config = sp.GetRequiredService<IConfiguration>();
+            var env = sp.GetRequiredService<IHostEnvironment>();
+            // Demo data (well-known credentials + demo company) is for Development only unless explicitly enabled.
+            var seedDemo = config.GetValue("Bootstrap:SeedDemoData", env.IsDevelopment());
+
             var hasUsers = await identityDb.Users.IgnoreQueryFilters().AnyAsync();
+            if (!hasUsers && !seedDemo)
+            {
+                var bootstrapPassword = config["Bootstrap:SuperAdminPassword"];
+                if (string.IsNullOrWhiteSpace(bootstrapPassword) || bootstrapPassword.Length < 12)
+                {
+                    Serilog.Log.Warning("No users exist and Bootstrap:SuperAdminPassword (>= 12 chars) is not configured; no administrator was created.");
+                }
+                else
+                {
+                    var bootstrapUserName = config["Bootstrap:SuperAdminUserName"] ?? "superadmin";
+                    var bootstrapEmail = config["Bootstrap:SuperAdminEmail"] ?? "admin@localhost";
+                    var firstAdmin = new AlRobban.Modules.IdentityAndAccess.Domain.Entities.User(
+                        Guid.NewGuid(),
+                        tenantId: null,
+                        bootstrapUserName,
+                        bootstrapEmail,
+                        passwordHasher.HashPassword(bootstrapPassword),
+                        "مدير النظام",
+                        "System Administrator",
+                        AlRobban.Modules.IdentityAndAccess.Domain.Enums.UserRole.SuperAdmin,
+                        createdBy: "System Bootstrapper");
+                    await identityDb.Users.AddAsync(firstAdmin);
+                    await identityDb.SaveChangesAsync();
+                    Serilog.Log.Information("Bootstrap SuperAdmin '{UserName}' created. Remove Bootstrap:SuperAdminPassword from configuration now.", bootstrapUserName);
+                }
+            }
+
+            if (!seedDemo)
+            {
+                return;
+            }
+
             if (!hasUsers)
             {
                 Serilog.Log.Information("Initial platform startup: auto-seeding SuperAdmin, demo tenant company, and master data...");

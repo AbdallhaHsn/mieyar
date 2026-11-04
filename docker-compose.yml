@@ -1,14 +1,18 @@
 services:
+  # All published ports are bound to 127.0.0.1: Docker publishes ports through iptables and
+  # bypasses UFW, so a bare "1433:1433" would expose the service to the internet.
+  # Set real passwords through environment variables / an untracked .env file (see .env.example).
+
   # 1. Microsoft SQL Server 2022 (Supports Ledger Tables & Row-Level Security / SESSION_CONTEXT)
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: alrobban-sqlserver
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=AlRobban@Dev2026!
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-AlRobban@Dev2026!}
       - MSSQL_PID=Developer
     ports:
-      - "1433:1433"
+      - "127.0.0.1:1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     restart: unless-stopped
@@ -19,20 +23,20 @@ services:
     container_name: alrobban-postgres
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=AlRobban@Dev2026!
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-AlRobban@Dev2026!}
       - POSTGRES_DB=alrobban_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  # 3. Redis (Distributed Caching & HybridCache Backplane)
+  # 3. Redis (Distributed Caching & HybridCache Backplane) - loopback only, no password
   redis:
     image: redis:7-alpine
     container_name: alrobban-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -43,10 +47,10 @@ services:
     container_name: alrobban-rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=AlRobban@Dev2026!
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-AlRobban@Dev2026!}
     ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management Web UI
+      - "127.0.0.1:5672:5672"   # AMQP protocol
+      - "127.0.0.1:15672:15672" # Management Web UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
@@ -58,9 +62,9 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "16686:16686" # Web UI
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
+      - "127.0.0.1:16686:16686" # Web UI
+      - "127.0.0.1:4317:4317"   # OTLP gRPC
+      - "127.0.0.1:4318:4318"   # OTLP HTTP
     restart: unless-stopped
 
 volumes:

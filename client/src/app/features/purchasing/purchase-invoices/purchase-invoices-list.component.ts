@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { PurchasingService, PurchaseInvoiceDto, PurchaseInvoiceStatus, PurchasePaymentStatus, PurchaseKpisDto } from '../../../core/services/purchasing.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { tafqeet } from '../../../core/utils/tafqeet';
 import Swal from 'sweetalert2';
@@ -135,7 +136,7 @@ import Swal from 'sweetalert2';
               <th>{{ 'ui.purchaseInvoicesList.db9e2c' | translate }}</th>
               <th>{{ 'invoices.table.paymentStatus' | translate }}</th>
               <th>{{ 'purchasing.invoices.table.status' | translate }}</th>
-              <th>{{ 'ui.purchaseInvoicesList.13cada' | translate }}</th>
+              <th *ngIf="!authService.isSalesperson()">{{ 'ui.purchaseInvoicesList.13cada' | translate }}</th>
               <th class="text-center">{{ 'branches.table.actions' | translate }}</th>
             </tr>
           </thead>
@@ -168,7 +169,7 @@ import Swal from 'sweetalert2';
                   {{ getStatusLabel(inv.status) }}
                 </span>
               </td>
-              <td>
+              <td *ngIf="!authService.isSalesperson()">
                 <a *ngIf="inv.associatedJournalEntryNumber" routerLink="/accounting/journal-entries" class="jv-pill">
                   <i class="pi pi-external-link"></i>
                   {{ inv.associatedJournalEntryNumber }}
@@ -341,7 +342,7 @@ import Swal from 'sweetalert2';
             </div>
 
             <!-- Linked Journal Entry Note -->
-            <div *ngIf="selectedInvoice()?.associatedJournalEntryNumber" class="jv-alert">
+            <div *ngIf="selectedInvoice()?.associatedJournalEntryNumber && !authService.isSalesperson()" class="jv-alert">
               <i class="pi pi-check-circle"></i>
               <span>{{ 'ui.purchaseInvoicesList.44ca64' | translate }} <strong>{{ selectedInvoice()?.associatedJournalEntryNumber }}</strong> {{ 'ui.purchaseInvoicesList.ddba79' | translate }}</span>
             </div>
@@ -579,7 +580,7 @@ import Swal from 'sweetalert2';
 
         input {
           width: 100%;
-          padding: 0.55rem 0.85rem 0.55rem 2.4rem;
+          padding-block: 0.55rem; padding-inline-start: 2.4rem; padding-inline-end: 0.85rem;
           border-radius: 7px;
           border: 1px solid #CBD5E1;
           font-size: 0.88rem;
@@ -1022,6 +1023,7 @@ import Swal from 'sweetalert2';
 export class PurchaseInvoicesListComponent implements OnInit {
   purchasingService = inject(PurchasingService);
   langService = inject(LanguageService);
+  authService = inject(AuthService);
 
   PurchaseInvoiceStatus = PurchaseInvoiceStatus;
   PurchasePaymentStatus = PurchasePaymentStatus;
@@ -1208,10 +1210,11 @@ export class PurchaseInvoicesListComponent implements OnInit {
             });
           },
           error: (err) => {
+            const errorMsg = err?.error?.description || err?.error?.Description || err?.error?.message || err?.message || this.langService.t('purchasing.purchaseInvoices.alerts.postFailedDefault');
             Swal.fire({
               icon: 'error',
               title: this.langService.t('purchasing.purchaseInvoices.alerts.postFailed'),
-              text: err?.error?.Description || this.langService.t('purchasing.purchaseInvoices.alerts.postFailedDefault')
+              text: errorMsg
             });
           }
         });
@@ -1238,7 +1241,8 @@ export class PurchaseInvoicesListComponent implements OnInit {
             Swal.fire({ icon: 'success', title: this.langService.t('common.cancelledSuccessfully'), text: this.langService.t('purchasing.purchaseInvoices.alerts.cancelledSuccess') });
           },
           error: (err) => {
-            Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: err?.error?.Description || this.langService.t('purchasing.purchaseInvoices.alerts.cancelFailed') });
+            const errorMsg = err?.error?.description || err?.error?.Description || err?.error?.message || err?.message || this.langService.t('purchasing.purchaseInvoices.alerts.cancelFailed');
+            Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: errorMsg });
           }
         });
       }
@@ -1268,10 +1272,11 @@ export class PurchaseInvoicesListComponent implements OnInit {
             });
           },
           error: (err) => {
+            const errorMsg = err?.error?.description || err?.error?.Description || err?.error?.message || err?.message || this.langService.t('purchasing.purchaseInvoices.alerts.returnsFailed');
             Swal.fire({
               icon: 'error',
               title: this.langService.t('common.error'),
-              text: err?.error?.Description || this.langService.t('purchasing.purchaseInvoices.alerts.returnsFailed')
+              text: errorMsg
             });
           }
         });

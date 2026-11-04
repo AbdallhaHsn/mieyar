@@ -21,8 +21,10 @@ public class Salesperson : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntit
     public string WarehouseCode { get; private set; } = "WH-01";
     public string WarehouseNameAr { get; private set; } = "المستودع الرئيسي";
 
-    // Branch
+    // Branch & Department
     public Guid? BranchId { get; private set; }
+    public string? DepartmentName { get; private set; }
+    public string? DepartmentNameEn { get; private set; }
 
     public decimal CommissionRate { get; private set; } = 0m;
     public bool IsActive { get; private set; } = true;
@@ -69,7 +71,9 @@ public class Salesperson : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntit
         bool canViewCostPrice = false,
         bool canSellFromAnyWarehouse = false,
         string? permissionsJson = null,
-        string? createdBy = null)
+        string? createdBy = null,
+        string? departmentName = null,
+        string? departmentNameEn = null)
     {
         return new Salesperson
         {
@@ -86,6 +90,8 @@ public class Salesperson : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntit
             PhoneNumber = phoneNumber?.Trim(),
             Email = email?.Trim().ToLowerInvariant(),
             BranchId = branchId,
+            DepartmentName = string.IsNullOrWhiteSpace(departmentName) ? null : departmentName.Trim(),
+            DepartmentNameEn = string.IsNullOrWhiteSpace(departmentNameEn) ? null : departmentNameEn.Trim(),
             CommissionRate = Math.Max(0, commissionRate),
             CanGiveDiscount = canGiveDiscount,
             MaxDiscountPercent = Math.Clamp(maxDiscountPercent, 0m, 100m),
@@ -123,7 +129,9 @@ public class Salesperson : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntit
         bool canViewCostPrice = false,
         bool canSellFromAnyWarehouse = false,
         string? permissionsJson = null,
-        string? modifiedBy = null)
+        string? modifiedBy = null,
+        string? departmentName = null,
+        string? departmentNameEn = null)
     {
         NameAr = nameAr.Trim();
         NameEn = string.IsNullOrWhiteSpace(nameEn) ? nameAr.Trim() : nameEn.Trim();
@@ -134,6 +142,8 @@ public class Salesperson : AggregateRoot<Guid>, IMustHaveTenant, IAuditableEntit
         PhoneNumber = phoneNumber?.Trim();
         Email = email?.Trim().ToLowerInvariant();
         BranchId = branchId;
+        DepartmentName = string.IsNullOrWhiteSpace(departmentName) ? null : departmentName.Trim();
+        DepartmentNameEn = string.IsNullOrWhiteSpace(departmentNameEn) ? null : departmentNameEn.Trim();
         CommissionRate = Math.Max(0, commissionRate);
         CanGiveDiscount = canGiveDiscount;
         MaxDiscountPercent = Math.Clamp(maxDiscountPercent, 0m, 100m);

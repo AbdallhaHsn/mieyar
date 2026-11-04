@@ -42,7 +42,6 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
             </div>
             <div class="fs-title-row">
               <h1 class="fs-title">{{ 'accounting.financialStatements.ui.financialStatementsExecutiveReports' | translate }}</h1>
-              <span class="socpa-badge"><i class="pi pi-verified"></i> SOCPA & IFRS Compliant</span>
             </div>
           </div>
 
@@ -2136,7 +2135,6 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                     ? (('ui.financialStatements.e36fef' | translate) + (fromDate | date:'yyyy-MM-dd') + ('accounting.financialStatements.ui.to1' | translate) + (toDate | date:'yyyy-MM-dd')) 
                     : (('ui.financialStatements.51ea43' | translate) + (asOfDate | date:'yyyy-MM-dd')) }}
                 </span>
-                <span class="socpa-tag">{{ 'ui.financialStatements.09afb3' | translate }}</span>
               </div>
             </div>
 
@@ -2316,10 +2314,6 @@ type ActiveTab = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'equity' |
                   <span class="sig-title">{{ 'hr.payroll.cfoTitle' | translate }}</span>
                   <div class="sig-line">{{ 'ui.financialStatements.e7da75' | translate }}</div>
                 </div>
-              </div>
-
-              <div class="print-legal-footer">
-                {{ 'ui.financialStatements.b6f16c' | translate }}
               </div>
             </div>
 

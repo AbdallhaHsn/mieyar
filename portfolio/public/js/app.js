@@ -10,6 +10,11 @@ const i18n = {
     'nav.skills': 'المهارات التقنية',
     'nav.contact': 'تواصل معي',
     'nav.menu': 'القائمة',
+    'nav.articles': 'المقالات',
+    'articles.tag': 'المدوّنة التقنية',
+    'articles.title': 'مقالات وتجارب من قلب الميدان',
+    'articles.desc': 'دروس عملية في هندسة أنظمة ERP والفوترة الإلكترونية والمعماريات الحديثة.',
+    'articles.all': 'عرض كل المقالات',
     'hero.greeting': 'مرحباً، أنا',
     'hero.btnProjects': 'استكشف الأنظمة والمشاريع',
     'hero.btnContact': 'تواصل معي مباشرة',
@@ -58,6 +63,11 @@ const i18n = {
     'nav.skills': 'Technical Skills',
     'nav.contact': 'Contact',
     'nav.menu': 'Menu',
+    'nav.articles': 'Articles',
+    'articles.tag': 'Tech Blog',
+    'articles.title': 'Field-Tested Articles & Lessons',
+    'articles.desc': 'Practical lessons on ERP engineering, e-invoicing and modern architectures.',
+    'articles.all': 'View all articles',
     'hero.greeting': "Hello, I'm",
     'hero.btnProjects': 'Explore Systems & Demos',
     'hero.btnContact': 'Get in Touch',
@@ -111,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
   applyTheme('light');
   applyLanguage(currentLang);
   fetchPortfolioData();
+  fetchHomeArticles();
+  if (window.Pub) Pub.trackVisit();
   setupEventListeners();
 });
 
@@ -124,6 +136,7 @@ function setupEventListeners() {
       localStorage.setItem('portfolio_lang', currentLang);
       applyLanguage(currentLang);
       if (portfolioData) renderAll();
+      renderHomeArticles();
     });
   }
 
@@ -160,21 +173,39 @@ function setupEventListeners() {
   // Contact Form Submission
   const contactForm = document.getElementById('contact-form');
   if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('msg-name').value;
       const contact = document.getElementById('msg-contact').value;
       const body = document.getElementById('msg-body').value;
 
-      Swal.fire({
-        icon: 'success',
-        title: currentLang === 'ar' ? i18n.ar['contact.successTitle'] : i18n.en['contact.successTitle'],
-        text: currentLang === 'ar' ? i18n.ar['contact.successText'] : i18n.en['contact.successText'],
-        confirmButtonColor: '#059669',
-        confirmButtonText: currentLang === 'ar' ? 'حسناً' : 'OK'
-      });
+      const ar = currentLang === 'ar';
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, contact, body })
+        });
+        if (!res.ok) throw new Error(res.status);
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: ar ? 'تعذر الإرسال' : 'Could not send',
+          text: ar ? 'حدث خطأ أو تجاوزت عدد المحاولات المسموح. حاول لاحقاً.' : 'Something went wrong or you sent too many messages. Try again later.',
+          confirmButtonColor: '#dc2626',
+          confirmButtonText: ar ? 'حسناً' : 'OK'
+        });
+        return;
+      }
 
       contactForm.reset();
+      Swal.fire({
+        icon: 'success',
+        title: ar ? i18n.ar['contact.successTitle'] : i18n.en['contact.successTitle'],
+        text: ar ? i18n.ar['contact.successText'] : i18n.en['contact.successText'],
+        confirmButtonColor: '#059669',
+        confirmButtonText: ar ? 'حسناً' : 'OK'
+      });
     });
   }
 }
@@ -370,4 +401,25 @@ function renderSkills() {
       </div>
     </div>
   `).join('');
+}
+
+// Home page: latest articles
+let homeArticles = [];
+async function fetchHomeArticles() {
+  try {
+    homeArticles = await (await fetch('/api/articles')).json();
+  } catch (err) {
+    homeArticles = [];
+  }
+  renderHomeArticles();
+}
+
+function renderHomeArticles() {
+  const grid = document.getElementById('home-articles');
+  const section = document.getElementById('articles');
+  if (!grid || !window.Pub) return;
+  if (!homeArticles.length) { if (section) section.style.display = 'none'; return; }
+  if (section) section.style.display = '';
+  const list = homeArticles.slice(0, 3);
+  grid.innerHTML = list.map((a, i) => Pub.card(a, i === 0 && a.featured)).join('');
 }

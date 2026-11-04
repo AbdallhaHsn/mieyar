@@ -183,7 +183,7 @@
           transition: border-color 0.15s;
 
           &:focus {
-            border-color: #0284c7;
+            border-color: #059669;
           }
         }
       }
@@ -215,7 +215,7 @@
       &.active {
         background: #0f766e;
         color: #ffffff;
-        border-color: #0f766e;
+        border-color: #059669;
       }
     }
   }
@@ -382,12 +382,12 @@
             transition: all 0.15s;
 
             &:hover {
-              border-color: #0f766e;
+              border-color: #059669;
               background: #f8fafc;
             }
 
             &.selected {
-              border-color: #0f766e;
+              border-color: #059669;
               background: #f0fdfa;
               box-shadow: 0 2px 5px rgba(15, 118, 110, 0.12);
             }
@@ -790,7 +790,7 @@
       transition: border-color 0.15s;
 
       &:focus {
-        border-color: #0284c7;
+        border-color: #059669;
       }
     }
 
@@ -901,13 +901,13 @@
     border: 1px solid transparent;
 
     &.btn-primary { background: #0f766e; color: #ffffff; }
-    &.btn-outline-cyan { background: #ffffff; border-color: #0284c7; color: #0284c7; &:hover { background: #f0f9ff; } }
+    &.btn-outline-cyan { background: #ffffff; border-color: #059669; color: #0284c7; &:hover { background: #f0f9ff; } }
     &.btn-outline-amber { background: #ffffff; border-color: #d97706; color: #d97706; &:hover { background: #fffdf5; } }
     &.btn-success-outline { background: #ffffff; border-color: #16a34a; color: #16a34a; &:hover { background: #f0fdf4; } }
     &.btn-outline-danger { background: #ffffff; border-color: #fee2e2; color: #dc2626; &:hover { background: #fef2f2; } }
-    &.btn-outline-primary { background: #ffffff; border-color: #0f766e; color: #0f766e; &:hover { background: #f0fdf4; } }
+    &.btn-outline-primary { background: #ffffff; border-color: #059669; color: #0f766e; &:hover { background: #f0fdf4; } }
     &.btn-outline-secondary { background: #ffffff; border-color: #cbd5e1; color: #475569; &:hover { background: #f8fafc; } }
-    &.btn-outline-info { background: #ffffff; border-color: #0284c7; color: #0284c7; &:hover { background: #f0f9ff; } }
+    &.btn-outline-info { background: #ffffff; border-color: #059669; color: #0284c7; &:hover { background: #f0f9ff; } }
   }
 
   .btn-xs {

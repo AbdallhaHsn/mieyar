@@ -52,6 +52,8 @@ public class SalespersonRepository : ISalespersonRepository
                 s.NameEn.ToLower().Contains(term) ||
                 (s.UserName != null && s.UserName.ToLower().Contains(term)) ||
                 (s.PhoneNumber != null && s.PhoneNumber.Contains(term)) ||
+                (s.DepartmentName != null && s.DepartmentName.ToLower().Contains(term)) ||
+                (s.DepartmentNameEn != null && s.DepartmentNameEn.ToLower().Contains(term)) ||
                 s.WarehouseCode.ToLower().Contains(term));
         }
 

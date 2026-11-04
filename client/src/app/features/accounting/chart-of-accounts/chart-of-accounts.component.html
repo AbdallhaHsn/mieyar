@@ -234,7 +234,7 @@
           </h2>
           @if (coaService.inspectedAccount(); as acc) {
             <span class="panel-acc-code font-mono text-muted">
-              {{ 'accounting.coa.guidance.codePrefix' | translate }}{{ acc.accountCode }} | {{ currentLang() === 'en' ? (acc.nameEn || acc.nameAr) : acc.accountTypeNameAr }}
+              {{ 'accounting.coa.guidance.codePrefix' | translate }}{{ acc.accountCode }} | {{ acc.accountTypeNameAr }}
             </span>
           }
         </div>

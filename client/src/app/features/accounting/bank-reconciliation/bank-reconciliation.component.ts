@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 import {
   BankReconciliationService,
   BankAccountSummary,
@@ -47,6 +48,8 @@ export class BankReconciliationComponent implements OnInit {
   selectedAccountId = signal<string>('');
   statementDate = signal<string>(new Date().toISOString().substring(0, 10));
   statementEndingBalance = signal<number>(0);
+  statementBalanceTouched = signal<boolean>(false);
+  priorReconciledBalance = signal<number>(0);
   notes = signal<string>('');
 
   isLoading = signal<boolean>(false);
@@ -89,21 +92,25 @@ export class BankReconciliationComponent implements OnInit {
   });
 
   accountOptions = computed<SelectOption[]>(() => {
-    return this.bankAccounts().map(acc => ({
-      value: acc.accountId,
-      label: `${acc.accountCode} - ${acc.accountNameAr}`,
-      sublabel: `الرصيد الدفتري: ${(acc.currentLedgerBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`,
-      code: acc.accountCode,
-      badge: (acc.currentLedgerBalance || 0).toFixed(2) + ' ر.س',
-      badgeClass: acc.currentLedgerBalance >= 0 ? 'badge-primary' : 'badge-danger',
-      icon: 'pi pi-building'
-    }));
+    return this.bankAccounts().map(acc => {
+      const bal = acc.currentLedgerBalance || 0;
+      const formattedBal = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return {
+        value: acc.accountId,
+        label: acc.accountNameAr || acc.accountNameEn,
+        sublabel: `الرصيد الدفتري: ${formattedBal} ر.س`,
+        code: acc.accountCode,
+        badge: `${formattedBal} ر.س`,
+        badgeClass: bal >= 0 ? 'badge-primary' : 'badge-danger',
+        icon: 'pi pi-building'
+      };
+    });
   });
 
   counterAccountOptions = computed<SelectOption[]>(() => {
     return this.allPostableAccounts().map(acc => ({
       value: acc.id,
-      label: `${acc.accountCode} - ${acc.nameAr}`,
+      label: acc.nameAr || acc.nameEn,
       code: acc.accountCode,
       icon: 'pi pi-tag'
     }));
@@ -153,6 +160,19 @@ export class BankReconciliationComponent implements OnInit {
     this.currentPage.set(1);
   }
 
+  onStatementBalanceChange(val: any): void {
+    this.statementEndingBalance.set(Number(val) || 0);
+    this.statementBalanceTouched.set(true);
+  }
+
+  totalDebits = computed(() => {
+    return this.transactions().reduce((sum, t) => sum + (t.debit || 0), 0);
+  });
+
+  totalCredits = computed(() => {
+    return this.transactions().reduce((sum, t) => sum + (t.credit || 0), 0);
+  });
+
   clearedDeposits = computed(() => {
     return this.transactions()
       .filter(t => t.isMatched)
@@ -177,6 +197,14 @@ export class BankReconciliationComponent implements OnInit {
       .reduce((sum, t) => sum + (t.credit || 0), 0);
   });
 
+  clearedNetBalance = computed(() => {
+    return Math.round((this.priorReconciledBalance() + this.clearedDeposits() - this.clearedWithdrawals()) * 100) / 100;
+  });
+
+  unclearedNetBalance = computed(() => {
+    return Math.round((this.unclearedDeposits() - this.unclearedWithdrawals()) * 100) / 100;
+  });
+
   depositsInTransitCount = computed(() => {
     return this.transactions().filter(t => !t.isMatched && t.debit > 0).length;
   });
@@ -194,23 +222,42 @@ export class BankReconciliationComponent implements OnInit {
   });
 
   bookBalance = computed(() => {
-    return this.transactions().reduce((sum, t) => sum + ((t.debit || 0) - (t.credit || 0)), 0);
+    return Math.round((this.priorReconciledBalance() + this.totalDebits() - this.totalCredits()) * 100) / 100;
   });
 
   adjustedBankBalance = computed(() => {
-    return Number(this.statementEndingBalance()) + this.unclearedDeposits() - this.unclearedWithdrawals();
-  });
-
-  difference = computed(() => {
-    return Math.round((this.adjustedBankBalance() - this.bookBalance()) * 100) / 100;
-  });
-
-  isBalanced = computed(() => {
-    return Math.abs(this.difference()) < 0.005;
+    return Math.round((Number(this.statementEndingBalance()) + this.unclearedDeposits() - this.unclearedWithdrawals()) * 100) / 100;
   });
 
   matchedCount = computed(() => this.transactions().filter(t => t.isMatched).length);
   unmatchedCount = computed(() => this.transactions().filter(t => !t.isMatched).length);
+
+  difference = computed(() => {
+    // When no transactions are matched yet and the statement balance is still 0 (untouched),
+    // compare statement balance against bookBalance so the accountant sees the unreconciled ledger gap
+    if (this.matchedCount() === 0 && !this.statementBalanceTouched() && Number(this.statementEndingBalance()) === 0 && this.unmatchedCount() > 0) {
+      return Math.round((Number(this.statementEndingBalance()) - this.bookBalance()) * 100) / 100;
+    }
+    return Math.round((Number(this.statementEndingBalance()) - this.clearedNetBalance()) * 100) / 100;
+  });
+
+  isBalanced = computed(() => {
+    if (this.transactions().length > 0 && this.matchedCount() === 0 && !this.statementBalanceTouched() && Math.abs(this.bookBalance()) >= 0.005) {
+      return false;
+    }
+    return Math.abs(this.difference()) < 0.005;
+  });
+
+  allVisibleMatched = computed(() => {
+    const visible = this.filteredTransactions();
+    return visible.length > 0 && visible.every(t => t.isMatched);
+  });
+
+  toggleSelectAllVisible(checked: boolean): void {
+    const visibleIds = new Set(this.filteredTransactions().map(t => t.journalEntryLineId));
+    const updated = this.transactions().map(t => visibleIds.has(t.journalEntryLineId) ? { ...t, isMatched: checked } : t);
+    this.transactions.set(updated);
+  }
 
   // Live parsed statement preview in import modal
   statementPreviewRows = computed<ParsedStatementRow[]>(() => {
@@ -276,8 +323,12 @@ export class BankReconciliationComponent implements OnInit {
       next: (accounts) => {
         this.bankAccounts.set(accounts);
         if (accounts.length > 0) {
-          const rajhi = accounts.find(a => a.accountCode === '11102');
-          this.selectedAccountId.set(rajhi ? rajhi.accountId : accounts[0].accountId);
+          const preferredBank = accounts.find(a =>
+            a.accountNameAr?.includes('بنك') ||
+            a.accountNameAr?.includes('مصرف') ||
+            a.accountNameEn?.toLowerCase().includes('bank')
+          ) || accounts[0];
+          this.selectedAccountId.set(preferredBank.accountId);
           this.loadWorkspace();
         } else {
           this.isLoading.set(false);
@@ -314,6 +365,8 @@ export class BankReconciliationComponent implements OnInit {
 
   onAccountChanged(accountId: string): void {
     this.selectedAccountId.set(accountId);
+    this.statementBalanceTouched.set(false);
+    this.statementEndingBalance.set(0);
     this.loadWorkspace();
   }
 
@@ -331,9 +384,15 @@ export class BankReconciliationComponent implements OnInit {
 
     this.bankRecService.getWorkspace(accId, date, endingBal, companyId).subscribe({
       next: (ws: BankReconciliationWorkspace) => {
-        this.transactions.set(ws.transactions || []);
+        const txs = ws.transactions || [];
+        this.transactions.set(txs);
+        const unreconciledNet = txs.reduce((s, t) => s + ((t.debit || 0) - (t.credit || 0)), 0);
+        const bookBal = typeof ws.bookBalance === 'number' ? ws.bookBalance : unreconciledNet;
+        this.priorReconciledBalance.set(Math.round((bookBal - unreconciledNet) * 100) / 100);
+
         if (ws.statementEndingBalance && this.statementEndingBalance() === 0) {
           this.statementEndingBalance.set(ws.statementEndingBalance);
+          this.statementBalanceTouched.set(true);
         }
         this.isLoading.set(false);
       },
@@ -345,8 +404,9 @@ export class BankReconciliationComponent implements OnInit {
   }
 
   setBalanceToCleared(): void {
-    const cleared = this.clearedDeposits() - this.clearedWithdrawals();
+    const cleared = this.clearedNetBalance();
     this.statementEndingBalance.set(Math.round(cleared * 100) / 100);
+    this.statementBalanceTouched.set(true);
   }
 
   matchTransactionByRef(ref: string): void {
@@ -379,7 +439,12 @@ export class BankReconciliationComponent implements OnInit {
     if (!accId) return;
 
     if (finalize && !this.isBalanced()) {
-      this.errorMessage.set(this.langService.t('accounting.bankRec.alerts.unbalancedFinalize'));
+      Swal.fire({
+        icon: 'warning',
+        title: 'التسوية غير متطابقة',
+        text: this.langService.t('accounting.bankRec.alerts.unbalancedFinalize'),
+        confirmButtonColor: '#059669'
+      });
       return;
     }
 
@@ -398,7 +463,7 @@ export class BankReconciliationComponent implements OnInit {
       statementDate: this.statementDate(),
       statementEndingBalance: Number(this.statementEndingBalance()),
       matchedJournalLineIds: matchedIds,
-      notes: this.notes() || (finalize ? 'تسوية معتمدة لحساب مصرف الراجحي' : 'مسودة تسوية بنكية'),
+      notes: this.notes() || (finalize ? 'تسوية بنكية معتمدة' : 'مسودة تسوية بنكية'),
       finalize
     };
 
@@ -408,12 +473,22 @@ export class BankReconciliationComponent implements OnInit {
         const actionText = finalize 
           ? this.langService.t('accounting.bankRec.alerts.finalizeSuccess') 
           : this.langService.t('accounting.bankRec.alerts.draftSuccess');
-        this.successMessage.set(`${actionText} [${res.reconciliationNumber}].`);
+        Swal.fire({
+          icon: 'success',
+          title: finalize ? 'تم اعتماد التسوية البنكية' : 'تم حفظ المسودة',
+          text: `${actionText} [${res.reconciliationNumber}]`,
+          confirmButtonColor: '#059669'
+        });
         this.loadWorkspace();
       },
       error: (err) => {
         this.isSaving.set(false);
-        this.errorMessage.set(this.langService.t('accounting.bankRec.alerts.saveFailed') + (err.error?.description || err.message));
+        Swal.fire({
+          icon: 'error',
+          title: 'تعذر حفظ التسوية',
+          text: err.error?.description || err.message,
+          confirmButtonColor: '#dc2626'
+        });
       }
     });
   }

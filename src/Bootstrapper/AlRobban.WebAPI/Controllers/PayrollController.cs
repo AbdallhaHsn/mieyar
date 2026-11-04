@@ -1,3 +1,4 @@
+using AlRobban.WebAPI.Security;
 using System.Text;
 using AlRobban.Modules.GeneralLedger.Application.Queries.BankReconciliation;
 using AlRobban.Modules.HumanResources.Application.Commands.Payroll;
@@ -12,7 +13,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/hr/payroll")]
-[Authorize]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class PayrollController : ControllerBase
 {
     private readonly IMediator _mediator;

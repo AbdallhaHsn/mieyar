@@ -316,7 +316,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of requisitions()">
+          <tr *ngFor="let r of filteredRequisitions()">
             <td><strong class="code-pill">{{ r.requisitionNumber }}</strong></td>
             <td>
               <div class="title-cell">
@@ -405,7 +405,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let po of orders()">
+          <tr *ngFor="let po of filteredOrders()">
             <td><strong class="code-pill">{{ po.orderNumber }}</strong></td>
             <td>
               <span *ngIf="po.requisitionNumber" class="code-pill bg-purple">{{ po.requisitionNumber }}</span>
@@ -497,7 +497,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let grn of receipts()">
+          <tr *ngFor="let grn of filteredReceipts()">
             <td><strong class="code-pill">{{ grn.receiptNumber }}</strong></td>
             <td>
               <span *ngIf="grn.purchaseOrderNumber" class="code-pill bg-blue">{{ grn.purchaseOrderNumber }}</span>
@@ -573,12 +573,12 @@
             <th>{{ 'ui.procurementHub.fcb94d' | translate }}</th>
             <th>{{ 'ui.procurementHub.96e22e' | translate }}</th>
             <th>{{ 'invoices.table.paymentStatus' | translate }}</th>
-            <th>{{ 'invoices.view.journalEntryLabel' | translate }}</th>
+            <th *ngIf="!authService.isSalesperson()">{{ 'invoices.view.journalEntryLabel' | translate }}</th>
             <th>{{ 'purchasing.procurementHub.actions' | translate }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let inv of invoices()">
+          <tr *ngFor="let inv of filteredInvoices()">
             <td><strong class="code-pill">{{ inv.invoiceNumber }}</strong></td>
             <td>{{ inv.vendorInvoiceNumber || '—' }}</td>
             <td>
@@ -612,7 +612,7 @@
                 'badge-rose': inv.paymentStatus === 1
               }">{{ inv.paymentStatusAr }}</span>
             </td>
-            <td>
+            <td *ngIf="!authService.isSalesperson()">
               <span *ngIf="inv.associatedJournalEntryNumber" class="code-pill bg-gray">{{ inv.associatedJournalEntryNumber }}</span>
               <span *ngIf="!inv.associatedJournalEntryNumber" class="text-muted">{{ 'purchasing.procurementHub.draft' | translate }}</span>
             </td>

@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserStickyNotesService } from '../../core/services/user-sticky-notes.service';
 import { UserCalendarTasksService } from '../../core/services/user-calendar-tasks.service';
 import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-note.component';
+import { LayoutService } from '../../core/services/layout.service';
 
 @Component({
   selector: 'app-topbar',
@@ -17,13 +18,24 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
   , TranslatePipe],
   template: `
     <header class="erp-topbar">
-      <!-- Search Input -->
-      <div class="topbar-search">
-        <i class="pi pi-search search-icon"></i>
-        <input 
-          type="text" 
-          [placeholder]="('layout.topbar.searchAccountsEntriesCtrlK' | translate)" 
-        />
+      <!-- Left side: Mobile Toggle + Search -->
+      <div class="topbar-left">
+        <button 
+          type="button" 
+          class="mobile-nav-toggle" 
+          (click)="layoutService.toggleMobileSidebar()" 
+          [title]="'القائمة'">
+          <i class="pi pi-bars"></i>
+        </button>
+
+        <!-- Search Input -->
+        <div class="topbar-search">
+          <i class="pi pi-search search-icon"></i>
+          <input 
+            type="text" 
+            [placeholder]="('layout.topbar.searchAccountsEntriesCtrlK' | translate)" 
+          />
+        </div>
       </div>
 
       <!-- Right Action Items -->
@@ -106,24 +118,70 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
     }
 
     .erp-topbar {
-      height: 60px;
+      height: 48px;
+      min-height: 48px;
       background: #FFFFFF;
       border-bottom: 1px solid #E2E8F0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 1.75rem;
+      padding: 0 0.95rem;
       position: sticky;
       top: 0;
       z-index: 80;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      gap: 0.6rem;
+
+      @media (max-width: 767px) {
+        height: 44px;
+        min-height: 44px;
+        padding: 0 0.55rem;
+      }
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .mobile-nav-toggle {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+      font-size: 1.1rem;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+
+      @media (max-width: 767px) {
+        display: inline-flex;
+      }
+
+      &:active {
+        background: #E2E8F0;
+      }
     }
 
     .topbar-search {
       position: relative;
-      width: 320px;
+      width: 280px;
       display: flex;
       align-items: center;
+
+      @media (max-width: 1023px) {
+        width: 180px;
+      }
+
+      @media (max-width: 640px) {
+        display: none;
+      }
 
       .search-icon {
         position: absolute;
@@ -243,6 +301,10 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
     .tool-label {
       font-size: 0.78rem;
       font-weight: 700;
+
+      @media (max-width: 1023px) {
+        display: none;
+      }
     }
 
     /* Lang Btn */
@@ -259,6 +321,16 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      @media (max-width: 1023px) {
+        padding: 0.35rem 0.55rem;
+      }
+
+      .lang-text {
+        @media (max-width: 1023px) {
+          display: none;
+        }
+      }
 
       .lang-icon {
         width: 15px;
@@ -335,6 +407,7 @@ import { FloatingStickyNoteComponent } from '../sticky-notes/floating-sticky-not
 export class TopbarComponent {
   authService = inject(AuthService);
   langService = inject(LanguageService);
+  layoutService = inject(LayoutService);
   router = inject(Router);
 
   notesService = inject(UserStickyNotesService);

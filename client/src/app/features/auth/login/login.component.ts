@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AuthService, LoginRequest } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
@@ -215,7 +216,7 @@ import { CompanyContextService } from '../../../core/services/company-context.se
                 <label for="password">
                   {{ 'auth.login.password' | translate }}
                 </label>
-                <a href="javascript:void(0)" class="forgot-pwd-link">
+                <a href="javascript:void(0)" class="forgot-pwd-link" (click)="openForgotPasswordModal()">
                   {{ 'auth.login.forgot' | translate }}
                 </a>
               </div>
@@ -1236,6 +1237,132 @@ export class LoginComponent implements OnInit {
         this.loading = false;
         // Mock fallback succeeds automatically
         this.router.navigate(['/dashboard']);
+      }
+    });
+  }
+
+  openForgotPasswordModal(): void {
+    const isAr = this.langService.currentLang() === 'ar';
+    const title = this.langService.t('auth.login.forgotPasswordTitle');
+    const promptText = this.langService.t('auth.login.forgotPasswordPrompt');
+    const sendBtn = this.langService.t('auth.login.sendOtpBtn');
+    const cancelBtn = this.langService.t('common.cancel');
+
+    // Step 1: Prompt for Username or Email
+    Swal.fire({
+      title,
+      text: promptText,
+      input: 'text',
+      inputValue: this.username || '',
+      inputPlaceholder: isAr ? 'اسم المستخدم أو البريد الإلكتروني' : 'Username or email address',
+      showCancelButton: true,
+      confirmButtonText: sendBtn,
+      cancelButtonText: cancelBtn,
+      confirmButtonColor: '#059669',
+      cancelButtonColor: '#64748b',
+      showLoaderOnConfirm: true,
+      preConfirm: (val) => {
+        const usernameOrEmail = val?.trim();
+        if (!usernameOrEmail) {
+          Swal.showValidationMessage(isAr ? 'يرجى إدخال اسم المستخدم أو البريد الإلكتروني' : 'Please enter your username or email');
+          return false;
+        }
+        return this.authService.forgotPassword(usernameOrEmail).toPromise()
+          .catch(err => {
+            const msg = err?.error?.description || err?.error?.message || (isAr ? 'لم يتم العثور على حساب بهذا الاسم أو البريد' : 'User account not found');
+            Swal.showValidationMessage(msg);
+          });
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then((step1Result) => {
+      if (step1Result.isConfirmed && step1Result.value) {
+        const otpData = step1Result.value;
+        this.openEnterOtpModal(otpData);
+      }
+    });
+  }
+
+  private openEnterOtpModal(otpData: { userName: string; maskedEmail: string; otp: string }): void {
+    const isAr = this.langService.currentLang() === 'ar';
+    const step2Title = this.langService.t('auth.login.enterOtpTitle');
+    const otpLabel = this.langService.t('auth.login.otpLabel');
+    const newPwdLabel = this.langService.t('auth.login.newPasswordLabel');
+    const devNotice = this.langService.t('auth.login.otpQuickDevNotice');
+    const confirmBtn = isAr ? 'تأكيد وتعيين كلمة المرور' : 'Confirm & Set Password';
+    const cancelBtn = this.langService.t('common.cancel');
+
+    Swal.fire({
+      title: step2Title,
+      html: `
+        <div style="text-align: ${isAr ? 'right' : 'left'}; font-size: 0.875rem; color: #334155; margin-bottom: 0.75rem;">
+          <p style="margin: 0 0 0.5rem 0;">
+            ${isAr ? 'تم إرسال رمز التحقق إلى:' : 'Verification code sent to:'}
+            <strong style="color: #059669; direction: ltr; display: inline-block;">${otpData.maskedEmail || otpData.userName}</strong>
+          </p>
+          <div style="background: #F0FDF4; border: 1px dashed #10B981; border-radius: 8px; padding: 0.5rem 0.75rem; text-align: center; margin-bottom: 1rem;">
+            <span style="font-size: 0.775rem; color: #047857; margin-left: 0.5rem; margin-right: 0.5rem;">${devNotice}</span>
+            <span style="font-size: 1.25rem; font-weight: 800; color: #065F46; letter-spacing: 3px; font-family: monospace;">${otpData.otp}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div>
+              <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 0.25rem;">
+                ${otpLabel}
+              </label>
+              <input id="swal-otp-input" class="swal2-input" style="width: 100%; margin: 0; height: 2.6rem; font-size: 1.15rem; letter-spacing: 3px; text-align: center; font-family: monospace;" value="${otpData.otp}" maxlength="6">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 0.25rem;">
+                ${newPwdLabel}
+              </label>
+              <input id="swal-new-password-input" type="password" class="swal2-input" style="width: 100%; margin: 0; height: 2.6rem; font-size: 0.95rem;" placeholder="${isAr ? 'كلمة المرور الجديدة (6 أحرف فأكثر)' : 'New password (min 6 characters)'}">
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: confirmBtn,
+      cancelButtonText: cancelBtn,
+      confirmButtonColor: '#059669',
+      cancelButtonColor: '#64748b',
+      showLoaderOnConfirm: true,
+      preConfirm: () => {
+        const otpInput = (document.getElementById('swal-otp-input') as HTMLInputElement)?.value?.trim();
+        const pwdInput = (document.getElementById('swal-new-password-input') as HTMLInputElement)?.value?.trim();
+
+        if (!otpInput) {
+          Swal.showValidationMessage(isAr ? 'يرجى إدخال رمز التحقق (OTP)' : 'Please enter the verification code');
+          return false;
+        }
+        if (!pwdInput || pwdInput.length < 6) {
+          Swal.showValidationMessage(this.langService.t('auth.login.passwordMinLength'));
+          return false;
+        }
+
+        return this.authService.resetPassword({
+          userNameOrEmail: otpData.userName,
+          otp: otpInput,
+          newPassword: pwdInput
+        }).toPromise().catch(err => {
+          const msg = err?.error?.description || err?.error?.message || (isAr ? 'رمز التحقق غير صحيح أو منتهي' : 'Invalid or expired OTP code');
+          Swal.showValidationMessage(msg);
+        });
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then((step2Result) => {
+      if (step2Result.isConfirmed && step2Result.value) {
+        const successMsg = this.langService.t('auth.login.resetPasswordSuccess');
+        Swal.fire({
+          icon: 'success',
+          title: isAr ? 'تم بنجاح!' : 'Success!',
+          text: successMsg,
+          confirmButtonColor: '#059669',
+          timer: 3500
+        });
+
+        // Auto-fill username in the login input for instant seamless login
+        this.username = otpData.userName;
+        this.password = '';
+        this.errorMessage = '';
       }
     });
   }

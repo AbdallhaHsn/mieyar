@@ -27,11 +27,21 @@
       </div>
     </div>
     <div class="header-actions">
+      <div *ngIf="licenseQuota()" class="quota-pill" [class.quota-full]="isBranchQuotaFull()" [title]="isBranchQuotaFull() ? ('companies.portal.quotaFullWarning' | translate) : ''">
+        <i class="pi pi-sitemap"></i>
+        <span *ngIf="licenseQuota()?.maxBranches !== null">
+          {{ 'companies.portal.quotaBranchesLabel' | translate:{ used: (licenseQuota()?.usedBranches ?? 0), max: (licenseQuota()?.maxBranches ?? 0), remaining: (licenseQuota()?.remainingBranches ?? 0) } }}
+        </span>
+        <span *ngIf="licenseQuota()?.maxBranches === null">
+          {{ 'companies.portal.quotaUnlimitedLabel' | translate:{ used: (licenseQuota()?.usedBranches ?? 0) } }}
+        </span>
+      </div>
+
       <button type="button" class="btn-refresh-compact" (click)="loadBranches()" [title]="'common.refresh' | translate">
         <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
         <span>{{ 'common.refresh' | translate }}</span>
       </button>
-      <button type="button" class="btn-primary-compact" (click)="openAddModal()">
+      <button type="button" class="btn-primary-compact" (click)="openAddModal()" [disabled]="isBranchQuotaFull()" [title]="isBranchQuotaFull() ? ('companies.portal.quotaFullWarning' | translate) : ''">
         <i class="pi pi-plus"></i>
         <span>{{ 'branches.addBranch' | translate }}</span>
       </button>

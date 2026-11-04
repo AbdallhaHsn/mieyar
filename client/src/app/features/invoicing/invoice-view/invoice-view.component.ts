@@ -4,6 +4,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { InvoicesService, InvoiceDto, InvoiceType, TransactionType, InvoiceStatus } from '../../../core/services/invoices.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { tafqeet } from '../../../core/utils/tafqeet';
 import * as QRCode from 'qrcode';
 import Swal from 'sweetalert2';
@@ -23,6 +24,7 @@ export class InvoiceViewComponent implements OnInit {
   private invoicesService = inject(InvoicesService);
   companyContext = inject(CompanyContextService);
   langService = inject(LanguageService);
+  authService = inject(AuthService);
 
   currentLang = computed(() => this.langService.currentLang());
   invoice = signal<InvoiceDto | null>(null);

@@ -82,6 +82,8 @@ public class InvoicingDbContext : AppDbContextBase
             entity.Property(e => e.PhoneNumber).HasMaxLength(50);
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.UserName).HasMaxLength(100);
+            entity.Property(e => e.DepartmentName).HasMaxLength(150);
+            entity.Property(e => e.DepartmentNameEn).HasMaxLength(150);
             entity.Property(e => e.CommissionRate).HasPrecision(18, 4);
             entity.Property(e => e.MaxDiscountPercent).HasPrecision(18, 2);
         });

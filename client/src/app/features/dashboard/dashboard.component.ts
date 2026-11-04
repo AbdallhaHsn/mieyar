@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { CompanyContextService } from '../../core/services/company-context.service';
+import { JournalEntryService } from '../../core/services/journal-entry.service';
 
 interface MetricCard {
   titleAr: string;
@@ -44,11 +45,11 @@ interface JournalEntryPreview {
         </div>
 
         <div class="quick-nav-actions">
-          <button class="btn-action green" (click)="router.navigate(['/accounting/journal-entries'])">
+          <button class="btn-action green" (click)="router.navigate(['/accounting/journal-entries/create'])">
             <i class="pi pi-plus"></i>
             <span>{{ 'dashboard.newEntry' | translate }}</span>
           </button>
-          <button class="btn-action cyan" (click)="router.navigate(['/invoicing/tax-invoices'])">
+          <button class="btn-action cyan" (click)="router.navigate(['/invoicing/tax-invoices/create'])">
             <i class="pi pi-receipt"></i>
             <span>{{ 'dashboard.taxInvoice' | translate }}</span>
           </button>
@@ -268,11 +269,11 @@ interface JournalEntryPreview {
 
       &.cyan {
         background: #FFFFFF;
-        color: #0284C7;
-        border: 1.5px solid #0284C7;
+        color: #059669;
+        border: 1.5px solid #059669;
 
         &:hover {
-          background: #F0F9FF;
+          background: #ECFDF5;
         }
       }
     }
@@ -305,7 +306,7 @@ interface JournalEntryPreview {
       }
 
       &.cyan {
-        border-top: 3px solid #0284C7;
+        border-top: 3px solid #059669;
       }
     }
 
@@ -332,8 +333,8 @@ interface JournalEntryPreview {
         color: #059669;
       }
       &.cyan {
-        background: #F0F9FF;
-        color: #0284C7;
+        background: #ECFDF5;
+        color: #059669;
       }
     }
 
@@ -451,9 +452,9 @@ interface JournalEntryPreview {
       }
 
       &.cyan {
-        background: #F0F9FF;
-        color: #0284C7;
-        border: 1px solid rgba(2, 132, 199, 0.2);
+        background: #ECFDF5;
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.2);
       }
     }
 
@@ -474,7 +475,7 @@ interface JournalEntryPreview {
     /* ZATCA KPIs */
     .zatca-kpis {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
       gap: 0.75rem;
       background: #F8FAFC;
       padding: 1rem;
@@ -514,7 +515,7 @@ interface JournalEntryPreview {
     .btn-link {
       background: transparent;
       border: none;
-      color: #0284C7;
+      color: #059669;
       font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
@@ -580,8 +581,8 @@ interface JournalEntryPreview {
         color: #059669;
       }
       &.audited {
-        background: #F0F9FF;
-        color: #0284C7;
+        background: #ECFDF5;
+        color: #059669;
       }
     }
 
@@ -594,6 +595,28 @@ export class DashboardComponent {
   langService = inject(LanguageService);
   companyContext = inject(CompanyContextService);
   router = inject(Router);
+  private journalService = inject(JournalEntryService);
+
+  constructor() {
+    const companyId = this.companyContext.activeCompany()?.id;
+    this.journalService.getList({ companyId, take: 5 }).subscribe({
+      next: (res) => {
+        if (res && res.items && res.items.length > 0) {
+          this.recentEntries = res.items.slice(0, 5).map(e => ({
+            voucherNo: e.entryNumber,
+            date: (e.entryDate || '').substring(0, 10),
+            descriptionAr: e.descriptionAr,
+            descriptionEn: e.descriptionEn || e.descriptionAr,
+            amount: (e.totalDebit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            branchAr: 'الفرع الرئيسي',
+            branchEn: 'Main Branch',
+            status: e.status === 2 ? 'Posted' : 'Audited'
+          }));
+        }
+      },
+      error: () => {}
+    });
+  }
 
   metricCards: MetricCard[] = [
     {

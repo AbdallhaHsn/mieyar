@@ -20,12 +20,13 @@ interface CartItem {
   totalAmount: number;
 }
 
+import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 @Component({
   selector: 'app-pos-cashier',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   templateUrl: './pos-cashier.component.html',
   styleUrls: ['./pos-cashier.component.scss']
 })
@@ -33,7 +34,7 @@ export class PosCashierComponent implements OnInit {
   public langService = inject(LanguageService);
   public modulesSettings = inject(ModulesSettingsService);
   private posService = inject(PosService);
-  private authService = inject(AuthService);
+  public authService = inject(AuthService);
 
   // Active Shift State
   currentShift: PosShiftDto | null = null;
@@ -286,7 +287,7 @@ export class PosCashierComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('pos.alerts.cashReceivedInsufficient'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -423,7 +424,7 @@ export class PosCashierComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('pos.alerts.movementReasonRequired'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

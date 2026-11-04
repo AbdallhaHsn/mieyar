@@ -1,3 +1,4 @@
+using AlRobban.WebAPI.Security;
 using AlRobban.Modules.Projects.Application.Commands.ProgressBillings;
 using AlRobban.Modules.Projects.Application.Queries.Projects;
 using AlRobban.Shared.Application.Abstractions;
@@ -9,7 +10,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/projects/billings")]
-[Authorize]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class ProgressBillingsController : ControllerBase
 {
     private readonly IMediator _mediator;

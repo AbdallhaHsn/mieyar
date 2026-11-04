@@ -1,3 +1,4 @@
+using AlRobban.WebAPI.Security;
 using AlRobban.Modules.Projects.Application.Commands.Guarantees;
 using AlRobban.Modules.Projects.Application.Queries.Projects;
 using AlRobban.Modules.Projects.Domain.Enums;
@@ -10,7 +11,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/projects/guarantees")]
-[Authorize]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class GuaranteesController : ControllerBase
 {
     private readonly IMediator _mediator;

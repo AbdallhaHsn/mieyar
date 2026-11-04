@@ -274,7 +274,7 @@ export class VouchersComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('accounting.vouchers.alerts.totalAmountPositive'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -285,7 +285,7 @@ export class VouchersComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('accounting.vouchers.alerts.selectTreasuryOrBank'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -296,7 +296,7 @@ export class VouchersComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.createType() === VoucherType.Receipt ? this.langService.t('accounting.vouchers.alerts.enterReceivedFrom') : this.langService.t('accounting.vouchers.alerts.enterPaidTo'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -311,7 +311,7 @@ export class VouchersComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('accounting.vouchers.alerts.specifyLineAccountAmount'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -326,7 +326,7 @@ export class VouchersComponent implements OnInit {
           title: this.langService.t('common.warning'),
           text: this.langService.t('accounting.vouchers.alerts.selectLineAccount', { line: i + 1 }),
           confirmButtonText: this.langService.t('common.ok'),
-          confirmButtonColor: '#0284c7'
+          confirmButtonColor: '#059669'
         });
         return;
       }
@@ -336,7 +336,7 @@ export class VouchersComponent implements OnInit {
           title: this.langService.t('common.warning'),
           text: this.langService.t('accounting.vouchers.alerts.enterValidLineAmount', { line: i + 1 }),
           confirmButtonText: this.langService.t('common.ok'),
-          confirmButtonColor: '#0284c7'
+          confirmButtonColor: '#059669'
         });
         return;
       }
@@ -354,7 +354,7 @@ export class VouchersComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('accounting.vouchers.alerts.totalAmountPositive'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -480,7 +480,7 @@ export class VouchersComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('accounting.vouchers.alerts.enterCancelReason'),
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

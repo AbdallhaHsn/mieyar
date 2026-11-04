@@ -13,7 +13,7 @@ public class JwtTokenService : IJwtTokenService
     private readonly string _secretKey;
     private readonly string _issuer;
     private readonly string _audience;
-    private readonly int _expiryDays;
+    private readonly double _expiryHours;
 
     public JwtTokenService(IConfiguration configuration)
     {
@@ -21,14 +21,26 @@ public class JwtTokenService : IJwtTokenService
             ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
         _issuer = configuration["Jwt:Issuer"] ?? "AlRobban.Security";
         _audience = configuration["Jwt:Audience"] ?? "AlRobban.Client";
-        _expiryDays = int.TryParse(configuration["Jwt:ExpiryDays"], out var days) ? days : 1;
+        
+        if (double.TryParse(configuration["Jwt:ExpiryHours"], out var hours) && hours > 0)
+        {
+            _expiryHours = hours;
+        }
+        else if (int.TryParse(configuration["Jwt:ExpiryDays"], out var days) && days > 0)
+        {
+            _expiryHours = days * 24.0;
+        }
+        else
+        {
+            _expiryHours = 8.0; // Default: 8 working hours
+        }
     }
 
     public AuthResponseDto GenerateToken(User user, Company? company, CompanyRole? companyRole = null)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_secretKey);
-        var expiresAtUtc = DateTime.UtcNow.AddDays(_expiryDays);
+        var expiresAtUtc = DateTime.UtcNow.AddHours(_expiryHours);
 
         var effectiveRole = user.Role.ToString();
         if (companyRole != null && string.Equals(companyRole.Code, "SALES_REP", StringComparison.OrdinalIgnoreCase))

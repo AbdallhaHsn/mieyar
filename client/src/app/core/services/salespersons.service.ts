@@ -29,6 +29,14 @@ export interface SalespersonDto {
   canViewCostPrice?: boolean;
   canSellFromAnyWarehouse?: boolean;
   userRole?: string;
+  departmentName?: string;
+  departmentNameEn?: string;
+}
+
+export interface SalesDepartmentOption {
+  nameAr: string;
+  nameEn: string;
+  isCustom?: boolean;
 }
 
 export interface AvailableUserDto {
@@ -67,6 +75,8 @@ export interface CreateSalespersonRequest {
   canSellBelowCost?: boolean;
   canViewCostPrice?: boolean;
   canSellFromAnyWarehouse?: boolean;
+  departmentName?: string;
+  departmentNameEn?: string;
 }
 
 export interface UpdateSalespersonRequest {
@@ -74,6 +84,8 @@ export interface UpdateSalespersonRequest {
   nameEn: string;
   phoneNumber?: string;
   email?: string;
+  departmentName?: string;
+  departmentNameEn?: string;
   userId?: string;
   userName?: string;
   targetRole?: string;
@@ -139,5 +151,19 @@ export class SalespersonsService {
 
   toggleActive(id: string): Observable<{ success: boolean; isActive: boolean }> {
     return this.http.patch<{ success: boolean; isActive: boolean }>(`${this.apiUrl}/${id}/toggle-active`, {});
+  }
+
+  getDepartments(): Observable<SalesDepartmentOption[]> {
+    return this.http.get<SalesDepartmentOption[]>(`${this.apiUrl}/departments`);
+  }
+
+  getSavedDepartmentsStore(): Observable<{ found: boolean; data: SalesDepartmentOption[] | null }> {
+    const compId = this.companyContext.activeCompany().id || 'default';
+    return this.http.get<{ found: boolean; data: SalesDepartmentOption[] | null }>(`${environment.apiUrl}/api/system-data/store/sales_departments_${compId}`);
+  }
+
+  saveDepartmentsStore(departments: SalesDepartmentOption[]): Observable<any> {
+    const compId = this.companyContext.activeCompany().id || 'default';
+    return this.http.post(`${environment.apiUrl}/api/system-data/store/sales_departments_${compId}`, departments);
   }
 }

@@ -214,7 +214,7 @@
           <th>{{ 'invoices.table.vatAmount' | translate }}</th>
           <th>{{ 'invoices.table.total' | translate }}</th>
           <th>{{ 'invoices.table.paymentStatus' | translate }}</th>
-          <th *ngIf="!isQuotationsView()">{{ 'invoices.view.journalEntry' | translate }}</th>
+          <th *ngIf="!isQuotationsView() && !authService.isSalesperson()">{{ 'invoices.view.journalEntry' | translate }}</th>
           <th style="text-align: center;">{{ 'invoices.table.actions' | translate }}</th>
         </tr>
       </thead>
@@ -273,7 +273,7 @@
               </div>
             </div>
           </td>
-          <td *ngIf="!isQuotationsView()" (click)="$event.stopPropagation()">
+          <td *ngIf="!isQuotationsView() && !authService.isSalesperson()" (click)="$event.stopPropagation()">
             <a 
               *ngIf="inv.associatedJournalEntryNumber" 
               [routerLink]="['/accounting/journal-entries']" 

@@ -266,11 +266,11 @@ export class YearEndClosingComponent implements OnInit {
         this.closingResult.set(res);
         this.isExecuting.set(false);
         this.currentStep.set(4);
-        this.successMessage.set(this.langService.t('accounting.yearEndClosing.alerts.closingSuccess').replace('{year}', res.yearNumber.toString()).replace('{entryNo}', res.closingJournalEntryNumber));
+        const msg = this.langService.t('accounting.yearEndClosing.alerts.closingSuccess').replace('{year}', res.yearNumber.toString()).replace('{entryNo}', res.closingJournalEntryNumber); this.successMessage.set(msg); Swal.fire({ icon: 'success', title: this.langService.t('common.saved'), text: msg, confirmButtonColor: '#059669' });
         this.loadInitialData();
       },
       error: (err) => {
-        this.errorMessage.set(this.langService.t('accounting.yearEndClosing.alerts.closingFailed').replace('{error}', err.error?.message || err.message || ''));
+        const msg = this.langService.t('accounting.yearEndClosing.alerts.closingFailed').replace('{error}', err.error?.message || err.message || ''); this.errorMessage.set(msg); Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: msg, confirmButtonColor: '#059669' });
         this.isExecuting.set(false);
       }
     });
@@ -299,11 +299,11 @@ export class YearEndClosingComponent implements OnInit {
       next: () => {
         this.isReopening.set(false);
         this.closeReopenModal();
-        this.successMessage.set(this.langService.t('accounting.yearEndClosing.alerts.reopenSuccess'));
+        const msg = this.langService.t('accounting.yearEndClosing.alerts.reopenSuccess'); this.successMessage.set(msg); Swal.fire({ icon: 'success', title: this.langService.t('common.saved'), text: msg, confirmButtonColor: '#059669' });
         this.loadInitialData();
       },
       error: (err) => {
-        this.errorMessage.set(this.langService.t('accounting.yearEndClosing.alerts.reopenFailed').replace('{error}', err.error?.message || err.message || ''));
+        const msg = this.langService.t('accounting.yearEndClosing.alerts.reopenFailed').replace('{error}', err.error?.message || err.message || ''); this.errorMessage.set(msg); Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: msg, confirmButtonColor: '#059669' });
         this.isReopening.set(false);
       }
     });

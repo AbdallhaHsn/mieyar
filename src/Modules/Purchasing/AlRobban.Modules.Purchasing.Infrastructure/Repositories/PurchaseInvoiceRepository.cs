@@ -112,21 +112,19 @@ public class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     public async Task<string> GenerateNextInvoiceNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
     {
         var prefix = $"PINV-{year}-";
-        var numbers = await _dbContext.PurchaseInvoices
+        var lastNumber = await _dbContext.PurchaseInvoices
             .Where(x => x.CompanyId == companyId && x.InvoiceNumber.StartsWith(prefix))
+            .OrderByDescending(x => x.InvoiceNumber)
             .Select(x => x.InvoiceNumber)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
 
         int maxSeq = 0;
-        foreach (var num in numbers)
+        if (!string.IsNullOrEmpty(lastNumber))
         {
-            var parts = num.Split('-');
+            var parts = lastNumber.Split('-');
             if (parts.Length >= 3 && int.TryParse(parts[2], out var currentSeq))
             {
-                if (currentSeq > maxSeq)
-                {
-                    maxSeq = currentSeq;
-                }
+                maxSeq = currentSeq;
             }
         }
 

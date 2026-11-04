@@ -46,7 +46,7 @@
 }
 
 .main-title i {
-  color: #0284c7;
+  color: #059669;
 }
 
 .subtitle {
@@ -177,7 +177,7 @@
 }
 
 .tab-btn.active {
-  background: #0284c7;
+  background: #059669;
   color: #ffffff;
 }
 
@@ -194,7 +194,7 @@
 
 .search-icon {
   position: absolute;
-  right: 8px;
+  inset-inline-start: 8px;
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
@@ -204,7 +204,8 @@
 .search-box input {
   height: 28px;
   width: 100%;
-  padding: 0 28px 0 8px;
+  padding-inline-start: 28px;
+  padding-inline-end: 8px;
   font-size: 0.75rem;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
@@ -213,12 +214,12 @@
 }
 
 .search-box input:focus {
-  border-color: #0284c7;
+  border-color: #059669;
 }
 
 .table-responsive {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 /* ERP Table */
@@ -282,12 +283,12 @@
 }
 
 .btn-primary {
-  background: #0284c7;
+  background: #059669;
   color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #0369a1;
+  background: #047857;
 }
 
 .btn-primary:disabled {
@@ -479,9 +480,9 @@
 }
 
 .form-control:focus {
-  border-color: #0284c7;
+  border-color: #059669;
   background-color: #ffffff;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
 }
 
 .ltr-input {
@@ -789,7 +790,7 @@
 .report-tab-pill.active {
   background: #0284c7;
   color: #ffffff;
-  border-color: #0284c7;
+  border-color: #059669;
   box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
 }
 
@@ -1159,3 +1160,20 @@
   }
 }
 
+
+/* Utility & Responsive Rules */
+.d-flex { display: flex; }
+.d-block { display: block; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.gap-2 { gap: 0.5rem; }
+.row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 0.75rem; }
+.col-4 { grid-column: span 4; }
+.col-6 { grid-column: span 6; }
+.col-12 { grid-column: span 12; }
+@media (max-width: 768px) {
+  .header-strip, .table-toolbar { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .search-box { width: 100%; }
+  .col-4, .col-6 { grid-column: span 12; }
+}

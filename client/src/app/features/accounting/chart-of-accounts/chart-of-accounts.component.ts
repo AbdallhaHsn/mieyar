@@ -191,7 +191,7 @@ export class ChartOfAccountsComponent implements OnInit {
           icon: 'success',
           title: this.langService.t('accounting.chartOfAccounts.alerts.exportSuccess'),
           text: this.langService.t('accounting.chartOfAccounts.alerts.exportSuccessText'),
-          confirmButtonColor: '#0284c7'
+          confirmButtonColor: '#059669'
         });
       },
       error: () => {
@@ -439,7 +439,7 @@ export class ChartOfAccountsComponent implements OnInit {
           </div>
         `,
         icon: 'warning',
-        confirmButtonColor: '#0284c7',
+        confirmButtonColor: '#059669',
         confirmButtonText: this.langService.t('accounting.chartOfAccounts.alerts.understood')
       });
       return;

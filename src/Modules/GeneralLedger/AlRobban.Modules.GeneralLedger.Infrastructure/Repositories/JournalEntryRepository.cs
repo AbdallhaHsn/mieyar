@@ -56,21 +56,19 @@ public class JournalEntryRepository : IJournalEntryRepository
             }
 
             var prefix = $"JV-{year}-";
-            var numbers = await _dbContext.JournalEntries
+            var lastNumber = await _dbContext.JournalEntries
                 .Where(x => x.CompanyId == companyId && x.EntryNumber.StartsWith(prefix))
+                .OrderByDescending(x => x.EntryNumber)
                 .Select(x => x.EntryNumber)
-                .ToListAsync(cancellationToken);
+                .FirstOrDefaultAsync(cancellationToken);
 
             int maxSeq = 0;
-            foreach (var num in numbers)
+            if (!string.IsNullOrEmpty(lastNumber))
             {
-                var parts = num.Split('-');
+                var parts = lastNumber.Split('-');
                 if (parts.Length >= 3 && int.TryParse(parts[2], out var currentSeq))
                 {
-                    if (currentSeq > maxSeq)
-                    {
-                        maxSeq = currentSeq;
-                    }
+                    maxSeq = currentSeq;
                 }
             }
 

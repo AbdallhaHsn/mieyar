@@ -25,27 +25,24 @@
       </div>
 
       <div class="header-actions">
-        <button class="btn btn-outline" (click)="toggleMetricsRibbon()" [title]="'projects.hub.toggleMetricsTitle' | translate">
-          <i class="pi" [ngClass]="showMetricsRibbon ? 'pi-chevron-up' : 'pi-chart-bar'"></i>
+        <button class="btn btn-outline btn-kpi-toggle" [class.active]="showMetricsRibbon" (click)="toggleMetricsRibbon()" [title]="'projects.hub.toggleMetricsTitle' | translate">
+          <i class="pi" [ngClass]="showMetricsRibbon ? 'pi-chart-bar' : 'pi-eye'"></i>
           <span>{{ showMetricsRibbon ? ('projects.hub.collapseMetrics' | translate) : ('projects.hub.showMetrics' | translate) }}</span>
         </button>
-        <button class="btn btn-secondary" (click)="openAddTimesheetModal()">
-          <i class="pi pi-clock"></i>
-          <span>{{ 'projects.hub.recordTimesheet' | translate }}</span>
-        </button>
-        <button class="btn btn-secondary" (click)="openAddTaskModal()">
-          <i class="pi pi-calendar-plus"></i>
-          <span>{{ 'projects.hub.planTask' | translate }}</span>
-        </button>
-        <button class="btn btn-secondary" (click)="openGuaranteeForm()">
-          <i class="pi pi-shield"></i>
-          <span>{{ 'projects.hub.letterOfGuarantee' | translate }}</span>
-        </button>
-        <button class="btn btn-secondary" (click)="openBillingForm()">
-          <i class="pi pi-file-edit"></i>
-          <span>{{ 'projects.hub.progressBilling' | translate }}</span>
-        </button>
-        <button class="btn btn-primary" (click)="openProjectForm()">
+
+        <div class="quick-actions-dropdown">
+          <button class="btn btn-outline btn-kpi-toggle" (click)="toggleQuickActionsMenu()">
+            <i class="pi pi-bolt"></i><span>{{ langService.currentLang() === 'ar' ? 'إجراء سريع' : 'Quick Actions' }}</span><i class="pi pi-angle-down"></i>
+          </button>
+          <div class="quick-menu" *ngIf="showQuickActionsMenu" (click)="showQuickActionsMenu = false">
+            <button (click)="openBillingForm()"><i class="pi pi-file-edit"></i> {{ 'projects.hub.progressBilling' | translate }}</button>
+            <button (click)="openGuaranteeForm()"><i class="pi pi-shield"></i> {{ 'projects.hub.letterOfGuarantee' | translate }}</button>
+            <button (click)="openAddTaskModal()"><i class="pi pi-calendar-plus"></i> {{ 'projects.hub.planTask' | translate }}</button>
+            <button (click)="openAddTimesheetModal()"><i class="pi pi-clock"></i> {{ 'projects.hub.recordTimesheet' | translate }}</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-create-project" (click)="openProjectForm()">
           <i class="pi pi-plus"></i>
           <span>{{ 'projects.hub.newProject' | translate }}</span>
         </button>
@@ -102,31 +99,8 @@
 
     <!-- Navigation Hub Tabs: Projects | Billings | Guarantees -->
     <div class="tabs-and-toolbar">
-      <div class="hub-tabs">
-        <button class="tab-btn" [class.active]="activeTab === 'projects'" (click)="setTab('projects')">
-          <i class="pi pi-folder"></i>
-          <span>{{ 'projects.hub.navTabs.projectsAndContracts' | translate }} ({{ projects.length }})</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'planning'" (click)="setTab('planning')">
-          <i class="pi pi-calendar"></i>
-          <span>{{ 'projects.hub.navTabs.planningAndGantt' | translate }} ({{ planningTasks.length }})</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'timesheet'" (click)="setTab('timesheet')">
-          <i class="pi pi-clock"></i>
-          <span>{{ 'projects.hub.navTabs.timesheetAndField' | translate }} ({{ timesheets.length }})</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'billings'" (click)="setTab('billings')">
-          <i class="pi pi-file-edit"></i>
-          <span>{{ 'projects.hub.navTabs.progressBillings' | translate }} ({{ billings.length }})</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'guarantees'" (click)="setTab('guarantees')">
-          <i class="pi pi-shield"></i>
-          <span>{{ 'projects.hub.navTabs.bankGuarantees' | translate }} ({{ guarantees.length }})</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'settings'" (click)="setTab('settings')">
-          <i class="pi pi-cog"></i>
-          <span>{{ 'projects.hub.navTabs.contractingSettings' | translate }}</span>
-        </button>
+      <div class="hub-page-title"><i class="pi" [ngClass]="{'pi-folder': activeTab==='projects', 'pi-calendar': activeTab==='planning', 'pi-clock': activeTab==='timesheet', 'pi-file-edit': activeTab==='billings', 'pi-shield': activeTab==='guarantees', 'pi-cog': activeTab==='settings'}"></i>
+        <span>{{ activeTab==='projects' ? ('projects.hub.navTabs.projectsAndContracts' | translate) + ' (' + projects.length + ')' : activeTab==='planning' ? ('projects.hub.navTabs.planningAndGantt' | translate) : activeTab==='timesheet' ? ('projects.hub.navTabs.timesheetAndField' | translate) : activeTab==='billings' ? ('projects.hub.navTabs.progressBillings' | translate) : activeTab==='guarantees' ? ('projects.hub.navTabs.bankGuarantees' | translate) : ('projects.hub.navTabs.contractingSettings' | translate) }}</span>
       </div>
 
       <div class="hub-toolbar">
@@ -244,12 +218,18 @@
       <!-- OPTION A: SPACIOUS STAGE CARDS VIEW (Clean, Uncrowded & Stage-Oriented) -->
       <div class="stage-cards-container" *ngIf="displayMode === 'cards'">
         <div class="project-stage-card" *ngFor="let p of paginatedProjects">
-          <!-- Card Top: Identity, Client & Status -->
+          <!-- Card Top: Identity, Smart Health Radar, Client & Status -->
           <div class="stage-card-header">
             <div class="identity-group">
               <span class="badge-code lg font-bold">{{ p.code }}</span>
               <div class="titles-wrap">
-                <h3 class="card-project-title" (click)="openProjectWorkspace(p.id)">{{ p.nameAr }}</h3>
+                <div class="title-and-radar">
+                  <h3 class="card-project-title" (click)="openProjectWorkspace(p.id)">{{ p.nameAr }}</h3>
+                  <span class="health-radar-badge" [ngClass]="'radar-' + getProjectHealthRadar(p).status">
+                    <i class="pi" [ngClass]="getProjectHealthRadar(p).icon"></i>
+                    <span>{{ langService.currentLang() === 'ar' ? getProjectHealthRadar(p).labelAr : getProjectHealthRadar(p).labelEn }}</span>
+                  </span>
+                </div>
                 <span class="card-project-sub">{{ p.nameEn }}</span>
               </div>
             </div>
@@ -257,81 +237,159 @@
             <div class="header-tags">
               <span class="client-pill"><i class="pi pi-user"></i> {{ p.customerName }}</span>
               <span class="contract-pill"><i class="pi pi-file"></i> {{ 'projects.hub.stageCards.contract' | translate }} {{ p.contractNumber }}</span>
+              <span class="days-countdown-pill" [class.urgent]="getRemainingDays(p) <= 30 && p.status !== ProjectStatus.Completed">
+                <i class="pi pi-hourglass"></i>
+                {{ langService.currentLang() === 'ar' ? ('متبقي ' + getRemainingDays(p) + ' يوم') : (getRemainingDays(p) + 'd left') }}
+              </span>
               <span class="status-badge" [ngClass]="getStatusClass(p.status)">{{ p.statusText }}</span>
             </div>
           </div>
 
-          <!-- Project Lifecycle 4-Step Stepper (المسار الميداني للمشروع) -->
-          <div class="project-lifecycle-stepper">
-            <div class="step-node" [class.done]="getStageStepNumber(p) >= 1" [class.current]="getStageStepNumber(p) === 1">
+          <!-- Interactive Project Lifecycle 4-Step Stepper (المسار الميداني التفاعلي للمشروع) -->
+          <div class="project-lifecycle-stepper interactive-stepper">
+            <div
+              class="step-node clickable-step"
+              [class.done]="getStageStepNumber(p) >= 1"
+              [class.current]="getStageStepNumber(p) === 1"
+              (click)="onLifecycleStepClick(p, 1)"
+              [title]="langService.currentLang() === 'ar' ? 'انقر لعرض بيانات العقد والموازنة' : 'View Contract & Budget'"
+            >
               <div class="node-circle">
                 <i class="pi pi-check" *ngIf="getStageStepNumber(p) > 1"></i>
                 <span *ngIf="getStageStepNumber(p) <= 1">1</span>
               </div>
-              <span class="node-label">{{ 'projects.hub.stageCards.step1' | translate }}</span>
+              <div class="node-text-group">
+                <span class="node-label">{{ 'projects.hub.stageCards.step1' | translate }}</span>
+              </div>
             </div>
             <div class="stepper-line" [class.active]="getStageStepNumber(p) >= 2"></div>
 
-            <div class="step-node" [class.done]="getStageStepNumber(p) >= 2" [class.current]="getStageStepNumber(p) === 2">
+            <div
+              class="step-node clickable-step"
+              [class.done]="getStageStepNumber(p) >= 2"
+              [class.current]="getStageStepNumber(p) === 2"
+              (click)="onLifecycleStepClick(p, 2)"
+              [title]="langService.currentLang() === 'ar' ? 'انقر لإدارة مراحل العمل الميدانية (WBS)' : 'Manage WBS & Field Execution'"
+            >
               <div class="node-circle">
                 <i class="pi pi-check" *ngIf="getStageStepNumber(p) > 2"></i>
                 <span *ngIf="getStageStepNumber(p) <= 2">2</span>
               </div>
-              <span class="node-label">{{ 'projects.hub.stageCards.step2' | translate }}</span>
+              <div class="node-text-group">
+                <span class="node-label">{{ 'projects.hub.stageCards.step2' | translate }}</span>
+              </div>
             </div>
             <div class="stepper-line" [class.active]="getStageStepNumber(p) >= 3"></div>
 
-            <div class="step-node" [class.done]="getStageStepNumber(p) >= 3" [class.current]="getStageStepNumber(p) === 3">
+            <div
+              class="step-node clickable-step"
+              [class.done]="getStageStepNumber(p) >= 3"
+              [class.current]="getStageStepNumber(p) === 3"
+              (click)="onLifecycleStepClick(p, 3)"
+              [title]="langService.currentLang() === 'ar' ? 'انقر لإصدار أو متابعة المستخلصات الدورية' : 'Issue or View Progress Billings'"
+            >
               <div class="node-circle">
                 <i class="pi pi-check" *ngIf="getStageStepNumber(p) > 3"></i>
                 <span *ngIf="getStageStepNumber(p) <= 3">3</span>
               </div>
-              <span class="node-label">{{ 'projects.hub.stageCards.step3' | translate }}</span>
+              <div class="node-text-group">
+                <span class="node-label">{{ 'projects.hub.stageCards.step3' | translate }}</span>
+              </div>
             </div>
             <div class="stepper-line" [class.active]="getStageStepNumber(p) >= 4"></div>
 
-            <div class="step-node" [class.done]="getStageStepNumber(p) >= 4" [class.current]="getStageStepNumber(p) === 4">
+            <div
+              class="step-node clickable-step"
+              [class.done]="getStageStepNumber(p) >= 4"
+              [class.current]="getStageStepNumber(p) === 4"
+              (click)="onLifecycleStepClick(p, 4)"
+              [title]="langService.currentLang() === 'ar' ? 'انقر لعرض التقرير الهندسي ومحضر التسليم' : 'View Technical Handover Report'"
+            >
               <div class="node-circle">
                 <i class="pi pi-check" *ngIf="getStageStepNumber(p) >= 4"></i>
                 <span *ngIf="getStageStepNumber(p) < 4">4</span>
               </div>
-              <span class="node-label">{{ 'projects.hub.stageCards.step4' | translate }}</span>
+              <div class="node-text-group">
+                <span class="node-label">{{ 'projects.hub.stageCards.step4' | translate }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- Key Financial & Operational Pillars Grid (4 Spacious Columns) -->
+          <!-- Key Financial & Operational Pillars Grid (4 Upgraded Analytical Columns) -->
           <div class="stage-pillars-grid">
+            <!-- Pillar 1: Contract Value, Estimated Cost & Retention Pool -->
             <div class="pillar-card">
-              <span class="pillar-label"><i class="pi pi-briefcase"></i> {{ 'projects.hub.stageCards.pillarValueBudget' | translate }}</span>
+              <div class="pillar-label-row">
+                <span class="pillar-label"><i class="pi pi-briefcase"></i> {{ 'projects.hub.stageCards.pillarValueBudget' | translate }}</span>
+                <span class="mini-pill pill-slate" [title]="langService.currentLang() === 'ar' ? 'نسبة التكلفة التقديرية من العقد' : 'Estimated Cost Ratio'">
+                  {{ getBudgetToContractPct(p) }}% {{ langService.currentLang() === 'ar' ? 'تكلفة' : 'Cost' }}
+                </span>
+              </div>
               <strong class="pillar-val">{{ formatCurrency(p.contractAmount) }}</strong>
-              <small class="pillar-sub">{{ 'projects.hub.stageCards.pillarBudget' | translate }} {{ formatCurrency(p.estimatedCost) }}</small>
+              <div class="pillar-sub-split">
+                <small class="pillar-sub">{{ 'projects.hub.stageCards.pillarBudget' | translate }} <strong>{{ formatCurrency(p.estimatedCost) }}</strong></small>
+              </div>
             </div>
 
+            <!-- Pillar 2: Billings, Remaining Contract Backlog & Actual Expenses -->
             <div class="pillar-card">
-              <span class="pillar-label"><i class="pi pi-file-edit"></i> {{ 'projects.hub.stageCards.pillarBillingsCosts' | translate }}</span>
+              <div class="pillar-label-row">
+                <span class="pillar-label"><i class="pi pi-file-edit"></i> {{ 'projects.hub.stageCards.pillarBillingsCosts' | translate }}</span>
+                <span class="mini-pill pill-blue">{{ getBilledPct(p) }}% {{ langService.currentLang() === 'ar' ? 'مفوتر' : 'Billed' }}</span>
+              </div>
               <strong class="pillar-val text-info">{{ formatCurrency(p.totalBilledAmount) }}</strong>
-              <small class="pillar-sub text-warning">{{ 'projects.hub.stageCards.pillarActualExpenses' | translate }} {{ formatCurrency(p.totalExpensesAmount) }}</small>
+              <div class="pillar-sub-split">
+                <small class="pillar-sub text-warning">{{ 'projects.hub.stageCards.pillarActualExpenses' | translate }} <strong>{{ formatCurrency(p.totalExpensesAmount) }}</strong></small>
+              </div>
             </div>
 
-            <div class="pillar-card">
+            <!-- Pillar 3: Dual Progress Comparison (WBS Completion % vs Contract Time Elapsed %) -->
+            <div class="pillar-card pillar-progress-dual">
               <div class="pillar-label-row">
                 <span class="pillar-label"><i class="pi pi-chart-pie"></i> {{ 'projects.hub.stageCards.pillarActualProgress' | translate }}</span>
                 <span class="pct-badge">{{ p.completionPercentage }}%</span>
               </div>
-              <div class="progress-bar-bg mt-1">
+              <div class="progress-bar-bg">
                 <div class="progress-bar-fill" [style.width.%]="p.completionPercentage"></div>
               </div>
-              <small class="pillar-sub">{{ p.phasesCount }} {{ 'projects.hub.stageCards.pillarRegisteredPhases' | translate }}</small>
+              <div class="time-vs-wbs-row">
+                <span class="time-label">
+                  <i class="pi pi-clock"></i>
+                  {{ langService.currentLang() === 'ar' ? 'المدة المنقضية:' : 'Time Elapsed:' }} <strong>{{ getTimeElapsedPct(p) }}%</strong>
+                </span>
+                <span class="phases-link" (click)="onLifecycleStepClick(p, 2)">
+                  {{ p.phasesCount }} {{ 'projects.hub.stageCards.pillarRegisteredPhases' | translate }}
+                </span>
+              </div>
+              <div class="progress-bar-bg time-bar-bg">
+                <div class="progress-bar-fill time-bar-fill" [style.width.%]="getTimeElapsedPct(p)"></div>
+              </div>
             </div>
 
-            <div class="pillar-card">
-              <span class="pillar-label"><i class="pi pi-chart-line"></i> {{ 'projects.hub.stageCards.pillarEstimatedProfit' | translate }}</span>
-              <strong class="pillar-val text-success">{{ formatCurrency(p.profitabilityAmount) }}</strong>
-              <small class="pillar-sub">{{ 'projects.hub.stageCards.pillarProfitMargin' | translate }} <strong class="text-success">{{ p.profitMarginPercentage }}%</strong></small>
+            <!-- Pillar 4: Estimated Contractual Profit (Fixed!) & Realized Net Profit -->
+            <div class="pillar-card pillar-profit-highlight">
+              <div class="pillar-label-row">
+                <span class="pillar-label"><i class="pi pi-chart-line"></i> {{ 'projects.hub.stageCards.pillarEstimatedProfit' | translate }}</span>
+                <span class="mini-pill pill-emerald">
+                  {{ 'projects.hub.stageCards.pillarProfitMargin' | translate }} {{ getEstimatedMarginPct(p) }}%
+                </span>
+              </div>
+              <strong class="pillar-val text-success">{{ formatCurrency(getEstimatedProfit(p)) }}</strong>
+              <div class="pillar-sub-split">
+                <small class="pillar-sub">
+                  {{ langService.currentLang() === 'ar' ? 'صافي محقق فعلياً:' : 'Realized Net:' }}
+                  <strong [class.text-success]="p.profitabilityAmount >= 0" [class.text-danger]="p.profitabilityAmount < 0">
+                    {{ formatCurrency(p.profitabilityAmount) }}
+                  </strong>
+                </small>
+                <small class="pillar-sub text-muted" *ngIf="p.totalBilledAmount === 0">
+                  {{ langService.currentLang() === 'ar' ? 'ربح تعاقدي مخطط' : 'Planned Margin' }}
+                </small>
+              </div>
             </div>
           </div>
 
-          <!-- Card Bottom Action Ribbon -->
+          <!-- Card Bottom Action Ribbon with Smart Next-Best-Action -->
           <div class="stage-card-footer">
             <div class="footer-meta">
               <span><i class="pi pi-calendar"></i> {{ 'projects.hub.stageCards.startDate' | translate }} {{ p.startDate | date:'yyyy-MM-dd' }}</span>
@@ -340,6 +398,12 @@
             </div>
 
             <div class="footer-actions">
+              <!-- Smart Contextual Next-Best-Action Button -->
+              <button class="btn btn-sm btn-next-action" (click)="triggerNextBestAction(p)" [title]="langService.currentLang() === 'ar' ? 'الإجراء التالي الموصى به بناءً على مرحلة المشروع' : 'Recommended Next Action'">
+                <i class="pi" [ngClass]="getNextBestAction(p).icon"></i>
+                <span>{{ langService.currentLang() === 'ar' ? getNextBestAction(p).labelAr : getNextBestAction(p).labelEn }}</span>
+              </button>
+
               <button class="btn btn-sm btn-primary" (click)="openProjectWorkspace(p.id)">
                 <i class="pi pi-desktop"></i>
                 <span>{{ 'projects.hub.stageCards.commandCenter' | translate }}</span>
@@ -433,8 +497,8 @@
         </table>
       </div>
 
-      <!-- Modern Projects Pagination Bar -->
-      <div class="projects-pagination-bar" *ngIf="filteredProjects.length > 0">
+      <!-- Modern Projects Pagination Bar (Only shown when items exceed page size) -->
+      <div class="projects-pagination-bar" *ngIf="filteredProjects.length > projectsPageSize">
         <div class="pagination-info">
           <span>{{ 'projects.hub.pagination.showing' | translate }} <strong>{{ (projectsCurrentPage - 1) * projectsPageSize + 1 }}</strong> {{ 'projects.hub.pagination.to' | translate }} <strong>{{ Math.min(projectsCurrentPage * projectsPageSize, filteredProjects.length) }}</strong> {{ 'projects.hub.pagination.ofTotal' | translate }} <strong>{{ filteredProjects.length }}</strong> {{ 'projects.hub.pipeline.projectUnit' | translate }}</span>
           <div class="page-size-selector">

@@ -13,6 +13,9 @@ public class ProjectsDbContext : AppDbContextBase
     public DbSet<ContractProgressBilling> ContractProgressBillings => Set<ContractProgressBilling>();
     public DbSet<LetterOfGuarantee> LettersOfGuarantee => Set<LetterOfGuarantee>();
     public DbSet<ProjectExpense> ProjectExpenses => Set<ProjectExpense>();
+    public DbSet<ProjectPlanningTask> ProjectPlanningTasks => Set<ProjectPlanningTask>();
+    public DbSet<ProjectTimesheet> ProjectTimesheets => Set<ProjectTimesheet>();
+    public DbSet<ProjectAccountingSetting> ProjectAccountingSettings => Set<ProjectAccountingSetting>();
 
     public ProjectsDbContext(
         DbContextOptions<ProjectsDbContext> options,
@@ -123,6 +126,62 @@ public class ProjectsDbContext : AppDbContextBase
             b.Property(e => e.Amount).HasPrecision(18, 2);
 
             b.HasIndex(e => new { e.CompanyId, e.ProjectId });
+        });
+
+        modelBuilder.Entity<ProjectPlanningTask>(b =>
+        {
+            b.ToTable("ProjectPlanningTasks");
+            b.HasKey(t => t.Id);
+            b.Property(t => t.TitleAr).HasMaxLength(300).IsRequired();
+            b.Property(t => t.TitleEn).HasMaxLength(300);
+            b.Property(t => t.ProjectName).HasMaxLength(250);
+            b.Property(t => t.ProjectCode).HasMaxLength(50);
+            b.Property(t => t.StartDate).HasMaxLength(30);
+            b.Property(t => t.EndDate).HasMaxLength(30);
+            b.Property(t => t.AssignedTo).HasMaxLength(150);
+            b.Property(t => t.AssignedRole).HasMaxLength(150);
+            b.Property(t => t.Status).HasMaxLength(50);
+            b.Property(t => t.PredecessorId).HasMaxLength(100);
+            b.Property(t => t.ProgressPercentage).HasPrecision(6, 2);
+            b.Property(t => t.EstimatedCost).HasPrecision(18, 2);
+            b.HasIndex(t => new { t.CompanyId, t.ProjectId });
+        });
+
+        modelBuilder.Entity<ProjectTimesheet>(b =>
+        {
+            b.ToTable("ProjectTimesheets");
+            b.HasKey(t => t.Id);
+            b.Property(t => t.ProjectName).HasMaxLength(250);
+            b.Property(t => t.ProjectCode).HasMaxLength(50);
+            b.Property(t => t.PhaseName).HasMaxLength(250);
+            b.Property(t => t.Date).HasMaxLength(30);
+            b.Property(t => t.EntryType).HasMaxLength(50);
+            b.Property(t => t.UnitOfMeasure).HasMaxLength(50);
+            b.Property(t => t.EmployeeName).HasMaxLength(150);
+            b.Property(t => t.EmployeeRole).HasMaxLength(150);
+            b.Property(t => t.SubcontractorName).HasMaxLength(250);
+            b.Property(t => t.SubcontractorContractNo).HasMaxLength(100);
+            b.Property(t => t.TaskDescription).HasMaxLength(500);
+            b.Property(t => t.Status).HasMaxLength(50);
+            b.Property(t => t.Quantity).HasPrecision(18, 2);
+            b.Property(t => t.UnitPrice).HasPrecision(18, 2);
+            b.Property(t => t.RetentionPercentage).HasPrecision(6, 2);
+            b.Property(t => t.RetentionAmount).HasPrecision(18, 2);
+            b.Property(t => t.NetPayable).HasPrecision(18, 2);
+            b.Property(t => t.Hours).HasPrecision(18, 2);
+            b.Property(t => t.HourlyRate).HasPrecision(18, 2);
+            b.Property(t => t.TotalCost).HasPrecision(18, 2);
+            b.HasIndex(t => new { t.CompanyId, t.ProjectId });
+        });
+
+        modelBuilder.Entity<ProjectAccountingSetting>(b =>
+        {
+            b.ToTable("ProjectAccountingSettings");
+            b.HasKey(s => s.Id);
+            b.Property(s => s.DefaultRetentionPercentage).HasPrecision(6, 2);
+            b.Property(s => s.DefaultAdvancePaymentPercentage).HasPrecision(6, 2);
+            b.Property(s => s.DefaultVatRate).HasPrecision(6, 2);
+            b.HasIndex(s => s.CompanyId).IsUnique();
         });
 
         base.OnModelCreating(modelBuilder);

@@ -44,6 +44,12 @@ export enum EndOfServiceReason {
   ForceMajeure = 7
 }
 
+export interface HrDepartmentOption {
+  nameAr: string;
+  nameEn: string;
+  isCustom?: boolean;
+}
+
 export interface EmployeeDto {
   id: string;
   companyId: string;
@@ -184,9 +190,63 @@ export class HrService {
 
   private employeesUrl = `${environment.apiUrl}/api/hr/employees`;
   private payrollUrl = `${environment.apiUrl}/api/hr/payroll`;
+  private systemStoresUrl = `${environment.apiUrl}/api/system-stores`;
 
   private get activeCompanyId(): string {
-    return this.companyContext.activeCompany()?.id || '11111111-2222-3333-4444-555555555555';
+    const id = this.companyContext.activeCompany()?.id;
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return id && guidRegex.test(id) ? id : '11111111-1111-1111-1111-111111111111';
+  }
+
+  private sanitizeEmployeePayload(payload: any): any {
+    const firstAr = (payload.firstNameAr || '').trim() || 'موظف';
+    const lastAr = (payload.lastNameAr || '').trim() || '-';
+    const firstEn = (payload.firstNameEn || '').trim() || firstAr;
+    const lastEn = (payload.lastNameEn || '').trim() || lastAr;
+
+    return {
+      companyId: payload.companyId && /^[0-9a-f-]{36}$/i.test(payload.companyId) ? payload.companyId : this.activeCompanyId,
+      employeeNumber: payload.employeeNumber?.trim() || null,
+      firstNameAr: firstAr,
+      lastNameAr: lastAr,
+      firstNameEn: firstEn,
+      lastNameEn: lastEn,
+      nationalIdOrIqama: (payload.nationalIdOrIqama || '').trim(),
+      nationality: (payload.nationality || '').trim() || (payload.isSaudi ? 'سعودي' : 'مقيم'),
+      isSaudi: !!payload.isSaudi,
+      gender: Number(payload.gender) || 1,
+      dateOfBirth: payload.dateOfBirth ? new Date(payload.dateOfBirth).toISOString() : null,
+      mobileNumber: payload.mobileNumber?.trim() || null,
+      email: payload.email?.trim() || null,
+      departmentId: payload.departmentId || null,
+      departmentName: (payload.departmentName || '').trim() || 'الإدارة العامة',
+      jobTitleAr: (payload.jobTitleAr || '').trim(),
+      jobTitleEn: (payload.jobTitleEn || payload.jobTitleAr || '').trim(),
+      costCenterId: payload.costCenterId || null,
+      branchId: payload.branchId || null,
+      hireDate: payload.hireDate ? new Date(payload.hireDate).toISOString() : new Date().toISOString(),
+      contractType: Number(payload.contractType) || 1,
+      contractStartDate: payload.contractStartDate ? new Date(payload.contractStartDate).toISOString() : null,
+      contractEndDate: payload.contractEndDate ? new Date(payload.contractEndDate).toISOString() : null,
+      status: Number(payload.status) || 1,
+      bankCode: (payload.bankCode || 'RJHI').trim(),
+      bankName: (payload.bankName || 'مصرف الراجحي').trim(),
+      iban: (payload.iban || '').trim().length > 2 ? payload.iban.trim() : 'SA0000000000000000000000',
+      basicSalary: Number(payload.basicSalary) || 0,
+      housingAllowance: Number(payload.housingAllowance) || 0,
+      transportationAllowance: Number(payload.transportationAllowance) || 0,
+      otherAllowances: Number(payload.otherAllowances) || 0
+    };
+  }
+
+  getSavedDepartmentsStore(): Observable<{ found: boolean; data: HrDepartmentOption[] }> {
+    return this.http.get<{ found: boolean; data: HrDepartmentOption[] }>(
+      `${this.systemStoresUrl}/hr_departments_catalog`
+    );
+  }
+
+  saveDepartmentsStore(departments: HrDepartmentOption[]): Observable<any> {
+    return this.http.put(`${this.systemStoresUrl}/hr_departments_catalog`, departments);
   }
 
   // --- EMPLOYEES API ---
@@ -203,15 +263,16 @@ export class HrService {
   }
 
   createEmployee(payload: Partial<EmployeeDto>): Observable<EmployeeDto> {
-    const body = {
-      ...payload,
-      companyId: payload.companyId || this.activeCompanyId
-    };
+    const body = this.sanitizeEmployeePayload(payload);
     return this.http.post<EmployeeDto>(this.employeesUrl, body);
   }
 
   updateEmployee(id: string, payload: Partial<EmployeeDto>): Observable<EmployeeDto> {
-    return this.http.put<EmployeeDto>(`${this.employeesUrl}/${id}`, payload);
+    const body = {
+      id,
+      ...this.sanitizeEmployeePayload(payload)
+    };
+    return this.http.put<EmployeeDto>(`${this.employeesUrl}/${id}`, body);
   }
 
   calculateEosb(employeeId: string, calculationDate: string, reason: EndOfServiceReason): Observable<EosbCalculationResultDto> {

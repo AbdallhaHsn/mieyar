@@ -271,7 +271,7 @@ export class WarehouseAnalyticsPageComponent implements OnInit {
           icon: 'error',
           title: this.langService.t('inventory.warehouses.analytics.alerts.fetchErrorTitle'),
           text: this.langService.t('inventory.warehouses.analytics.alerts.fetchErrorText'),
-          confirmButtonColor: '#0284c7'
+          confirmButtonColor: '#059669'
         });
       }
     });
@@ -303,7 +303,7 @@ export class WarehouseAnalyticsPageComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('inventory.warehouses.analytics.alerts.noDataToExportTitle'),
         text: this.langService.t('inventory.warehouses.analytics.alerts.noDataToExportText'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -539,7 +539,7 @@ export class WarehouseAnalyticsPageComponent implements OnInit {
         icon: 'error',
         title: this.langService.t('inventory.warehouses.analytics.alerts.exportFailedTitle'),
         text: this.langService.t('inventory.warehouses.analytics.alerts.exportFailedText'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
     } finally {
       this.isExporting.set(false);

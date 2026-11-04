@@ -26,6 +26,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   let headers = req.headers;
 
+  const activeLang = localStorage.getItem('alrobban_lang') || 'ar';
+  headers = headers.set('Accept-Language', activeLang).set('X-Lang', activeLang);
+
   if (token) {
     headers = headers.set('Authorization', `Bearer ${token}`);
   }

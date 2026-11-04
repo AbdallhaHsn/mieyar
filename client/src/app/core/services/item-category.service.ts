@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, of, catchError, map, tap } from 'rxjs';
 import { CompanyContextService } from './company-context.service';
 import { AccountingTranslatorService } from './accounting-translator.service';
 import { LanguageService } from './language.service';
@@ -21,6 +22,7 @@ export interface ItemCategoryDto {
   providedIn: 'root'
 })
 export class ItemCategoryService {
+  private http = inject(HttpClient);
   private companyContext = inject(CompanyContextService);
   private translator = inject(AccountingTranslatorService);
   private langService = inject(LanguageService);
@@ -34,6 +36,7 @@ export class ItemCategoryService {
   }
 
   getCategories(companyId?: string): Observable<ItemCategoryDto[]> {
+    const cId = this.getEffectiveCompanyId(companyId);
     const key = this.getStorageKey(companyId);
     const stored = localStorage.getItem(key);
     let list: ItemCategoryDto[] = stored ? JSON.parse(stored) : [];
@@ -41,14 +44,23 @@ export class ItemCategoryService {
     // Filter out unwanted sample categories (CAT-CONC, CAT-ALUM, etc.)
     const sampleIds = new Set(['cat-001', 'cat-002', 'cat-003', 'cat-004', 'cat-005', 'cat-006', 'cat-007', 'cat-008']);
     const sampleCodes = new Set(['CAT-CONC', 'CAT-ALUM', 'CAT-STEEL', 'CAT-CHEM', 'CAT-BLDG', 'CAT-ELEC', 'CAT-SPARE', 'CAT-GEN']);
-    
+
     const filtered = list.filter(c => !sampleIds.has(c.id) && !sampleCodes.has(c.code));
     if (filtered.length !== list.length) {
       list = filtered;
       localStorage.setItem(key, JSON.stringify(list));
     }
 
-    return of(list);
+    const params = new HttpParams().set('companyId', cId);
+    return this.http.get<ItemCategoryDto[]>('/api/items/categories', { params }).pipe(
+      map(remote => (remote && remote.length > 0 ? remote : list)),
+      tap(res => {
+        if (res.length > 0) {
+          localStorage.setItem(key, JSON.stringify(res));
+        }
+      }),
+      catchError(() => of(list))
+    );
   }
 
   saveCategory(category: Partial<ItemCategoryDto>, companyId?: string): Observable<ItemCategoryDto> {
@@ -71,28 +83,46 @@ export class ItemCategoryService {
       isActive: category.isActive ?? true
     };
 
-    const index = list.findIndex(c => c.id === item.id || (item.code && c.code.toLowerCase() === item.code.toLowerCase()));
-    if (index >= 0) {
-      list[index] = item;
-    } else {
-      list.push(item);
-    }
+    const upsertLocal = (savedItem: ItemCategoryDto) => {
+      const index = list.findIndex(c => c.id === savedItem.id || c.id === item.id || (savedItem.code && c.code.toLowerCase() === savedItem.code.toLowerCase()));
+      if (index >= 0) {
+        list[index] = savedItem;
+      } else {
+        list.push(savedItem);
+      }
+      localStorage.setItem(key, JSON.stringify(list));
+    };
 
-    localStorage.setItem(key, JSON.stringify(list));
-    return of(item);
+    return this.http.post<ItemCategoryDto>('/api/items/categories', item).pipe(
+      tap(saved => upsertLocal(saved)),
+      catchError(() => {
+        upsertLocal(item);
+        return of(item);
+      })
+    );
   }
 
   deleteCategory(id: string, companyId?: string): Observable<boolean> {
+    const cId = this.getEffectiveCompanyId(companyId);
     const key = this.getStorageKey(companyId);
     const list = this.getCategoriesSync(companyId).filter(c => c.id !== id);
     localStorage.setItem(key, JSON.stringify(list));
-    return of(true);
+
+    const params = new HttpParams().set('companyId', cId);
+    return this.http.delete<boolean>(`/api/items/categories/${encodeURIComponent(id)}`, { params }).pipe(
+      catchError(() => of(true))
+    );
   }
 
   clearAllCategories(companyId?: string): Observable<boolean> {
+    const cId = this.getEffectiveCompanyId(companyId);
     const key = this.getStorageKey(companyId);
     localStorage.removeItem(key);
-    return of(true);
+
+    const params = new HttpParams().set('companyId', cId);
+    return this.http.delete<boolean>('/api/items/categories', { params }).pipe(
+      catchError(() => of(true))
+    );
   }
 
   async promptCreateCategory(defaultNameAr = '', companyId?: string): Promise<ItemCategoryDto | null> {

@@ -240,7 +240,7 @@ export class ManufacturingHubComponent implements OnInit {
         title: this.langService.t('manufacturing.hub.alerts.selectBomTitle'),
         text: this.langService.t('manufacturing.hub.alerts.selectBomText'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -437,7 +437,7 @@ export class ManufacturingHubComponent implements OnInit {
         title: this.langService.t('manufacturing.hub.alerts.itemDataIncompleteTitle'),
         text: this.langService.t('manufacturing.hub.alerts.itemDataIncompleteText'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -535,7 +535,7 @@ export class ManufacturingHubComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('manufacturing.hub.alerts.bomDataIncompleteText'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -695,7 +695,7 @@ export class ManufacturingHubComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('manufacturing.hub.alerts.rawMaterialDataIncomplete'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

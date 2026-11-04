@@ -50,6 +50,7 @@ export class PartnerCreateComponent implements OnInit {
   isSaving = signal<boolean>(false);
   isAutoTranslating = signal<boolean>(false);
   accountsList = signal<AccountDto[]>([]);
+  allAccountsList = signal<AccountDto[]>([]);
 
   // Scheme IDs options approved by ZATCA
   idSchemeOptions: IdSchemeOption[] = [
@@ -110,10 +111,19 @@ export class PartnerCreateComponent implements OnInit {
   postalZone = signal<string>(''); // 5 أرقام
   countryCode = signal<string>('SA');
 
-  // Step 3: Credit & Financials
+  // Step 3: Credit & Financials + Chart of Accounts Sub-Account Option
   creditLimit = signal<number>(50000);
   paymentTermsDays = signal<number>(30);
   glAccountId = signal<string>('');
+  createSubAccountInChartOfAccounts = signal<boolean>(true);
+  parentGlAccountId = signal<string>('');
+  subAccountCode = signal<string>('');
+
+  selectedParentAccount = computed<AccountDto | null>(() => {
+    const pid = this.parentGlAccountId();
+    if (!pid) return null;
+    return this.allAccountsList().find(a => a.id === pid) || null;
+  });
 
   // Computed: Effective City Name
   effectiveCity = computed(() => {
@@ -244,6 +254,9 @@ export class PartnerCreateComponent implements OnInit {
         if (d.creditLimit) this.creditLimit.set(d.creditLimit);
         if (d.paymentTermsDays) this.paymentTermsDays.set(d.paymentTermsDays);
         if (d.glAccountId) this.glAccountId.set(d.glAccountId);
+        if (d.createSubAccountInChartOfAccounts !== undefined) this.createSubAccountInChartOfAccounts.set(d.createSubAccountInChartOfAccounts);
+        if (d.parentGlAccountId) this.parentGlAccountId.set(d.parentGlAccountId);
+        if (d.subAccountCode) this.subAccountCode.set(d.subAccountCode);
         sessionStorage.removeItem('alrobban_partner_draft');
       }
     } catch {
@@ -261,13 +274,76 @@ export class PartnerCreateComponent implements OnInit {
         }
       };
       flatten(tree || []);
+      this.allAccountsList.set(flattened);
       this.accountsList.set(flattened.filter(a => a.isPostable));
+      if (!this.parentGlAccountId()) {
+        this.applyDefaultParentAccount(this.partnerType());
+      } else {
+        this.computeSuggestedSubAccountCode(this.parentGlAccountId());
+      }
     });
   }
 
   setPartnerType(type: PartnerType): void {
     this.partnerType.set(type);
     this.generateSmartCode(type);
+    if (this.allAccountsList().length > 0) {
+      this.applyDefaultParentAccount(type);
+    }
+  }
+
+  applyDefaultParentAccount(type: PartnerType): void {
+    const all = this.allAccountsList();
+    if (all.length === 0) return;
+
+    let defaultParent: AccountDto | undefined;
+    if (type === PartnerType.Supplier) {
+      defaultParent = all.find(a => a.accountCode === '21101')
+                   || all.find(a => a.accountCode === '211')
+                   || all.find(a => a.accountCode.startsWith('211'));
+    } else {
+      defaultParent = all.find(a => a.accountCode === '11201')
+                   || all.find(a => a.accountCode === '112')
+                   || all.find(a => a.accountCode.startsWith('112'));
+    }
+
+    if (defaultParent) {
+      this.parentGlAccountId.set(defaultParent.id);
+      this.computeSuggestedSubAccountCode(defaultParent.id);
+    }
+  }
+
+  onParentAccountPicked(acc: AccountDto | null): void {
+    const id = acc ? acc.id : '';
+    this.parentGlAccountId.set(id);
+    if (id) {
+      this.computeSuggestedSubAccountCode(id);
+    } else {
+      this.subAccountCode.set('');
+    }
+  }
+
+  computeSuggestedSubAccountCode(parentId: string): void {
+    const all = this.allAccountsList();
+    const parent = all.find(a => a.id === parentId);
+    if (!parent) return;
+
+    const children = all.filter(a => a.parentAccountId === parent.id);
+    let nextIndex = children.length + 1;
+    const existingCodes = new Set(all.map(a => a.accountCode));
+
+    while (true) {
+      const candidate = parent.level === 1
+        ? `${parent.accountCode}${nextIndex}`
+        : (parent.level === 2
+            ? `${parent.accountCode}${String(nextIndex).padStart(2, '0')}`
+            : `${parent.accountCode}${String(nextIndex).padStart(3, '0')}`);
+      if (!existingCodes.has(candidate)) {
+        this.subAccountCode.set(candidate);
+        break;
+      }
+      nextIndex++;
+    }
   }
 
   generateSmartCode(type: PartnerType): void {
@@ -407,6 +483,18 @@ export class PartnerCreateComponent implements OnInit {
       return;
     }
 
+    if (this.createSubAccountInChartOfAccounts() && !this.parentGlAccountId()) {
+      const isAr = this.langService.isArabic();
+      Swal.fire({
+        icon: 'warning',
+        title: isAr ? 'يرجى تحديد الحساب الأب في شجرة الحسابات' : 'Select Parent Account in Chart of Accounts',
+        text: isAr
+          ? 'قمت بتفعيل خيار إضافة العميل/المورد في شجرة الحسابات؛ يرجى اختيار الحساب الرئيسي الذي سيتم إدراج الحساب الفرعي تحته.'
+          : 'Please choose the parent account under which the new partner sub-account will be created.'
+      });
+      return;
+    }
+
     const readiness = this.complianceChecklist();
     if (!readiness.canIssueStandardTaxInvoice) {
       const isAr = this.langService.isArabic();
@@ -470,7 +558,10 @@ export class PartnerCreateComponent implements OnInit {
       otherIdValue: this.otherIdValue().trim() || null,
       creditLimit: Number(this.creditLimit()) || 0,
       paymentTermsDays: Number(this.paymentTermsDays()) || 30,
-      glAccountId: this.glAccountId() || null
+      glAccountId: this.createSubAccountInChartOfAccounts() ? null : (this.glAccountId() || null),
+      createSubAccountInChartOfAccounts: this.createSubAccountInChartOfAccounts(),
+      parentGlAccountId: this.createSubAccountInChartOfAccounts() ? (this.parentGlAccountId() || null) : null,
+      subAccountCode: this.createSubAccountInChartOfAccounts() ? (this.subAccountCode().trim() || null) : null
     };
 
     this.http.post(`${environment.apiUrl}/api/partners`, payload).subscribe({
@@ -479,6 +570,14 @@ export class PartnerCreateComponent implements OnInit {
         sessionStorage.removeItem('alrobban_partner_draft');
 
         const displayName = this.langService.isArabic() ? payload.nameAr : (payload.nameEn || payload.nameAr);
+        const createdGlInfo = res?.glAccountCode
+          ? `<div style="margin-top:0.5rem; padding:0.45rem 0.75rem; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:6px; color:#065f46; font-size:0.84rem;">
+               <i class="pi pi-sitemap"></i>
+               ${this.langService.isArabic()
+                 ? `تم إدراج الحساب الفرعي في شجرة الحسابات برقم: <strong>${res.glAccountCode}</strong> (${res.glAccountNameAr || displayName})`
+                 : `Added to Chart of Accounts with code: <strong>${res.glAccountCode}</strong> (${res.glAccountNameEn || displayName})`}
+             </div>`
+          : '';
         Swal.fire({
           icon: 'success',
           title: this.langService.t('accounting.partnerCreate.alerts.partnerRegisteredSuccess'),
@@ -488,9 +587,10 @@ export class PartnerCreateComponent implements OnInit {
                 ${payload.code} - ${displayName}
               </strong>
               <span style="color: #64748b;">${this.langService.t('accounting.partnerCreate.alerts.partnerSavedSub')}</span>
+              ${createdGlInfo}
             </div>
           `,
-          timer: 2000,
+          timer: 2500,
           timerProgressBar: true,
           confirmButtonColor: '#059669',
           confirmButtonText: this.langService.t('common.ok')
@@ -498,6 +598,7 @@ export class PartnerCreateComponent implements OnInit {
 
         if (addAnother) {
           this.resetForm();
+          this.loadAccounts();
           this.currentStep.set(1);
         } else {
           this.router.navigate(['/accounting/partners']);

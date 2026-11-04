@@ -18,6 +18,7 @@ import { AccountingTranslatorService } from '../../../core/services/accounting-t
 import { BranchesWarehousesService, BranchDto } from '../../../core/services/branches-warehouses.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { TenantManagementService, CompanyQuotaDto } from '../../../core/services/tenant-management.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
 @Component({
@@ -33,8 +34,17 @@ export class UsersAndRolesComponent implements OnInit {
   private translator = inject(AccountingTranslatorService);
   private bwService = inject(BranchesWarehousesService);
   private companyContext = inject(CompanyContextService);
+  private tenantService = inject(TenantManagementService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  // License Quota State
+  licenseQuota = signal<CompanyQuotaDto | null>(null);
+  isUserQuotaFull = computed(() => {
+    const q = this.licenseQuota();
+    if (!q || q.maxUsers === null) return false;
+    return q.usedUsers >= q.maxUsers;
+  });
 
   // Active Tab
   activeTab = signal<'users' | 'roles'>('users');
@@ -159,6 +169,14 @@ export class UsersAndRolesComponent implements OnInit {
     this.loadRoles();
     this.loadBranches();
     this.loadPermissionsCatalog();
+    this.loadQuota();
+  }
+
+  loadQuota(): void {
+    this.tenantService.getCurrentLicenseQuota().subscribe({
+      next: (q) => this.licenseQuota.set(q),
+      error: () => {}
+    });
   }
 
   // --- DATA LOADING ---
@@ -334,6 +352,16 @@ export class UsersAndRolesComponent implements OnInit {
 
   // --- USER MODAL ACTIONS ---
   openCreateUserModal(): void {
+    if (this.isUserQuotaFull()) {
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.t('common.warning'),
+        text: this.langService.t('companies.portal.quotaFullWarning'),
+        confirmButtonColor: '#059669'
+      });
+      return;
+    }
+
     this.isEditingUser.set(false);
     this.editingUserId.set(null);
     this.userFormUserName.set('');
@@ -462,10 +490,29 @@ export class UsersAndRolesComponent implements OnInit {
           Swal.fire(this.langService.t('usersAndRoles.alerts.successTitle'), this.langService.t('usersAndRoles.alerts.userCreateSuccess'), 'success');
           this.loadUsers();
           this.loadRoles();
+          this.loadQuota();
         },
         error: (err) => {
           this.isSavingUser.set(false);
-          Swal.fire(this.langService.t('usersAndRoles.alerts.errorTitle'), err.error?.description || this.langService.t('usersAndRoles.alerts.userCreateError'), 'error');
+          if (err?.error?.code === 'License.LimitReached') {
+            const limit = err.error?.limit ?? '';
+            const msg = this.langService.t('companies.portal.licenseLimitReachedUsers').replace('{limit}', limit.toString());
+            Swal.fire({
+              icon: 'warning',
+              title: this.langService.t('common.warning'),
+              text: msg,
+              confirmButtonColor: '#059669'
+            });
+          } else if (err?.error?.code === 'License.Expired') {
+            Swal.fire({
+              icon: 'warning',
+              title: this.langService.t('common.warning'),
+              text: this.langService.t('companies.portal.licenseExpiredNotice'),
+              confirmButtonColor: '#059669'
+            });
+          } else {
+            Swal.fire(this.langService.t('usersAndRoles.alerts.errorTitle'), err.error?.description || this.langService.t('usersAndRoles.alerts.userCreateError'), 'error');
+          }
         }
       });
     }

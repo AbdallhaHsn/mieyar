@@ -43,7 +43,7 @@
 
     <!-- Page Number Chips -->
     <div class="pag-pages-list">
-      <ng-container *ngFor="let p of pagesArray(); track $index">
+      @for (p of pagesArray(); track $index) {
         <span *ngIf="p === '...'" class="pag-ellipsis">...</span>
         <button 
           *ngIf="p !== '...'" 
@@ -53,7 +53,7 @@
           (click)="goToPage(p)">
           {{ p }}
         </button>
-      </ng-container>
+      }
     </div>
 
     <!-- Next Page Button -->

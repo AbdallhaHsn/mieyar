@@ -266,8 +266,8 @@
 
     &:focus {
       outline: none;
-      border-color: #0284C7;
-      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
     }
   }
 }
@@ -290,7 +290,7 @@
 
     &:focus {
       outline: none;
-      border-color: #0284C7;
+      border-color: #059669;
     }
   }
 }
@@ -609,7 +609,7 @@
   transition: all 0.15s;
 
   &:hover {
-    background: #0369a1;
+    background: #047857;
     transform: scale(1.03);
   }
 }
@@ -1202,7 +1202,7 @@
 
     &:focus {
       outline: none;
-      border-color: #0284C7;
+      border-color: #059669;
     }
   }
 }
@@ -1242,7 +1242,7 @@
 
       &:focus {
         outline: none;
-        border-color: #0284C7;
+        border-color: #059669;
       }
     }
   }
@@ -2097,7 +2097,7 @@
       }
 
       .tab-count-pill {
-        background: #7E22CE;
+        background: #047857;
         color: #FFFFFF;
       }
     }
@@ -2162,7 +2162,7 @@
       gap: 0.35rem;
       transition: all 0.15s;
 
-      &:hover { background: #0369a1; }
+      &:hover { background: #047857; }
     }
   }
 
@@ -2405,3 +2405,22 @@
 }
 
 
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
+  }
+}

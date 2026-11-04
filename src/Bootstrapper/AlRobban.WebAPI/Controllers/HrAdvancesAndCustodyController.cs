@@ -1,3 +1,4 @@
+using AlRobban.WebAPI.Security;
 using AlRobban.Modules.HumanResources.Domain.Entities;
 using AlRobban.Modules.HumanResources.Domain.Enums;
 using AlRobban.Modules.HumanResources.Infrastructure.Persistence;
@@ -10,7 +11,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/hr")]
-[Authorize]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class HrAdvancesAndCustodyController : ControllerBase
 {
     private readonly HumanResourcesDbContext _dbContext;

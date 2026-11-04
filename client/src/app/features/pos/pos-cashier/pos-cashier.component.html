@@ -41,6 +41,16 @@
 
     <!-- Actions -->
     <div class="topbar-right">
+      <a
+        *ngIf="!authService.isSalesperson()"
+        routerLink="/pos/shifts"
+        class="btn btn-secondary btn-sm"
+        style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(16, 185, 129, 0.35); color: #047857; background: #ecfdf5;"
+        [title]="langService.currentLang() === 'ar' ? 'سجل ومراجعة الورديات وإقفالات الصندوق للإدارة والمحاسبة' : 'Management POS Shifts & Z-Reports Audit'">
+        <i class="pi pi-history"></i>
+        <span>{{ langService.currentLang() === 'ar' ? 'مراجعة الورديات وإقفالات الصندوق' : 'Shifts & Z-Reports Audit' }}</span>
+      </a>
+
       <button class="btn btn-secondary btn-sm" *ngIf="currentShift" (click)="openCashMovementDialog()" [title]="'pos.movementTitle' | translate">
         <i class="pi pi-arrows-v"></i>
         <span>{{ 'pos.cashInOut' | translate }}</span>
@@ -494,6 +504,17 @@
           <label>{{ 'pos.openShiftModal.openingFloat' | translate }}</label>
           <input type="number" [(ngModel)]="openingFloat" min="0" step="50" autofocus />
           <small class="text-muted">{{ 'pos.openShiftModal.openingFloatHint' | translate }}</small>
+        </div>
+
+        <div *ngIf="!authService.isSalesperson()" style="margin-top: 12px; padding: 10px 12px; background: #f0fdf4; border: 1px dashed #86efac; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="font-size: 0.78rem; color: #065f46; font-weight: 700;">
+            <i class="pi pi-shield" style="margin-inline-end: 5px;"></i>
+            {{ langService.currentLang() === 'ar' ? 'للإدارة والمحاسبة: هل ترغب في مراجعة الورديات وإقفالات الصندوق دون فتح وردية؟' : 'Management: Review shifts & Z-Reports without opening a shift?' }}
+          </div>
+          <a routerLink="/pos/shifts" class="btn btn-sm" style="background: #059669; color: #fff; text-decoration: none; font-size: 0.75rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="pi pi-history"></i>
+            <span>{{ langService.currentLang() === 'ar' ? 'سجل الورديات والإقفالات' : 'Shifts Audit' }}</span>
+          </a>
         </div>
       </div>
 

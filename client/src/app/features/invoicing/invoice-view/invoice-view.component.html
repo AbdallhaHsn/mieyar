@@ -32,7 +32,7 @@
           </span>
 
           <button 
-            *ngIf="inv.associatedJournalEntryNumber" 
+            *ngIf="inv.associatedJournalEntryNumber && !authService.isSalesperson()" 
             type="button"
             class="btn-gl-pill"
             (click)="navigateToJournalEntry(inv.associatedJournalEntryNumber)"
@@ -470,7 +470,7 @@
             <span class="lbl">{{ 'invoices.view.warehouse' | translate }}</span>
             <strong class="val font-mono">{{ inv.warehouseCode }}</strong>
           </div>
-          <div class="seller-info-cell" *ngIf="inv.associatedJournalEntryNumber">
+          <div class="seller-info-cell" *ngIf="inv.associatedJournalEntryNumber && !authService.isSalesperson()">
             <i class="pi pi-book"></i>
             <span class="lbl">{{ 'invoices.view.journalEntryLabel' | translate }}</span>
             <strong class="val font-mono">#{{ inv.associatedJournalEntryNumber }}</strong>
@@ -622,7 +622,6 @@
 
         <div class="thermal-footer">
           <p>{{ 'invoices.view.thermalThankYou' | translate }}</p>
-          <p class="thermal-powered">{{ 'invoices.view.thermalPowered' | translate }}</p>
         </div>
       </article>
 

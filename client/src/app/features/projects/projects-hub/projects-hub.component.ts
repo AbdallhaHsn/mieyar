@@ -195,7 +195,8 @@ export class ProjectsHubComponent implements OnInit {
   // Stages & Presentation Architecture (المراحل)
   selectedStage: 'all' | 'planning' | 'execution' | 'billing' | 'completed' = 'all';
   displayMode: 'cards' | 'table' = 'cards';
-  showMetricsRibbon = false; // Default collapsed to reduce screen clutter
+  showMetricsRibbon = true; // Visible by default for immediate executive visibility
+  showQuickActionsMenu = false;
   projectFormStep = 1; // 1: Contract, 2: Financials, 3: Site & Schedule, 4: Review & Confirm
 
   // Selected Project for Engineer Command Center & Executive Report
@@ -1009,7 +1010,7 @@ export class ProjectsHubComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: this.langService.t('projects.hub.alerts.resetConfirmBtn'),
       cancelButtonText: this.langService.t('common.cancel'),
-      confirmButtonColor: '#0284c7',
+      confirmButtonColor: '#059669',
       cancelButtonColor: '#64748b'
     }).then(res => {
       if (res.isConfirmed) {
@@ -1184,7 +1185,7 @@ export class ProjectsHubComponent implements OnInit {
         title: this.langService.t('projects.hub.alerts.timesheetIncompleteTitle'),
         text: this.langService.t('projects.hub.alerts.timesheetIncompleteText'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -1194,7 +1195,7 @@ export class ProjectsHubComponent implements OnInit {
         title: this.langService.t('projects.hub.alerts.subcontractorNameRequiredTitle'),
         text: this.langService.t('projects.hub.alerts.subcontractorNameRequiredText'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -1383,7 +1384,7 @@ export class ProjectsHubComponent implements OnInit {
         title: this.langService.t('projects.hub.alerts.timesheetIncompleteTitle'),
         text: this.langService.t('projects.hub.alerts.planningTaskIncomplete'),
         icon: 'warning',
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -1491,7 +1492,7 @@ export class ProjectsHubComponent implements OnInit {
     if (p.status === ProjectStatus.Completed || p.completionPercentage >= 100) {
       return 'completed';
     }
-    if (p.status === ProjectStatus.Planning || (p.completionPercentage === 0 && p.totalBilledAmount === 0)) {
+    if (p.status === ProjectStatus.Planning) {
       return 'planning';
     }
     if (p.totalBilledAmount > 0 && p.completionPercentage >= 50) {
@@ -1519,6 +1520,172 @@ export class ProjectsHubComponent implements OnInit {
       billing: this.projects.filter(p => this.getStageForProject(p) === 'billing').length,
       completed: this.projects.filter(p => this.getStageForProject(p) === 'completed').length
     };
+  }
+
+  // -------------------------------------------------------------
+  // Smart Contracting Card Helpers (Out-of-the-Box UX Enhancements)
+  // -------------------------------------------------------------
+  toggleQuickActionsMenu(): void {
+    this.showQuickActionsMenu = !this.showQuickActionsMenu;
+  }
+
+  getEstimatedProfit(p: ProjectDto | ProjectDetailsDto): number {
+    return (p.contractAmount || 0) - (p.estimatedCost || 0);
+  }
+
+  getEstimatedMarginPct(p: ProjectDto | ProjectDetailsDto): number {
+    if (!p.contractAmount || p.contractAmount <= 0) return 0;
+    return Math.round((this.getEstimatedProfit(p) / p.contractAmount) * 1000) / 10;
+  }
+
+  getBudgetToContractPct(p: ProjectDto | ProjectDetailsDto): number {
+    if (!p.contractAmount || p.contractAmount <= 0) return 0;
+    return Math.min(100, Math.round(((p.estimatedCost || 0) / p.contractAmount) * 100));
+  }
+
+  getBilledPct(p: ProjectDto | ProjectDetailsDto): number {
+    if (!p.contractAmount || p.contractAmount <= 0) return 0;
+    return Math.min(100, Math.round(((p.totalBilledAmount || 0) / p.contractAmount) * 100));
+  }
+
+  getRemainingContractValue(p: ProjectDto | ProjectDetailsDto): number {
+    return Math.max(0, (p.contractAmount || 0) - (p.totalBilledAmount || 0));
+  }
+
+  getContractRetentionPool(p: ProjectDto | ProjectDetailsDto): number {
+    const pct = p.retentionPercentage || 10;
+    return Math.round((p.contractAmount || 0) * (pct / 100));
+  }
+
+  getTimeElapsedPct(p: ProjectDto | ProjectDetailsDto): number {
+    if (!p.startDate || !p.expectedEndDate) return 0;
+    const start = new Date(p.startDate).getTime();
+    const end = new Date(p.expectedEndDate).getTime();
+    const now = Date.now();
+    if (end <= start) return 0;
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+    return Math.min(100, Math.max(1, Math.round(((now - start) / (end - start)) * 100)));
+  }
+
+  getRemainingDays(p: ProjectDto | ProjectDetailsDto): number {
+    if (!p.expectedEndDate) return 0;
+    const end = new Date(p.expectedEndDate).getTime();
+    const diff = end - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  getProjectHealthRadar(p: ProjectDto): { status: 'healthy' | 'schedule-risk' | 'cost-risk' | 'setup-needed'; icon: string; labelAr: string; labelEn: string } {
+    const budgetBurn = this.getBudgetBurnPercentage(p);
+    const timeElapsed = this.getTimeElapsedPct(p);
+    const progress = p.completionPercentage || 0;
+
+    if ((p.totalExpensesAmount || 0) > (p.estimatedCost || 0) || budgetBurn > progress + 15) {
+      return {
+        status: 'cost-risk',
+        icon: 'pi-exclamation-triangle',
+        labelAr: 'تنبيه تكلفة: الصرف يسبق الإنجاز',
+        labelEn: 'Cost Burn Risk'
+      };
+    }
+    if (timeElapsed > progress + 20) {
+      return {
+        status: 'schedule-risk',
+        icon: 'pi-clock',
+        labelAr: 'تنبيه زمني: يحتاج تسريع ميداني',
+        labelEn: 'Schedule Lag Risk'
+      };
+    }
+    if ((p.phasesCount || 0) === 0 && progress === 0) {
+      return {
+        status: 'setup-needed',
+        icon: 'pi-compass',
+        labelAr: 'جاهز لهيكلة مراحل العمل (WBS)',
+        labelEn: 'Ready for WBS Setup'
+      };
+    }
+    return {
+      status: 'healthy',
+      icon: 'pi-verified',
+      labelAr: 'مسار مالي وزمني متوازن (آمن)',
+      labelEn: 'On Track & Balanced'
+    };
+  }
+
+  getNextBestAction(p: ProjectDto): { labelAr: string; labelEn: string; icon: string; actionType: 'wbs' | 'billing' | 'progress' | 'report' } {
+    const billedPct = this.getBilledPct(p);
+    if ((p.phasesCount || 0) === 0) {
+      return {
+        labelAr: 'إعداد مراحل العمل (WBS)',
+        labelEn: 'Setup WBS Phases',
+        icon: 'pi-sitemap',
+        actionType: 'wbs'
+      };
+    }
+    if ((p.completionPercentage || 0) > billedPct) {
+      return {
+        labelAr: 'إصدار مستخلص للإنجاز الجديد',
+        labelEn: 'Issue Progress Billing',
+        icon: 'pi-file-edit',
+        actionType: 'billing'
+      };
+    }
+    if ((p.completionPercentage || 0) < 100) {
+      return {
+        labelAr: 'تحديث نسب الإنجاز الميداني',
+        labelEn: 'Update Field Progress',
+        icon: 'pi-chart-line',
+        actionType: 'progress'
+      };
+    }
+    return {
+      labelAr: 'التقرير الهندسي والمخالصة',
+      labelEn: 'Final Handover Report',
+      icon: 'pi-verified',
+      actionType: 'report'
+    };
+  }
+
+  triggerNextBestAction(p: ProjectDto): void {
+    const nextAction = this.getNextBestAction(p);
+    if (nextAction.actionType === 'wbs') {
+      this.isLoading = true;
+      this.projectsService.getProjectById(p.id).subscribe({
+        next: (details) => {
+          this.selectedProject = details;
+          this.workspaceTab = 'wbs';
+          this.viewMode = 'project-workspace';
+          this.isLoading = false;
+          this.initAddPhase();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        error: () => {
+          this.isLoading = false;
+        }
+      });
+    } else if (nextAction.actionType === 'billing') {
+      this.openBillingForm(p);
+    } else if (nextAction.actionType === 'progress') {
+      this.openProjectWorkspace(p.id, 'wbs');
+    } else {
+      this.openEngineerReport(p.id);
+    }
+  }
+
+  onLifecycleStepClick(p: ProjectDto, step: number): void {
+    if (step === 1) {
+      this.openProjectWorkspace(p.id, 'overview');
+    } else if (step === 2) {
+      if ((p.phasesCount || 0) === 0) {
+        this.triggerNextBestAction(p);
+      } else {
+        this.openProjectWorkspace(p.id, 'wbs');
+      }
+    } else if (step === 3) {
+      this.openBillingForm(p);
+    } else if (step === 4) {
+      this.openEngineerReport(p.id);
+    }
   }
 
   nextFormStep(): void {
@@ -1685,7 +1852,7 @@ export class ProjectsHubComponent implements OnInit {
         title: this.langService.t('common.warning'),
         text: this.langService.t('projects.hub.alerts.projectValidationRequired'),
         confirmButtonText: this.langService.t('common.confirm'),
-        confirmButtonColor: '#2563eb'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -1972,7 +2139,7 @@ export class ProjectsHubComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: this.langService.t('common.confirm'),
       cancelButtonText: this.langService.t('common.cancel'),
-      confirmButtonColor: '#2563eb',
+      confirmButtonColor: '#059669',
       cancelButtonColor: '#64748b',
       preConfirm: () => {
         const newExpiry = (document.getElementById('swal-new-expiry') as HTMLInputElement).value;

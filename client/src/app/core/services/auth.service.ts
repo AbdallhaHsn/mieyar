@@ -52,6 +52,7 @@ export class AuthService {
   isCompanyAdmin = computed(() => this.currentUser()?.role === 'CompanyAdmin' || this.currentUser()?.roleCode === 'COMPANY_ADMIN');
   isSalesperson = computed(() => this.currentUser()?.role === 'Salesperson' || this.currentUser()?.roleCode === 'SALES_REP');
   isAccountant = computed(() => this.currentUser()?.role === 'Accountant' || this.currentUser()?.roleCode === 'ACCOUNTANT' || this.currentUser()?.roleCode === 'FINANCE_MANAGER');
+  canViewAccounting = computed(() => !this.isSalesperson());
   isAuthenticated = computed(() => !!this.currentUser());
 
   hasPermission(perm: string): boolean {
@@ -221,6 +222,32 @@ export class AuthService {
     if (!this.isSuperAdmin() && this.currentUser()?.role !== 'SuperAdmin') return;
 
     this.companyContext.setCompany(tenant);
+  }
+
+  /**
+   * Request OTP code for password recovery
+   */
+  forgotPassword(userNameOrEmail: string): Observable<{
+    success: boolean;
+    userName: string;
+    maskedEmail: string;
+    otp: string;
+    message: string;
+  }> {
+    const endpoint = `${environment.apiUrl}/api/auth/forgot-password`;
+    return this.http.post<any>(endpoint, { userNameOrEmail });
+  }
+
+  /**
+   * Reset password using OTP code
+   */
+  resetPassword(payload: { userNameOrEmail: string; otp: string; newPassword: string }): Observable<{
+    success: boolean;
+    userName: string;
+    message: string;
+  }> {
+    const endpoint = `${environment.apiUrl}/api/auth/reset-password`;
+    return this.http.post<any>(endpoint, payload);
   }
 }
 

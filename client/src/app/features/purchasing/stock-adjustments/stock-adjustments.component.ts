@@ -284,7 +284,7 @@ export class StockAdjustmentsComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('common.warning'),
         text: this.langService.t('purchasing.stockAdjustments.alerts.selectItem'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -295,7 +295,7 @@ export class StockAdjustmentsComponent implements OnInit {
         icon: 'info',
         title: this.langService.t('purchasing.stockAdjustments.alerts.noVariance'),
         text: this.langService.t('purchasing.stockAdjustments.alerts.qtyMatches'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -456,7 +456,7 @@ export class StockAdjustmentsComponent implements OnInit {
         icon: 'info',
         title: this.langService.t('purchasing.stockAdjustments.alerts.noVariance'),
         text: this.langService.t('purchasing.stockAdjustments.alerts.noBulkVariance'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

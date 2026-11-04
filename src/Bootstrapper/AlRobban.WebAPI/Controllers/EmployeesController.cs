@@ -1,3 +1,4 @@
+using AlRobban.WebAPI.Security;
 using AlRobban.Modules.HumanResources.Application.Commands.Employees;
 using AlRobban.Modules.HumanResources.Application.DTOs;
 using AlRobban.Modules.HumanResources.Application.Queries;
@@ -13,7 +14,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/hr/employees")]
-[Authorize]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class EmployeesController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -31,10 +31,20 @@ export const routes: Routes = [
         data: { roles: ['SuperAdmin'] }
       },
       {
+        path: 'companies/new',
+        loadComponent: () => import('./features/company-onboarding/company-onboarding.component').then(m => m.CompanyOnboardingComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['SuperAdmin'] }
+      },
+      {
+        path: 'companies/create',
+        redirectTo: 'companies/new'
+      },
+      {
         path: 'settings/branches',
         loadComponent: () => import('./features/settings/branches/branches.component').then(m => m.BranchesComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant'] }
+        data: { roles: ['CompanyAdmin', 'Accountant'] }
       },
       {
         path: 'system/branches',
@@ -48,13 +58,13 @@ export const routes: Routes = [
         path: 'purchasing/warehouses',
         loadComponent: () => import('./features/inventory/warehouses/warehouses.component').then(m => m.WarehousesComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant'] }
+        data: { roles: ['CompanyAdmin', 'Accountant'] }
       },
       {
         path: 'purchasing/warehouses/:id/analytics',
         loadComponent: () => import('./features/inventory/warehouses/warehouse-analytics-page/warehouse-analytics-page.component').then(m => m.WarehouseAnalyticsPageComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant'] }
+        data: { roles: ['CompanyAdmin', 'Accountant'] }
       },
       {
         path: 'inventory/warehouses/:id/analytics',
@@ -68,19 +78,19 @@ export const routes: Routes = [
         path: 'accounting/chart-of-accounts',
         loadComponent: () => import('./features/accounting/chart-of-accounts/chart-of-accounts.component').then(m => m.ChartOfAccountsComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant', 'FinancialAuditor'] }
+        data: { roles: ['CompanyAdmin', 'Accountant', 'FinancialAuditor'] }
       },
       {
         path: 'accounting/chart-of-accounts/create',
         loadComponent: () => import('./features/accounting/account-create/account-create.component').then(m => m.AccountCreateComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant', 'FinancialAuditor'] }
+        data: { roles: ['CompanyAdmin', 'Accountant', 'FinancialAuditor'] }
       },
       {
         path: 'accounting/financial-settings',
         loadComponent: () => import('./features/accounting/financial-settings/financial-settings.component').then(m => m.FinancialSettingsComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant'] }
+        data: { roles: ['CompanyAdmin', 'Accountant'] }
       },
       {
         path: 'accounting/cost-centers',
@@ -90,7 +100,7 @@ export const routes: Routes = [
         path: 'accounting/year-end-closing',
         loadComponent: () => import('./features/accounting/year-end-closing/year-end-closing.component').then(m => m.YearEndClosingComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant', 'FinancialAuditor'] }
+        data: { roles: ['CompanyAdmin', 'Accountant', 'FinancialAuditor'] }
       },
       {
         path: 'accounting/fiscal-closing',
@@ -197,7 +207,7 @@ export const routes: Routes = [
         path: 'invoicing/zatca-onboarding',
         loadComponent: () => import('./features/invoicing/zatca-onboarding/zatca-onboarding.component').then(m => m.ZatcaOnboardingComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin', 'Accountant'] }
+        data: { roles: ['CompanyAdmin', 'Accountant'] }
       },
       {
         path: 'zatca/onboarding',
@@ -216,10 +226,20 @@ export const routes: Routes = [
         redirectTo: 'invoicing/simplified'
       },
       {
+        path: 'pos/shifts',
+        loadComponent: () => import('./features/pos/pos-shifts/pos-shifts.component').then(m => m.PosShiftsComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['CompanyAdmin', 'Accountant'] }
+      },
+      {
+        path: 'invoicing/pos-shifts',
+        redirectTo: 'pos/shifts'
+      },
+      {
         path: 'invoicing/salespersons',
         loadComponent: () => import('./features/invoicing/salespersons/salespersons.component').then(m => m.SalespersonsComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin'] }
+        data: { roles: ['CompanyAdmin'] }
       },
       {
         path: 'purchasing/items',
@@ -365,19 +385,19 @@ export const routes: Routes = [
         path: 'settings/users-and-roles',
         loadComponent: () => import('./features/settings/users-and-roles/users-and-roles.component').then(m => m.UsersAndRolesComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin'] }
+        data: { roles: ['CompanyAdmin'] }
       },
       {
         path: 'settings/users-and-roles/roles/create',
         loadComponent: () => import('./features/settings/users-and-roles/role-editor/role-editor.component').then(m => m.RoleEditorComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin'] }
+        data: { roles: ['CompanyAdmin'] }
       },
       {
         path: 'settings/users-and-roles/roles/:id/edit',
         loadComponent: () => import('./features/settings/users-and-roles/role-editor/role-editor.component').then(m => m.RoleEditorComponent),
         canActivate: [roleGuard],
-        data: { roles: ['SuperAdmin', 'CompanyAdmin'] }
+        data: { roles: ['CompanyAdmin'] }
       },
       {
         path: 'settings/roles/create',

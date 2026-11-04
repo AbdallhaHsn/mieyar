@@ -381,7 +381,7 @@ export class RoleEditorComponent implements OnInit {
         text: this.langService.t('roles.validation.missingFields'),
         icon: 'warning',
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -393,7 +393,7 @@ export class RoleEditorComponent implements OnInit {
         text: this.langService.t('roles.validation.selectAtLeastOne'),
         icon: 'warning',
         confirmButtonText: this.langService.t('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

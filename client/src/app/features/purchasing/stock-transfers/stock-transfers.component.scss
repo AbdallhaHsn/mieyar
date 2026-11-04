@@ -68,10 +68,10 @@
   i { font-size: 0.75rem; }
 
   &.btn-primary {
-    background: #0284c7;
+    background: #059669;
     color: #ffffff;
-    border-color: #0284c7;
-    &:hover { background: #0369a1; }
+    border-color: #059669;
+    &:hover { background: #047857; }
   }
 
   &.btn-secondary {
@@ -175,8 +175,8 @@
     transition: all 0.15s ease;
 
     &:focus {
-      border-color: #0284c7;
-      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
     }
   }
 }
@@ -227,8 +227,8 @@
     background: #ffffff;
 
     &:focus {
-      border-color: #0284c7;
-      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
     }
   }
 }
@@ -293,3 +293,22 @@
 .text-blue { color: #2563eb; }
 .text-muted { color: #94a3b8; }
 .ltr-text { direction: ltr; text-align: left; }
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
+  }
+}

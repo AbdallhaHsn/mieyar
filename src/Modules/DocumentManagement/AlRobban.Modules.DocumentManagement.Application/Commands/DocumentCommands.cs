@@ -32,8 +32,13 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
 
     public async Task<Result<DocumentAttachmentDto>> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
-        var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var targetTenantId = _tenantContext.TenantId ?? request.CompanyId;
+        if (!targetTenantId.HasValue || targetTenantId.Value == Guid.Empty)
+        {
+            return Result.Failure<DocumentAttachmentDto>(Error.Validation("Tenant.Required", "يجب تحديد الشركة التابع لها المستند."));
+        }
+        var tenantId = targetTenantId.Value;
+        var companyId = request.CompanyId ?? tenantId;
 
         if (string.IsNullOrWhiteSpace(request.FileName) || string.IsNullOrWhiteSpace(request.FileContentBase64))
         {
@@ -72,16 +77,23 @@ public record GetDocumentsByEntityQuery(Guid? CompanyId, string EntityType, Guid
 public class GetDocumentsByEntityQueryHandler : IRequestHandler<GetDocumentsByEntityQuery, Result<IReadOnlyList<DocumentAttachmentDto>>>
 {
     private readonly IDocumentRepository _documentRepository;
+    private readonly ICurrentTenantContext _tenantContext;
 
-    public GetDocumentsByEntityQueryHandler(IDocumentRepository documentRepository)
+    public GetDocumentsByEntityQueryHandler(IDocumentRepository documentRepository, ICurrentTenantContext tenantContext)
     {
         _documentRepository = documentRepository;
+        _tenantContext = tenantContext;
     }
 
     public async Task<Result<IReadOnlyList<DocumentAttachmentDto>>> Handle(GetDocumentsByEntityQuery request, CancellationToken cancellationToken)
     {
-        var companyId = request.CompanyId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
-        var docs = await _documentRepository.GetByEntityAsync(companyId, request.EntityType, request.EntityId, cancellationToken);
+        var companyId = request.CompanyId ?? _tenantContext.TenantId;
+        if (!companyId.HasValue || companyId.Value == Guid.Empty)
+        {
+            return Result.Failure<IReadOnlyList<DocumentAttachmentDto>>(Error.Validation("Tenant.Required", "يجب تحديد الشركة للوصول إلى المستندات."));
+        }
+
+        var docs = await _documentRepository.GetByEntityAsync(companyId.Value, request.EntityType, request.EntityId, cancellationToken);
         var dtos = docs.Select(DocumentAttachmentDto.FromEntity).ToList();
         return Result.Success<IReadOnlyList<DocumentAttachmentDto>>(dtos);
     }
@@ -94,16 +106,24 @@ public record DocumentFileDownloadDto(string FileName, string ContentType, byte[
 public class GetDocumentFileByIdQueryHandler : IRequestHandler<GetDocumentFileByIdQuery, Result<DocumentFileDownloadDto>>
 {
     private readonly IDocumentRepository _documentRepository;
+    private readonly ICurrentTenantContext _tenantContext;
 
-    public GetDocumentFileByIdQueryHandler(IDocumentRepository documentRepository)
+    public GetDocumentFileByIdQueryHandler(IDocumentRepository documentRepository, ICurrentTenantContext tenantContext)
     {
         _documentRepository = documentRepository;
+        _tenantContext = tenantContext;
     }
 
     public async Task<Result<DocumentFileDownloadDto>> Handle(GetDocumentFileByIdQuery request, CancellationToken cancellationToken)
     {
         var doc = await _documentRepository.GetByIdAsync(request.Id, cancellationToken);
         if (doc == null || doc.IsDeleted)
+        {
+            return Result.Failure<DocumentFileDownloadDto>(Error.NotFound("Document.NotFound", "المستند المطلوب غير موجود."));
+        }
+
+        // Cross-Tenant IDOR Guard: Verify caller belongs to the document owner company (unless platform SuperAdmin)
+        if (!_tenantContext.IsSuperAdmin && _tenantContext.TenantId.HasValue && doc.CompanyId != _tenantContext.TenantId.Value)
         {
             return Result.Failure<DocumentFileDownloadDto>(Error.NotFound("Document.NotFound", "المستند المطلوب غير موجود."));
         }
@@ -125,16 +145,24 @@ public record DeleteDocumentCommand(Guid Id) : IRequest<Result<bool>>;
 public class DeleteDocumentCommandHandler : IRequestHandler<DeleteDocumentCommand, Result<bool>>
 {
     private readonly IDocumentRepository _documentRepository;
+    private readonly ICurrentTenantContext _tenantContext;
 
-    public DeleteDocumentCommandHandler(IDocumentRepository documentRepository)
+    public DeleteDocumentCommandHandler(IDocumentRepository documentRepository, ICurrentTenantContext tenantContext)
     {
         _documentRepository = documentRepository;
+        _tenantContext = tenantContext;
     }
 
     public async Task<Result<bool>> Handle(DeleteDocumentCommand request, CancellationToken cancellationToken)
     {
         var doc = await _documentRepository.GetByIdAsync(request.Id, cancellationToken);
         if (doc == null || doc.IsDeleted)
+        {
+            return Result.Failure<bool>(Error.NotFound("Document.NotFound", "المستند غير موجود."));
+        }
+
+        // Cross-Tenant IDOR Guard: Verify caller belongs to the document owner company (unless platform SuperAdmin)
+        if (!_tenantContext.IsSuperAdmin && _tenantContext.TenantId.HasValue && doc.CompanyId != _tenantContext.TenantId.Value)
         {
             return Result.Failure<bool>(Error.NotFound("Document.NotFound", "المستند غير موجود."));
         }

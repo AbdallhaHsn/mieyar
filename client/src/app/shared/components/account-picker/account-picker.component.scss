@@ -165,11 +165,10 @@
 .dropdown-floating-menu {
   position: absolute;
   top: calc(100% + 4px);
-  right: 0;
-  left: auto;
-  min-width: 500px;
-  max-width: 600px;
-  width: max(100%, 500px);
+  inset-inline-start: 0;
+  min-width: min(500px, 92vw);
+  max-width: min(600px, 95vw);
+  width: max(100%, min(500px, 92vw));
   z-index: 9999;
   background: #ffffff;
   border: 1px solid #cbd5e1;

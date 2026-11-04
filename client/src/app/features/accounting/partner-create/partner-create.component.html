@@ -409,15 +409,108 @@
 
         <div class="vertical-form-grid">
           
-          <!-- Row 1: GL Account Link -->
-          <div class="form-field col-span-2">
-            <label class="field-label">{{ 'ui.partnerCreate.dcfa61' | translate }}</label>
-            <app-account-picker 
-              [accounts]="accountsList()"
-              [placeholder]="partnerType() === PartnerType.Customer ? ('ui.partnerCreate.66e26f' | translate) : ('ui.partnerCreate.76bb2f' | translate)"
-              (accountSelect)="onAccountPicked($event)">
-            </app-account-picker>
-            <span class="field-hint">{{ 'ui.partnerCreate.7145ba' | translate }}</span>
+          <!-- Row 1: Chart of Accounts Integration Box -->
+          <div class="coa-link-box col-span-2">
+            <div class="coa-box-header">
+              <div class="coa-title-wrap">
+                <i class="pi pi-sitemap text-emerald"></i>
+                <div>
+                  <strong class="coa-title">
+                    {{ langService.currentLang() === 'en' ? 'Chart of Accounts Integration' : 'ربط وإدراج في شجرة الحسابات (دليل الحسابات)' }}
+                  </strong>
+                  <span class="coa-subtitle">
+                    {{ langService.currentLang() === 'en'
+                      ? 'Automatically add this partner as a sub-account under an account you choose, or link to an existing account'
+                      : 'اختر الحساب الأب في شجرة الحسابات ليتم فتح حساب فرعي باسم هذا العميل/المورد تحته تلقائياً' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="coa-mode-pills">
+                <button
+                  type="button"
+                  class="mode-pill"
+                  [class.active]="createSubAccountInChartOfAccounts()"
+                  (click)="createSubAccountInChartOfAccounts.set(true)">
+                  <i class="pi pi-plus-circle"></i>
+                  <span>{{ langService.currentLang() === 'en' ? 'Create Sub-Account Under Parent' : 'إضافة كحساب فرعي تحت حساب أختاره' }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="mode-pill"
+                  [class.active]="!createSubAccountInChartOfAccounts()"
+                  (click)="createSubAccountInChartOfAccounts.set(false)">
+                  <i class="pi pi-link"></i>
+                  <span>{{ langService.currentLang() === 'en' ? 'Link Existing Account' : 'ربط بحساب موجود مسبقاً' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Mode 1: Create new sub-account under chosen parent account -->
+            <div class="coa-subaccount-grid" *ngIf="createSubAccountInChartOfAccounts()">
+              <div class="form-field">
+                <label class="field-label required">
+                  {{ langService.currentLang() === 'en' ? 'Parent Account in Chart of Accounts' : 'الحساب الأب (الرئيسي) في شجرة الحسابات' }}
+                </label>
+                <app-account-picker
+                  [accounts]="allAccountsList()"
+                  [ngModel]="parentGlAccountId()"
+                  [placeholder]="partnerType() === PartnerType.Customer
+                    ? (langService.currentLang() === 'en' ? 'Select parent account (e.g. 11201 Customers)...' : 'اختر الحساب الأب (مثال: 11201 العملاء)...')
+                    : (langService.currentLang() === 'en' ? 'Select parent account (e.g. 21101 Suppliers)...' : 'اختر الحساب الأب (مثال: 21101 الموردين)...')"
+                  (accountSelect)="onParentAccountPicked($event)">
+                </app-account-picker>
+              </div>
+
+              <div class="form-field">
+                <div class="label-row">
+                  <label class="field-label">
+                    {{ langService.currentLang() === 'en' ? 'New Sub-Account Code (Auto)' : 'رقم الحساب الفرعي الجديد (تلقائي قابل للتعديل)' }}
+                  </label>
+                  <button
+                    type="button"
+                    class="btn-text-action"
+                    *ngIf="parentGlAccountId()"
+                    (click)="computeSuggestedSubAccountCode(parentGlAccountId())">
+                    <i class="pi pi-refresh"></i>
+                    {{ langService.currentLang() === 'en' ? 'Auto-Code' : 'اقتراح تلقائي' }}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  class="form-control font-code font-bold"
+                  [value]="subAccountCode()"
+                  (input)="subAccountCode.set($any($event.target).value)"
+                  placeholder="e.g. 1120101" />
+              </div>
+
+              <!-- Live Preview Banner -->
+              <div class="coa-preview-banner col-span-2" *ngIf="selectedParentAccount() as parentAcc">
+                <i class="pi pi-check-circle text-emerald"></i>
+                <div class="preview-text">
+                  <span>{{ langService.currentLang() === 'en' ? 'Will be added in Chart of Accounts under:' : 'سيتم إدراجه في شجرة الحسابات تحت:' }}</span>
+                  <strong class="parent-badge font-code">{{ parentAcc.accountCode }} - {{ langService.currentLang() === 'en' ? (parentAcc.nameEn || parentAcc.nameAr) : parentAcc.nameAr }}</strong>
+                  <i class="pi pi-arrow-left preview-arrow"></i>
+                  <strong class="child-badge font-code">
+                    {{ subAccountCode() || 'Auto' }} - {{ nameAr() || (partnerType() === PartnerType.Customer ? 'اسم العميل' : 'اسم المورد') }}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode 2: Link to an existing postable GL account -->
+            <div class="coa-existing-grid" *ngIf="!createSubAccountInChartOfAccounts()">
+              <div class="form-field">
+                <label class="field-label">{{ 'ui.partnerCreate.dcfa61' | translate }}</label>
+                <app-account-picker
+                  [accounts]="accountsList()"
+                  [ngModel]="glAccountId()"
+                  [placeholder]="partnerType() === PartnerType.Customer ? ('ui.partnerCreate.66e26f' | translate) : ('ui.partnerCreate.76bb2f' | translate)"
+                  (accountSelect)="onAccountPicked($event)">
+                </app-account-picker>
+                <span class="field-hint">{{ 'ui.partnerCreate.7145ba' | translate }}</span>
+              </div>
+            </div>
           </div>
 
           <!-- Row 2: Credit Limit & Payment Terms -->
@@ -461,6 +554,13 @@
               <div class="frc-item">
                 <span class="frc-lbl">{{ 'ui.partnerCreate.5ef7b3' | translate }}</span>
                 <strong class="frc-val">{{ nameAr() }}</strong>
+              </div>
+
+              <div class="frc-item col-span-2" *ngIf="createSubAccountInChartOfAccounts() && selectedParentAccount() as parentAcc">
+                <span class="frc-lbl">{{ langService.currentLang() === 'en' ? 'Chart of Accounts Placement' : 'الإدراج في شجرة الحسابات' }}</span>
+                <strong class="frc-val text-emerald font-code">
+                  {{ subAccountCode() }} ({{ nameAr() }}) ← {{ langService.currentLang() === 'en' ? 'Under:' : 'تحت الحساب الأب:' }} {{ parentAcc.accountCode }} - {{ parentAcc.nameAr }}
+                </strong>
               </div>
 
               <div class="frc-item">

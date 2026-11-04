@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { CompanyContextService } from '../../core/services/company-context.service';
+import { LayoutService } from '../../core/services/layout.service';
 
 export interface NavItem {
   labelAr: string;
@@ -87,15 +88,12 @@ export interface NavSection {
         <!-- Rail Bottom Utility Actions -->
         <div class="rail-bottom-actions">
           <button 
+            *ngIf="isSubRailCollapsed()"
             type="button" 
-            class="rail-action-btn"
+            class="rail-action-btn expand-action"
             (click)="toggleSubRail()"
-            [title]="isSubRailCollapsed() 
-              ? ('layout.sidebar.expandSubmenu' | translate)
-              : ('layout.sidebar.collapseSubmenu' | translate)">
-            <i class="pi" [ngClass]="isSubRailCollapsed() 
-              ? ('layout.sidebar.pibars' | translate) 
-              : ('layout.sidebar.pichevronleft' | translate)"></i>
+            [title]="('layout.sidebar.expandSubmenu' | translate)">
+            <i class="pi" [ngClass]="langService.currentLang() === 'ar' ? 'pi-angle-left' : 'pi-angle-right'"></i>
           </button>
 
           <button 
@@ -116,7 +114,7 @@ export interface NavSection {
         <!-- Active Module Header -->
         <div class="sub-rail-header" *ngIf="activeSection">
           <div class="module-identity">
-            <div class="module-icon-badge" [ngClass]="'theme-' + (activeSection.theme || 'emerald')">
+            <div class="module-icon-badge theme-emerald">
               <i [class]="activeSection.icon"></i>
             </div>
             <div class="module-text-wrap">
@@ -141,16 +139,19 @@ export interface NavSection {
         <!-- Tenant Badge Strip -->
         <div class="sub-rail-tenant">
           <div class="tenant-tag-icon">
-            <i class="pi pi-building"></i>
+            <i class="pi" [ngClass]="authService.isSuperAdmin() ? 'pi-shield' : 'pi-building'"></i>
           </div>
           <div class="tenant-tag-details">
             <span class="tenant-label">
               {{ authService.isSuperAdmin() 
-                ? ('layout.sidebar.platformOwner' | translate)
+                ? ('companies.portal.platformOwnerBadge' | translate)
                 : ('layout.sidebar.activeTenant' | translate) }}
             </span>
-            <strong class="tenant-org" [title]="companyContext.companyName()(langService.currentLang())">
+            <strong class="tenant-org" *ngIf="!authService.isSuperAdmin()" [title]="companyContext.companyName()(langService.currentLang())">
               {{ companyContext.companyName()(langService.currentLang()) }}
+            </strong>
+            <strong class="tenant-org" *ngIf="authService.isSuperAdmin()">
+              {{ langService.currentLang() === 'ar' ? 'منصة مِعيار المركزية' : 'Meyar Cloud Platform' }}
             </strong>
           </div>
         </div>
@@ -166,6 +167,7 @@ export interface NavSection {
                   [routerLink]="item.route" 
                   [queryParams]="item.queryParams"
                   [class.active]="isItemActive(item)" 
+                  (click)="onNavEntryClick()"
                   class="nav-entry-link"
                   *ngIf="isItemVisible(item)">
                   <div class="entry-icon-box">
@@ -183,7 +185,7 @@ export interface NavSection {
 
           <!-- Case B: Master Section with Grouped Subgroups -->
           <div class="subgroups-stack" *ngIf="activeSection.subGroups">
-            <div class="subgroup-card" *ngFor="let group of activeSection.subGroups">
+            <div class="subgroup-card" *ngFor="let group of activeSection.subGroups" [hidden]="!isSubGroupVisible(group)">
               
               <!-- Subgroup Header Toggle -->
               <button 
@@ -194,7 +196,7 @@ export interface NavSection {
                 (click)="toggleSubGroup(group)">
                 <div class="group-title-side">
                   <i [class]="group.icon + ' group-icon'"></i>
-                  <span class="group-name">
+                  <span class="group-name" [title]="langService.currentLang() === 'ar' ? group.titleAr : group.titleEn">
                     {{ langService.currentLang() === 'ar' ? group.titleAr : group.titleEn }}
                   </span>
                 </div>
@@ -211,14 +213,14 @@ export interface NavSection {
                     [routerLink]="item.route" 
                     [queryParams]="item.queryParams"
                     [class.active]="isItemActive(item)" 
+                    (click)="onNavEntryClick()"
                     class="nav-entry-link child-link"
                     *ngIf="isItemVisible(item)">
-                    <div class="entry-icon-box">
-                      <i [class]="item.icon"></i>
-                    </div>
-                    <span class="entry-label">
+                    <i [class]="item.icon + ' child-item-icon'"></i>
+                    <span class="entry-label" [title]="langService.currentLang() === 'ar' ? item.labelAr : item.labelEn">
                       {{ langService.currentLang() === 'ar' ? item.labelAr : item.labelEn }}
                     </span>
+                    <span class="child-active-dot" *ngIf="isItemActive(item)"></span>
                   </a>
                 </li>
               </ul>
@@ -236,9 +238,12 @@ export interface NavSection {
             </div>
             <div class="user-meta-column">
               <strong class="user-fullname">
-                {{ langService.currentLang() === 'ar' ? authService.currentUser()?.fullNameAr : authService.currentUser()?.fullNameEn }}
+                {{ getDisplayFullName() }}
               </strong>
-              <span class="user-login-name">{{ authService.currentUser()?.userName }}</span>
+              <span class="user-role-badge">
+                <span class="online-dot"></span>
+                {{ getDisplayRoleTitle() }}
+              </span>
             </div>
           </div>
         </div>
@@ -255,6 +260,15 @@ export interface NavSection {
 
     button, a, span, strong, h2, h3 {
       font-family: var(--font-arabic) !important;
+      outline: none !important;
+      box-shadow: none;
+    }
+
+    button:focus,
+    button:focus-visible,
+    a:focus,
+    a:focus-visible {
+      outline: none !important;
     }
 
     .erp-dual-sidebar {
@@ -264,37 +278,80 @@ export interface NavSection {
       top: 0;
       z-index: 90;
       user-select: none;
+
+      /* Prevent global .btn i / button i margin rules from distorting centered icon boxes */
+      i {
+        margin-inline-end: 0 !important;
+      }
+
+      @media (max-width: 1023px) and (min-width: 768px) {
+        .secondary-rail:not(.collapsed) {
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          inset-inline-start: 68px;
+          z-index: 95;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+      }
+
+      @media (max-width: 767px) {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        inset-inline-start: 0;
+        z-index: 100;
+        transform: translateX(100%);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.25);
+      }
+    }
+
+    :host-context([dir="ltr"]) {
+      @media (max-width: 767px) {
+        .erp-dual-sidebar {
+          transform: translateX(-100%);
+        }
+      }
+    }
+
+    :host-context(.mobile-sidebar-open) {
+      @media (max-width: 767px) {
+        .erp-dual-sidebar {
+          transform: translateX(0) !important;
+        }
+      }
     }
 
     /* ======================================================== */
     /* 1. PRIMARY APP RAIL STYLING                              */
     /* ======================================================== */
     .primary-rail {
-      width: 70px;
-      min-width: 70px;
+      width: 68px;
+      min-width: 68px;
       height: 100vh;
-      background: #0F172A; /* Deep modern executive slate */
+      background: #0F172A;
       border-inline-end: 1px solid #1E293B;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 0.65rem 0.35rem;
-      gap: 0.5rem;
+      gap: 0.45rem;
       z-index: 92;
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
     }
 
     .rail-brand-box {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
       background: #1E293B;
       border: 1px solid #334155;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.25rem;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
@@ -305,9 +362,9 @@ export interface NavSection {
       }
 
       .rail-brand-logo {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
         object-fit: cover;
       }
     }
@@ -318,15 +375,15 @@ export interface NavSection {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.3rem;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 0.2rem 0;
+      padding: 0.15rem 0;
     }
 
     .rail-app-btn {
       width: 100%;
-      min-height: 52px;
+      min-height: 50px;
       background: transparent;
       border: none;
       border-radius: 10px;
@@ -336,25 +393,25 @@ export interface NavSection {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 0.35rem 0.15rem;
+      padding: 0.3rem 0.15rem;
       position: relative;
       transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 
       .rail-icon-box {
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.05rem;
+        font-size: 1rem;
         transition: all 0.18s ease;
       }
 
       .rail-app-label {
         font-size: 0.62rem;
         font-weight: 700;
-        margin-top: 0.2rem;
+        margin-top: 0.18rem;
         white-space: nowrap;
         text-align: center;
         letter-spacing: -0.2px;
@@ -365,9 +422,9 @@ export interface NavSection {
       .rail-active-pill {
         position: absolute;
         inset-inline-start: 0;
-        top: 20%;
-        bottom: 20%;
-        width: 3.5px;
+        top: 22%;
+        bottom: 22%;
+        width: 3px;
         background: #10B981;
         border-radius: 0 4px 4px 0;
         box-shadow: 0 0 8px #10B981;
@@ -389,8 +446,8 @@ export interface NavSection {
 
         .rail-icon-box {
           color: #10B981;
-          background: rgba(16, 185, 129, 0.2);
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+          background: rgba(16, 185, 129, 0.18);
+          box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
         }
 
         .rail-app-label {
@@ -406,13 +463,13 @@ export interface NavSection {
       flex-direction: column;
       align-items: center;
       gap: 0.35rem;
-      padding-top: 0.4rem;
+      padding-top: 0.45rem;
       border-top: 1px solid #1E293B;
     }
 
     .rail-action-btn {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 9px;
       background: #1E293B;
       border: 1px solid #334155;
@@ -421,13 +478,24 @@ export interface NavSection {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       transition: all 0.18s ease;
 
       &:hover {
         background: #334155;
         color: #FFFFFF;
         border-color: #475569;
+      }
+
+      &.expand-action {
+        color: #34D399;
+        border-color: rgba(16, 185, 129, 0.35);
+
+        &:hover {
+          background: #059669;
+          color: #FFFFFF;
+          border-color: #10B981;
+        }
       }
 
       &.logout-action:hover {
@@ -442,8 +510,8 @@ export interface NavSection {
     /* 2. SECONDARY CONTEXTUAL SUB-SIDEBAR STYLING              */
     /* ======================================================== */
     .secondary-rail {
-      width: 245px;
-      min-width: 245px;
+      width: 256px;
+      min-width: 256px;
       height: 100vh;
       background: #FFFFFF;
       border-inline-end: 1px solid #E2E8F0;
@@ -453,7 +521,7 @@ export interface NavSection {
                   opacity 0.18s ease,
                   transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
-      box-shadow: 3px 0 14px rgba(15, 23, 42, 0.03);
+      box-shadow: 3px 0 14px rgba(15, 23, 42, 0.025);
       z-index: 91;
 
       &.collapsed {
@@ -467,13 +535,13 @@ export interface NavSection {
     }
 
     .sub-rail-header {
-      padding: 0.85rem 0.95rem;
+      padding: 0.75rem 0.85rem;
       border-bottom: 1px solid #F1F5F9;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.5rem;
-      background: #FAFAFA;
+      background: #FFFFFF;
     }
 
     .module-identity {
@@ -490,26 +558,11 @@ export interface NavSection {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      font-size: 0.95rem;
       flex-shrink: 0;
-
-      &.theme-emerald {
-        background: linear-gradient(135deg, #059669 0%, #10B981 100%);
-        color: #FFFFFF;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
-      }
-
-      &.theme-blue {
-        background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
-        color: #FFFFFF;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-      }
-
-      &.theme-purple {
-        background: linear-gradient(135deg, #7E22CE 0%, #A855F7 100%);
-        color: #FFFFFF;
-        box-shadow: 0 2px 8px rgba(147, 51, 234, 0.25);
-      }
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.22);
     }
 
     .module-text-wrap {
@@ -518,7 +571,7 @@ export interface NavSection {
       min-width: 0;
 
       .module-main-title {
-        font-size: 0.86rem;
+        font-size: 0.85rem;
         font-weight: 800;
         color: #0F172A;
         margin: 0;
@@ -539,37 +592,40 @@ export interface NavSection {
       width: 26px;
       height: 26px;
       border-radius: 6px;
-      background: #FFFFFF;
+      background: #F8FAFC;
       border: 1px solid #E2E8F0;
-      color: #94A3B8;
+      color: #64748B;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       transition: all 0.15s ease;
       flex-shrink: 0;
 
       &:hover {
-        background: #F1F5F9;
-        color: #0F172A;
-        border-color: #CBD5E1;
+        background: #ECFDF5;
+        color: #059669;
+        border-color: #A7F3D0;
       }
     }
 
     .sub-rail-tenant {
-      padding: 0.45rem 0.85rem;
+      margin: 0.5rem 0.65rem 0.2rem 0.65rem;
+      padding: 0.42rem 0.65rem;
       background: #F8FAFC;
-      border-bottom: 1px solid #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       gap: 0.5rem;
 
       .tenant-tag-icon {
-        width: 22px;
-        height: 22px;
-        border-radius: 5px;
-        background: #EEF2F6;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: #ECFDF5;
+        border: 1px solid #D1FAE5;
         color: #059669;
         display: flex;
         align-items: center;
@@ -586,16 +642,18 @@ export interface NavSection {
         .tenant-label {
           font-size: 0.58rem;
           font-weight: 600;
-          color: #94A3B8;
+          color: #64748B;
+          line-height: 1.1;
         }
 
         .tenant-org {
           font-size: 0.72rem;
           font-weight: 750;
-          color: #334155;
+          color: #0F172A;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          line-height: 1.25;
         }
       }
     }
@@ -605,10 +663,10 @@ export interface NavSection {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 0.6rem 0.55rem;
+      padding: 0.45rem 0.65rem;
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      gap: 0.4rem;
     }
 
     .nav-links-list {
@@ -623,13 +681,15 @@ export interface NavSection {
     .nav-entry-link {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
-      padding: 0.45rem 0.65rem;
+      gap: 0.55rem;
+      padding: 0.45rem 0.6rem;
       border-radius: 8px;
-      color: #334155;
+      border: 1px solid transparent;
+      color: #475569;
       text-decoration: none;
-      font-size: 0.79rem;
+      font-size: 0.78rem;
       font-weight: 650;
+      outline: none !important;
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
       .entry-icon-box {
@@ -642,7 +702,7 @@ export interface NavSection {
         align-items: center;
         justify-content: center;
         color: #64748B;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         flex-shrink: 0;
         transition: all 0.15s ease;
       }
@@ -669,7 +729,7 @@ export interface NavSection {
         .entry-icon-box {
           background: #FFFFFF;
           border-color: #CBD5E1;
-          color: #0F172A;
+          color: #059669;
         }
 
         .entry-arrow {
@@ -680,14 +740,15 @@ export interface NavSection {
 
       &.active {
         background: #ECFDF5;
-        color: #059669;
-        font-weight: 800;
+        border-color: #A7F3D0;
+        color: #065F46;
+        font-weight: 750;
 
         .entry-icon-box {
           background: #10B981;
           border-color: #10B981;
           color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+          box-shadow: 0 2px 5px rgba(16, 185, 129, 0.22);
         }
 
         .entry-arrow {
@@ -697,9 +758,50 @@ export interface NavSection {
         }
       }
 
+      /* Sleek Level-2 Child Links inside Subgroups */
       &.child-link {
-        font-size: 0.76rem;
-        padding: 0.38rem 0.55rem;
+        font-size: 0.75rem;
+        padding: 0.42rem 0.6rem;
+        border-radius: 7px;
+        position: relative;
+
+        .child-item-icon {
+          font-size: 0.82rem;
+          color: #94A3B8;
+          width: 18px;
+          text-align: center;
+          flex-shrink: 0;
+          transition: color 0.15s ease;
+        }
+
+        .child-active-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #10B981;
+          box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+          flex-shrink: 0;
+        }
+
+        &:hover {
+          background: #F8FAFC;
+          color: #0F172A;
+
+          .child-item-icon {
+            color: #059669;
+          }
+        }
+
+        &.active {
+          background: #ECFDF5;
+          border-color: #A7F3D0;
+          color: #065F46;
+          font-weight: 750;
+
+          .child-item-icon {
+            color: #059669;
+          }
+        }
       }
     }
 
@@ -707,48 +809,50 @@ export interface NavSection {
     .subgroups-stack {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.38rem;
     }
 
     .subgroup-card {
       display: flex;
       flex-direction: column;
-      background: #FAFAFA;
-      border: 1px solid #F1F5F9;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 9px;
       overflow: hidden;
       transition: all 0.15s ease;
 
       &:hover {
-        border-color: #E2E8F0;
+        border-color: #CBD5E1;
       }
     }
 
     .subgroup-toggle {
       width: 100%;
-      background: transparent;
+      background: #F8FAFC;
       border: none;
-      padding: 0.5rem 0.65rem;
+      padding: 0.48rem 0.6rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.4rem;
+      gap: 0.35rem;
       transition: all 0.15s ease;
 
       .group-title-side {
         display: flex;
         align-items: center;
-        gap: 0.45rem;
+        gap: 0.42rem;
         min-width: 0;
+        flex: 1;
 
         .group-icon {
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           color: #64748B;
+          flex-shrink: 0;
         }
 
         .group-name {
-          font-size: 0.75rem;
+          font-size: 0.73rem;
           font-weight: 750;
           color: #334155;
           white-space: nowrap;
@@ -760,19 +864,20 @@ export interface NavSection {
       .group-meta-side {
         display: flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.3rem;
+        flex-shrink: 0;
 
         .group-badge {
           font-size: 0.6rem;
           font-weight: 700;
-          background: #EEF2F6;
-          color: #64748B;
-          padding: 0.05rem 0.35rem;
+          background: #E2E8F0;
+          color: #475569;
+          padding: 0.05rem 0.38rem;
           border-radius: 999px;
         }
 
         .group-chevron {
-          font-size: 0.62rem;
+          font-size: 0.6rem;
           color: #94A3B8;
           transition: transform 0.18s ease;
 
@@ -804,23 +909,28 @@ export interface NavSection {
         background: #F0FDF4;
 
         .group-title-side .group-icon {
-          color: #10B981;
+          color: #059669;
         }
 
         .group-title-side .group-name {
           color: #065F46;
           font-weight: 800;
         }
+
+        .group-meta-side .group-badge {
+          background: #D1FAE5;
+          color: #065F46;
+        }
       }
     }
 
     .subgroup-links-list {
       list-style: none;
-      padding: 0.25rem 0.45rem 0.35rem;
+      padding: 0.3rem 0.35rem;
       margin: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.12rem;
+      gap: 0.15rem;
       background: #FFFFFF;
       animation: fadeInSubLinks 0.15s ease-out;
     }
@@ -838,9 +948,9 @@ export interface NavSection {
 
     /* Sub-Rail Footer */
     .sub-rail-footer {
-      padding: 0.65rem 0.85rem;
-      background: #FAFAFA;
-      border-top: 1px solid #F1F5F9;
+      padding: 0.6rem 0.75rem;
+      background: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
     }
 
     .user-profile-badge {
@@ -867,6 +977,7 @@ export interface NavSection {
         display: flex;
         flex-direction: column;
         min-width: 0;
+        gap: 0.08rem;
 
         .user-fullname {
           font-size: 0.74rem;
@@ -877,15 +988,25 @@ export interface NavSection {
           text-overflow: ellipsis;
         }
 
-        .user-login-name {
-          font-size: 0.62rem;
-          font-weight: 600;
-          color: #94A3B8;
+        .user-role-badge {
+          font-size: 0.64rem;
+          font-weight: 650;
+          color: #059669;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
           white-space: nowrap;
+
+          .online-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10B981;
+            flex-shrink: 0;
+          }
         }
       }
     }
-
     /* Custom Slim Scrollbar */
     .custom-scrollbar::-webkit-scrollbar {
       width: 4px;
@@ -909,17 +1030,48 @@ export interface NavSection {
 export class SidebarComponent {
   authService = inject(AuthService);
   langService = inject(LanguageService);
+  layoutService = inject(LayoutService);
   companyContext = inject(CompanyContextService);
   router = inject(Router);
 
   // Active module selected on the primary rail
   selectedSectionId = signal<string>('main-overview');
   
-  // Collapse toggle for the contextual secondary rail
-  isSubRailCollapsed = signal<boolean>(false);
+  // Collapse toggle for the contextual secondary rail (collapsed by default on tablet & mobile)
+  isSubRailCollapsed = signal<boolean>(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   toggleSubRail() {
     this.isSubRailCollapsed.set(!this.isSubRailCollapsed());
+  }
+
+  getDisplayFullName(): string {
+    const user = this.authService.currentUser();
+    if (!user) return '';
+    const isAr = this.langService.currentLang() === 'ar';
+    const name = isAr ? (user.fullNameAr || user.fullNameEn) : (user.fullNameEn || user.fullNameAr);
+    if (!name || name.toLowerCase() === 'adminco') {
+      return isAr ? 'مدير المنشأة (adminco)' : 'Company Admin (adminco)';
+    }
+    return name;
+  }
+
+  getDisplayRoleTitle(): string {
+    const user = this.authService.currentUser();
+    const isAr = this.langService.currentLang() === 'ar';
+    if (!user) return '';
+    if (this.authService.isSuperAdmin()) return isAr ? 'مالك المنصة المركزية' : 'Platform SuperAdmin';
+    if (user.roleNameAr && isAr) return user.roleNameAr;
+    if (this.authService.isCompanyAdmin()) return isAr ? 'مدير النظام والمنشأة' : 'System & Company Admin';
+    if (this.authService.isAccountant()) return isAr ? 'محاسب مالي معتمد' : 'Financial Accountant';
+    if (this.authService.isSalesperson()) return isAr ? 'مسؤول مبيعات' : 'Sales Representative';
+    return user.role || user.userName;
+  }
+
+  onNavEntryClick() {
+    this.layoutService.closeMobileSidebar();
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      this.isSubRailCollapsed.set(true);
+    }
   }
 
   get activeSection(): NavSection | undefined {
@@ -1083,6 +1235,9 @@ export class SidebarComponent {
   }
 
   isSectionVisible(section: NavSection): boolean {
+    if (this.authService.isSuperAdmin()) {
+      return section.id === 'admin-security';
+    }
     if (section.superAdminOnly && !this.authService.isSuperAdmin()) {
       return false;
     }
@@ -1093,15 +1248,22 @@ export class SidebarComponent {
   }
 
   isItemVisible(item: NavItem): boolean {
+    if (this.authService.isSuperAdmin()) {
+      return item.route === '/companies' || !!item.superAdminOnly;
+    }
     if (item.superAdminOnly && !this.authService.isSuperAdmin()) {
       return false;
     }
     if (this.authService.isSalesperson()) {
-      if (item.route === '/invoicing/salespersons') {
+      if (item.route === '/invoicing/salespersons' || item.route === '/pos/shifts') {
         return false;
       }
     }
     return true;
+  }
+
+  isSubGroupVisible(group: NavSubGroup): boolean {
+    return group.items.some(i => this.isItemVisible(i));
   }
 
   getSubItemsCount(section?: NavSection): number {
@@ -1270,6 +1432,12 @@ export class SidebarComponent {
               labelEn: 'POS Cash Invoices',
               icon: 'pi pi-receipt',
               route: '/invoicing/simplified'
+            },
+            {
+              labelAr: 'مراجعة الورديات وإقفالات الصندوق',
+              labelEn: 'POS Shifts & Cash Closings',
+              icon: 'pi pi-wallet',
+              route: '/pos/shifts'
             },
             {
               labelAr: 'فريق ومناديب المبيعات',

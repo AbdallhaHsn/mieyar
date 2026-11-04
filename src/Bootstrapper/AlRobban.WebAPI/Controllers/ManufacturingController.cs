@@ -3,12 +3,15 @@ using AlRobban.Modules.Manufacturing.Application.DTOs;
 using AlRobban.Modules.Manufacturing.Application.Queries;
 using AlRobban.Modules.Manufacturing.Domain.Enums;
 using MediatR;
+using AlRobban.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = AppRoles.BackOffice)]
 public class ManufacturingController : ControllerBase
 {
     private readonly IMediator _mediator;

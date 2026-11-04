@@ -225,10 +225,19 @@ public class PostPurchaseInvoiceCommandHandler : IRequestHandler<PostPurchaseInv
         // 1. Determine Accounts for Double-Entry Posting:
         // Credit Account: Vendor GL Account or General Payables (21101)
         var creditAccountId = vendor.GlAccountId;
-        if (!creditAccountId.HasValue)
+        if (!creditAccountId.HasValue || vendor.PartnerType == PartnerType.Customer)
         {
             var payablesAccount = await _accountRepo.GetByCodeAsync(invoice.CompanyId, "21101", cancellationToken);
             creditAccountId = payablesAccount?.Id ?? throw new InvalidOperationException("حساب الموردين (21101) غير معرف في دليل الحسابات.");
+        }
+        else
+        {
+            var vendorGl = await _accountRepo.GetByIdAsync(creditAccountId.Value, cancellationToken);
+            if (vendorGl == null || vendorGl.CompanyId != invoice.CompanyId)
+            {
+                var payablesAccount = await _accountRepo.GetByCodeAsync(invoice.CompanyId, "21101", cancellationToken);
+                creditAccountId = payablesAccount?.Id ?? throw new InvalidOperationException("حساب الموردين (21101) غير معرف في دليل الحسابات.");
+            }
         }
 
         // Input VAT Account: 11401 (ضريبة مدخلات قابلة للاسترداد 15%)
@@ -246,14 +255,32 @@ public class PostPurchaseInvoiceCommandHandler : IRequestHandler<PostPurchaseInv
             }
         }
 
+        // Default inventory account: 11301
+        var defaultInventoryAccount = await _accountRepo.GetByCodeAsync(invoice.CompanyId, "11301", cancellationToken);
+        if (defaultInventoryAccount == null)
+        {
+            var accounts = await _accountRepo.GetAllByCompanyAsync(invoice.CompanyId, cancellationToken);
+            defaultInventoryAccount = accounts.FirstOrDefault(a => a.AccountCode.StartsWith("11301") || a.AccountCode.StartsWith("113"));
+        }
+
         // 2. Prepare Balanced Journal Entry Lines
         var jvLines = new List<CreateJournalEntryLineRequest>();
 
         // 2.1 Debit: Line items (Inventory or Expense)
         foreach (var line in invoice.Lines)
         {
+            var lineAccountId = line.AccountId;
+            var acc = await _accountRepo.GetByIdAsync(lineAccountId, cancellationToken);
+            if (acc == null || acc.CompanyId != invoice.CompanyId)
+            {
+                if (defaultInventoryAccount != null)
+                {
+                    lineAccountId = defaultInventoryAccount.Id;
+                }
+            }
+
             jvLines.Add(new CreateJournalEntryLineRequest(
-                AccountId: line.AccountId,
+                AccountId: lineAccountId,
                 Debit: line.TaxableAmount,
                 Credit: 0,
                 Description: $"{line.ItemNameAr} (فاتورة مشتريات {invoice.InvoiceNumber})",
@@ -449,10 +476,19 @@ public class ReturnPurchaseInvoiceCommandHandler : IRequestHandler<ReturnPurchas
 
         // 1. Determine Accounts for Reverse Double-Entry
         var debitAccountId = vendor.GlAccountId;
-        if (!debitAccountId.HasValue)
+        if (!debitAccountId.HasValue || vendor.PartnerType == PartnerType.Customer)
         {
             var payablesAccount = await _accountRepo.GetByCodeAsync(invoice.CompanyId, "21101", cancellationToken);
             debitAccountId = payablesAccount?.Id ?? throw new InvalidOperationException("حساب الموردين (21101) غير معرف.");
+        }
+        else
+        {
+            var vendorGl = await _accountRepo.GetByIdAsync(debitAccountId.Value, cancellationToken);
+            if (vendorGl == null || vendorGl.CompanyId != invoice.CompanyId || vendorGl.AccountCode.StartsWith("112"))
+            {
+                var payablesAccount = await _accountRepo.GetByCodeAsync(invoice.CompanyId, "21101", cancellationToken);
+                debitAccountId = payablesAccount?.Id ?? throw new InvalidOperationException("حساب الموردين (21101) غير معرف.");
+            }
         }
 
         Guid? vatAccountId = null;
@@ -637,10 +673,15 @@ public class PayPurchaseInvoiceCommandHandler : IRequestHandler<PayPurchaseInvoi
         {
             var allAccounts = await _accountRepo.GetAllByCompanyAsync(invoice.CompanyId, cancellationToken);
 
-            var apAccount = (vendor?.GlAccountId.HasValue == true
-                                ? allAccounts.FirstOrDefault(a => a.Id == vendor.GlAccountId.Value)
+            var vendorGl = (vendor?.GlAccountId.HasValue == true && vendor.PartnerType != PartnerType.Customer)
+                ? allAccounts.FirstOrDefault(a => a.Id == vendor.GlAccountId.Value)
+                : null;
+
+            var apAccount = (vendorGl != null && !vendorGl.AccountCode.StartsWith("112")
+                                ? vendorGl
                                 : null)
                             ?? allAccounts.FirstOrDefault(a => a.AccountCode == "21101" && a.IsPostable)
+                            ?? allAccounts.FirstOrDefault(a => a.AccountCode == "21101")
                             ?? allAccounts.FirstOrDefault(a => a.AccountCode.StartsWith("211") && a.IsPostable);
 
             var paymentAccount = command.Request.PaymentAccountId.HasValue

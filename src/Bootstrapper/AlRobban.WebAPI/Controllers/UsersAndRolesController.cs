@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using AlRobban.Modules.IdentityAndAccess.Application.DTOs;
 using AlRobban.Modules.IdentityAndAccess.Application.Services;
 using AlRobban.Modules.IdentityAndAccess.Domain.Entities;
@@ -15,7 +15,7 @@ namespace AlRobban.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/iam")]
-[Authorize]
+[Authorize(Roles = AppRoles.Admins)]
 public class UsersAndRolesController : ControllerBase
 {
     private readonly IUserRepository _userRepository;
@@ -23,6 +23,7 @@ public class UsersAndRolesController : ControllerBase
     private readonly IPasswordHasher _passwordHasher;
     private readonly IdentityAndAccessDbContext _dbContext;
     private readonly ICurrentTenantContext _tenantContext;
+    private readonly ILicenseService _license;
     private readonly ILogger<UsersAndRolesController> _logger;
 
     public UsersAndRolesController(
@@ -31,6 +32,7 @@ public class UsersAndRolesController : ControllerBase
         IPasswordHasher passwordHasher,
         IdentityAndAccessDbContext dbContext,
         ICurrentTenantContext tenantContext,
+        ILicenseService license,
         ILogger<UsersAndRolesController> logger)
     {
         _userRepository = userRepository;
@@ -38,14 +40,39 @@ public class UsersAndRolesController : ControllerBase
         _passwordHasher = passwordHasher;
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _license = license;
         _logger = logger;
     }
 
+    // Tenant is always resolved by TenantEnforcementFilter (JWT claim, or X-Tenant-Id for SuperAdmin); no fallback tenant.
     private Guid GetEffectiveTenantId()
     {
         return _tenantContext.TenantId.GetValueOrDefault() != Guid.Empty
-            ? _tenantContext.TenantId.Value
-            : Guid.Parse("11111111-2222-3333-4444-555555555555");
+            ? _tenantContext.TenantId!.Value
+            : throw new InvalidOperationException("Tenant context is required.");
+    }
+
+    private bool CallerIsSuperAdmin => User.IsInRole(AppRoles.SuperAdmin);
+
+    private bool IsSelf(Guid userId) =>
+        string.Equals(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, userId.ToString(), StringComparison.OrdinalIgnoreCase);
+
+    private IActionResult? CheckRoleAssignment(UserRole role)
+    {
+        if (role == UserRole.SuperAdmin)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "Users.Forbidden", description = "لا يمكن منح صلاحية مدير المنصة لمستخدمي الشركات." });
+        }
+        return null;
+    }
+
+    private static string? ValidatePasswordPolicy(string? password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 10 || !password.Any(char.IsLetter) || !password.Any(char.IsDigit))
+        {
+            return "كلمة المرور يجب أن لا تقل عن 10 خانات وتحتوي على أحرف وأرقام.";
+        }
+        return null;
     }
 
     // =========================================================================
@@ -121,6 +148,12 @@ public class UsersAndRolesController : ControllerBase
             return BadRequest(new { code = "Users.DuplicateEmail", description = $"البريد الإلكتروني '{request.Email}' مسجل مسبقاً في النظام." });
         }
 
+        var policyError = ValidatePasswordPolicy(request.Password);
+        if (policyError != null)
+        {
+            return BadRequest(new { code = "Users.WeakPassword", description = policyError });
+        }
+
         var passwordHash = _passwordHasher.HashPassword(request.Password);
 
         var effectiveRole = request.Role;
@@ -138,6 +171,16 @@ public class UsersAndRolesController : ControllerBase
                     _ => request.Role
                 };
             }
+        }
+
+        var denied = CheckRoleAssignment(effectiveRole);
+        if (denied != null) return denied;
+
+        var currentUsers = await _dbContext.Users.CountAsync(u => u.TenantId == tenantId && u.IsActive, cancellationToken);
+        var licenseCheck = await _license.CheckCanAddAsync(tenantId, LicenseResource.Users, currentUsers, cancellationToken);
+        if (!licenseCheck.Allowed)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, licenseCheck.ToResponse());
         }
 
         var newUser = new User(
@@ -212,6 +255,19 @@ public class UsersAndRolesController : ControllerBase
             }
         }
 
+        var denied = CheckRoleAssignment(effectiveRole);
+        if (denied != null) return denied;
+
+        if (user.Role == UserRole.SuperAdmin && !CallerIsSuperAdmin)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "Users.Forbidden", description = "لا يمكن تعديل حساب مدير النظام." });
+        }
+
+        if (IsSelf(user.Id) && (effectiveRole != user.Role || !request.IsActive))
+        {
+            return BadRequest(new { code = "Users.SelfChange", description = "لا يمكنك تغيير دورك أو تعطيل حسابك بنفسك." });
+        }
+
         user.UpdateDetails(
             fullNameAr: request.FullNameAr,
             fullNameEn: request.FullNameEn,
@@ -239,9 +295,15 @@ public class UsersAndRolesController : ControllerBase
             return NotFound(new { code = "Users.NotFound", description = "المستخدم المطلوب غير موجود." });
         }
 
-        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+        if (user.Role == UserRole.SuperAdmin && !CallerIsSuperAdmin)
         {
-            return BadRequest(new { code = "Users.WeakPassword", description = "كلمة المرور يجب أن لا تقل عن 6 خانات." });
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "Users.Forbidden", description = "لا يمكن تعديل حساب مدير النظام." });
+        }
+
+        var policyError = ValidatePasswordPolicy(request.NewPassword);
+        if (policyError != null)
+        {
+            return BadRequest(new { code = "Users.WeakPassword", description = policyError });
         }
 
         var newHash = _passwordHasher.HashPassword(request.NewPassword);
@@ -260,6 +322,16 @@ public class UsersAndRolesController : ControllerBase
         if (user == null)
         {
             return NotFound(new { code = "Users.NotFound", description = "المستخدم المطلوب غير موجود." });
+        }
+
+        if (user.Role == UserRole.SuperAdmin && !CallerIsSuperAdmin)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "Users.Forbidden", description = "لا يمكن تعديل حساب مدير النظام." });
+        }
+
+        if (IsSelf(user.Id) && !request.IsActive)
+        {
+            return BadRequest(new { code = "Users.SelfChange", description = "لا يمكنك تعطيل حسابك بنفسك." });
         }
 
         user.SetStatus(request.IsActive, User.Identity?.Name ?? "Admin");

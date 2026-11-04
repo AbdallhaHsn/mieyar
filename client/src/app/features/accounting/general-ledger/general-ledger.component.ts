@@ -37,10 +37,6 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <h1 class="page-title">
                 {{ 'accounting.generalLedger.generalLedgerStatements' | translate }}
               </h1>
-              <span class="compliance-badge" [title]="'ui.generalLedger.a12288' | translate">
-                <i class="pi pi-verified"></i>
-                <span>SOCPA & IFRS Compliant</span>
-              </span>
             </div>
             <p class="page-subtitle">
               {{ 'accounting.generalLedger.trackTheImpactOfJournal' | translate }}
@@ -566,7 +562,6 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                 <div class="center-title-box">
                   <h1 class="statement-main-title">{{ 'ui.generalLedger.7469b0' | translate }}</h1>
                   <span class="statement-sub-title">GENERAL LEDGER ACCOUNT STATEMENT</span>
-                  <span class="standard-cert-badge">{{ 'ui.generalLedger.977941' | translate }}</span>
                 </div>
 
                 <div class="left-seal-box">
@@ -727,23 +722,6 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
                 </div>
               </section>
 
-              <!-- 7. Document Footer & Compliance Line -->
-              <footer class="statement-compliance-footer">
-                <div class="compliance-left">
-                  <span>{{ 'ui.generalLedger.b0a387' | translate }}</span>
-                  <span class="dot">&bull;</span>
-                  <span>{{ 'ui.generalLedger.aa2a8a' | translate }}</span>
-                </div>
-                <div class="compliance-center">
-                  <span class="page-number-box">
-                    <i class="pi pi-file"></i>
-                    <span>{{ 'ui.generalLedger.d8d24b' | translate }}</span>
-                  </span>
-                </div>
-                <div class="compliance-right font-mono">
-                  <span>{{ 'accounting.journal.ui.printDate' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
-                </div>
-              </footer>
 
             </article>
           </div>

@@ -18,6 +18,7 @@
   
   <!-- Custom Styles -->
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/articles.css">
 </head>
 <body>
   <!-- Background Subtle Accents -->
@@ -43,6 +44,7 @@
         <a href="#about" class="nav-link" data-i18n="nav.about">نبذة عني</a>
         <a href="#projects" class="nav-link" data-i18n="nav.projects">الأنظمة والمشاريع</a>
         <a href="#experience" class="nav-link" data-i18n="nav.experience">المسيرة المهنية</a>
+        <a href="#articles" class="nav-link" data-i18n="nav.articles">المقالات</a>
         <a href="#skills" class="nav-link" data-i18n="nav.skills">المهارات التقنية</a>
         <a href="#contact" class="nav-link" data-i18n="nav.contact">تواصل معي</a>
       </nav>
@@ -56,9 +58,9 @@
         </button>
 
         <!-- Admin Control Button -->
-        <button id="btn-admin-open" class="btn-icon btn-admin-trigger" title="لوحة التحكم بالبيانات (Admin)">
+        <a href="/admin" id="btn-admin-open" class="btn-icon btn-admin-trigger" title="لوحة التحكم (Admin)">
           <i class="pi pi-cog"></i>
-        </button>
+        </a>
 
         <!-- Mobile Menu Toggle -->
         <button id="btn-mobile-menu" class="btn-icon mobile-only" title="القائمة">
@@ -78,6 +80,7 @@
       <a href="#about" class="drawer-link" data-i18n="nav.about">نبذة عني</a>
       <a href="#projects" class="drawer-link" data-i18n="nav.projects">الأنظمة والمشاريع</a>
       <a href="#experience" class="drawer-link" data-i18n="nav.experience">المسيرة المهنية</a>
+      <a href="#articles" class="drawer-link" data-i18n="nav.articles">المقالات</a>
       <a href="#skills" class="drawer-link" data-i18n="nav.skills">المهارات التقنية</a>
       <a href="#contact" class="drawer-link" data-i18n="nav.contact">تواصل معي</a>
     </div>
@@ -196,6 +199,21 @@
       </div>
     </section>
 
+    <!-- Articles Section -->
+    <section class="section articles-section" id="articles">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag" data-i18n="articles.tag">المدوّنة التقنية</div>
+          <h2 class="section-title" data-i18n="articles.title">مقالات وتجارب من قلب الميدان</h2>
+          <p class="section-desc" data-i18n="articles.desc">دروس عملية في هندسة أنظمة ERP والفوترة الإلكترونية والمعماريات الحديثة.</p>
+        </div>
+        <div class="articles-grid" id="home-articles"></div>
+        <div class="section-footer">
+          <a href="/articles" class="btn btn-secondary"><i class="pi pi-book"></i> <span data-i18n="articles.all">عرض كل المقالات</span></a>
+        </div>
+      </div>
+    </section>
+
     <!-- Career Journey / Experience Timeline -->
     <section class="section experience-section" id="experience">
       <div class="container">
@@ -308,159 +326,9 @@
     </div>
   </footer>
 
-  <!-- Admin CMS Drawer / Modal (Secret Secured Panel) -->
-  <div class="admin-modal" id="admin-modal">
-    <div class="admin-backdrop" id="admin-backdrop"></div>
-    <div class="admin-panel">
-      <!-- Admin Header -->
-      <div class="admin-panel-header">
-        <div class="admin-panel-title">
-          <i class="pi pi-sliders-h"></i>
-          <span data-i18n="admin.title">لوحة التحكم السريعة بالمحتوى (CMS)</span>
-        </div>
-        <button class="btn-icon" id="admin-close-btn"><i class="pi pi-times"></i></button>
-      </div>
-
-      <!-- Admin PIN Lock View -->
-      <div class="admin-lock-screen" id="admin-lock-screen">
-        <div class="lock-icon-box"><i class="pi pi-lock"></i></div>
-        <h3 data-i18n="admin.lockTitle">أدخل رمز الأمان (PIN) لتسجيل الدخول</h3>
-        <p class="lock-sub" data-i18n="admin.lockDesc">هذه اللوحة مخصصة لمالك الموقع لإدارة المشاريع والبيانات الشخصية بسهولة.</p>
-        <form id="admin-pin-form" class="admin-pin-form">
-          <input type="password" id="admin-pin-input" class="form-input pin-input" maxlength="10" placeholder="••••" required autofocus>
-          <button type="submit" class="btn btn-primary btn-block">
-            <i class="pi pi-key"></i>
-            <span data-i18n="admin.unlock">فتح لوحة التحكم</span>
-          </button>
-        </form>
-      </div>
-
-      <!-- Admin Authenticated Content View -->
-      <div class="admin-content-view" id="admin-content-view" style="display: none;">
-        <!-- Admin Navigation Tabs -->
-        <div class="admin-tabs">
-          <button class="admin-tab active" data-tab="tab-profile"><i class="pi pi-user"></i> <span data-i18n="admin.tabProfile">البيانات الشخصية</span></button>
-          <button class="admin-tab" data-tab="tab-projects"><i class="pi pi-th-large"></i> <span data-i18n="admin.tabProjects">المشاريع والروابط</span></button>
-          <button class="admin-tab" data-tab="tab-experiences"><i class="pi pi-briefcase"></i> <span data-i18n="admin.tabExp">الخبرات المهنية</span></button>
-          <button class="admin-tab" data-tab="tab-security"><i class="pi pi-shield"></i> <span data-i18n="admin.tabSecurity">تغيير الـ PIN</span></button>
-        </div>
-
-        <!-- Tab 1: Profile Settings -->
-        <div class="admin-tab-pane active" id="tab-profile">
-          <form id="form-admin-profile">
-            <div class="form-row">
-              <div class="form-group">
-                <label>الاسم بالعربية</label>
-                <input type="text" id="adm-nameAr" class="form-input" required>
-              </div>
-              <div class="form-group">
-                <label>Name in English</label>
-                <input type="text" id="adm-nameEn" class="form-input" required>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>المسمى الوظيفي (عربي)</label>
-                <input type="text" id="adm-titleAr" class="form-input" required>
-              </div>
-              <div class="form-group">
-                <label>Professional Title (EN)</label>
-                <input type="text" id="adm-titleEn" class="form-input" required>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>النبذة التعريفية (عربي)</label>
-              <textarea id="adm-bioAr" class="form-input" rows="3"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label>Bio (English)</label>
-              <textarea id="adm-bioEn" class="form-input" rows="3"></textarea>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>البريد الإلكتروني</label>
-                <input type="email" id="adm-email" class="form-input">
-              </div>
-              <div class="form-group">
-                <label>رقم الواتساب (مثال: +966500000000)</label>
-                <input type="text" id="adm-phone" class="form-input">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>رابط GitHub</label>
-                <input type="url" id="adm-github" class="form-input">
-              </div>
-              <div class="form-group">
-                <label>رابط LinkedIn</label>
-                <input type="url" id="adm-linkedin" class="form-input">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>رابط الـ CV للتحميل</label>
-                <input type="text" id="adm-resumeUrl" class="form-input">
-              </div>
-              <div class="form-group">
-                <label>رابط صورة البروفايل (أو ارفع ملفاً أدناه)</label>
-                <input type="text" id="adm-avatarUrl" class="form-input">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>رفع صورة بروفايل جديدة من جهازك</label>
-              <input type="file" id="adm-avatarFile" accept="image/*" class="form-input">
-            </div>
-
-            <button type="submit" class="btn btn-primary"><i class="pi pi-check"></i> حفظ التعديلات الشخصية</button>
-          </form>
-        </div>
-
-        <!-- Tab 2: Projects Management -->
-        <div class="admin-tab-pane" id="tab-projects">
-          <div class="pane-action-bar">
-            <h4>إدارة المشاريع وروابط الأنظمة الحية</h4>
-            <button class="btn btn-primary btn-sm" id="btn-add-new-project"><i class="pi pi-plus"></i> إضافة مشروع جديد</button>
-          </div>
-          <div class="admin-projects-list" id="admin-projects-list">
-            <!-- Rendered from JS -->
-          </div>
-        </div>
-
-        <!-- Tab 3: Experiences Management -->
-        <div class="admin-tab-pane" id="tab-experiences">
-          <div class="pane-action-bar">
-            <h4>إدارة الخبرات وسجل العمل</h4>
-            <button class="btn btn-primary btn-sm" id="btn-add-new-exp"><i class="pi pi-plus"></i> إضافة خبرة جديدة</button>
-          </div>
-          <div class="admin-exp-list" id="admin-exp-list">
-            <!-- Rendered from JS -->
-          </div>
-        </div>
-
-        <!-- Tab 4: Security & PIN -->
-        <div class="admin-tab-pane" id="tab-security">
-          <h4>تغيير رمز الأمان (Admin PIN)</h4>
-          <form id="form-change-pin" style="max-width: 400px; margin-top: 15px;">
-            <div class="form-group">
-              <label>رمز الأمان الجديد (4 أرقام أو أكثر)</label>
-              <input type="password" id="adm-new-pin" class="form-input" required minlength="4" placeholder="••••">
-            </div>
-            <button type="submit" class="btn btn-primary"><i class="pi pi-lock"></i> حفظ الرمز الجديد</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Scripts -->
+  <script src="js/pub.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/admin.js"></script>
+  
 </body>
 </html>

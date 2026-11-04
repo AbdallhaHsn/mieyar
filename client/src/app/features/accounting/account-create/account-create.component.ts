@@ -296,7 +296,7 @@ export class AccountCreateComponent implements OnInit {
 
     if (this.accountForm.invalid) {
       this.accountForm.markAllAsTouched();
-      this.errorMessage.set(this.langService.t('accounting.accountCreate.validation.formInvalid'));
+      const msg = this.langService.t('accounting.accountCreate.validation.formInvalid'); this.errorMessage.set(msg); Swal.fire({ icon: 'warning', title: this.langService.t('common.warning'), text: msg, confirmButtonColor: '#059669' });
       return;
     }
 

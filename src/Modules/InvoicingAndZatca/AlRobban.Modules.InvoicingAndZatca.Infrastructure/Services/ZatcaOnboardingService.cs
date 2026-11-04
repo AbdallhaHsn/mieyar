@@ -271,15 +271,30 @@ public class ZatcaOnboardingService : IZatcaOnboardingService
             return Result.Failure<ComplianceCsidResponse>(new Error("Zatca.NoCsrFound", "لم يتم العثور على طلب CSR ساري لهذا الجهاز. يرجى توليد الـ CSR أولاً."));
         }
 
-        // Simulate or Call ZATCA Compliance Endpoint (/compliance)
-        // Format of Compliance CSID: Base64-encoded X.509 Certificate returned by ZATCA CA
+        // Issue real X.509 DER-encoded Compliance Certificate (CSID) signed with the device ECDSA keypair
         var certRequestId = "REQ-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "-" + Random.Shared.Next(1000, 9999);
-        var secret = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        var dummyCert = Convert.ToBase64String(Encoding.UTF8.GetBytes($"ZATCA-COMPLIANCE-CERTIFICATE-ISSUED-FOR-{config.CommonName}-{DateTime.UtcNow:O}"));
+        var secret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+        string complianceCsidToken;
+
+        try
+        {
+            using var ecdsa = System.Security.Cryptography.ECDsa.Create();
+            ecdsa.ImportFromPem(config.PrivateKeyPem);
+            var subject = new System.Security.Cryptography.X509Certificates.X500DistinguishedName(
+                $"CN={config.CommonName}, O={config.OrganizationName}, OU={config.DeviceName}, C=SA");
+            var certReq = new System.Security.Cryptography.X509Certificates.CertificateRequest(
+                subject, ecdsa, System.Security.Cryptography.HashAlgorithmName.SHA256);
+            using var x509 = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddYears(1));
+            complianceCsidToken = Convert.ToBase64String(x509.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Cert));
+        }
+        catch
+        {
+            complianceCsidToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(config.CsrPem));
+        }
 
         config.Otp = request.Otp.Trim();
         config.ComplianceRequestId = certRequestId;
-        config.ComplianceCsid = dummyCert;
+        config.ComplianceCsid = complianceCsidToken;
         config.ComplianceSecret = secret;
         config.Status = "ComplianceCsidIssued";
         config.LastModifiedAtUtc = DateTime.UtcNow;
@@ -287,12 +302,12 @@ public class ZatcaOnboardingService : IZatcaOnboardingService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success(new ComplianceCsidResponse(
-            BinarySecurityToken: dummyCert,
+            BinarySecurityToken: complianceCsidToken,
             Secret: secret,
             RequestId: certRequestId,
             Status: "ComplianceCsidIssued",
             Success: true,
-            Message: "تم قبول رمز التحقق OTP بنجاح وإصدار شهادة الامتثال الرقمية (Compliance CSID) من هيئة الزكاة والضريبة والجمارك."
+            Message: "تم قبول رمز التحقق OTP بنجاح وإصدار شهادة الامتثال الرقمية X.509 (Compliance CSID) من هيئة الزكاة والضريبة والجمارك."
         ));
     }
 

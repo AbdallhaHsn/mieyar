@@ -460,10 +460,12 @@
   input[type="number"],
   select {
     width: 100%;
-    padding: 0.55rem 0.75rem;
+    height: 38px;
+    padding: 0 0.75rem;
     border: 1px solid #cbd5e1;
     border-radius: 7px;
     font-size: 0.85rem;
+    line-height: 1.45;
     background: #ffffff;
     color: #0f172a;
     outline: none;
@@ -479,6 +481,10 @@
     &.uppercase {
       text-transform: uppercase;
     }
+  }
+
+  select {
+    padding-inline-end: 2.1rem;
   }
 
   .hint {

@@ -280,8 +280,9 @@ export class InvoiceCreateComponent implements OnInit {
   projectCode = signal<string>('');
   projectName = signal<string>('');
 
-  // Row 4: Payment Method & Credit Terms
-  paymentMeansCode = signal<string>('42'); // 42 = آجل (Credit), 10 = نقدي, 30 = تحويل بنكي, 48 = مدى
+  // Row 4: Payment Method & Credit Terms (Integrated in Master Card)
+  showExtras = signal<boolean>(false);
+  paymentMeansCode = signal<string>('10'); // 10 = نقدي, 42 = آجل, 30 = تحويل بنكي, 48 = مدى
   discountDays = signal<number>(0);
   creditBalanceDate = signal<string>(new Date().toISOString().substring(0, 10));
 
@@ -493,7 +494,7 @@ export class InvoiceCreateComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('invoices.create.alerts.itemNameRequired'),
         text: this.langService.t('invoices.create.alerts.selectItemOrType'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -503,7 +504,7 @@ export class InvoiceCreateComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('invoices.create.alerts.invalidQuantity'),
         text: this.langService.t('invoices.create.alerts.positiveQuantityRequired'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -513,7 +514,7 @@ export class InvoiceCreateComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('invoices.create.alerts.invalidPrice'),
         text: this.langService.t('invoices.create.alerts.validPriceRequired'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -1382,6 +1383,23 @@ export class InvoiceCreateComponent implements OnInit {
     addrParts.push('المملكة العربية السعودية');
 
     this.buyerAddress.set(addrParts.join('، '));
+    // Default to credit payment terms for registered commercial partners
+    this.paymentMeansCode.set('42');
+
+    // Auto-sync ZATCA Invoice Type: Standard B2B if customer has VAT number, otherwise Simplified B2C
+    if (partner.taxNumber && partner.taxNumber.trim().length >= 15) {
+      this.invoiceType.set(InvoiceType.StandardTaxInvoice);
+    } else {
+      this.invoiceType.set(InvoiceType.SimplifiedTaxInvoice);
+    }
+  }
+
+  onInvoiceTypeChange(newType: number): void {
+    const typeVal = Number(newType) as InvoiceType;
+    this.invoiceType.set(typeVal);
+    if (!this.isCreditNoteMode() && !this.isQuotationMode()) {
+      this.generateInvoiceNumber(typeVal === InvoiceType.SimplifiedTaxInvoice ? 'SIMP' : 'INV');
+    }
   }
 
   setCashCustomer(): void {
@@ -1389,6 +1407,8 @@ export class InvoiceCreateComponent implements OnInit {
     this.customerCode.set('CUST-CASH');
     this.buyerName.set('عميل نقدي عام');
     this.buyerNameEn.set('Cash Customer');
+    this.paymentMeansCode.set('10');
+    this.invoiceType.set(InvoiceType.SimplifiedTaxInvoice);
     this.buyerPhone.set('');
     this.buyerVatNumber.set('');
     this.buyerOtherIdType.set('CRN');
@@ -1401,6 +1421,19 @@ export class InvoiceCreateComponent implements OnInit {
     this.buyerPostalCode.set('12211');
     this.buyerCountryCode.set('SA');
     this.buyerAddress.set('مبنى 1234، طريق الملك فهد، حي العليا، الرياض 12211، المملكة العربية السعودية');
+    if (!this.isCreditNoteMode() && !this.isQuotationMode()) {
+      this.generateInvoiceNumber('SIMP');
+    }
+  }
+
+  getPaymentMethodLabel(): string {
+    switch (this.paymentMeansCode()) {
+      case '10': return this.langService.t('invoices.create.cash');
+      case '42': return this.langService.t('invoices.create.credit');
+      case '48': return this.langService.t('invoices.create.card');
+      case '30': return this.langService.t('invoices.create.bankTransfer');
+      default: return this.langService.t('invoices.create.cash');
+    }
   }
 
   saveInvoice(autoIssue: boolean = false): void {

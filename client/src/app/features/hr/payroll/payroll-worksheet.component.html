@@ -469,13 +469,8 @@
             </div>
 
             <div class="center-title-box">
-              <div class="title-crown-badge">
-                <i class="pi pi-verified text-emerald"></i>
-                <span>{{ 'hr.payroll.officialApprovedSheet' | translate }}</span>
-              </div>
               <h1 class="sheet-main-title">{{ 'hr.payroll.officialSheetMainTitle' | translate }}</h1>
               <span class="sheet-sub-title font-mono">OFFICIAL MONTHLY PAYROLL STATEMENT (WPS / MUDAD)</span>
-              <span class="standard-cert-badge">{{ 'hr.payroll.officialSheetSubtitle' | translate }}</span>
             </div>
 
             <div class="left-seal-box">
@@ -680,18 +675,6 @@
                 </div>
               </div>
             </section>
-
-            <!-- Compliance Footer -->
-            <footer class="sheet-compliance-footer">
-              <div class="compliance-left">
-                <span>{{ 'hr.payroll.automatedExtractNotice' | translate }}</span>
-                <span class="dot">&bull;</span>
-                <span>{{ 'hr.payroll.complianceNotice' | translate }}</span>
-              </div>
-              <div class="compliance-right font-mono">
-                <span>{{ 'hr.payroll.issueDateTime' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd HH:mm:ss' }}</span>
-              </div>
-            </footer>
           </div>
 
         </article>
@@ -895,12 +878,6 @@
               <span class="sig-date font-mono">{{ 'hr.payroll.date' | translate }} {{ currentPrintDate | date:'yyyy-MM-dd' }}</span>
             </div>
           </section>
-
-          <!-- Payslip Footer -->
-          <footer class="payslip-footer">
-            <span>{{ 'hr.payroll.payslipFooterNotice' | translate }}</span>
-            <span class="font-mono">{{ currentPrintDate | date:'yyyy-MM-dd HH:mm' }}</span>
-          </footer>
 
         </article>
       </div>

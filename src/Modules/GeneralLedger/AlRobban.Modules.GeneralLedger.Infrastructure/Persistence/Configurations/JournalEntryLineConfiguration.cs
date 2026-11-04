@@ -30,6 +30,7 @@ public class JournalEntryLineConfiguration : IEntityTypeConfiguration<JournalEnt
         builder.HasOne(x => x.Account)
             .WithMany()
             .HasForeignKey(x => x.AccountId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.CostCenter)

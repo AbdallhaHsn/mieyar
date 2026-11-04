@@ -22,6 +22,7 @@ public class PurchasingDbContext : AppDbContextBase
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<ItemWarehouseStock> ItemWarehouseStocks => Set<ItemWarehouseStock>();
     public DbSet<WarehouseAccountMapping> WarehouseAccountMappings => Set<WarehouseAccountMapping>();
+    public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
 
     public PurchasingDbContext(
         DbContextOptions<PurchasingDbContext> options,
@@ -33,6 +34,18 @@ public class PurchasingDbContext : AppDbContextBase
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PurchasingDbContext).Assembly);
+        modelBuilder.Entity<ItemCategory>(b =>
+        {
+            b.ToTable("ItemCategories", "pur");
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Code).HasMaxLength(50).IsRequired();
+            b.Property(c => c.NameAr).HasMaxLength(200).IsRequired();
+            b.Property(c => c.NameEn).HasMaxLength(200);
+            b.Property(c => c.Description).HasMaxLength(500);
+            b.Property(c => c.Color).HasMaxLength(50);
+            b.Property(c => c.Icon).HasMaxLength(100);
+            b.HasIndex(c => new { c.CompanyId, c.Code });
+        });
         base.OnModelCreating(modelBuilder);
     }
 }

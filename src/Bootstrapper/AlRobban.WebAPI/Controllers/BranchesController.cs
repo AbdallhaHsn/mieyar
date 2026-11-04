@@ -1,3 +1,4 @@
+using AlRobban.WebAPI.Security;
 using AlRobban.Modules.IdentityAndAccess.Domain.Entities;
 using AlRobban.Modules.IdentityAndAccess.Domain.Repositories;
 using AlRobban.Modules.IdentityAndAccess.Domain.ValueObjects;
@@ -14,11 +15,16 @@ public class BranchesController : ControllerBase
 {
     private readonly ICompanyRepository _companyRepository;
     private readonly ICurrentTenantContext _tenantContext;
+    private readonly ILicenseService _license;
 
-    public BranchesController(ICompanyRepository companyRepository, ICurrentTenantContext tenantContext)
+    public BranchesController(
+        ICompanyRepository companyRepository,
+        ICurrentTenantContext tenantContext,
+        ILicenseService license)
     {
         _companyRepository = companyRepository;
         _tenantContext = tenantContext;
+        _license = license;
     }
 
     [HttpGet]
@@ -50,6 +56,8 @@ public class BranchesController : ControllerBase
     }
 
     [HttpPost]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> CreateBranch(Guid companyId, [FromBody] CreateBranchRequest request, CancellationToken cancellationToken)
     {
         var company = await _companyRepository.GetByIdAsync(companyId, cancellationToken);
@@ -62,6 +70,12 @@ public class BranchesController : ControllerBase
         if (company.Branches.Any(b => b.Code.Equals(code, StringComparison.OrdinalIgnoreCase)))
         {
             return Conflict(new { code = "Branch.DuplicateCode", description = $"كود الفرع '{code}' مستخدم مسبقاً لهذه المنشأة." });
+        }
+
+        var licenseCheck = await _license.CheckCanAddAsync(companyId, LicenseResource.Branches, company.Branches.Count, cancellationToken);
+        if (!licenseCheck.Allowed)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, licenseCheck.ToResponse());
         }
 
         var nationalAddress = request.Address != null
@@ -105,6 +119,8 @@ public class BranchesController : ControllerBase
     }
 
     [HttpPut("{branchId:guid}/status")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> ToggleBranchStatus(Guid companyId, Guid branchId, [FromBody] ToggleBranchStatusRequest request, CancellationToken cancellationToken)
     {
         var company = await _companyRepository.GetByIdAsync(companyId, cancellationToken);
@@ -137,6 +153,8 @@ public class BranchesController : ControllerBase
     }
 
     [HttpPut("{branchId:guid}")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> UpdateBranch(Guid companyId, Guid branchId, [FromBody] UpdateBranchRequest request, CancellationToken cancellationToken)
     {
         var company = await _companyRepository.GetByIdAsync(companyId, cancellationToken);
@@ -186,6 +204,8 @@ public class BranchesController : ControllerBase
     }
 
     [HttpDelete("{branchId:guid}")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> DeleteBranch(Guid companyId, Guid branchId, CancellationToken cancellationToken)
     {
         var company = await _companyRepository.GetByIdAsync(companyId, cancellationToken);

@@ -12,6 +12,8 @@ import { AccountingTranslatorService } from '../../../core/services/accounting-t
 import { ModulesSettingsService } from '../../../core/services/modules-settings.service';
 import { tafqeet } from '../../../core/utils/tafqeet';
 import { SearchableSelectComponent, SelectOption } from '../../../shared/components/searchable-select/searchable-select.component';
+import { ChartOfAccountsService } from '../../../core/services/chart-of-accounts.service';
+import { AccountDto } from '../../../core/models/account.model';
 import Swal from 'sweetalert2';
 import { environment } from '../../../../environments/environment';
 
@@ -63,7 +65,9 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
   langService = inject(LanguageService);
   private translator = inject(AccountingTranslatorService);
   public modulesSettings = inject(ModulesSettingsService);
+  private coaService = inject(ChartOfAccountsService);
 
+  defaultInventoryAccountId = signal<string>('');
   branches = signal<BranchDto[]>([]);
   warehouses = signal<WarehouseDto[]>([]);
 
@@ -198,7 +202,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
     itemNameEn: '',
     warehouseCode: 'WH-01',
     unitOfMeasure: 'Piece',
-    accountId: '735009B9-692B-4B81-9827-47AD49749E2D',
+    accountId: '',
     quantity: 1,
     unitPrice: 0,
     discountAmount: 0,
@@ -240,6 +244,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
     this.loadItemsMaster();
     this.loadCostCenters();
     this.loadBranchesAndWarehouses();
+    this.loadDefaultInventoryAccount();
 
     this.route.queryParams.subscribe(params => {
       if (params['vendorId']) {
@@ -274,7 +279,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
             itemNameEn: l.itemNameEn,
             warehouseCode: l.warehouseCode || this.selectedWarehouse,
             unitOfMeasure: l.unitOfMeasure || 'Piece',
-            accountId: '735009B9-692B-4B81-9827-47AD49749E2D',
+            accountId: l.accountId || this.defaultInventoryAccountId(),
             quantity: (l.quantityOrdered - l.quantityBilled > 0) ? (l.quantityOrdered - l.quantityBilled) : l.quantityOrdered,
             unitPrice: l.unitPrice,
             discountAmount: l.discountAmount || 0,
@@ -298,12 +303,33 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
             itemNameEn: l.itemNameEn,
             warehouseCode: l.warehouseCode || this.selectedWarehouse,
             unitOfMeasure: l.unitOfMeasure || 'Piece',
-            accountId: '735009B9-692B-4B81-9827-47AD49749E2D',
+            accountId: this.defaultInventoryAccountId(),
             quantity: l.quantityAccepted,
             unitPrice: l.unitCost,
             discountAmount: 0,
             vatRate: 15
           })));
+        }
+      }
+    });
+  }
+
+  loadDefaultInventoryAccount() {
+    this.coaService.loadAccountsTree().subscribe(tree => {
+      const flattened: AccountDto[] = [];
+      const flatten = (nodes: AccountDto[]) => {
+        for (const n of nodes) {
+          flattened.push(n);
+          if (n.subAccounts?.length) flatten(n.subAccounts);
+        }
+      };
+      flatten(tree || []);
+      const invAcc = flattened.find(a => a.accountCode === '11301' || a.accountCode.startsWith('11301'))
+                  || flattened.find(a => a.accountCode.startsWith('113') && a.isPostable);
+      if (invAcc) {
+        this.defaultInventoryAccountId.set(invAcc.id);
+        if (!this.lineForm.accountId) {
+          this.lineForm.accountId = invAcc.id;
         }
       }
     });
@@ -429,7 +455,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
       itemNameEn: '',
       warehouseCode: this.selectedWarehouse || 'WH-01',
       unitOfMeasure: 'Piece',
-      accountId: '735009B9-692B-4B81-9827-47AD49749E2D',
+      accountId: this.defaultInventoryAccountId(),
       quantity: 1,
       unitPrice: 0,
       discountAmount: 0,
@@ -457,9 +483,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
       this.lineForm.itemNameEn = itm.nameEn || '';
       this.lineForm.unitPrice = itm.purchasePrice || itm.costPrice || 0;
       this.lineForm.unitOfMeasure = itm.unitOfMeasure || 'Piece';
-      if (itm.inventoryAccountId) {
-        this.lineForm.accountId = itm.inventoryAccountId;
-      }
+      this.lineForm.accountId = itm.inventoryAccountId || this.defaultInventoryAccountId();
     }
   }
 
@@ -508,7 +532,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
           itemNameEn: '',
           warehouseCode: this.selectedWarehouse || 'WH-01',
           unitOfMeasure: 'Piece',
-          accountId: '735009B9-692B-4B81-9827-47AD49749E2D',
+          accountId: this.defaultInventoryAccountId(),
           quantity: 1,
           unitPrice: 0,
           discountAmount: 0,
@@ -623,7 +647,7 @@ export class PurchaseInvoiceCreateComponent implements OnInit {
         itemId: l.itemId || undefined,
         itemNameAr: l.itemNameAr.trim(),
         itemNameEn: l.itemNameEn ? l.itemNameEn.trim() : undefined,
-        accountId: l.accountId || '735009B9-692B-4B81-9827-47AD49749E2D',
+        accountId: l.accountId || this.defaultInventoryAccountId(),
         costCenterId: this.selectedCostCenterId || undefined,
         quantity: Number(l.quantity),
         unitPrice: Number(l.unitPrice),

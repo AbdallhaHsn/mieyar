@@ -241,7 +241,9 @@ public record SalespersonDto(
     bool CanSellBelowCost = false,
     bool CanViewCostPrice = false,
     bool CanSellFromAnyWarehouse = false,
-    string? UserRole = null);
+    string? UserRole = null,
+    string? DepartmentName = null,
+    string? DepartmentNameEn = null);
 
 public class CreateSalespersonRequest
 {
@@ -251,6 +253,8 @@ public class CreateSalespersonRequest
     public string NameEn { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
     public string? Email { get; set; }
+    public string? DepartmentName { get; set; }
+    public string? DepartmentNameEn { get; set; }
     public Guid? UserId { get; set; }
     public string? UserName { get; set; }
     public bool CreateUserAccount { get; set; } = false;
@@ -276,6 +280,8 @@ public class UpdateSalespersonRequest
     public string NameEn { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
     public string? Email { get; set; }
+    public string? DepartmentName { get; set; }
+    public string? DepartmentNameEn { get; set; }
     public Guid? UserId { get; set; }
     public string? UserName { get; set; }
     public string? TargetRole { get; set; }

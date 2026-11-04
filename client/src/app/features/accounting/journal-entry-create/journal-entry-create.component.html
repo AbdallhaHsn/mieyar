@@ -17,10 +17,6 @@
           <h1 class="page-title">
             {{ 'accounting.journal.create.ui.highspeedJournalEntry' | translate }}
           </h1>
-          <span class="compliance-pill">
-            <i class="pi pi-shield"></i>
-            {{ 'accounting.journal.create.ui.socpaIfrsDoubleentryEngine' | translate }}
-          </span>
         </div>
       </div>
     </div>
@@ -178,7 +174,7 @@
         </div>
 
         <!-- Smart Unified Narration Field with Instant Bidirectional Translation -->
-        <div class="narration-smart-container col-span-full" [dir]="'accounting.journal.create.ui.ltr' | translate">
+        <div class="narration-smart-container col-span-full" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
           <div class="narration-header-bar">
             <div class="label-group">
               <label class="smart-label">

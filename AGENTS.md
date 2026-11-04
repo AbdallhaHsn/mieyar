@@ -22,3 +22,12 @@
   3. **Input Validation & Warnings:** e.g., missing required fields, cash drawer discrepancy warnings (`icon: 'warning'`).
   4. **Errors:** e.g., API failure descriptions (`icon: 'error'`).
 - Always format titles, text, and action buttons cleanly in Arabic/English matching the active language context with professional colors (e.g. `#059669` for confirm success, `#dc2626` for delete, `#0284c7` for primary action, `#64748b` for cancel).
+
+## 4. Clean UI & Print Documents — Zero Compliance/Promotional Boilerplate (منع العبارات الترويجية وعبارات المطابقة الزائدة)
+- **Mandate:** Never display verbose compliance disclaimers, auto-generation notices, or internal rule badges in UI headers, modals, or printable documents (statements, invoices, vouchers, trial balance, financial statements, payroll sheets, etc.).
+- **Strictly Forbidden Phrases:**
+  - `"مستند مطابق للمعايير"`
+  - `"تم إصدار هذا الكشف آلياً من نظام الربان المحاسبي المتكامل (ERP) ويُعد معتمداً لأغراض المطابقة المالية."`
+  - `"مستند مالي معتمد متوافق مع معايير المحاسبة الدولية (IFRS) ومتطلبات هيئة الزكاة والضريبة والجمارك (ZATCA)"`
+  - `"معتمد طبقاً لمعايير الهيئة السعودية للمحاسبين (SOCPA) والمعايير الدولية (IFRS)"` / `"SOCPA & IFRS Compliant"`
+  - `"معيار الإدخال الأحادي والترجمة الفورية (Rule 1)"`

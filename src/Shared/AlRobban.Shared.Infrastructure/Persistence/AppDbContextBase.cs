@@ -82,16 +82,24 @@ public abstract class AppDbContextBase : DbContext
     {
         if (Database.IsSqlServer() && _tenantContext.TenantId.HasValue)
         {
-            var tenantParam = new SqlParameter("@tenantId", _tenantContext.TenantId.Value.ToString());
-            await Database.ExecuteSqlRawAsync(
-                "EXEC sp_set_session_context 'TenantId', @tenantId, @read_only = 1;",
-                new[] { tenantParam },
-                cancellationToken);
+            try
+            {
+                var tenantParam = new SqlParameter("@tenantId", _tenantContext.TenantId.Value.ToString());
+                await Database.ExecuteSqlRawAsync(
+                    "EXEC sp_set_session_context @key = N'TenantId', @value = @tenantId, @read_only = 0;",
+                    new[] { tenantParam },
+                    cancellationToken);
+            }
+            catch
+            {
+                // Non-fatal if connection does not support session_context
+            }
         }
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        await SetSqlSessionContextAsync(cancellationToken);
         await DispatchDomainEventsAsync(cancellationToken);
         return await base.SaveChangesAsync(cancellationToken);
     }

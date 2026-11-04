@@ -192,7 +192,7 @@ export class PayrollWorksheetComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('hr.payroll.alerts.alreadyPostedTitle'),
         text: this.langService.t('hr.payroll.alerts.alreadyPostedText'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -335,7 +335,7 @@ export class PayrollWorksheetComponent implements OnInit {
               showCancelButton: true,
               confirmButtonText: this.langService.t('hr.payroll.alerts.inspectEntry'),
               cancelButtonText: this.langService.t('common.close'),
-              confirmButtonColor: '#0284c7',
+              confirmButtonColor: '#059669',
               cancelButtonColor: '#64748b'
             }).then(viewRes => {
               if (viewRes.isConfirmed && updated.journalEntryId) {
@@ -548,7 +548,7 @@ export class PayrollWorksheetComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('common.warning'),
         text: this.langService.t('hr.payroll.alerts.cannotEditPosted'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }
@@ -689,7 +689,7 @@ export class PayrollWorksheetComponent implements OnInit {
         icon: 'warning',
         title: this.langService.t('common.warning'),
         text: this.langService.t('hr.payroll.alerts.noLinesToExport'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

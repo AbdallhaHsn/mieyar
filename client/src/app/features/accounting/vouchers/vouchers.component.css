@@ -90,15 +90,15 @@
   color: #ffffff;
 }
 .btn-indigo:hover:not(:disabled) {
-  background: #4338ca;
+  background: #047857;
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: #059669;
   color: #ffffff;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: #047857;
 }
 
 .btn-secondary {
@@ -285,8 +285,8 @@
   transition: border-color 0.15s;
 }
 .form-control:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105,0.1);
 }
 .form-control-sm {
   height: 28px;
@@ -777,7 +777,7 @@
 }
 
 .btn-print-primary {
-  background: #1d4ed8;
+  background: #047857;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -904,7 +904,7 @@
 }
 
 .voucher-title-box.box-payment {
-  border-color: #2563eb;
+  border-color: #059669;
 }
 
 .voucher-title-box .voucher-title {
@@ -1175,5 +1175,24 @@
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
   }
 }

@@ -1618,7 +1618,118 @@ import Swal from 'sweetalert2';
       font-size: 0.84rem;
       color: #1E293B;
     }
-  `]
+
+    /* Currency Rate Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+    .modal-card {
+      background: #FFFFFF;
+      border-radius: 14px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.25);
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.35rem;
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .modal-title-box {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .modal-title-box h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .btn-close {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid #E2E8F0;
+      background: #FFFFFF;
+      color: #64748B;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-close:hover {
+      background: #FEE2E2;
+      color: #DC2626;
+      border-color: #FCA5A5;
+    }
+    .modal-body {
+      padding: 1.25rem 1.35rem;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .form-field.full {
+      grid-column: span 2;
+    }
+    .form-field label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #334155;
+    }
+    .form-field input {
+      height: 36px;
+      padding: 0 0.75rem;
+      border: 1px solid #CBD5E1;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      color: #0F172A;
+      outline: none;
+    }
+    .form-field input:focus {
+      border-color: #059669;
+      box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+    }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.65rem;
+      padding: 0.85rem 1.35rem;
+      background: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
+    }
+    @media (max-width: 768px) {
+      .page-header, .closing-header-card, .already-closed-state, .open-action-state {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.85rem;
+      }
+      .settings-tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .audit-kpi-grid, .res-details-grid, .form-grid { grid-template-columns: 1fr; }
+      .form-field.full { grid-column: span 1; }
+    }  `]
 })
 export class FinancialSettingsComponent implements OnInit {
   private settingsService = inject(FinancialSettingsService);
@@ -1986,7 +2097,7 @@ export class FinancialSettingsComponent implements OnInit {
           companyId,
           yearNumber: res.value.year,
           nameAr: res.value.nameAr,
-          nameEn: `Fiscal Year ${res.value.year}`,
+          nameEn: this.translator.translateArabicToEnglish(res.value.nameAr) || `Fiscal Year ${res.value.year}`,
           startDate: res.value.start,
           endDate: res.value.end,
           includeClosingPeriod: res.value.include13

@@ -1,3 +1,4 @@
+﻿using AlRobban.WebAPI.Security;
 using AlRobban.Modules.Purchasing.Domain.Entities;
 using AlRobban.Modules.Purchasing.Infrastructure.Persistence;
 using AlRobban.Shared.Application.Abstractions;
@@ -14,11 +15,13 @@ public class WarehousesController : ControllerBase
 {
     private readonly PurchasingDbContext _dbContext;
     private readonly ICurrentTenantContext _tenantContext;
+    private readonly ILicenseService _license;
 
-    public WarehousesController(PurchasingDbContext dbContext, ICurrentTenantContext tenantContext)
+    public WarehousesController(PurchasingDbContext dbContext, ICurrentTenantContext tenantContext, ILicenseService license)
     {
         _dbContext = dbContext;
         _tenantContext = tenantContext;
+        _license = license;
     }
 
     [HttpGet]
@@ -73,6 +76,8 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpPost]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> CreateWarehouse(Guid companyId, [FromBody] CreateWarehouseRequest request, CancellationToken cancellationToken)
     {
         var code = request.Code.Trim().ToUpper();
@@ -83,6 +88,15 @@ public class WarehousesController : ControllerBase
         if (exists)
         {
             return Conflict(new { code = "Warehouse.DuplicateCode", description = $"كود المستودع '{code}' مسجل مسبقاً لهذه الشركة." });
+        }
+
+        var currentWarehouses = await _dbContext.Warehouses
+            .IgnoreQueryFilters()
+            .CountAsync(w => w.CompanyId == companyId, cancellationToken);
+        var licenseCheck = await _license.CheckCanAddAsync(companyId, LicenseResource.Warehouses, currentWarehouses, cancellationToken);
+        if (!licenseCheck.Allowed)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, licenseCheck.ToResponse());
         }
 
         // If this warehouse is marked as default, unset other defaults
@@ -135,6 +149,8 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpPut("{warehouseId:guid}/status")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> ToggleWarehouseStatus(Guid companyId, Guid warehouseId, [FromBody] ToggleWarehouseStatusRequest request, CancellationToken cancellationToken)
     {
         var warehouse = await _dbContext.Warehouses
@@ -164,6 +180,8 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpPut("{warehouseId:guid}")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> UpdateWarehouse(Guid companyId, Guid warehouseId, [FromBody] UpdateWarehouseRequest request, CancellationToken cancellationToken)
     {
         var warehouse = await _dbContext.Warehouses
@@ -219,6 +237,8 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpDelete("{warehouseId:guid}")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> DeleteWarehouse(Guid companyId, Guid warehouseId, CancellationToken cancellationToken)
     {
         var warehouse = await _dbContext.Warehouses
@@ -254,6 +274,8 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpPut("{warehouseId:guid}/accounting-matrix/{paymentMethod:int}")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> SaveAccountingMatrix(
         Guid companyId,
         Guid warehouseId,
@@ -310,6 +332,8 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpPost("{warehouseId:guid}/accounting-matrix/copy")]
+
+    [Authorize(Roles = AppRoles.Admins)]
     public async Task<IActionResult> CopyAccountingMatrix(
         Guid companyId,
         Guid warehouseId,

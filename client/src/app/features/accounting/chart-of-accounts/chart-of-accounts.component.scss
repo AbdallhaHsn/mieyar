@@ -758,7 +758,7 @@
       &:hover {
         background: #0284c7;
         color: #ffffff;
-        border-color: #0284c7;
+        border-color: #059669;
       }
     }
 
@@ -770,7 +770,7 @@
       &:hover {
         background: #0284c7;
         color: #ffffff;
-        border-color: #0284c7;
+        border-color: #059669;
       }
     }
 
@@ -794,7 +794,7 @@
       &:hover {
         background: #2563eb;
         color: #ffffff;
-        border-color: #2563eb;
+        border-color: #059669;
       }
     }
 
@@ -992,7 +992,7 @@
   }
 
   .select-standard {
-    border-color: #0284c7;
+    border-color: #059669;
     background-color: #f0f9ff;
     font-weight: 600;
     color: #0369a1;
@@ -1426,5 +1426,24 @@
       max-width: 100%;
       min-width: 100%;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
   }
 }

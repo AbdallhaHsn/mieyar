@@ -24,6 +24,12 @@ public class Company : AggregateRoot<Guid>, IAuditableEntity
 
     public bool IsActive { get; private set; } = true;
 
+    // Licensing (managed only by the platform owner / SuperAdmin). null = unlimited.
+    public int? MaxUsers { get; private set; }
+    public int? MaxWarehouses { get; private set; }
+    public int? MaxBranches { get; private set; }
+    public DateTime? LicenseExpiresAtUtc { get; private set; }
+
     // Auditing
     public DateTime CreatedAtUtc { get; set; }
     public string? CreatedBy { get; set; }
@@ -119,6 +125,16 @@ public class Company : AggregateRoot<Guid>, IAuditableEntity
         _fiscalYears.Add(fiscalYear);
         return fiscalYear;
     }
+
+    public void SetLicense(int? maxUsers, int? maxWarehouses, int? maxBranches, DateTime? expiresAtUtc)
+    {
+        MaxUsers = maxUsers;
+        MaxWarehouses = maxWarehouses;
+        MaxBranches = maxBranches;
+        LicenseExpiresAtUtc = expiresAtUtc;
+    }
+
+    public bool IsLicenseExpired => LicenseExpiresAtUtc.HasValue && LicenseExpiresAtUtc.Value < DateTime.UtcNow;
 
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;

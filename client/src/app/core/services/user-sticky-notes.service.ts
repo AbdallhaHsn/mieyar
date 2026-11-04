@@ -1,4 +1,5 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
 
 export type StickyNoteColor = 'yellow' | 'emerald' | 'sky' | 'rose' | 'purple' | 'amber';
@@ -17,6 +18,7 @@ export interface StickyNote {
   providedIn: 'root'
 })
 export class UserStickyNotesService {
+  private http = inject(HttpClient);
   private authService = inject(AuthService);
 
   notes = signal<StickyNote[]>([]);
@@ -48,9 +50,21 @@ export class UserStickyNotesService {
           // Drop untouched sample notes that were auto-seeded by earlier versions
           .filter(n => !(n.id.startsWith('note_def_') && n.createdAt === n.updatedAt));
         this.notes.set(this.sortNotes(parsed));
-        this.saveToStorage(userId, parsed);
+        this.saveToStorage(userId, parsed, false);
       } else {
         this.notes.set([]);
+      }
+      if (userId && userId !== 'guest') {
+        this.http.get<{ found: boolean; data: StickyNote[] }>(`/api/system-data/store/${encodeURIComponent(key)}`).subscribe({
+          next: (res) => {
+            if (res?.found && Array.isArray(res.data)) {
+              const cleaned = res.data.filter(n => !(n.id.startsWith('note_def_') && n.createdAt === n.updatedAt));
+              this.notes.set(this.sortNotes(cleaned));
+              this.saveToStorage(userId, cleaned, false);
+            }
+          },
+          error: () => {}
+        });
       }
     } catch {
       this.notes.set([]);
@@ -60,12 +74,16 @@ export class UserStickyNotesService {
   private saveCurrent() {
     const user = this.authService.currentUser();
     const userId = user?.id || user?.userName || 'guest';
-    this.saveToStorage(userId, this.notes());
+    this.saveToStorage(userId, this.notes(), true);
   }
 
-  private saveToStorage(userId: string, items: StickyNote[]) {
+  private saveToStorage(userId: string, items: StickyNote[], syncRemote = true) {
     try {
-      localStorage.setItem(this.getStorageKey(userId), JSON.stringify(items));
+      const key = this.getStorageKey(userId);
+      localStorage.setItem(key, JSON.stringify(items));
+      if (syncRemote && userId && userId !== 'guest') {
+        this.http.post(`/api/system-data/store/${encodeURIComponent(key)}`, items).subscribe({ error: () => {} });
+      }
     } catch (e) {
       console.error('Failed to save sticky notes', e);
     }

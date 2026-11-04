@@ -2326,7 +2326,7 @@ import Swal from 'sweetalert2';
         .erp-input-group {
           display: flex;
           align-items: center;
-          height: 33px;
+          height: 34px;
           border: 1px solid #CBD5E1;
           border-radius: 6px;
           background: #FFFFFF;
@@ -2386,7 +2386,9 @@ import Swal from 'sweetalert2';
 
           .erp-select {
             flex: 1;
-            height: 100%;
+            height: 32px !important;
+            min-height: 32px !important;
+            line-height: 32px !important;
             border: none;
             outline: none;
             padding: 0 0.45rem;
@@ -3445,7 +3447,7 @@ export class ItemsListComponent implements OnInit {
           title: this.langService.t('purchasing.items.alerts.transferSuccessTitle'),
           html,
           confirmButtonText: this.langService.t('common.confirm'),
-          confirmButtonColor: '#2563eb'
+          confirmButtonColor: '#059669'
         });
       },
       error: (err) => {

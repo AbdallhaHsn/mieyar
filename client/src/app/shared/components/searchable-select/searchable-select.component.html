@@ -63,10 +63,6 @@
         (ngModelChange)="onSearchChange($event)"
         (keydown)="onKeyDown($event)" />
       
-      <span class="search-counter" *ngIf="filteredItems().length > 0">
-        {{ filteredItems().length }}
-      </span>
-
       <button 
         type="button" 
         class="btn-clear-search" 

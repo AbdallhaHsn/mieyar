@@ -96,12 +96,12 @@
     }
 
     &.btn-primary {
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
       color: #ffffff;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
 
       &:hover {
-        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%);
         transform: translateY(-1px);
       }
     }
@@ -275,8 +275,8 @@
         transition: border-color 0.2s ease;
 
         &:focus {
-          border-color: #0284c7;
-          box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+          border-color: #059669;
+          box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
         }
       }
 
@@ -309,25 +309,29 @@
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          right: 0.75rem;
+          inset-inline-start: 0.75rem;
           color: #64748b;
           font-size: 0.85rem;
           pointer-events: none;
+          z-index: 2;
         }
 
         select {
-          padding: 0.55rem 2.15rem 0.55rem 1rem;
+          height: 36px;
+          padding-block: 0;
+          padding-inline-start: 2.25rem !important;
+          padding-inline-end: 2.15rem !important;
           border-radius: 8px;
           border: 1px solid #cbd5e1;
           font-size: 0.85rem;
-          background: #ffffff;
+          background-color: #ffffff;
           color: #334155;
           font-weight: 500;
           outline: none;
           cursor: pointer;
 
           &:focus {
-            border-color: #0284c7;
+            border-color: #059669;
           }
         }
       }
@@ -623,5 +627,24 @@
     .text-end {
       text-align: right;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
   }
 }

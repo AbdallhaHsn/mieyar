@@ -6,6 +6,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { InvoicesService, InvoiceDto, InvoiceType, TransactionType, InvoiceStatus, InvoicePaymentStatus, CreateInvoiceRequest } from '../../../core/services/invoices.service';
 import { CompanyContextService } from '../../../core/services/company-context.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { tafqeet } from '../../../core/utils/tafqeet';
 import { environment } from '../../../../environments/environment';
@@ -69,6 +70,7 @@ export class TaxInvoicesComponent implements OnInit {
   private http = inject(HttpClient);
   companyContext = inject(CompanyContextService);
   langService = inject(LanguageService);
+  authService = inject(AuthService);
 
   // Current Language
   currentLang = computed(() => this.langService.currentLang());

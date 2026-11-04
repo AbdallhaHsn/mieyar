@@ -345,19 +345,19 @@ export class FixedAssetsComponent implements OnInit {
 
     const asset = this.newAsset();
     if (!asset.nameAr.trim() && !this.unifiedAssetName().trim()) {
-      this.errorMessage.set(this.langService.t('accounting.fixedAssets.alerts.nameRequired'));
+      Swal.fire({ icon: 'warning', title: this.langService.t('common.warning'), text: this.langService.t('accounting.fixedAssets.alerts.nameRequired'), confirmButtonColor: '#059669' });
       return;
     }
     if (!asset.assetAccountId || !asset.accumulatedDepreciationAccountId || !asset.depreciationExpenseAccountId) {
-      this.errorMessage.set(this.langService.t('accounting.fixedAssets.alerts.accountsRequired'));
+      Swal.fire({ icon: 'warning', title: this.langService.t('common.warning'), text: this.langService.t('accounting.fixedAssets.alerts.accountsRequired'), confirmButtonColor: '#059669' });
       return;
     }
     if (asset.acquisitionCost <= 0) {
-      this.errorMessage.set(this.langService.t('accounting.fixedAssets.alerts.costGreaterThanZero'));
+      Swal.fire({ icon: 'warning', title: this.langService.t('common.warning'), text: this.langService.t('accounting.fixedAssets.alerts.costGreaterThanZero'), confirmButtonColor: '#059669' });
       return;
     }
     if (asset.usefulLifeMonths <= 0) {
-      this.errorMessage.set(this.langService.t('accounting.fixedAssets.alerts.lifeGreaterThanZero'));
+      Swal.fire({ icon: 'warning', title: this.langService.t('common.warning'), text: this.langService.t('accounting.fixedAssets.alerts.lifeGreaterThanZero'), confirmButtonColor: '#059669' });
       return;
     }
 
@@ -369,12 +369,12 @@ export class FixedAssetsComponent implements OnInit {
       next: (created) => {
         this.isSaving.set(false);
         this.closeCreateModal();
-        this.successMessage.set(this.langService.t('accounting.fixedAssets.alerts.assetAddedSuccess', { code: created.assetCode || '' }));
+        Swal.fire({ icon: 'success', title: this.langService.t('common.saved'), text: this.langService.t('accounting.fixedAssets.alerts.assetAddedSuccess', { code: created.assetCode || '' }), confirmButtonColor: '#059669' });
         this.loadAssets();
       },
       error: (err) => {
         this.isSaving.set(false);
-        this.errorMessage.set(this.langService.t('accounting.fixedAssets.alerts.assetAddFailed', { msg: err.error?.description || err.message || '' }));
+        Swal.fire({ icon: 'error', title: this.langService.t('common.error'), text: this.langService.t('accounting.fixedAssets.alerts.assetAddFailed', { msg: err.error?.description || err.message || '' }), confirmButtonColor: '#059669' });
       }
     });
   }

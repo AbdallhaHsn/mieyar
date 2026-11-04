@@ -71,11 +71,9 @@ public class InvoiceCryptoService : IInvoiceCryptoService
                 var sigRaw = SignDataRaw(Encoding.UTF8.GetBytes(invoiceHash), privateKeyPem);
                 AddTlvTag(tlvs, 7, sigRaw);
             }
-            catch
+            catch (Exception ex)
             {
-                var dummySig = new byte[64];
-                Encoding.UTF8.GetBytes("ZATCA-SIG-" + invoiceHash[..10]).CopyTo(dummySig, 0);
-                AddTlvTag(tlvs, 7, dummySig);
+                throw new InvalidOperationException($"فشل التوقيع الرقمي للفاتورة (ECDSA): {ex.Message}", ex);
             }
         }
 

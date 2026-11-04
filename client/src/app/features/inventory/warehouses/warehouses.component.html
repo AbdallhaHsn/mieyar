@@ -1,14 +1,4 @@
 <div class="warehouses-container" [dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
-  <!-- Notifications -->
-  <div class="alert-banner alert-success" *ngIf="successMessage()">
-    <i class="pi pi-check-circle"></i>
-    <span>{{ successMessage() }}</span>
-  </div>
-  <div class="alert-banner alert-error" *ngIf="errorMessage()">
-    <i class="pi pi-exclamation-triangle"></i>
-    <span>{{ errorMessage() }}</span>
-  </div>
-
   <!-- Compact Executive Header -->
   <header class="page-header compact-header">
     <div class="header-titles">
@@ -27,11 +17,21 @@
       </div>
     </div>
     <div class="header-actions">
+      <div *ngIf="licenseQuota()" class="quota-pill" [class.quota-full]="isWarehouseQuotaFull()" [title]="isWarehouseQuotaFull() ? ('companies.portal.quotaFullWarning' | translate) : ''">
+        <i class="pi pi-box"></i>
+        <span *ngIf="licenseQuota()?.maxWarehouses !== null">
+          {{ 'companies.portal.quotaWarehousesLabel' | translate:{ used: (licenseQuota()?.usedWarehouses ?? 0), max: (licenseQuota()?.maxWarehouses ?? 0), remaining: (licenseQuota()?.remainingWarehouses ?? 0) } }}
+        </span>
+        <span *ngIf="licenseQuota()?.maxWarehouses === null">
+          {{ 'companies.portal.quotaUnlimitedLabel' | translate:{ used: (licenseQuota()?.usedWarehouses ?? 0) } }}
+        </span>
+      </div>
+
       <button type="button" class="btn-refresh-compact" (click)="loadData()" [title]="'zatca.actions.refreshTitle' | translate">
         <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
         <span>{{ 'inventory.warehouses.refresh' | translate }}</span>
       </button>
-      <button type="button" class="btn-primary-compact" (click)="openAddModal()">
+      <button type="button" class="btn-primary-compact" (click)="openAddModal()" [disabled]="isWarehouseQuotaFull()" [title]="isWarehouseQuotaFull() ? ('companies.portal.quotaFullWarning' | translate) : ''">
         <i class="pi pi-plus"></i>
         <span>{{ 'inventory.warehouses.addWarehouse' | translate }}</span>
       </button>
@@ -647,5 +647,6 @@
         </div>
       </div>
 
+    </div>
   </div>
 </div>

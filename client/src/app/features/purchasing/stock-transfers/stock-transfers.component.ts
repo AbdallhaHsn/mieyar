@@ -242,7 +242,7 @@ export class StockTransfersComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: this.langService.t('purchasing.transfers.alerts.confirmBtn'),
       cancelButtonText: this.langService.t('common.cancel'),
-      confirmButtonColor: '#0284c7'
+      confirmButtonColor: '#059669'
     }).then(res => {
       if (res.isConfirmed) {
         this.isSubmitting.set(true);

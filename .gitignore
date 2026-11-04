@@ -41,3 +41,9 @@ $RECYCLE.BIN/
 ~$*
   
 scratch/  
+
+## Secrets
+.env
+certs/
+*.pem
+src/Bootstrapper/AlRobban.WebAPI/appsettings.Development.json

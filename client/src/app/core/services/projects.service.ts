@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, catchError, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CompanyContextService } from './company-context.service';
 
@@ -510,13 +510,23 @@ export class ProjectsService {
       guaranteeCommissionAccountName: 'عمولات ومصاريف إصدار خطابات الضمان'
     };
     localStorage.setItem(key, JSON.stringify(defaultSettings));
-    return of(defaultSettings);
+    return this.http.get<any>(`${this.baseUrl}/settings`, {
+      params: new HttpParams().set('companyId', this.getEffectiveCompanyId(companyId))
+    }).pipe(
+      map(remote => ({ ...defaultSettings, ...remote })),
+      tap(merged => localStorage.setItem(key, JSON.stringify(merged))),
+      catchError(() => of(defaultSettings))
+    );
   }
 
   saveProjectSettings(settings: ProjectSettingsDto): Observable<ProjectSettingsDto> {
     const key = this.getSettingsStorageKey(settings.companyId);
     localStorage.setItem(key, JSON.stringify(settings));
-    return of(settings);
+    return this.http.post<any>(`${this.baseUrl}/settings`, settings).pipe(
+      map(remote => ({ ...settings, ...remote })),
+      tap(merged => localStorage.setItem(key, JSON.stringify(merged))),
+      catchError(() => of(settings))
+    );
   }
 
   getTimesheets(projectId?: string, companyId?: string): Observable<ProjectTimesheetDto[]> {
@@ -656,7 +666,22 @@ export class ProjectsService {
     if (projectId) {
       list = list.filter(t => t.projectId === projectId);
     }
-    return of(list);
+
+    const cId = this.getEffectiveCompanyId(companyId);
+    let params = new HttpParams().set('companyId', cId);
+    if (projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
+      params = params.set('projectId', projectId);
+    }
+
+    return this.http.get<ProjectTimesheetDto[]>(`${this.baseUrl}/timesheets`, { params }).pipe(
+      map(remote => (remote && remote.length > 0 ? remote : list)),
+      tap(res => {
+        if (!projectId && res.length > 0) {
+          localStorage.setItem(key, JSON.stringify(res));
+        }
+      }),
+      catchError(() => of(list))
+    );
   }
 
   addTimesheet(entry: Partial<ProjectTimesheetDto>): Observable<ProjectTimesheetDto> {
@@ -701,6 +726,25 @@ export class ProjectsService {
       notes: entry.notes || ''
     };
 
+    const isGuid = (v?: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v || '');
+    if (isGuid(newEntry.projectId)) {
+      return this.http.post<ProjectTimesheetDto>(`${this.baseUrl}/timesheets`, {
+        ...newEntry,
+        companyId: isGuid(newEntry.companyId) ? newEntry.companyId : null,
+        phaseId: isGuid(newEntry.phaseId) ? newEntry.phaseId : null
+      }).pipe(
+        tap(saved => {
+          list.unshift(saved);
+          localStorage.setItem(key, JSON.stringify(list));
+        }),
+        catchError(() => {
+          list.unshift(newEntry);
+          localStorage.setItem(key, JSON.stringify(list));
+          return of(newEntry);
+        })
+      );
+    }
+
     list.unshift(newEntry);
     localStorage.setItem(key, JSON.stringify(list));
     return of(newEntry);
@@ -713,6 +757,11 @@ export class ProjectsService {
       let list: ProjectTimesheetDto[] = JSON.parse(stored);
       list = list.filter(t => t.id !== id);
       localStorage.setItem(key, JSON.stringify(list));
+    }
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return this.http.delete<{ success: boolean }>(`${this.baseUrl}/timesheets/${id}`).pipe(
+        catchError(() => of({ success: true }))
+      );
     }
     return of({ success: true });
   }
@@ -883,7 +932,22 @@ export class ProjectsService {
     if (projectId) {
       list = list.filter(t => t.projectId === projectId);
     }
-    return of(list);
+
+    const cId = this.getEffectiveCompanyId(companyId);
+    let params = new HttpParams().set('companyId', cId);
+    if (projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
+      params = params.set('projectId', projectId);
+    }
+
+    return this.http.get<GanttTaskItem[]>(`${this.baseUrl}/planning`, { params }).pipe(
+      map(remote => (remote && remote.length > 0 ? remote : list)),
+      tap(res => {
+        if (!projectId && res.length > 0) {
+          localStorage.setItem(key, JSON.stringify(res));
+        }
+      }),
+      catchError(() => of(list))
+    );
   }
 
   savePlanningTask(task: Partial<GanttTaskItem>): Observable<GanttTaskItem> {
@@ -921,6 +985,29 @@ export class ProjectsService {
       notes: task.notes || ''
     };
 
+    const isGuid = (v?: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v || '');
+    if (isGuid(item.projectId)) {
+      return this.http.post<GanttTaskItem>(`${this.baseUrl}/planning`, {
+        ...item,
+        id: isGuid(item.id) ? item.id : null,
+        companyId: isGuid(item.companyId) ? item.companyId : null,
+        phaseId: isGuid(item.phaseId) ? item.phaseId : null
+      }).pipe(
+        tap(saved => {
+          const idx = list.findIndex(t => t.id === item.id || t.id === saved.id);
+          if (idx >= 0) list[idx] = saved;
+          else list.push(saved);
+          localStorage.setItem(key, JSON.stringify(list));
+        }),
+        catchError(() => {
+          if (existingIndex >= 0) list[existingIndex] = item;
+          else list.push(item);
+          localStorage.setItem(key, JSON.stringify(list));
+          return of(item);
+        })
+      );
+    }
+
     if (existingIndex >= 0) {
       list[existingIndex] = item;
     } else {
@@ -939,6 +1026,11 @@ export class ProjectsService {
       list = list.filter(t => t.id !== id);
       localStorage.setItem(key, JSON.stringify(list));
     }
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return this.http.delete<{ success: boolean }>(`${this.baseUrl}/planning/${id}`).pipe(
+        catchError(() => of({ success: true }))
+      );
+    }
     return of({ success: true });
   }
 
@@ -953,6 +1045,11 @@ export class ProjectsService {
         task.status = task.progressPercentage >= 100 ? 'Completed' : task.progressPercentage > 0 ? 'InProgress' : 'Planned';
         localStorage.setItem(key, JSON.stringify(list));
       }
+    }
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(taskId)) {
+      return this.http.put<{ success: boolean }>(`${this.baseUrl}/planning/${taskId}/progress`, { progressPercentage: progress }).pipe(
+        catchError(() => of({ success: true }))
+      );
     }
     return of({ success: true });
   }

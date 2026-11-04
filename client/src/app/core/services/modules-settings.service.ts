@@ -190,13 +190,42 @@ export class ModulesSettingsService {
 
   constructor() {
     this.loadedCompanyId = this.companyContext.activeCompany().id;
+    this.syncFromBackend();
     // Reload the settings whenever the active company changes (login / company switch)
     effect(() => {
       const id = this.companyContext.activeCompany().id;
       if (id !== this.loadedCompanyId) {
         this.loadedCompanyId = id;
         this.settings.set(this.loadPersistedSettings());
+        this.syncFromBackend();
       }
+    });
+  }
+
+  private syncFromBackend(): void {
+    const key = encodeURIComponent(this.storageKey);
+    this.http.get<{ found: boolean; data: any }>(`/api/system-data/store/${key}`).subscribe({
+      next: (res) => {
+        if (res?.found && res.data) {
+          const defaults = this.buildDefaultsForActiveCompany();
+          const parsed = res.data;
+          const merged: AllModulesSettings = {
+            general: { ...defaults.general, ...parsed.general },
+            accounting: { ...defaults.accounting, ...parsed.accounting },
+            invoicing: { ...defaults.invoicing, ...parsed.invoicing },
+            pos: { ...defaults.pos, ...parsed.pos },
+            purchasing: { ...defaults.purchasing, ...parsed.purchasing },
+            hr: { ...defaults.hr, ...parsed.hr },
+            projects: { ...defaults.projects, ...parsed.projects },
+            system: { ...defaults.system, ...parsed.system }
+          };
+          this.settings.set(merged);
+          try {
+            localStorage.setItem(this.storageKey, JSON.stringify(merged));
+          } catch {}
+        }
+      },
+      error: () => {}
     });
   }
 
@@ -264,6 +293,8 @@ export class ModulesSettingsService {
     } catch (e) {
       console.error('Failed to save modules settings to local storage', e);
     }
+    const key = encodeURIComponent(this.storageKey);
+    this.http.post(`/api/system-data/store/${key}`, newSettings).subscribe({ error: () => {} });
     this.syncWithCompanyContext(newSettings.general);
   }
 

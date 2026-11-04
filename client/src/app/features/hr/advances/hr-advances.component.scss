@@ -184,8 +184,8 @@
       transition: border-color 0.2s, box-shadow 0.2s;
 
       &:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
       }
     }
 
@@ -497,11 +497,11 @@
   transition: all 0.2s;
 
   &.btn-primary {
-    background: #2563eb;
+    background: #059669;
     color: #ffffff;
 
     &:hover:not(:disabled) {
-      background: #1d4ed8;
+      background: #047857;
     }
   }
 
@@ -685,8 +685,8 @@
     box-sizing: border-box;
 
     &:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
     }
   }
 
@@ -783,4 +783,23 @@
 .pagination-footer {
   padding: 0.75rem 1rem;
   border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+@media (max-width: 768px) {
+  .page-header, .header-strip, .toolbar-card, .filter-bar, .table-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .kpi-grid, .metrics-strip, .stats-grid, .form-grid, .allowance-grid, .allocation-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-stepper {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .side-guidance-panel {
+    min-width: 100vw !important;
+    width: 100vw !important;
+  }
 }

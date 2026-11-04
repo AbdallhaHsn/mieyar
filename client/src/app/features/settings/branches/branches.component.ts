@@ -8,6 +8,7 @@ import { AccountingTranslatorService } from '../../../core/services/accounting-t
 import { LanguageService } from '../../../core/services/language.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TenantManagementService, CompanyQuotaDto } from '../../../core/services/tenant-management.service';
 
 @Component({
   selector: 'app-branches',
@@ -21,6 +22,15 @@ export class BranchesComponent implements OnInit {
   public companyContext = inject(CompanyContextService);
   private translator = inject(AccountingTranslatorService);
   public langService = inject(LanguageService);
+  private tenantService = inject(TenantManagementService);
+
+  // License Quota State
+  licenseQuota = signal<CompanyQuotaDto | null>(null);
+  isBranchQuotaFull = computed(() => {
+    const q = this.licenseQuota();
+    if (!q || q.maxBranches === null) return false;
+    return (q.usedBranches ?? 0) >= q.maxBranches;
+  });
 
   isLoading = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
@@ -111,6 +121,14 @@ export class BranchesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBranches();
+    this.loadQuota();
+  }
+
+  loadQuota(): void {
+    this.tenantService.getCurrentLicenseQuota().subscribe({
+      next: (q) => this.licenseQuota.set(q),
+      error: () => {}
+    });
   }
 
   get currentCompanyId(): string {
@@ -155,6 +173,16 @@ export class BranchesComponent implements OnInit {
   }
 
   openAddModal(): void {
+    if (this.isBranchQuotaFull()) {
+      Swal.fire({
+        icon: 'warning',
+        title: this.langService.translate('common.warning'),
+        text: this.langService.translate('companies.portal.quotaFullWarning'),
+        confirmButtonColor: '#059669'
+      });
+      return;
+    }
+
     this.branchForm = this.getEmptyForm();
     this.manualEnEdit = false;
     this.manualCodeEdit = false;
@@ -408,13 +436,33 @@ export class BranchesComponent implements OnInit {
         },
         error: (err) => {
           this.isSubmitting.set(false);
-          Swal.fire({
-            icon: 'error',
-            title: this.langService.translate('branches.alerts.errorTitle'),
-            text: this.extractErrorMessage(err),
-            confirmButtonColor: '#dc2626',
-            confirmButtonText: this.langService.translate('common.ok')
-          });
+          if (err?.error?.code === 'License.LimitReached') {
+            const limit = err.error?.limit ?? '';
+            const msg = this.langService.translate('companies.portal.licenseLimitReachedBranches').replace('{limit}', limit.toString());
+            Swal.fire({
+              icon: 'warning',
+              title: this.langService.translate('common.warning'),
+              text: msg,
+              confirmButtonColor: '#059669',
+              confirmButtonText: this.langService.translate('common.ok')
+            });
+          } else if (err?.error?.code === 'License.Expired') {
+            Swal.fire({
+              icon: 'warning',
+              title: this.langService.translate('common.warning'),
+              text: this.langService.translate('companies.portal.licenseExpiredNotice'),
+              confirmButtonColor: '#059669',
+              confirmButtonText: this.langService.translate('common.ok')
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: this.langService.translate('branches.alerts.errorTitle'),
+              text: this.extractErrorMessage(err),
+              confirmButtonColor: '#dc2626',
+              confirmButtonText: this.langService.translate('common.ok')
+            });
+          }
         }
       });
     }
@@ -440,7 +488,7 @@ export class BranchesComponent implements OnInit {
         title: this.langService.translate('branches.alerts.errorTitle'),
         text: this.langService.translate('branches.alerts.cannotDeleteMainBranch'),
         confirmButtonText: this.langService.translate('common.ok'),
-        confirmButtonColor: '#0284c7'
+        confirmButtonColor: '#059669'
       });
       return;
     }

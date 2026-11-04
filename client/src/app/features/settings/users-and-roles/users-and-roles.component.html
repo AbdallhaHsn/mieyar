@@ -22,7 +22,17 @@
 
       <div class="header-actions">
         @if (activeTab() === 'users') {
-          <button class="btn btn-primary" (click)="openCreateUserModal()">
+          <div *ngIf="licenseQuota()" class="quota-pill" [class.quota-full]="isUserQuotaFull()" [title]="isUserQuotaFull() ? ('companies.portal.quotaFullWarning' | translate) : ''">
+            <i class="pi pi-shield"></i>
+            <span *ngIf="licenseQuota()?.maxUsers !== null">
+              {{ 'companies.portal.quotaUsersLabel' | translate:{ used: (licenseQuota()?.usedUsers ?? 0), max: (licenseQuota()?.maxUsers ?? 0), remaining: (licenseQuota()?.remainingUsers ?? 0) } }}
+            </span>
+            <span *ngIf="licenseQuota()?.maxUsers === null">
+              {{ 'companies.portal.quotaUnlimitedLabel' | translate:{ used: (licenseQuota()?.usedUsers ?? 0) } }}
+            </span>
+          </div>
+
+          <button class="btn btn-primary" (click)="openCreateUserModal()" [disabled]="isUserQuotaFull()" [title]="isUserQuotaFull() ? ('companies.portal.quotaFullWarning' | translate) : ''">
             <i class="pi pi-user-plus"></i>
             <span>{{ 'usersAndRoles.newUser' | translate }}</span>
           </button>

@@ -65,6 +65,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<AlRobban.WebAPI.Security.TenantEnforcementFilter>();
+    options.Filters.Add<AlRobban.WebAPI.Security.AuditorWriteGuardFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
@@ -127,6 +128,8 @@ builder.Services.AddAuthorization(options =>
 
 // 4. Multi-Tenancy & Infrastructure
 builder.Services.AddScoped<ICurrentTenantContext, TenantContext>();
+builder.Services.AddScoped<IRequestLanguageContext, RequestLanguageContext>();
+builder.Services.AddScoped<AlRobban.WebAPI.Security.ILicenseService, AlRobban.WebAPI.Security.LicenseService>();
 builder.Services.AddScoped<AuditableEntityInterceptor>();
 builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddSingleton<IZatcaCryptoService, ZatcaCryptoService>();
@@ -158,12 +161,17 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 // 7. CORS Configuration
+var configuredOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>();
+var allowedCorsOrigins = configuredOrigins != null && configuredOrigins.Length > 0
+    ? configuredOrigins
+    : new[] { "http://localhost:4200", "http://127.0.0.1:4200" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClientApp", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true)
-            .WithHeaders("Authorization", "Content-Type", "X-Tenant-Id", "Accept")
+        policy.WithOrigins(allowedCorsOrigins)
+            .WithHeaders("Authorization", "Content-Type", "X-Tenant-Id", "Accept", "Accept-Language", "X-Lang")
             .AllowAnyMethod()
             .AllowCredentials();
     });
@@ -211,6 +219,44 @@ var app = builder.Build();
 // Configure Middleware Pipeline
 if (app.Environment.IsDevelopment())
 {
+    // Swagger UI bundle parser compatibility fix: Swashbuckle + Microsoft.OpenApi outputs "openapi": "3.0.4"
+    // which bundled Swagger UI regex rejects with "The provided definition does not specify a valid version field".
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.Value?.EndsWith("/swagger.json", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var originalBodyStream = context.Response.Body;
+            await using var memoryStream = new MemoryStream();
+            context.Response.Body = memoryStream;
+
+            await next();
+
+            if (context.Response.StatusCode == 200)
+            {
+                memoryStream.Position = 0;
+                using var reader = new StreamReader(memoryStream);
+                var json = await reader.ReadToEndAsync();
+                // استبدال أي إصدار 3.0.x بـ 3.0.1 لضمان توافق Swagger UI
+                var patched = System.Text.RegularExpressions.Regex.Replace(
+                    json,
+                    @"""openapi""\s*:\s*""3\.0\.\d+""",
+                    @"""openapi"": ""3.0.1""");
+
+                context.Response.Body = originalBodyStream;
+                context.Response.ContentType = "application/json;charset=utf-8";
+                await context.Response.WriteAsync(patched);
+                return;
+            }
+
+            memoryStream.Position = 0;
+            context.Response.Body = originalBodyStream;
+            await memoryStream.CopyToAsync(originalBodyStream);
+            return;
+        }
+
+        await next();
+    });
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {

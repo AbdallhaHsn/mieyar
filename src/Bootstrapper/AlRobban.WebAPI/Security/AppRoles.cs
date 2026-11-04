@@ -9,9 +9,9 @@ public static class AppRoles
     public const string FinancialAuditor = "FinancialAuditor";
     public const string Salesperson = "Salesperson";
 
-    /// <summary>Platform owner or tenant administrators.</summary>
-    public const string Admins = SuperAdmin + "," + CompanyAdmin;
+    /// <summary>Tenant administrators. The platform owner (SuperAdmin) is deliberately excluded: it manages companies/licenses only.</summary>
+    public const string Admins = CompanyAdmin;
 
-    /// <summary>Back-office staff (everyone except salespersons).</summary>
-    public const string BackOffice = SuperAdmin + "," + CompanyAdmin + "," + Accountant + "," + FinancialAuditor;
+    /// <summary>Back-office staff (everyone except salespersons and the platform owner).</summary>
+    public const string BackOffice = CompanyAdmin + "," + Accountant + "," + FinancialAuditor;
 }

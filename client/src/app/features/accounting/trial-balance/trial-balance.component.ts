@@ -37,7 +37,6 @@ interface FlatRowItem {
             </div>
             <div class="tb-title-row">
               <h1 class="tb-title">{{ 'accounting.trialBalance.title' | translate }}</h1>
-              <span class="socpa-badge"><i class="pi pi-verified"></i> SOCPA & IFRS Compliant</span>
             </div>
           </div>
 
@@ -495,11 +494,6 @@ interface FlatRowItem {
               </div>
 
               <div class="header-qr-side">
-                <div class="official-audit-badge">
-                  <i class="pi pi-shield"></i>
-                  <span>{{ 'ui.trialBalance.9efe36' | translate }}</span>
-                  <small>SOCPA / IFRS</small>
-                </div>
                 <span class="print-date font-mono">{{ 'ui.trialBalance.7980bf' | translate }} {{ printDate | date:'yyyy-MM-dd HH:mm' }}</span>
               </div>
             </div>
@@ -609,11 +603,6 @@ interface FlatRowItem {
                 <span class="sig-name">Chief Financial Officer</span>
                 <div class="sig-line">{{ 'ui.trialBalance.e7da75' | translate }}</div>
               </div>
-            </div>
-
-            <!-- Official Footer Note -->
-            <div class="paper-footer-legal">
-              <span>{{ 'ui.trialBalance.1e895b' | translate }}</span>
             </div>
 
           </div>
@@ -1741,10 +1730,7 @@ export class TrialBalanceComponent implements OnInit {
       <body>
         <table border="1" cellpadding="5" cellspacing="0">
           <tr>
-            <th colspan="10" class="header-main">${companyName} - نظام الربان المحاسبي المتكامل Al-Roban ERP</th>
-          </tr>
-          <tr>
-            <td colspan="10" class="header-sub">نظام تخطيط موارد المنشآت والفوترة الإلكترونية المعتمدة (ZATCA / SOCPA / IFRS)</td>
+            <th colspan="10" class="header-main">${companyName}</th>
           </tr>
           <tr>
             <td colspan="10" class="tax-bar">الرقم الضريبي VAT: ${vatNo} | السجل التجاري CR: ${crNo} | المركز الرئيسي - المملكة العربية السعودية</td>

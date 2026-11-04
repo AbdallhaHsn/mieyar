@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { LanguageService } from '../../../core/services/language.service';
+import { CompanyContextService } from '../../../core/services/company-context.service';
+import { TafqeetService } from '../../../core/services/tafqeet.service';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import Swal from 'sweetalert2';
@@ -39,6 +41,10 @@ export interface BusinessPartnerDto {
   creditLimit: number;
   paymentTermsDays: number;
   currentBalance: number;
+  glAccountId?: string;
+  glAccountCode?: string;
+  glAccountNameAr?: string;
+  glAccountNameEn?: string;
   isActive: boolean;
   createdAtUtc?: string | Date;
 }
@@ -64,7 +70,7 @@ export interface PartnerAgingBucketDto {
     <div class="partners-container" [attr.dir]="langService.currentLang() === 'ar' ? 'rtl' : 'ltr'">
       
       <!-- Page Header -->
-      <header class="page-header">
+      <header *ngIf="!showStatementModal()" class="page-header no-print">
         <div class="header-title-box">
           <div class="icon-frame">
             <i class="pi pi-users"></i>
@@ -84,15 +90,15 @@ export interface PartnerAgingBucketDto {
             <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
             <span>{{ 'accounting.partners.ui.refresh' | translate }}</span>
           </button>
-          <a class="btn-primary" routerLink="/accounting/partners/create">
+          <button type="button" class="btn-primary" (click)="openCreateModal()">
             <i class="pi pi-user-plus"></i>
             <span>{{ 'accounting.partners.ui.newPartner' | translate }}</span>
-          </a>
+          </button>
         </div>
       </header>
 
       <!-- Main Navigation Tabs: Cards vs Aging Report -->
-      <nav class="view-tabs">
+      <nav *ngIf="!showStatementModal()" class="view-tabs no-print">
         <button [class.active]="activeTab() === 'cards'" (click)="activeTab.set('cards')">
           <i class="pi pi-id-card"></i>
           <span>{{ 'accounting.partners.ui.partnerProfiles' | translate }}</span>
@@ -106,7 +112,7 @@ export interface PartnerAgingBucketDto {
       </nav>
 
       <!-- TAB 1: Partner Cards View -->
-      <div *ngIf="activeTab() === 'cards'" class="tab-content">
+      <div *ngIf="!showStatementModal() && activeTab() === 'cards'" class="tab-content no-print">
         <!-- KPI Strip -->
         <section class="kpi-grid">
           <div class="kpi-card">
@@ -261,16 +267,7 @@ export interface PartnerAgingBucketDto {
       </div>
 
       <!-- TAB 2: Debt Aging Report (تقرير أعمار الديون) -->
-      <div *ngIf="activeTab() === 'aging'" class="tab-content">
-        <!-- Aging Overview Notice -->
-        <div class="aging-banner">
-          <i class="pi pi-info-circle"></i>
-          <div>
-            <strong>{{ 'accounting.partners.ui.standardDebtAgingMechanics' | translate }}</strong>
-            <p>{{ 'accounting.partners.ui.agingDesc' | translate }}</p>
-          </div>
-        </div>
-
+      <div *ngIf="!showStatementModal() && activeTab() === 'aging'" class="tab-content no-print">
         <div class="table-card">
           <table class="data-table aging-table">
             <thead>
@@ -315,10 +312,10 @@ export interface PartnerAgingBucketDto {
         </div>
       </div>
 
-      <!-- Partner Account Statement Modal (كشف حساب الشريك التجاري) -->
-      <div *ngIf="showStatementModal()" class="statement-modal-backdrop" (click)="closePartnerStatementModal()">
-        <div class="statement-modal-dialog" (click)="$event.stopPropagation()">
-          <header class="stmt-modal-header">
+      <!-- Partner Account Statement Modal (كشف حساب الشريك التجاري الرسمي بهوية الربان) -->
+      <div *ngIf="showStatementModal()" class="statement-modal-backdrop print-modal-backdrop" (click)="closePartnerStatementModal()">
+        <div class="statement-modal-dialog print-preview-dialog" (click)="$event.stopPropagation()">
+          <header class="stmt-modal-header no-print">
             <div class="header-left">
               <i class="pi pi-file-text text-emerald" style="font-size: 1.5rem;"></i>
               <div>
@@ -331,7 +328,13 @@ export interface PartnerAgingBucketDto {
                 </p>
               </div>
             </div>
-            <button type="button" class="btn-close-modal" (click)="closePartnerStatementModal()">✕</button>
+            <div class="stmt-header-actions">
+              <button type="button" class="btn-print-stmt" (click)="printPartnerStatement()" [disabled]="!partnerStatement()">
+                <i class="pi pi-print me-1"></i>
+                <span>{{ 'accounting.gl.printStatement' | translate }}</span>
+              </button>
+              <button type="button" class="btn-close-modal" (click)="closePartnerStatementModal()">✕</button>
+            </div>
           </header>
 
           <div class="stmt-modal-body">
@@ -359,141 +362,234 @@ export interface PartnerAgingBucketDto {
               </div>
             </div>
 
-            <!-- VAT Notice -->
-            <div class="stmt-vat-box no-print">
-              <i class="pi pi-shield text-emerald"></i>
-              <span>
-                <strong>{{ 'ui.partners.e64a8b' | translate }}</strong> {{ 'ui.partners.06397d' | translate }}
-              </span>
-            </div>
-
             <!-- Loading State -->
-            <div *ngIf="isLoadingStatement()" class="stmt-loading">
+            <div *ngIf="isLoadingStatement()" class="stmt-loading no-print">
               <i class="pi pi-spin pi-spinner text-emerald"></i>
               <span>{{ 'ui.partners.478738' | translate }}</span>
             </div>
 
-            <!-- Printable Sheet -->
-            <div *ngIf="!isLoadingStatement() && partnerStatement() as stmt" class="stmt-sheet">
-              <!-- Customer Profile Box -->
-              <div class="stmt-profile-box">
-                <div class="prof-name">
-                  <h4>{{ stmt.partnerNameAr }}</h4>
-                  <span class="prof-en" *ngIf="stmt.partnerNameEn">{{ stmt.partnerNameEn }}</span>
-                  <div class="prof-meta">
-                    <span *ngIf="stmt.partnerCode"><strong>{{ 'ui.partners.c25912' | translate }}</strong> {{ stmt.partnerCode }}</span>
-                    <span *ngIf="stmt.taxNumber"><strong>{{ 'pos.receipt.vatLabel' | translate }}</strong> {{ stmt.taxNumber }}</span>
-                    <span *ngIf="stmt.phone"><strong>{{ 'invoices.view.thermalPhone' | translate }}</strong> {{ stmt.phone }}</span>
-                    <span *ngIf="stmt.address"><strong>{{ 'invoices.view.thermalAddress' | translate }}</strong> {{ stmt.address }}</span>
+            <!-- Official Al-Roban Printable A4 Statement Sheet -->
+            <div *ngIf="!isLoadingStatement() && partnerStatement() as stmt" class="print-paper-container">
+              <article class="official-statement-sheet" id="printable-partner-statement">
+
+                <!-- 1. Official Corporate Header -->
+                <header class="statement-print-header">
+                  <div class="org-info">
+                    <div class="org-brand-row">
+                      <img *ngIf="companyContext.companyLogo() || companyContext.activeCompany().logoUrl"
+                           [src]="companyContext.companyLogo() || companyContext.activeCompany().logoUrl"
+                           alt="Logo"
+                           class="org-logo-img" />
+                      <div *ngIf="!(companyContext.companyLogo() || companyContext.activeCompany().logoUrl)" class="org-logo-fallback">
+                        <i class="pi pi-compass"></i>
+                      </div>
+                      <div class="org-text-box">
+                        <h2 class="org-name-ar">{{ companyContext.activeCompany().nameAr || 'شركة الربان للحلول الذكية' }}</h2>
+                        <span class="org-name-en">{{ companyContext.activeCompany().nameEn || 'Al-Roban Smart Solutions Co.' }}</span>
+                        <div class="org-tax-row">
+                          <span>{{ 'pos.receipt.vatLabel' | translate }} <strong class="font-code">{{ companyContext.activeCompany().vatNumber || '310123456700003' }}</strong></span>
+                          <span class="dot">&bull;</span>
+                          <span>{{ 'accounting.journal.ui.cr' | translate }} <strong class="font-code">{{ companyContext.activeCompany().commercialRegistration || '1010789456' }}</strong></span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="prof-period">
-                  <div class="pill">
-                    <span>{{ 'ui.partners.c21237' | translate }}</span>
-                    <strong>{{ stmt.fromDate | date:'yyyy/MM/dd' }} — {{ stmt.toDate | date:'yyyy/MM/dd' }}</strong>
+
+                  <div class="center-title-box">
+                    <h1 class="statement-main-title">
+                      {{ stmt.partnerType === 2 ? (langService.currentLang() === 'ar' ? 'كشف حساب مورد تفصيلي' : 'Vendor Statement of Account') : (langService.currentLang() === 'ar' ? 'كشف حساب عميل تفصيلي' : 'Customer Statement of Account') }}
+                    </h1>
+                    <span class="statement-sub-title">
+                      {{ stmt.partnerType === 2 ? 'VENDOR STATEMENT OF ACCOUNT (AP SUB-LEDGER)' : 'CUSTOMER STATEMENT OF ACCOUNT (AR SUB-LEDGER)' }}
+                    </span>
                   </div>
-                  <div class="pill">
-                    <span>{{ 'ui.partners.887efc' | translate }}</span>
-                    <strong>{{ statementToDate() | date:'yyyy/MM/dd' }}</strong>
+
+                  <div class="left-seal-box">
+                    <div class="seal-frame">
+                      <svg width="64" height="64" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="30" cy="30" r="28" stroke="#047857" stroke-width="2" stroke-dasharray="4 2"/>
+                        <circle cx="30" cy="30" r="23" stroke="#047857" stroke-width="1"/>
+                        <path d="M30 13L34 22H26L30 13Z" fill="#047857"/>
+                        <text x="30" y="33" font-size="6.2" font-weight="bold" fill="#047857" text-anchor="middle">ختم رسمي معتمد</text>
+                        <text x="30" y="42" font-size="4.8" fill="#64748B" text-anchor="middle">مستند مالي رسمي</text>
+                      </svg>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </header>
 
-              <!-- KPI Metrics -->
-              <div class="stmt-kpis">
-                <div class="stmt-kpi">
-                  <span class="lbl">{{ 'invoices.statementModal.openingBalance' | translate }}</span>
-                  <strong class="val">{{ stmt.openingBalance | number:'1.2-2' }} SAR</strong>
-                </div>
-                <div class="stmt-kpi debit">
-                  <span class="lbl">{{ 'ui.partners.d13982' | translate }}</span>
-                  <strong class="val text-rose">{{ stmt.totalDebit | number:'1.2-2' }} SAR</strong>
-                </div>
-                <div class="stmt-kpi credit">
-                  <span class="lbl">{{ 'ui.partners.ec0365' | translate }}</span>
-                  <strong class="val text-emerald">{{ stmt.totalCredit | number:'1.2-2' }} SAR</strong>
-                </div>
-                <div class="stmt-kpi balance" [class.has-balance]="stmt.closingBalance > 0">
-                  <span class="lbl">{{ 'ui.partners.5ae2ae' | translate }}</span>
-                  <strong class="val" [class.text-amber]="stmt.closingBalance > 0" [class.text-emerald]="stmt.closingBalance <= 0">
-                    {{ stmt.closingBalance | number:'1.2-2' }} SAR
-                  </strong>
-                </div>
-              </div>
+                <!-- 2. Structured Partner & Period Meta Grid (6 Cells) -->
+                <section class="statement-meta-box">
+                  <div class="meta-cell">
+                    <span class="m-lbl">{{ langService.currentLang() === 'ar' ? 'كود الشريك التجاري' : 'Partner Code' }}</span>
+                    <strong class="m-val font-code text-emerald">{{ stmt.partnerCode || '—' }}</strong>
+                  </div>
 
-              <!-- Transactions Table -->
-              <div class="stmt-table-container">
-                <table class="stmt-table">
-                  <thead>
-                    <tr>
-                      <th style="width: 105px;">{{ 'accounting.journal.table.date' | translate }}</th>
-                      <th style="width: 130px;">{{ 'ui.stockAdjustments.2579ea' | translate }}</th>
-                      <th style="width: 140px;">{{ 'ui.partners.e56dcc' | translate }}</th>
-                      <th>{{ 'ui.partners.f99ddd' | translate }}</th>
-                      <th style="width: 110px;" class="text-end">{{ 'ui.partners.3cb9ad' | translate }}</th>
-                      <th style="width: 110px;" class="text-end">{{ 'ui.partners.b885ef' | translate }}</th>
-                      <th style="width: 120px;" class="text-end">{{ 'accounting.coa.table.balance' | translate }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr class="stmt-row-opening">
-                      <td colspan="4"><strong>{{ 'ui.partners.6d92dd' | translate }}</strong></td>
-                      <td class="text-end">—</td>
-                      <td class="text-end">—</td>
-                      <td class="text-end font-code fw-bold">{{ stmt.openingBalance | number:'1.2-2' }}</td>
-                    </tr>
+                  <div class="meta-cell">
+                    <span class="m-lbl">{{ stmt.partnerType === 2 ? (langService.currentLang() === 'ar' ? 'اسم المورد المعتمد' : 'Supplier Name') : (langService.currentLang() === 'ar' ? 'اسم العميل' : 'Customer Name') }}</span>
+                    <strong class="m-val">
+                      {{ stmt.partnerNameAr }}
+                      <small *ngIf="stmt.partnerNameEn" class="meta-en-sub">({{ stmt.partnerNameEn }})</small>
+                    </strong>
+                  </div>
 
-                    <tr *ngIf="stmt.lines.length === 0">
-                      <td colspan="7" class="text-center py-4 text-muted">
-                        {{ 'ui.partners.b3c77d' | translate }}
-                      </td>
-                    </tr>
+                  <div class="meta-cell">
+                    <span class="m-lbl">{{ langService.currentLang() === 'ar' ? 'الرقم الضريبي للشريك (VAT)' : 'Partner VAT Number' }}</span>
+                    <strong class="m-val font-code">{{ stmt.taxNumber || '—' }}</strong>
+                  </div>
 
-                    <tr *ngFor="let l of stmt.lines" [class.row-payment]="l.credit > 0">
-                      <td class="font-code">{{ l.date | date:'yyyy/MM/dd' }}</td>
-                      <td>
-                        <span class="stmt-tag" [class.inv]="l.debit > 0" [class.rec]="l.credit > 0">
-                          {{ l.documentType }}
-                        </span>
-                      </td>
-                      <td class="font-code fw-bold">{{ l.documentNumber }}</td>
-                      <td>{{ l.description }}</td>
-                      <td class="text-end font-code text-rose" [class.fw-bold]="l.debit > 0">
-                        {{ l.debit > 0 ? (l.debit | number:'1.2-2') : '—' }}
-                      </td>
-                      <td class="text-end font-code text-emerald" [class.fw-bold]="l.credit > 0">
-                        {{ l.credit > 0 ? (l.credit | number:'1.2-2') : '—' }}
-                      </td>
-                      <td class="text-end font-code fw-bold" [class.text-amber]="l.balance > 0">
-                        {{ l.balance | number:'1.2-2' }}
-                      </td>
-                    </tr>
+                  <div class="meta-cell">
+                    <span class="m-lbl">{{ langService.currentLang() === 'ar' ? 'الهاتف والعنوان الوطني' : 'Phone & Address' }}</span>
+                    <strong class="m-val">{{ stmt.phone || '—' }} <span *ngIf="stmt.address" class="text-muted">&bull; {{ stmt.address }}</span></strong>
+                  </div>
 
-                    <tr class="stmt-row-total">
-                      <td colspan="4" class="text-end fw-bold">{{ 'ui.partners.f403a8' | translate }}</td>
-                      <td class="text-end font-code fw-bold text-rose">{{ stmt.totalDebit | number:'1.2-2' }}</td>
-                      <td class="text-end font-code fw-bold text-emerald">{{ stmt.totalCredit | number:'1.2-2' }}</td>
-                      <td class="text-end font-code fw-bold">{{ stmt.closingBalance | number:'1.2-2' }} SAR</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                  <div class="meta-cell">
+                    <span class="m-lbl">{{ langService.currentLang() === 'ar' ? 'فترة كشف الحساب' : 'Statement Period' }}</span>
+                    <strong class="m-val font-code">{{ stmt.fromDate | date:'yyyy/MM/dd' }} — {{ stmt.toDate | date:'yyyy/MM/dd' }}</strong>
+                  </div>
 
-              <!-- Signatures -->
-              <div class="stmt-signatures">
-                <div class="sig">
-                  <span>{{ 'ui.partners.cc7bba' | translate }}</span>
-                  <div class="line"></div>
-                </div>
-                <div class="sig">
-                  <span>{{ 'ui.partners.c083b0' | translate }}</span>
-                  <div class="line"></div>
-                </div>
-                <div class="sig">
-                  <span>{{ 'ui.partners.ec316b' | translate }}</span>
-                  <div class="line"></div>
-                </div>
-              </div>
+                  <div class="meta-cell">
+                    <span class="m-lbl">{{ langService.currentLang() === 'ar' ? 'تاريخ الإصدار والطباعة' : 'Issue Date & Time' }}</span>
+                    <strong class="m-val font-code">{{ currentPrintDate | date:'yyyy/MM/dd HH:mm' }}</strong>
+                  </div>
+                </section>
+
+                <!-- 3. 4-Box Balances Summary Strip -->
+                <section class="statement-balances-summary">
+                  <div class="summary-box">
+                    <span class="s-lbl">{{ 'invoices.statementModal.openingBalance' | translate }}</span>
+                    <strong class="s-val font-code">{{ stmt.openingBalance | number:'1.2-2' }} <small>SAR</small></strong>
+                  </div>
+
+                  <div class="summary-box">
+                    <span class="s-lbl text-rose">{{ stmt.partnerType === 2 ? (langService.currentLang() === 'ar' ? 'إجمالي المسدد للمورد (مدين)' : 'Total Paid (Debit)') : ('ui.partners.d13982' | translate) }}</span>
+                    <strong class="s-val font-code text-rose">{{ stmt.totalDebit | number:'1.2-2' }} <small>SAR</small></strong>
+                  </div>
+
+                  <div class="summary-box">
+                    <span class="s-lbl text-emerald">{{ stmt.partnerType === 2 ? (langService.currentLang() === 'ar' ? 'إجمالي فواتير المشتريات (دائن)' : 'Total Purchase Invoices (Credit)') : ('ui.partners.ec0365' | translate) }}</span>
+                    <strong class="s-val font-code text-emerald">{{ stmt.totalCredit | number:'1.2-2' }} <small>SAR</small></strong>
+                  </div>
+
+                  <div class="summary-box highlight-closing">
+                    <span class="s-lbl">{{ 'ui.partners.5ae2ae' | translate }}</span>
+                    <strong class="s-val font-code" [class.text-amber]="stmt.closingBalance > 0" [class.text-emerald-dark]="stmt.closingBalance <= 0">
+                      {{ stmt.closingBalance | number:'1.2-2' }} <small>SAR</small>
+                    </strong>
+                  </div>
+                </section>
+
+                <!-- 4. Official Transactions Print Table -->
+                <section class="statement-print-table-section">
+                  <table class="statement-print-table">
+                    <thead>
+                      <tr>
+                        <th class="col-idx">#</th>
+                        <th class="col-date">{{ 'accounting.journal.table.date' | translate }}</th>
+                        <th class="col-type">{{ 'ui.stockAdjustments.2579ea' | translate }}</th>
+                        <th class="col-ref">{{ 'ui.partners.e56dcc' | translate }}</th>
+                        <th class="col-desc">{{ 'ui.partners.f99ddd' | translate }}</th>
+                        <th class="col-amt text-end">{{ 'ui.partners.3cb9ad' | translate }}</th>
+                        <th class="col-amt text-end">{{ 'ui.partners.b885ef' | translate }}</th>
+                        <th class="col-bal text-end">{{ 'accounting.coa.table.balance' | translate }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="row-print-opening">
+                        <td class="text-center font-code">0</td>
+                        <td class="text-center font-code">{{ stmt.fromDate | date:'yyyy/MM/dd' }}</td>
+                        <td class="text-center">—</td>
+                        <td class="text-center font-code">—</td>
+                        <td><strong>{{ 'ui.partners.6d92dd' | translate }}</strong></td>
+                        <td class="text-end font-code">—</td>
+                        <td class="text-end font-code">—</td>
+                        <td class="text-end font-code fw-bold">{{ stmt.openingBalance | number:'1.2-2' }}</td>
+                      </tr>
+
+                      <tr *ngIf="stmt.lines.length === 0">
+                        <td colspan="8" class="text-center py-4 text-muted">
+                          {{ 'ui.partners.b3c77d' | translate }}
+                        </td>
+                      </tr>
+
+                      <tr *ngFor="let l of stmt.lines; let idx = index" [class.row-payment]="l.credit > 0">
+                        <td class="text-center font-code">{{ idx + 1 }}</td>
+                        <td class="text-center font-code">{{ l.date | date:'yyyy/MM/dd' }}</td>
+                        <td class="text-center">
+                          <span class="stmt-tag" [class.inv]="l.debit > 0" [class.rec]="l.credit > 0">
+                            {{ l.documentType }}
+                          </span>
+                        </td>
+                        <td class="text-center font-code fw-bold">{{ l.documentNumber }}</td>
+                        <td class="desc-cell">{{ l.description }}</td>
+                        <td class="text-end font-code text-rose" [class.fw-bold]="l.debit > 0">
+                          {{ l.debit > 0 ? (l.debit | number:'1.2-2') : '—' }}
+                        </td>
+                        <td class="text-end font-code text-emerald" [class.fw-bold]="l.credit > 0">
+                          {{ l.credit > 0 ? (l.credit | number:'1.2-2') : '—' }}
+                        </td>
+                        <td class="text-end font-code fw-bold" [class.text-amber]="l.balance > 0">
+                          {{ l.balance | number:'1.2-2' }}
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="totals-row">
+                        <td colspan="5" class="text-end fw-bold">
+                          {{ langService.currentLang() === 'ar' ? 'إجمالي الحركات والرصيد الختامي المستحق (SAR):' : 'Total Movements & Closing Balance (SAR):' }}
+                        </td>
+                        <td class="text-end font-code fw-bold text-rose">{{ stmt.totalDebit | number:'1.2-2' }}</td>
+                        <td class="text-end font-code fw-bold text-emerald">{{ stmt.totalCredit | number:'1.2-2' }}</td>
+                        <td class="text-end font-code fw-bold">{{ stmt.closingBalance | number:'1.2-2' }} SAR</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </section>
+
+                <!-- 5. Arabic Tafqeet Box -->
+                <section class="statement-tafqeet-box">
+                  <div class="tafqeet-card">
+                    <span class="tafqeet-label">
+                      <i class="pi pi-check-circle text-emerald"></i>
+                      <span>{{ langService.currentLang() === 'ar' ? 'الرصيد الختامي بالحروف (التفقيط):' : 'Closing Balance in Words:' }}</span>
+                    </span>
+                    <span class="tafqeet-text fw-bold">
+                      {{ getStatementTafqeet(stmt.closingBalance) }}
+                    </span>
+                  </div>
+                </section>
+
+                <!-- 6. Tripartite Signatures Matrix -->
+                <section class="statement-signatures-matrix">
+                  <div class="signature-box">
+                    <span class="sig-header">{{ 'ui.partners.cc7bba' | translate }}</span>
+                    <div class="sig-content">
+                      <span class="sig-name">{{ langService.currentLang() === 'ar' ? 'قسم المحاسبة المالية' : 'Financial Accounting Dept.' }}</span>
+                      <div class="sig-line">{{ langService.currentLang() === 'ar' ? 'التوقيع: ........................................' : 'Signature: ..............................' }}</div>
+                      <span class="sig-date font-code">{{ langService.currentLang() === 'ar' ? 'التاريخ:' : 'Date:' }} {{ currentPrintDate | date:'yyyy/MM/dd' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="signature-box">
+                    <span class="sig-header">{{ 'ui.partners.c083b0' | translate }}</span>
+                    <div class="sig-content">
+                      <span class="sig-name">{{ langService.currentLang() === 'ar' ? 'المدير المالي (CFO) — المراجعة والتدقيق' : 'Chief Financial Officer (CFO)' }}</span>
+                      <div class="sig-line">{{ langService.currentLang() === 'ar' ? 'التوقيع: ........................................' : 'Signature: ..............................' }}</div>
+                      <span class="sig-date font-code">{{ langService.currentLang() === 'ar' ? 'التاريخ:' : 'Date:' }} {{ currentPrintDate | date:'yyyy/MM/dd' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="signature-box approved">
+                    <span class="sig-header">{{ stmt.partnerType === 2 ? (langService.currentLang() === 'ar' ? 'مصادقة المورد على صحة الرصيد' : 'Supplier Balance Confirmation') : (langService.currentLang() === 'ar' ? 'مصادقة العميل على صحة الرصيد' : 'Customer Balance Confirmation') }}</span>
+                    <div class="sig-content">
+                      <span class="sig-name">{{ stmt.partnerNameAr }}</span>
+                      <div class="sig-line">{{ langService.currentLang() === 'ar' ? 'التوقيع والختم الرسمي للمصادقة' : 'Official Stamp & Signature' }}</div>
+                      <span class="sig-date font-code">{{ langService.currentLang() === 'ar' ? 'التاريخ: .... / .... / 2026 م' : 'Date: .... / .... / 2026' }}</span>
+                    </div>
+                  </div>
+                </section>
+
+
+              </article>
             </div>
           </div>
 
@@ -1212,159 +1308,430 @@ export interface PartnerAgingBucketDto {
       gap: 0.5rem;
     }
 
-    .stmt-profile-box {
+    .stmt-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+
+      .btn-print-stmt {
+        background: #059669;
+        color: #ffffff;
+        border: none;
+        padding: 0.45rem 1rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        &:hover { background: #047857; }
+      }
+    }
+
+    /* Official Al-Roban Statement Sheet Styles */
+    .print-paper-container {
+      display: flex;
+      justify-content: center;
+      background: #f1f5f9;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .official-statement-sheet {
+      width: 100%;
+      max-width: 210mm;
+      background: #FFFFFF;
+      color: #0F172A;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10mm 12mm;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .statement-print-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      padding: 1rem 1.25rem;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-
-      .prof-name {
-        h4 {
-          font-size: 1.15rem;
-          font-weight: 800;
-          color: #0f172a;
-          margin: 0 0 0.25rem 0;
-        }
-
-        .prof-en {
-          font-size: 0.85rem;
-          color: #64748b;
-          display: block;
-          margin-bottom: 0.5rem;
-        }
-
-        .prof-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 1rem;
-          font-size: 0.8rem;
-          color: #475569;
-        }
-      }
-
-      .prof-period {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-
-        .pill {
-          font-size: 0.78rem;
-          background: #f8fafc;
-          padding: 0.3rem 0.6rem;
-          border-radius: 6px;
-          border: 1px solid #e2e8f0;
-          color: #334155;
-          span { color: #64748b; margin-left: 0.25rem; }
-        }
-      }
+      align-items: center;
+      padding-bottom: 0.85rem;
+      border-bottom: 2.5px solid #047857;
+      margin-bottom: 0.85rem;
+      gap: 0.75rem;
     }
 
-    .stmt-kpis {
+    .org-info {
+      flex: 1.15;
+    }
+
+    .org-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .org-logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      padding: 2px;
+      background: #fff;
+    }
+
+    .org-logo-fallback {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #065f46, #059669);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+
+    .org-text-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .org-name-ar {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #065F46;
+      margin: 0;
+      line-height: 1.25;
+    }
+
+    .org-name-en {
+      font-size: 0.72rem;
+      color: #64748B;
+      font-weight: 600;
+      display: block;
+    }
+
+    .org-tax-row {
+      font-size: 0.68rem;
+      color: #475569;
+      margin-top: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .center-title-box {
+      flex: 1.45;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .statement-main-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #0F172A;
+      margin: 0;
+    }
+
+    .statement-sub-title {
+      font-size: 0.68rem;
+      color: #047857;
+      font-weight: 800;
+      margin-top: 0.15rem;
+      letter-spacing: 0.4px;
+    }
+
+    .standard-cert-badge {
+      font-size: 0.62rem;
+      color: #64748B;
+      font-weight: 600;
+      margin-top: 0.2rem;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 0.12rem 0.55rem;
+      border-radius: 999px;
+    }
+
+    .left-seal-box {
+      flex: 0.7;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* 2. Statement Meta Box (6 Cells) */
+    .statement-meta-box {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem 0.75rem;
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .meta-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.12rem;
+    }
+
+    .m-lbl {
+      font-size: 0.65rem;
+      color: #64748B;
+      font-weight: 700;
+    }
+
+    .m-val {
+      font-size: 0.78rem;
+      color: #0F172A;
+      font-weight: 800;
+    }
+
+    .meta-en-sub {
+      font-size: 0.68rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    /* 3. Balances Summary (4 Boxes) */
+    .statement-balances-summary {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
-
-      .stmt-kpi {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-
-        .lbl { font-size: 0.72rem; color: #64748b; font-weight: 600; }
-        .val { font-size: 1.15rem; font-weight: 800; color: #0f172a; font-family: monospace; }
-        &.debit .val { color: #dc2626; }
-        &.credit .val { color: #059669; }
-        &.balance.has-balance .val { color: #d97706; }
-      }
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
     }
 
-    .stmt-table-container {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 1.5rem;
+    .summary-box {
+      background: #FAFAFA;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      gap: 0.18rem;
     }
 
-    .stmt-table {
+    .summary-box.highlight-closing {
+      background: #ECFDF5;
+      border: 1.5px solid #047857;
+    }
+
+    .s-lbl {
+      font-size: 0.66rem;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .s-val {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #0F172A;
+      small { font-size: 0.68rem; font-weight: 700; }
+    }
+
+    .text-emerald-dark { color: #065F46 !important; }
+
+    /* 4. Official Transactions Print Table */
+    .statement-print-table-section {
+      margin-bottom: 0.8rem;
+    }
+
+    .statement-print-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.82rem;
+      table-layout: fixed;
+      font-size: 0.75rem;
 
-      thead tr {
-        background: #065f46;
-        color: #ffffff;
-
-        th {
-          padding: 0.65rem 0.85rem;
-          font-weight: 700;
-          text-align: right;
-          border: none;
-        }
+      th {
+        background: #065F46 !important;
+        color: #FFFFFF !important;
+        padding: 0.48rem 0.5rem;
+        font-weight: 700;
+        border: 1px solid #065F46;
+        text-align: right;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
-      tbody tr {
-        border-bottom: 1px solid #f1f5f9;
+      th.col-idx { width: 34px; text-align: center; }
+      th.col-date { width: 84px; text-align: center; }
+      th.col-type { width: 96px; text-align: center; }
+      th.col-ref { width: 105px; text-align: center; }
+      th.col-desc { width: auto; text-align: right; }
+      th.col-amt { width: 90px; text-align: left; }
+      th.col-bal { width: 98px; text-align: left; }
 
-        &:hover { background: #f8fafc; }
+      td {
+        padding: 0.42rem 0.5rem;
+        border: 1px solid #CBD5E1;
+        color: #1E293B;
+        vertical-align: middle;
+        word-wrap: break-word;
+      }
 
-        td {
-          padding: 0.6rem 0.85rem;
-          color: #334155;
-        }
+      td.desc-cell {
+        line-height: 1.4;
+        font-weight: 600;
+        color: #0f172a;
+      }
 
-        &.stmt-row-opening {
-          background: #f8fafc;
-          font-weight: 700;
-          color: #475569;
-        }
+      .row-print-opening td {
+        background: #F8FAFC !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
 
-        &.stmt-row-total {
-          background: #f1f5f9;
-          font-weight: 800;
-          border-top: 2px solid #cbd5e1;
-        }
+      .totals-row td {
+        background: #ECFDF5 !important;
+        border-top: 2px solid #047857 !important;
+        font-weight: 800;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       .stmt-tag {
         display: inline-block;
-        padding: 0.2rem 0.5rem;
+        padding: 0.15rem 0.45rem;
         border-radius: 4px;
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         font-weight: 700;
-
-        &.inv { background: #e0f2fe; color: #0369a1; }
-        &.rec { background: #dcfce7; color: #15803d; }
+        white-space: nowrap;
+        &.inv { background: #e0f2fe !important; color: #0369a1 !important; }
+        &.rec { background: #dcfce7 !important; color: #15803d !important; }
       }
     }
 
-    .stmt-signatures {
+    /* 5. Tafqeet Box */
+    .statement-tafqeet-box {
+      margin-bottom: 0.85rem;
+    }
+
+    .tafqeet-card {
+      background: #F8FAFC;
+      border: 1px dashed #047857;
+      border-radius: 6px;
+      padding: 0.45rem 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.78rem;
+    }
+
+    .tafqeet-label {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #475569;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tafqeet-text {
+      color: #065F46;
+    }
+
+    /* 6. Tripartite Signatures Matrix */
+    .statement-signatures-matrix {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 0.35rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .signature-box {
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 0.55rem 0.65rem;
+      background: #FAFAFA;
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .signature-box.approved {
+      border-color: #A7F3D0;
+      background: #F0FDF4;
+    }
+
+    .sig-header {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #475569;
+      border-bottom: 1px solid #E2E8F0;
+      padding-bottom: 0.3rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .signature-box.approved .sig-header {
+      color: #065F46;
+      border-color: #BBF7D0;
+    }
+
+    .sig-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .sig-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #0F172A;
+    }
+
+    .sig-line {
+      font-size: 0.66rem;
+      color: #64748B;
+      margin-top: 0.35rem;
+    }
+
+    .sig-date {
+      font-size: 0.64rem;
+      color: #64748B;
+    }
+
+    /* 7. Compliance Footer */
+    .statement-compliance-footer {
+      margin-top: auto;
+      padding-top: 0.55rem;
+      border-top: 1px solid #CBD5E1;
       display: flex;
       justify-content: space-between;
-      margin-top: 2rem;
-      padding-top: 1rem;
-      border-top: 1px dashed #cbd5e1;
-
-      .sig {
-        text-align: center;
-        font-size: 0.78rem;
-        color: #64748b;
-        font-weight: 600;
-        width: 180px;
-
-        .line {
-          margin-top: 2.5rem;
-          border-bottom: 1px solid #94a3b8;
-        }
-      }
+      align-items: center;
+      font-size: 0.64rem;
+      color: #64748B;
+      gap: 0.5rem;
     }
+
+    .compliance-left { display: flex; align-items: center; gap: 0.35rem; flex: 1.3; }
+    .compliance-center { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .page-number-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #F0FDF4;
+      border: 1px solid #A7F3D0;
+      border-radius: 999px;
+      padding: 0.12rem 0.6rem;
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: #065F46;
+    }
+    .compliance-right { text-align: left; flex: 1; font-weight: 700; color: #475569; }
 
     .stmt-modal-footer {
       display: flex;
@@ -1399,10 +1766,148 @@ export interface PartnerAgingBucketDto {
       }
     }
 
+    @media screen and (max-width: 768px) {
+      .partners-container {
+        padding: 0.65rem 0.5rem 1.5rem 0.5rem;
+        gap: 0.85rem;
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.9rem 0.85rem;
+        gap: 0.75rem;
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+      }
+
+      .statement-print-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .statement-meta-box {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .statement-balances-summary {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .statement-signatures-matrix {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm 10mm 10mm;
+    }
+
     @media print {
-      .no-print { display: none !important; }
-      .statement-modal-backdrop { position: static; background: transparent; padding: 0; }
-      .statement-modal-dialog { box-shadow: none; border: none; max-width: 100%; max-height: none; }
+      .no-print, .page-header, .view-tabs, .tab-content, .stmt-modal-header, .stmt-filter-bar, .stmt-vat-box, .stmt-modal-footer, .btn-close-modal {
+        display: none !important;
+      }
+
+      .partners-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        gap: 0 !important;
+        background: #FFFFFF !important;
+      }
+
+      .statement-modal-backdrop {
+        position: static !important;
+        background: #FFFFFF !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .statement-modal-dialog {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .stmt-modal-body {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        max-height: none !important;
+      }
+
+      .print-paper-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #FFFFFF !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+
+      .official-statement-sheet {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .statement-print-header {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+      }
+
+      .statement-meta-box {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+
+      .statement-balances-summary {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+
+      .statement-print-table {
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+      }
+
+      .statement-print-table thead {
+        display: table-header-group !important;
+      }
+
+      .statement-print-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .statement-tafqeet-box, .statement-signatures-matrix, .statement-compliance-footer {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .statement-signatures-matrix {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
     }
   `]
 })
@@ -1411,6 +1916,9 @@ export class PartnersComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   langService = inject(LanguageService);
+  companyContext = inject(CompanyContextService);
+  tafqeet = inject(TafqeetService);
+  currentPrintDate = new Date();
 
   activeTab = signal<'cards' | 'aging'>('cards');
   partners = signal<BusinessPartnerDto[]>([]);
@@ -1578,6 +2086,7 @@ export class PartnersComponent implements OnInit {
   statementToDate = signal<string>(new Date().toISOString().substring(0, 10));
 
   openPartnerStatement(partner: BusinessPartnerDto) {
+    this.currentPrintDate = new Date();
     this.selectedPartner.set(partner);
     this.showStatementModal.set(true);
     this.loadPartnerStatement();
@@ -1613,7 +2122,16 @@ export class PartnersComponent implements OnInit {
     this.selectedPartner.set(null);
   }
 
+  getStatementTafqeet(balance: number): string {
+    const absBal = Math.abs(balance || 0);
+    if (absBal < 0.005) {
+      return this.langService.currentLang() === 'ar' ? 'صفر ريال سعودي فقط لا غير — الحساب مُصفّى ومُسدّد بالكامل' : 'Zero Saudi Riyals — Account Fully Settled';
+    }
+    return this.tafqeet.toArabicCurrency(absBal, 'ريال سعودي', 'هللة');
+  }
+
   printPartnerStatement() {
+    this.currentPrintDate = new Date();
     window.print();
   }
 

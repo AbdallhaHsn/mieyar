@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, of, tap } from 'rxjs';
 import { AccountDto, AccountingStandardGuidance, CreateAccountRequest } from '../models/account.model';
+export type { AccountDto, AccountingStandardGuidance, CreateAccountRequest } from '../models/account.model';
 import { CompanyContextService } from './company-context.service';
 import { LanguageService } from './language.service';
 import { environment } from '../../../environments/environment';

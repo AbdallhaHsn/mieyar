@@ -27,9 +27,13 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
     return false;
   }
 
-  // SuperAdmin has full platform access
+  // SuperAdmin is strictly confined to platform administration (/companies) and has no access to company operational/financial data
   if (userRole === 'SuperAdmin') {
-    return true;
+    if (expectedRoles.includes('SuperAdmin')) {
+      return true;
+    }
+    router.navigate(['/companies']);
+    return false;
   }
 
   const roleCode = authService.currentUser()?.roleCode;

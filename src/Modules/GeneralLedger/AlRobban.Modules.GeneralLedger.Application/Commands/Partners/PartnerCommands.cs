@@ -33,10 +33,13 @@ public record BusinessPartnerDto(
     Guid? GlAccountId,
     decimal CurrentBalance,
     bool IsActive,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? GlAccountCode = null,
+    string? GlAccountNameAr = null,
+    string? GlAccountNameEn = null
 )
 {
-    public static BusinessPartnerDto FromEntity(BusinessPartner p) => new(
+    public static BusinessPartnerDto FromEntity(BusinessPartner p, Account? glAccount = null) => new(
         p.Id,
         p.CompanyId,
         p.Code,
@@ -62,7 +65,10 @@ public record BusinessPartnerDto(
         p.GlAccountId,
         p.CurrentBalance,
         p.IsActive,
-        p.CreatedAtUtc
+        p.CreatedAtUtc,
+        glAccount?.AccountCode,
+        glAccount?.NameAr,
+        glAccount?.NameEn
     );
 }
 
@@ -101,32 +107,46 @@ public record CreatePartnerCommand(
     string? OtherIdValue = null,
     decimal CreditLimit = 0m,
     int PaymentTermsDays = 30,
-    Guid? GlAccountId = null
+    Guid? GlAccountId = null,
+    bool CreateSubAccountInChartOfAccounts = false,
+    Guid? ParentGlAccountId = null,
+    string? SubAccountCode = null
 ) : IRequest<Result<BusinessPartnerDto>>;
 
 public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand, Result<BusinessPartnerDto>>
 {
     private readonly IBusinessPartnerRepository _partnerRepository;
+    private readonly IAccountRepository _accountRepository;
     private readonly ICurrentTenantContext _tenantContext;
+    private readonly IRequestLanguageContext _lang;
 
     public CreatePartnerCommandHandler(
         IBusinessPartnerRepository partnerRepository,
-        ICurrentTenantContext tenantContext)
+        IAccountRepository accountRepository,
+        ICurrentTenantContext tenantContext,
+        IRequestLanguageContext lang)
     {
         _partnerRepository = partnerRepository;
+        _accountRepository = accountRepository;
         _tenantContext = tenantContext;
+        _lang = lang;
     }
 
     public async Task<Result<BusinessPartnerDto>> Handle(CreatePartnerCommand request, CancellationToken cancellationToken)
     {
         var tenantId = _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var currentUser = _tenantContext.UserDisplayName ?? _tenantContext.UserName ?? "System User";
 
         // تحقق من تكرار الكود
         var existing = await _partnerRepository.GetByCodeAsync(companyId, request.Code, cancellationToken);
         if (existing != null)
         {
-            return Result.Failure<BusinessPartnerDto>(Error.Conflict("Partner.CodeExists", $"رمز الطرف / العميل {request.Code} مسجل مسبقاً."));
+            return Result.Failure<BusinessPartnerDto>(Error.Conflict(
+                "Partner.CodeExists",
+                _lang.Translate(
+                    $"رمز الطرف / العميل {request.Code} مسجل مسبقاً.",
+                    $"Partner code {request.Code} already exists.")));
         }
 
         // التحقق من صحة الرقم الضريبي السعودي إذا تم إدخاله
@@ -137,9 +157,84 @@ public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand,
             {
                 return Result.Failure<BusinessPartnerDto>(Error.Validation(
                     "Partner.InvalidVatNumber",
-                    "الرقم الضريبي السعودي يجب أن يتكون من 15 رقماً، ويبدأ بالرقم 3 وينتهي بالرقم 3 وفق اشتراطات هيئة الزكاة والضريبة والجمارك (ZATCA)."
+                    _lang.Translate(
+                        "الرقم الضريبي السعودي يجب أن يتكون من 15 رقماً، ويبدأ بالرقم 3 وينتهي بالرقم 3 وفق اشتراطات هيئة الزكاة والضريبة والجمارك (ZATCA).",
+                        "Saudi VAT number must be 15 digits starting and ending with 3 according to ZATCA regulations.")
                 ));
             }
+        }
+
+        Guid? effectiveGlAccountId = request.GlAccountId;
+        Account? linkedOrCreatedAccount = null;
+
+        // إنشاء حساب فرعي جديد للعميل أو المورد في شجرة الحسابات تحت الحساب الأب الذي اختاره المستخدم
+        if (request.CreateSubAccountInChartOfAccounts && request.ParentGlAccountId.HasValue && request.ParentGlAccountId.Value != Guid.Empty)
+        {
+            var parentAccount = await _accountRepository.GetByIdAsync(request.ParentGlAccountId.Value, cancellationToken);
+            if (parentAccount == null)
+            {
+                return Result.Failure<BusinessPartnerDto>(Error.NotFound(
+                    "Partner.ParentAccountNotFound",
+                    _lang.Translate(
+                        "الحساب الأب المختار في شجرة الحسابات غير موجود.",
+                        "The selected parent account in the chart of accounts was not found.")));
+            }
+
+            var subCode = request.SubAccountCode?.Trim();
+            if (string.IsNullOrWhiteSpace(subCode))
+            {
+                var siblings = await _accountRepository.GetSubAccountsAsync(parentAccount.Id, cancellationToken);
+                var nextIndex = siblings.Count + 1;
+                while (true)
+                {
+                    var candidate = parentAccount.Level switch
+                    {
+                        1 => $"{parentAccount.AccountCode}{nextIndex}",
+                        2 => $"{parentAccount.AccountCode}{nextIndex:D2}",
+                        _ => $"{parentAccount.AccountCode}{nextIndex:D3}"
+                    };
+                    var existsCode = await _accountRepository.GetByCodeAsync(companyId, candidate, cancellationToken);
+                    if (existsCode == null)
+                    {
+                        subCode = candidate;
+                        break;
+                    }
+                    nextIndex++;
+                }
+            }
+            else
+            {
+                var existsCode = await _accountRepository.GetByCodeAsync(companyId, subCode, cancellationToken);
+                if (existsCode != null)
+                {
+                    return Result.Failure<BusinessPartnerDto>(Error.Conflict(
+                        "Account.CodeExists",
+                        _lang.Translate(
+                            $"رقم الحساب الفرعي {subCode} مستخدم مسبقاً في شجرة الحسابات.",
+                            $"Sub-account code {subCode} is already used in the chart of accounts.")));
+                }
+            }
+
+            var typeLabelAr = request.PartnerType == PartnerType.Customer ? "عميل" : (request.PartnerType == PartnerType.Supplier ? "مورد" : "عميل ومورد");
+            linkedOrCreatedAccount = Account.CreateSubAccount(
+                tenantId: tenantId,
+                companyId: companyId,
+                parentAccount: parentAccount,
+                accountCode: subCode,
+                nameAr: request.NameAr.Trim(),
+                nameEn: string.IsNullOrWhiteSpace(request.NameEn) ? request.NameAr.Trim() : request.NameEn.Trim(),
+                isPostable: true,
+                guidance: parentAccount.Guidance,
+                description: $"حساب {typeLabelAr} فرعي آلي مرتبط ببطاقة الشريك ({request.Code}) تحت الحساب ({parentAccount.AccountCode} - {parentAccount.NameAr})"
+            );
+
+            await _accountRepository.AddAsync(linkedOrCreatedAccount, cancellationToken);
+            await _accountRepository.SaveChangesAsync(cancellationToken);
+            effectiveGlAccountId = linkedOrCreatedAccount.Id;
+        }
+        else if (effectiveGlAccountId.HasValue && effectiveGlAccountId.Value != Guid.Empty)
+        {
+            linkedOrCreatedAccount = await _accountRepository.GetByIdAsync(effectiveGlAccountId.Value, cancellationToken);
         }
 
         var partner = BusinessPartner.Create(
@@ -156,8 +251,8 @@ public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand,
             address: request.Address,
             creditLimit: request.CreditLimit,
             paymentTermsDays: request.PaymentTermsDays,
-            glAccountId: request.GlAccountId,
-            createdBy: "System User",
+            glAccountId: effectiveGlAccountId,
+            createdBy: currentUser,
             streetName: request.StreetName,
             buildingNumber: request.BuildingNumber,
             plotIdentification: request.PlotIdentification,
@@ -172,7 +267,7 @@ public class CreatePartnerCommandHandler : IRequestHandler<CreatePartnerCommand,
         await _partnerRepository.AddAsync(partner, cancellationToken);
         await _partnerRepository.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(BusinessPartnerDto.FromEntity(partner));
+        return Result.Success(BusinessPartnerDto.FromEntity(partner, linkedOrCreatedAccount));
     }
 }
 
@@ -193,7 +288,7 @@ public class GetPartnersQueryHandler : IRequestHandler<GetPartnersQuery, Result<
     {
         var companyId = request.CompanyId ?? _tenantContext.TenantId ?? Guid.Parse("11111111-2222-3333-4444-555555555555");
         var partners = await _partnerRepository.GetListAsync(companyId, request.Type, request.Search, cancellationToken);
-        var dtos = partners.Select(BusinessPartnerDto.FromEntity).ToList();
+        var dtos = partners.Select(p => BusinessPartnerDto.FromEntity(p)).ToList();
         return Result.Success<IReadOnlyList<BusinessPartnerDto>>(dtos);
     }
 }
@@ -347,28 +442,51 @@ public class GetPartnerStatementQueryHandler : IRequestHandler<GetPartnerStateme
                 ? (allAccounts.FirstOrDefault(a => a.AccountCode == "11201") ?? allAccounts.FirstOrDefault(a => a.AccountCode.StartsWith("112")))
                 : (allAccounts.FirstOrDefault(a => a.AccountCode == "21101") ?? allAccounts.FirstOrDefault(a => a.AccountCode.StartsWith("211"))));
 
+        // Gather all candidate AR/AP accounts so that invoices and payments across 11201, 21101, and partner's dedicated GlAccountId are all captured
+        var candidateAccounts = new List<Account>();
+        if (targetAccount != null) candidateAccounts.Add(targetAccount);
+        var arControl = allAccounts.FirstOrDefault(a => a.AccountCode == "11201") ?? allAccounts.FirstOrDefault(a => a.AccountCode.StartsWith("112"));
+        var apControl = allAccounts.FirstOrDefault(a => a.AccountCode == "21101") ?? allAccounts.FirstOrDefault(a => a.AccountCode.StartsWith("211"));
+        if (arControl != null && candidateAccounts.All(a => a.Id != arControl.Id)) candidateAccounts.Add(arControl);
+        if (apControl != null && candidateAccounts.All(a => a.Id != apControl.Id)) candidateAccounts.Add(apControl);
+
         var statementLines = new List<PartnerStatementLineDto>();
         decimal openingBalance = 0m;
         decimal runningBalance = 0m;
 
-        if (targetAccount != null)
+        if (candidateAccounts.Count > 0)
         {
-            var allLines = await _journalRepository.GetLinesByAccountAsync(
-                companyId,
-                targetAccount.Id,
-                fromDate: null,
-                toDate: toDate,
-                costCenterId: null,
-                postedOnly: true,
-                cancellationToken: cancellationToken);
+            var allLines = new List<JournalEntryLine>();
+            foreach (var acc in candidateAccounts)
+            {
+                var accLines = await _journalRepository.GetLinesByAccountAsync(
+                    companyId,
+                    acc.Id,
+                    fromDate: null,
+                    toDate: toDate,
+                    costCenterId: null,
+                    postedOnly: true,
+                    cancellationToken: cancellationToken);
+                allLines.AddRange(accLines);
+            }
 
             var partnerKeywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrWhiteSpace(partnerNameAr)) partnerKeywords.Add(partnerNameAr.Trim());
             if (!string.IsNullOrWhiteSpace(partnerNameEn)) partnerKeywords.Add(partnerNameEn.Trim());
             if (!string.IsNullOrWhiteSpace(partnerCode)) partnerKeywords.Add(partnerCode.Trim());
 
+            // Check if partner has a dedicated non-control sub-account
+            var isDedicatedSubAccount = targetAccount != null
+                && targetAccount.AccountCode != "11201"
+                && targetAccount.AccountCode != "21101";
+
             var partnerLines = allLines.Where(l =>
             {
+                if (isDedicatedSubAccount && targetAccount != null && l.AccountId == targetAccount.Id)
+                {
+                    return true;
+                }
+
                 var desc = l.Description ?? string.Empty;
                 var jeDescAr = l.JournalEntry?.DescriptionAr ?? string.Empty;
                 var jeDescEn = l.JournalEntry?.DescriptionEn ?? string.Empty;
@@ -379,14 +497,19 @@ public class GetPartnerStatementQueryHandler : IRequestHandler<GetPartnerStateme
                     jeDescAr.Contains(k, StringComparison.OrdinalIgnoreCase) ||
                     jeDescEn.Contains(k, StringComparison.OrdinalIgnoreCase) ||
                     refNo.Contains(k, StringComparison.OrdinalIgnoreCase));
-            }).ToList();
+            })
+            .GroupBy(l => l.Id)
+            .Select(g => g.First())
+            .ToList();
 
+            var effectiveNature = targetAccount?.AccountNature ?? (isCustomer ? AccountNature.Debit : AccountNature.Credit);
             var beforeLines = partnerLines.Where(l => l.JournalEntry != null && l.JournalEntry.EntryDate < fromDate.Date);
-            openingBalance = beforeLines.Sum(l => targetAccount.AccountNature == AccountNature.Debit ? (l.Debit - l.Credit) : (l.Credit - l.Debit));
+            openingBalance = beforeLines.Sum(l => effectiveNature == AccountNature.Debit ? (l.Debit - l.Credit) : (l.Credit - l.Debit));
             runningBalance = openingBalance;
 
             var periodLines = partnerLines.Where(l => l.JournalEntry != null && l.JournalEntry.EntryDate >= fromDate.Date && l.JournalEntry.EntryDate <= toDate.Date)
                 .OrderBy(l => l.JournalEntry!.EntryDate)
+                .ThenBy(l => l.JournalEntry!.CreatedAtUtc)
                 .ThenBy(l => l.JournalEntry!.EntryNumber)
                 .ToList();
 
@@ -412,6 +535,10 @@ public class GetPartnerStatementQueryHandler : IRequestHandler<GetPartnerStateme
                 {
                     docType = "إشعار مدين (مرتجع)";
                 }
+                else if (desc.Contains("فاتورة مشتريات") || refNo.StartsWith("PINV-"))
+                {
+                    docType = "فاتورة مشتريات";
+                }
                 else if (desc.Contains("فاتورة"))
                 {
                     docType = isCustomer ? "فاتورة مبيعات" : "فاتورة مشتريات";
@@ -421,7 +548,7 @@ public class GetPartnerStatementQueryHandler : IRequestHandler<GetPartnerStateme
                     docType = "قيد تسوية";
                 }
 
-                var net = targetAccount.AccountNature == AccountNature.Debit ? (l.Debit - l.Credit) : (l.Credit - l.Debit);
+                var net = effectiveNature == AccountNature.Debit ? (l.Debit - l.Credit) : (l.Credit - l.Debit);
                 runningBalance += net;
 
                 statementLines.Add(new PartnerStatementLineDto(

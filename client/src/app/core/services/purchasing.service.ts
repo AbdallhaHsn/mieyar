@@ -322,6 +322,7 @@ export interface PurchaseRequisitionLineDto {
   estimatedTotal: number;
   warehouseCode?: string;
   costCenterId?: string;
+  accountId?: string;
   notes?: string;
 }
 
@@ -359,6 +360,7 @@ export interface CreateRequisitionLineRequest {
   estimatedUnitPrice: number;
   warehouseCode?: string;
   costCenterId?: string;
+  accountId?: string;
   notes?: string;
 }
 
@@ -396,6 +398,7 @@ export interface PurchaseOrderLineDto {
   totalAmount: number;
   warehouseCode?: string;
   costCenterId?: string;
+  accountId?: string;
   notes?: string;
 }
 
@@ -443,6 +446,7 @@ export interface CreatePurchaseOrderLineRequest {
   unitOfMeasure?: string;
   warehouseCode?: string;
   costCenterId?: string;
+  accountId?: string;
   notes?: string;
 }
 
@@ -462,6 +466,7 @@ export interface CreatePurchaseOrderRequest {
   branchCode?: string;
   warehouseCode?: string;
   costCenterId?: string;
+  accountId?: string;
   notes?: string;
   lines: CreatePurchaseOrderLineRequest[];
 }

@@ -63,7 +63,7 @@
   <!-- Setup Control Bar -->
   <div class="setup-card">
     <div class="setup-grid">
-      <div class="form-group flex-grow-1">
+      <div class="form-group col-account">
         <label>{{ 'accounting.bankReconciliation.summary.bankAccount' | translate }}</label>
         <app-searchable-select
           [items]="accountOptions()"
@@ -74,21 +74,22 @@
         </app-searchable-select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group col-date">
         <label for="statementDateInput">{{ 'accounting.bankReconciliation.summary.statementDate' | translate }}</label>
         <input 
           id="statementDateInput"
           type="date" 
-          class="form-control" 
+          class="form-control font-code" 
           [ngModel]="statementDate()" 
           (ngModelChange)="statementDate.set($event); loadWorkspace()" />
       </div>
 
-      <div class="form-group">
+      <div class="form-group col-balance">
         <div class="balance-label-row">
           <label for="statementBalanceInput">{{ 'accounting.bankReconciliation.summary.statementBalance' | translate }}</label>
           <button type="button" class="btn-micro-link" (click)="setBalanceToCleared()" [title]="'accounting.bankReconciliation.actions.matchToSelected' | translate">
-            <i class="pi pi-sliders-h"></i> {{ 'accounting.bankReconciliation.actions.matchToSelected' | translate }}
+            <i class="pi pi-sliders-h"></i>
+            <span>{{ 'accounting.bankReconciliation.actions.matchToSelected' | translate }}</span>
           </button>
         </div>
         <div class="input-with-currency">
@@ -96,18 +97,18 @@
             id="statementBalanceInput"
             type="number" 
             step="0.01" 
-            class="form-control text-start ltr-input" 
+            class="form-control ltr-input" 
             [ngModel]="statementEndingBalance()" 
-            (ngModelChange)="statementEndingBalance.set($event)" />
+            (ngModelChange)="onStatementBalanceChange($event)" />
           <span class="currency-tag">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
         </div>
       </div>
 
       <div class="form-group actions-col">
-        <label>&nbsp;</label>
+        <label class="invisible-label">&nbsp;</label>
         <button class="btn btn-refresh" [disabled]="isLoading()" (click)="loadWorkspace()" [title]="'common.refresh' | translate">
           <i class="pi pi-refresh" [class.pi-spin]="isLoading()"></i>
-          {{ 'common.refresh' | translate }}
+          <span>{{ 'common.refresh' | translate }}</span>
         </button>
       </div>
     </div>
@@ -119,7 +120,10 @@
       <div class="kpi-icon"><i class="pi pi-book"></i></div>
       <div class="kpi-body">
         <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.bookBalance' | translate }}</div>
-        <div class="kpi-value">{{ bookBalance() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-value">
+          <span dir="ltr" class="num-ltr">{{ bookBalance() | number:'1.2-2' }}</span>
+          <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
+        </div>
         <div class="kpi-sub">{{ 'accounting.bankReconciliation.summary.bookBalance' | translate }} {{ statementDate() }}</div>
       </div>
     </div>
@@ -128,19 +132,29 @@
       <div class="kpi-icon"><i class="pi pi-file"></i></div>
       <div class="kpi-body">
         <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.statementBalance' | translate }}</div>
-        <div class="kpi-value">{{ statementEndingBalance() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span></div>
+        <div class="kpi-value">
+          <span dir="ltr" class="num-ltr">{{ statementEndingBalance() | number:'1.2-2' }}</span>
+          <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
+        </div>
         <div class="kpi-sub">{{ 'accounting.bankReconciliation.kpi.confirmedStatement' | translate }}</div>
       </div>
     </div>
 
     <div class="kpi-card card-cleared">
-      <div class="kpi-icon"><i class="pi pi-check"></i></div>
+      <div class="kpi-icon"><i class="pi pi-check-square"></i></div>
       <div class="kpi-body">
         <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.cleared' | translate }} ({{ matchedCount() }})</div>
         <div class="kpi-value text-teal">
-          +{{ clearedDeposits() | number:'1.2-2' }} / -{{ clearedWithdrawals() | number:'1.2-2' }}
+          <span dir="ltr" class="num-ltr">{{ clearedNetBalance() | number:'1.2-2' }}</span>
+          <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
         </div>
-        <div class="kpi-sub">{{ 'accounting.bankReconciliation.tabs.unmatched' | translate }}: {{ unmatchedCount() }} {{ 'accounting.bankReconciliation.outstanding.items' | translate }}</div>
+        <div class="kpi-sub">
+          <span class="text-emerald" dir="ltr">+{{ clearedDeposits() | number:'1.2-2' }}</span>
+          <span class="mx-1">/</span>
+          <span class="text-rose" dir="ltr">-{{ clearedWithdrawals() | number:'1.2-2' }}</span>
+          <span class="mx-1">•</span>
+          <span>{{ 'accounting.bankReconciliation.tabs.unmatched' | translate }}: {{ unmatchedCount() }}</span>
+        </div>
       </div>
     </div>
 
@@ -151,13 +165,14 @@
       <div class="kpi-body">
         <div class="kpi-label">{{ 'accounting.bankReconciliation.kpi.difference' | translate }}</div>
         <div class="kpi-value" [class.text-green]="isBalanced()" [class.text-red]="!isBalanced()">
-          {{ difference() | number:'1.2-2' }} <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
+          <span dir="ltr" class="num-ltr">{{ difference() | number:'1.2-2' }}</span>
+          <span class="sar">{{ 'accounting.yearEndClosing.summary.sar' | translate }}</span>
         </div>
         <div class="kpi-sub" *ngIf="isBalanced()">
-          <span class="badge badge-success"><i class="pi pi-check me-1"></i> {{ 'accounting.bankReconciliation.kpi.balancedBadge' | translate }}</span>
+          <span class="badge badge-success"><i class="pi pi-check"></i> {{ 'accounting.bankReconciliation.kpi.balancedBadge' | translate }}</span>
         </div>
         <div class="kpi-sub" *ngIf="!isBalanced()">
-          <span class="badge badge-warning"><i class="pi pi-times me-1"></i> {{ 'accounting.bankReconciliation.kpi.unbalancedBadge' | translate }}</span>
+          <span class="badge badge-warning"><i class="pi pi-exclamation-circle"></i> {{ 'accounting.bankReconciliation.kpi.unbalancedBadge' | translate }}</span>
         </div>
       </div>
     </div>
@@ -263,7 +278,14 @@
       <table class="erp-table">
         <thead>
           <tr>
-            <th class="col-check text-center">{{ 'accounting.bankReconciliation.table.status' | translate }}</th>
+            <th class="col-check text-center">
+              <input 
+                type="checkbox" 
+                class="form-check-input"
+                [checked]="allVisibleMatched()"
+                (change)="toggleSelectAllVisible($any($event.target).checked)"
+                [title]="'accounting.bankReconciliation.actions.selectAll' | translate" />
+            </th>
             <th class="col-date">{{ 'accounting.bankReconciliation.table.date' | translate }}</th>
             <th class="col-code">{{ 'accounting.journal.table.entryNo' | translate }}</th>
             <th class="col-ref">{{ 'accounting.bankReconciliation.table.ref' | translate }}</th>
@@ -361,15 +383,20 @@
 
       <div class="footer-totals">
         <div class="total-item">
-          <span>{{ 'accounting.bankReconciliation.tabs.matched' | translate }}:</span>
-          <strong class="text-emerald">{{ clearedDeposits() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+          <span class="tot-lbl">{{ 'accounting.bankReconciliation.tabs.matched' | translate }} ({{ matchedCount() }}):</span>
+          <strong class="text-emerald" dir="ltr">{{ clearedNetBalance() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
         </div>
         <div class="total-item">
-          <span>{{ 'accounting.bankReconciliation.tabs.unmatched' | translate }}:</span>
-          <strong class="text-rose">{{ clearedWithdrawals() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+          <span class="tot-lbl">{{ 'accounting.bankReconciliation.tabs.unmatched' | translate }} ({{ unmatchedCount() }}):</span>
+          <strong class="text-rose" dir="ltr">{{ unclearedNetBalance() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
         </div>
-          <span>{{ 'accounting.journal.totals.totalDebit' | translate }}:</span>
-          <strong>{{ (clearedDeposits() - clearedWithdrawals()) | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+        <div class="total-item">
+          <span class="tot-lbl">{{ 'accounting.journal.table.debit' | translate }}:</span>
+          <strong dir="ltr">{{ totalDebits() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
+        </div>
+        <div class="total-item">
+          <span class="tot-lbl">{{ 'accounting.journal.table.credit' | translate }}:</span>
+          <strong dir="ltr">{{ totalCredits() | number:'1.2-2' }} {{ 'accounting.yearEndClosing.summary.sar' | translate }}</strong>
         </div>
       </div>
     </div>
