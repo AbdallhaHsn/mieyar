@@ -1185,11 +1185,11 @@ export class LoginComponent implements OnInit {
     this.isPlatformOwner = owner;
     this.errorMessage = '';
     if (owner) {
-      this.username = 'admin';
-      this.password = 'SuperAdmin@2026';
+      this.username = 'adminco';
+      this.password = '123321123';
       this.tenantCode = '';
     } else {
-      this.tenantCode = 'KHALEEJ-01';
+      this.tenantCode = 'COMP-01';
       this.username = 'alkhaleej_admin';
       this.password = 'Tenant@2026';
     }

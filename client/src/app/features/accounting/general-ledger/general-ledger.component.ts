@@ -182,61 +182,6 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
       <!-- ========================================================= -->
       <section class="gl-view-section" *ngIf="activeView() === 'overview'">
         
-        <!-- KPI Strip for All Accounts -->
-        <div class="gl-kpi-grid" *ngIf="overviewReport()">
-          <div class="kpi-card">
-            <div class="kpi-icon-box bg-slate">
-              <i class="pi pi-history"></i>
-            </div>
-            <div class="kpi-content">
-              <span class="kpi-title">{{ 'accounting.generalLedger.totalOpening' | translate }}</span>
-              <strong class="kpi-val font-mono">{{ overviewReport()!.totalOpeningBalance | number:'1.2-2' }} <small>SAR</small></strong>
-            </div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-box bg-emerald">
-              <i class="pi pi-arrow-down-left"></i>
-            </div>
-            <div class="kpi-content">
-              <span class="kpi-title">{{ 'accounting.generalLedger.totalPeriodDebit' | translate }}</span>
-              <strong class="kpi-val font-mono text-emerald">{{ overviewReport()!.totalPeriodDebit | number:'1.2-2' }} <small>SAR</small></strong>
-            </div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-box bg-cyan">
-              <i class="pi pi-arrow-up-right"></i>
-            </div>
-            <div class="kpi-content">
-              <span class="kpi-title">{{ 'accounting.generalLedger.totalPeriodCredit' | translate }}</span>
-              <strong class="kpi-val font-mono text-cyan">{{ overviewReport()!.totalPeriodCredit | number:'1.2-2' }} <small>SAR</small></strong>
-            </div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-box bg-amber">
-              <i class="pi pi-check-circle"></i>
-            </div>
-            <div class="kpi-content">
-              <span class="kpi-title">{{ 'accounting.generalLedger.balanceStatus' | translate }}</span>
-              <strong class="kpi-val font-mono" [class.text-emerald]="isLedgerBalanced()" [class.text-rose]="!isLedgerBalanced()">
-                {{ (overviewReport()!.totalPeriodDebit - overviewReport()!.totalPeriodCredit) | number:'1.2-2' }} <small>SAR</small>
-              </strong>
-            </div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-icon-box bg-teal">
-              <i class="pi pi-wallet"></i>
-            </div>
-            <div class="kpi-content">
-              <span class="kpi-title">{{ 'accounting.generalLedger.totalClosing' | translate }}</span>
-              <strong class="kpi-val font-mono">{{ overviewReport()!.totalClosingBalance | number:'1.2-2' }} <small>SAR</small></strong>
-            </div>
-          </div>
-        </div>
-
         <!-- Ledger Accounts Table -->
         <div class="table-container-card">
           <div class="table-top-bar">
@@ -375,34 +320,6 @@ import { TafqeetService } from '../../../core/services/tafqeet.service';
               <span class="lbl">{{ 'accounting.generalLedger.period' | translate }}</span>
               <strong class="val font-mono">{{ fromDate }} ~ {{ toDate }}</strong>
             </div>
-          </div>
-        </div>
-
-        <!-- Statement KPI Balances Strip -->
-        <div class="statement-kpi-grid" *ngIf="currentStatement()">
-          <div class="stmt-kpi-card bg-slate-subtle">
-            <span class="stmt-kpi-lbl">{{ 'accounting.generalLedger.openingBalance' | translate }}</span>
-            <strong class="stmt-kpi-val font-mono">{{ currentStatement()!.openingBalance | number:'1.2-2' }} <small>SAR</small></strong>
-          </div>
-
-          <div class="stmt-kpi-card bg-emerald-subtle">
-            <span class="stmt-kpi-lbl text-emerald">{{ 'accounting.generalLedger.totalPeriodDebit' | translate }}</span>
-            <strong class="stmt-kpi-val font-mono text-emerald">+ {{ currentStatement()!.totalDebit | number:'1.2-2' }} <small>SAR</small></strong>
-          </div>
-
-          <div class="stmt-kpi-card bg-cyan-subtle">
-            <span class="stmt-kpi-lbl text-cyan">{{ 'accounting.generalLedger.totalPeriodCredit' | translate }}</span>
-            <strong class="stmt-kpi-val font-mono text-cyan">- {{ currentStatement()!.totalCredit | number:'1.2-2' }} <small>SAR</small></strong>
-          </div>
-
-          <div class="stmt-kpi-card bg-amber-subtle">
-            <span class="stmt-kpi-lbl">{{ 'accounting.generalLedger.netMovement' | translate }}</span>
-            <strong class="stmt-kpi-val font-mono">{{ currentStatement()!.netMovement | number:'1.2-2' }} <small>SAR</small></strong>
-          </div>
-
-          <div class="stmt-kpi-card bg-emerald-deep">
-            <span class="stmt-kpi-lbl text-white">{{ 'accounting.generalLedger.currentClosingBalance' | translate }}</span>
-            <strong class="stmt-kpi-val font-mono text-white">{{ currentStatement()!.closingBalance | number:'1.2-2' }} <small>SAR</small></strong>
           </div>
         </div>
 

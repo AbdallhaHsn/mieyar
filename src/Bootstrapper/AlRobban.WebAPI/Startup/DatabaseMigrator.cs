@@ -393,6 +393,32 @@ END";
                 Serilog.Log.Information("Initial SuperAdmin and Tenant Admin created successfully.");
             }
 
+            // Ensure demo user adminco exists for quick demo access
+            var adminCoUser = await identityDb.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.UserName == "adminco");
+            if (adminCoUser == null)
+            {
+                adminCoUser = new AlRobban.Modules.IdentityAndAccess.Domain.Entities.User(
+                    Guid.Parse("ca333333-3333-3333-3333-333333333333"),
+                    tenantId: null, // Platform Owner
+                    "adminco",
+                    "adminco@alrobban.com",
+                    passwordHasher.HashPassword("123321123"),
+                    "مدير المنشأة (adminco)",
+                    "Company Admin (adminco)",
+                    AlRobban.Modules.IdentityAndAccess.Domain.Enums.UserRole.SuperAdmin,
+                    phoneNumber: "0505123456",
+                    createdBy: "System Bootstrapper");
+                await identityDb.Users.AddAsync(adminCoUser);
+                await identityDb.SaveChangesAsync();
+                Serilog.Log.Information("Bootstrap demo user 'adminco' created successfully with password '123321123'.");
+            }
+            else
+            {
+                // Reset password to 123321123 if needed to guarantee immediate login
+                adminCoUser.ChangePassword(passwordHasher.HashPassword("123321123"), "System Bootstrapper");
+                await identityDb.SaveChangesAsync();
+            }
+
             // Seed General Ledger defaults if needed
             var glDb = sp.GetRequiredService<GeneralLedgerDbContext>();
             var canonicalCompanyId = Guid.Parse("11111111-2222-3333-4444-555555555555");
